@@ -85,6 +85,12 @@ function parseQueryParams(url) {
   return params;
 }
 
+// Parse URL path to extract ID for delete endpoint
+function parsePathId(url) {
+  const match = url.match(/\/api\/decisions\/(\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
+
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -93,8 +99,294 @@ const app = new App({
     { path: '/', method: ['GET'], handler: (req, res) => { res.writeHead(302, { Location: '/dashboard' }); res.end(); } },
     { path: '/health', method: ['GET'], handler: (req, res) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ status: 'ok', mongodb: db ? 'connected' : 'disconnected', jira: process.env.JIRA_URL ? 'configured' : 'not configured' })); } },
     { path: '/api/decisions', method: ['GET'], handler: async (req, res) => { try { const query = parseQueryParams(req.url); const page = parseInt(query.page || '1'); const limit = parseInt(query.limit || '50'); const skip = (page - 1) * limit; const filter = {}; if (query.type) filter.type = query.type; if (query.epic) filter.epic_key = { $regex: query.epic, $options: 'i' }; if (query.search) filter.$or = [{ text: { $regex: query.search, $options: 'i' } }, { tags: { $regex: query.search, $options: 'i' } }]; const [decisions, total] = await Promise.all([decisionsCollection.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).toArray(), decisionsCollection.countDocuments(filter)]); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ decisions, pagination: { page, limit, total, pages: Math.ceil(total / limit) } })); } catch (error) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error' })); } } },
+    { 
+      path: '/api/decisions/', 
+      method: ['DELETE'], 
+      handler: async (req, res) => { 
+        try {
+          const id = parsePathId(req.url);
+          if (!id) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid ID' }));
+            return;
+          }
+          const result = await decisionsCollection.deleteOne({ id: id });
+          if (result.deletedCount === 0) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Decision not found' }));
+            return;
+          }
+          console.log(`🗑️ Deleted decision #${id}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, deleted: id }));
+        } catch (error) {
+          console.error('Delete error:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Delete failed' }));
+        }
+      } 
+    },
     { path: '/api/stats', method: ['GET'], handler: async (req, res) => { try { const [total, byType, recentCount] = await Promise.all([decisionsCollection.countDocuments(), decisionsCollection.aggregate([{ $group: { _id: '$type', count: { $sum: 1 } } }]).toArray(), decisionsCollection.countDocuments({ timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() } })]); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ total, byType: byType.reduce((acc, item) => { acc[item._id] = item.count; return acc; }, {}), lastWeek: recentCount })); } catch (error) { res.writeHead(500); res.end('{}'); } } },
-    { path: '/dashboard', method: ['GET'], handler: (req, res) => { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Decision Logger</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#f5f5f5;color:#1d1c1d}header{background:#fff;border-bottom:1px solid #e0e0e0;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.1)}.container{max-width:1400px;margin:0 auto;padding:20px}h1{font-size:28px;font-weight:700}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:20px 0}.stat-card{background:#fff;padding:20px;border-radius:8px}.stat-card h3{font-size:14px;color:#616061;margin-bottom:8px;text-transform:uppercase}.stat-card .number{font-size:32px;font-weight:700}.filters{background:#fff;padding:20px;border-radius:8px;margin-bottom:20px;display:flex;gap:15px;flex-wrap:wrap}.filter-group{flex:1;min-width:200px}.filter-group label{display:block;font-size:14px;font-weight:600;margin-bottom:5px}.filter-group input,.filter-group select{width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:4px;font-size:14px}.decisions-table{background:#fff;border-radius:8px;overflow:hidden}table{width:100%;border-collapse:collapse}thead{background:#f8f8f8}th{text-align:left;padding:15px;font-weight:600;font-size:14px;border-bottom:2px solid #e0e0e0}td{padding:15px;border-bottom:1px solid #f0f0f0;font-size:14px}tbody tr:hover{background:#f8f8f8}.badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600}.badge-product{background:#e8f5e9;color:#2e7d32}.badge-ux{background:#e3f2fd;color:#1565c0}.badge-technical{background:#fff3e0;color:#e65100}.tag{background:#f0f0f0;padding:2px 8px;border-radius:3px;font-size:12px;margin:2px}.jira-link{color:#0052cc;text-decoration:none;font-weight:500}.jira-link:hover{text-decoration:underline}.jira-title{color:#616061;font-size:12px}.loading{text-align:center;padding:40px}.export-btn{background:#611f69;color:#fff;border:none;padding:10px 20px;border-radius:4px;font-size:14px;cursor:pointer;margin-top:10px}.export-btn:hover{background:#4a154b}</style></head><body><header><div class="container"><h1>📝 Decision Logger</h1></div></header><div class="container"><div class="stats"><div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div><div class="stat-card"><h3>Product</h3><div class="number" id="product-count">-</div></div><div class="stat-card"><h3>UX</h3><div class="number" id="ux-count">-</div></div><div class="stat-card"><h3>Technical</h3><div class="number" id="technical-count">-</div></div><div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div></div><div class="filters"><div class="filter-group"><label>Search</label><input type="text" id="search" placeholder="Search..."></div><div class="filter-group"><label>Type</label><select id="type-filter"><option value="">All</option><option value="product">Product</option><option value="ux">UX</option><option value="technical">Technical</option></select></div><div class="filter-group"><label>Epic</label><input type="text" id="epic-filter" placeholder="LOK-123"></div></div><button class="export-btn" onclick="exportToCSV()">📥 Export CSV</button><div class="decisions-table"><table><thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Epic</th><th>Tags</th><th>Creator</th><th>Date</th></tr></thead><tbody id="decisions-body"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody></table></div></div><script>let allDecisions=[];async function fetchStats(){try{const r=await fetch('/api/stats');const d=await r.json();document.getElementById('total-count').textContent=d.total;document.getElementById('product-count').textContent=d.byType.product||0;document.getElementById('ux-count').textContent=d.byType.ux||0;document.getElementById('technical-count').textContent=d.byType.technical||0;document.getElementById('week-count').textContent=d.lastWeek}catch(e){}}async function fetchDecisions(){try{const s=document.getElementById('search').value;const t=document.getElementById('type-filter').value;const e=document.getElementById('epic-filter').value;const p=new URLSearchParams();if(s)p.append('search',s);if(t)p.append('type',t);if(e)p.append('epic',e);p.append('limit','100');const r=await fetch(\`/api/decisions?\${p}\`);const d=await r.json();allDecisions=d.decisions;renderDecisions(d.decisions)}catch(err){document.getElementById('decisions-body').innerHTML='<tr><td colspan="7">Error</td></tr>'}}function renderDecisions(decisions){const tbody=document.getElementById('decisions-body');if(decisions.length===0){tbody.innerHTML='<tr><td colspan="7">No decisions</td></tr>';return}tbody.innerHTML=decisions.map(d=>{let epicCell='-';if(d.epic_key){if(d.jira_data&&d.jira_data.url){epicCell=\`<a href="\${d.jira_data.url}" target="_blank" class="jira-link">\${d.epic_key}</a><div class="jira-title">\${d.jira_data.summary||''}</div>\`}else{epicCell=d.epic_key}}return\`<tr><td><strong>#\${d.id}</strong></td><td>\${d.text}</td><td><span class="badge badge-\${d.type}">\${d.type}</span></td><td>\${epicCell}</td><td>\${d.tags.map(t=>\`<span class="tag">\${t}</span>\`).join('')}</td><td>\${d.creator}</td><td>\${new Date(d.timestamp).toLocaleDateString()}</td></tr>\`}).join('')}function exportToCSV(){const csv=[['ID','Decision','Type','Epic','Summary','Tags','Creator','Date'],...allDecisions.map(d=>[d.id,d.text,d.type,d.epic_key||'',(d.jira_data&&d.jira_data.summary)||'',d.tags.join(','),d.creator,new Date(d.timestamp).toLocaleDateString()])].map(row=>row.map(cell=>\`"\${cell}"\`).join(',')).join('\\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=\`decisions.csv\`;a.click()}document.getElementById('search').addEventListener('input',debounce(fetchDecisions,500));document.getElementById('type-filter').addEventListener('change',fetchDecisions);document.getElementById('epic-filter').addEventListener('input',debounce(fetchDecisions,500));function debounce(func,wait){let timeout;return function(...args){clearTimeout(timeout);timeout=setTimeout(()=>func.apply(this,args),wait)}}fetchStats();fetchDecisions();setInterval(()=>{fetchStats();fetchDecisions()},30000)</script></body></html>`); } },
+    { path: '/dashboard', method: ['GET'], handler: (req, res) => { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Decision Logger</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #1d1c1d; }
+    header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 28px; font-weight: 700; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+    .stat-card { background: #fff; padding: 20px; border-radius: 8px; }
+    .stat-card h3 { font-size: 14px; color: #616061; margin-bottom: 8px; text-transform: uppercase; }
+    .stat-card .number { font-size: 32px; font-weight: 700; }
+    .filters { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+    .filter-group input, .filter-group select { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; }
+    .decisions-table { background: #fff; border-radius: 8px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8f8f8; }
+    th { text-align: left; padding: 15px; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e0e0e0; }
+    td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+    tbody tr:hover { background: #f8f8f8; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-product { background: #e8f5e9; color: #2e7d32; }
+    .badge-ux { background: #e3f2fd; color: #1565c0; }
+    .badge-technical { background: #fff3e0; color: #e65100; }
+    .tag { background: #f0f0f0; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin: 2px; }
+    .jira-link { color: #0052cc; text-decoration: none; font-weight: 500; }
+    .jira-link:hover { text-decoration: underline; }
+    .jira-title { color: #616061; font-size: 12px; }
+    .loading { text-align: center; padding: 40px; }
+    .export-btn { background: #611f69; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; margin-top: 10px; }
+    .export-btn:hover { background: #4a154b; }
+    .delete-btn { background: #dc3545; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+    .delete-btn:hover { background: #c82333; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #fff; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%; text-align: center; }
+    .modal h2 { margin-bottom: 15px; font-size: 20px; }
+    .modal p { margin-bottom: 20px; color: #616061; }
+    .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+    .modal-btn { padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; border: none; }
+    .modal-btn-cancel { background: #e0e0e0; color: #333; }
+    .modal-btn-cancel:hover { background: #d0d0d0; }
+    .modal-btn-delete { background: #dc3545; color: #fff; }
+    .modal-btn-delete:hover { background: #c82333; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>📝 Decision Logger</h1>
+    </div>
+  </header>
+  <div class="container">
+    <div class="stats">
+      <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
+      <div class="stat-card"><h3>Product</h3><div class="number" id="product-count">-</div></div>
+      <div class="stat-card"><h3>UX</h3><div class="number" id="ux-count">-</div></div>
+      <div class="stat-card"><h3>Technical</h3><div class="number" id="technical-count">-</div></div>
+      <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
+    </div>
+    <div class="filters">
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="text" id="search" placeholder="Search...">
+      </div>
+      <div class="filter-group">
+        <label>Type</label>
+        <select id="type-filter">
+          <option value="">All</option>
+          <option value="product">Product</option>
+          <option value="ux">UX</option>
+          <option value="technical">Technical</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Epic</label>
+        <input type="text" id="epic-filter" placeholder="LOK-123">
+      </div>
+    </div>
+    <button class="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
+    <div class="decisions-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Decision</th>
+            <th>Type</th>
+            <th>Epic</th>
+            <th>Tags</th>
+            <th>Creator</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="decisions-body">
+          <tr><td colspan="8" class="loading">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+      <h2>🗑️ Delete Decision</h2>
+      <p>Are you sure you want to delete decision <strong id="delete-decision-id">#0</strong>? This action cannot be undone.</p>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+        <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allDecisions = [];
+    let deleteTargetId = null;
+
+    async function fetchStats() {
+      try {
+        const r = await fetch('/api/stats');
+        const d = await r.json();
+        document.getElementById('total-count').textContent = d.total;
+        document.getElementById('product-count').textContent = d.byType.product || 0;
+        document.getElementById('ux-count').textContent = d.byType.ux || 0;
+        document.getElementById('technical-count').textContent = d.byType.technical || 0;
+        document.getElementById('week-count').textContent = d.lastWeek;
+      } catch (e) {}
+    }
+
+    async function fetchDecisions() {
+      try {
+        const s = document.getElementById('search').value;
+        const t = document.getElementById('type-filter').value;
+        const e = document.getElementById('epic-filter').value;
+        const p = new URLSearchParams();
+        if (s) p.append('search', s);
+        if (t) p.append('type', t);
+        if (e) p.append('epic', e);
+        p.append('limit', '100');
+        const r = await fetch(\`/api/decisions?\${p}\`);
+        const d = await r.json();
+        allDecisions = d.decisions;
+        renderDecisions(d.decisions);
+      } catch (err) {
+        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="8">Error</td></tr>';
+      }
+    }
+
+    function renderDecisions(decisions) {
+      const tbody = document.getElementById('decisions-body');
+      if (decisions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8">No decisions</td></tr>';
+        return;
+      }
+      tbody.innerHTML = decisions.map(d => {
+        let epicCell = '-';
+        if (d.epic_key) {
+          if (d.jira_data && d.jira_data.url) {
+            epicCell = \`<a href="\${d.jira_data.url}" target="_blank" class="jira-link">\${d.epic_key}</a><div class="jira-title">\${d.jira_data.summary || ''}</div>\`;
+          } else {
+            epicCell = d.epic_key;
+          }
+        }
+        return \`<tr>
+          <td><strong>#\${d.id}</strong></td>
+          <td>\${d.text}</td>
+          <td><span class="badge badge-\${d.type}">\${d.type}</span></td>
+          <td>\${epicCell}</td>
+          <td>\${d.tags.map(t => \`<span class="tag">\${t}</span>\`).join('')}</td>
+          <td>\${d.creator}</td>
+          <td>\${new Date(d.timestamp).toLocaleDateString()}</td>
+          <td><button class="delete-btn" onclick="openDeleteModal(\${d.id})">🗑️ Delete</button></td>
+        </tr>\`;
+      }).join('');
+    }
+
+    function openDeleteModal(id) {
+      deleteTargetId = id;
+      document.getElementById('delete-decision-id').textContent = '#' + id;
+      document.getElementById('delete-modal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('delete-modal').classList.remove('active');
+    }
+
+    async function confirmDelete() {
+      if (!deleteTargetId) return;
+      try {
+        const response = await fetch(\`/api/decisions/\${deleteTargetId}\`, {
+          method: 'DELETE'
+        });
+        if (response.ok) {
+          closeDeleteModal();
+          fetchStats();
+          fetchDecisions();
+        } else {
+          alert('Failed to delete decision');
+        }
+      } catch (err) {
+        alert('Error deleting decision');
+      }
+    }
+
+    function exportToCSV() {
+      const csv = [
+        ['ID', 'Decision', 'Type', 'Epic', 'Summary', 'Tags', 'Creator', 'Date'],
+        ...allDecisions.map(d => [
+          d.id,
+          d.text,
+          d.type,
+          d.epic_key || '',
+          (d.jira_data && d.jira_data.summary) || '',
+          d.tags.join(','),
+          d.creator,
+          new Date(d.timestamp).toLocaleDateString()
+        ])
+      ].map(row => row.map(cell => \`"\${cell}"\`).join(',')).join('\\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'decisions.csv';
+      a.click();
+    }
+
+    document.getElementById('search').addEventListener('input', debounce(fetchDecisions, 500));
+    document.getElementById('type-filter').addEventListener('change', fetchDecisions);
+    document.getElementById('epic-filter').addEventListener('input', debounce(fetchDecisions, 500));
+
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // Close modal on overlay click
+    document.getElementById('delete-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteModal();
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDeleteModal();
+    });
+
+    fetchStats();
+    fetchDecisions();
+    setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
+  </script>
+</body>
+</html>`); } },
   ],
 });
 
@@ -118,7 +410,7 @@ app.command('/decision', async ({ command, ack, client, say }) => {
           { type: 'input', block_id: 'type_block', element: { type: 'static_select', action_id: 'type_select', options: [{ text: { type: 'plain_text', text: '📦 Product' }, value: 'product' }, { text: { type: 'plain_text', text: '🎨 UX' }, value: 'ux' }, { text: { type: 'plain_text', text: '⚙️ Technical' }, value: 'technical' }] }, label: { type: 'plain_text', text: 'Decision Type' } },
           { type: 'input', block_id: 'epic_block', optional: true, element: { type: 'plain_text_input', action_id: 'epic_input', placeholder: { type: 'plain_text', text: 'LOK-123' } }, label: { type: 'plain_text', text: 'Epic/Story Key (optional)' }, hint: { type: 'plain_text', text: 'Auto-fetches from Jira' } },
           { type: 'input', block_id: 'tags_block', optional: true, element: { type: 'plain_text_input', action_id: 'tags_input', placeholder: { type: 'plain_text', text: 'aem, integration' } }, label: { type: 'plain_text', text: 'Tags (comma-separated, optional)' } },
-          { type: 'input', block_id: 'alternatives_block', optional: true, element: { type: 'plain_text_input', action_id: 'alternatives_input', multiline: true }, label: { type: 'plain_text', text: 'Additional Info (optional)' } },
+          { type: 'input', block_id: 'alternatives_block', optional: true, element: { type: 'plain_text_input', action_id: 'alternatives_input', multiline: true }, label: { type: 'plain_text', text: 'Additional comments (optional)' } },
           { type: 'input', block_id: 'jira_comment_block', optional: true, element: { type: 'checkboxes', action_id: 'jira_comment_checkbox', options: [{ text: { type: 'plain_text', text: 'Add this decision as a comment in Jira' }, value: 'yes' }] }, label: { type: 'plain_text', text: 'Jira Integration' } }
         ]
       }
@@ -159,7 +451,7 @@ app.view('decision_modal', async ({ ack, view, client }) => {
     
     if (addComment && epicKey && jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nDecision: ${decision.text}\n\n${alternatives ? `Alternatives: ${alternatives}\n\n` : ''}Logged via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nDecision: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via Decision Logger`;
       if (await addJiraComment(epicKey, comment)) {
         console.log(`✅ Jira comment added to ${epicKey}`);
       }
