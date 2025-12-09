@@ -177,7 +177,7 @@ app.view('decision_modal', async ({ ack, view, client }) => {
       blocks.push({ type: 'section', fields: [{ type: 'mrkdwn', text: `*Epic:*\n${epicKey}` }] });
     }
     if (tags.length > 0) blocks.push({ type: 'section', fields: [{ type: 'mrkdwn', text: `*Tags:*\n${tags.map(t => `\`${t}\``).join(', ')}` }] });
-    if (alternatives) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Alternatives:*\n${alternatives}` } });
+    if (alternatives) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Additional Comments:*\n${alternatives}` } });
     await client.chat.postMessage({ channel: metadata.channel_id, blocks, text: `Decision #${decision.id} logged` });
   } catch (error) { console.error('❌ Error:', error); }
 });
