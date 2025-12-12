@@ -13,7 +13,9 @@ const {
   handleApproveAction,
   handleRejectAction,
   handleEditAction,
-  handleEditModalSubmit
+  handleEditModalSubmit,
+  handleConnectJiraAction,
+  handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
 
 /**
@@ -81,7 +83,9 @@ async function startApp() {
   app.action('approve_suggestion', handleApproveAction);
   app.action('reject_suggestion', handleRejectAction);
   app.action('edit_suggestion', handleEditAction);
+  app.action('connect_jira_suggestion', handleConnectJiraAction);
   app.view('edit_suggestion_modal', handleEditModalSubmit);
+  app.view('connect_jira_modal', handleConnectJiraModalSubmit);
 
   // Start the server
   await app.start(config.port);

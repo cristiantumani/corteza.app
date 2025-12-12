@@ -331,6 +331,12 @@ async function postSuggestionsToSlack(client, suggestions, channelId) {
           },
           {
             type: 'button',
+            text: { type: 'plain_text', text: '🔗 Connect to Jira' },
+            value: suggestion.suggestion_id,
+            action_id: 'connect_jira_suggestion'
+          },
+          {
+            type: 'button',
             text: { type: 'plain_text', text: '❌ Reject' },
             style: 'danger',
             value: suggestion.suggestion_id,
@@ -605,6 +611,20 @@ async function handleEditAction({ ack, body, client }) {
               multiline: true
             },
             label: { type: 'plain_text', text: 'Additional Comments (optional)' }
+          },
+          {
+            type: 'input',
+            block_id: 'jira_comment_block',
+            optional: true,
+            element: {
+              type: 'checkboxes',
+              action_id: 'jira_comment_checkbox',
+              options: [{
+                text: { type: 'plain_text', text: 'Add this decision as a comment in Jira' },
+                value: 'yes'
+              }]
+            },
+            label: { type: 'plain_text', text: 'Jira Integration' }
           }
         ]
       }
@@ -635,6 +655,9 @@ async function handleEditModalSubmit({ ack, view, client }) {
         .filter(t => t),
       alternatives: values.alternatives_block.alternatives_input.value || null
     };
+
+    // Check if user wants to add Jira comment
+    const addComment = (values.jira_comment_block.jira_comment_checkbox.selected_options || []).length > 0;
 
     // Fetch original suggestion
     const suggestionsCollection = getAISuggestionsCollection();
@@ -677,6 +700,15 @@ async function handleEditModalSubmit({ ack, view, client }) {
 
     await decisionsCollection.insertOne(decision);
 
+    // Add Jira comment if requested
+    if (addComment && editedData.epic_key && jiraData) {
+      console.log('>>> Adding Jira comment...');
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${editedData.alternatives ? `Additional Comments: ${editedData.alternatives}\n\n` : ''}AI-extracted and approved via Decision Logger`;
+      if (await addJiraComment(editedData.epic_key, comment)) {
+        console.log(`✅ Jira comment added to ${editedData.epic_key}`);
+      }
+    }
+
     // Update suggestion
     await suggestionsCollection.updateOne(
       { suggestion_id: metadata.suggestion_id },
@@ -697,7 +729,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
     // Post confirmation
     await client.chat.postMessage({
       channel: metadata.channel_id,
-      text: `✅ Decision #${nextId} edited and approved by ${userName}`
+      text: `✅ Decision #${nextId} edited and approved by ${userName}${addComment && editedData.epic_key ? ' (Jira comment added)' : ''}`
     });
 
   } catch (error) {
@@ -770,10 +802,177 @@ async function updateMessageButtons(client, body, statusText) {
   }
 }
 
+/**
+ * Handles "Connect to Jira" button click - opens modal to select epic
+ */
+async function handleConnectJiraAction({ ack, body, client }) {
+  await ack();
+
+  try {
+    const suggestionId = body.actions[0].value;
+
+    // Fetch suggestion
+    const suggestionsCollection = getAISuggestionsCollection();
+    const suggestion = await suggestionsCollection.findOne({ suggestion_id: suggestionId });
+
+    if (!suggestion || suggestion.status !== 'pending') {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: '⚠️  This suggestion has already been processed.'
+      });
+      return;
+    }
+
+    // Open modal to select Jira epic
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: {
+        type: 'modal',
+        callback_id: 'connect_jira_modal',
+        private_metadata: JSON.stringify({
+          suggestion_id: suggestionId,
+          channel_id: body.channel.id,
+          message_ts: body.message.ts
+        }),
+        title: { type: 'plain_text', text: '🔗 Connect to Jira' },
+        submit: { type: 'plain_text', text: 'Approve & Connect' },
+        close: { type: 'plain_text', text: 'Cancel' },
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `This will approve the decision and add it as a comment to the Jira epic/story.`
+            }
+          },
+          {
+            type: 'input',
+            block_id: 'epic_block',
+            element: {
+              type: 'plain_text_input',
+              action_id: 'epic_input',
+              initial_value: suggestion.epic_key || '',
+              placeholder: { type: 'plain_text', text: 'LOK-123' }
+            },
+            label: { type: 'plain_text', text: 'Epic/Story Key' },
+            hint: { type: 'plain_text', text: 'Will auto-fetch from Jira and add decision as comment' }
+          }
+        ]
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error opening connect Jira modal:', error);
+  }
+}
+
+/**
+ * Handles connect to Jira modal submission
+ */
+async function handleConnectJiraModalSubmit({ ack, view, client }) {
+  await ack();
+
+  try {
+    const metadata = JSON.parse(view.private_metadata);
+    const values = view.state.values;
+
+    const epicKey = values.epic_block.epic_input.value?.trim() || null;
+
+    if (!epicKey) {
+      console.error('No epic key provided');
+      return;
+    }
+
+    // Fetch original suggestion
+    const suggestionsCollection = getAISuggestionsCollection();
+    const suggestion = await suggestionsCollection.findOne({
+      suggestion_id: metadata.suggestion_id
+    });
+
+    if (!suggestion || suggestion.status !== 'pending') {
+      return;
+    }
+
+    // Get user info
+    const userInfo = await client.users.info({ user: view.user.id });
+    const userName = userInfo.user.real_name || userInfo.user.name;
+
+    // Fetch Jira data
+    const jiraData = await fetchJiraIssue(epicKey);
+
+    if (!jiraData) {
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: `⚠️  Could not fetch Jira issue ${epicKey}. The decision will be saved without Jira connection.`
+      });
+      return;
+    }
+
+    // Create decision
+    const decisionsCollection = getDecisionsCollection();
+    const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
+    const nextId = lastDecision ? lastDecision.id + 1 : 1;
+
+    const decision = {
+      id: nextId,
+      text: suggestion.decision_text,
+      type: suggestion.decision_type,
+      epic_key: epicKey,
+      jira_data: jiraData,
+      tags: suggestion.tags,
+      alternatives: `AI-suggested decision (approved and connected to Jira by ${userName})`,
+      creator: userName,
+      user_id: view.user.id,
+      channel_id: metadata.channel_id,
+      timestamp: new Date().toISOString()
+    };
+
+    await decisionsCollection.insertOne(decision);
+
+    // Add Jira comment
+    console.log('>>> Adding Jira comment...');
+    const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\nAI-extracted and approved via Decision Logger`;
+    const jiraCommentSuccess = await addJiraComment(epicKey, comment);
+
+    if (jiraCommentSuccess) {
+      console.log(`✅ Jira comment added to ${epicKey}`);
+    }
+
+    // Update suggestion
+    await suggestionsCollection.updateOne(
+      { suggestion_id: metadata.suggestion_id },
+      {
+        $set: {
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewer_id: view.user.id,
+          final_decision_id: nextId
+        }
+      }
+    );
+
+    // Save feedback
+    await saveFeedback(suggestion, 'approved', null, view.user.id);
+
+    // Post confirmation
+    await client.chat.postMessage({
+      channel: metadata.channel_id,
+      text: `✅ Decision #${nextId} approved by ${userName} and connected to ${epicKey}${jiraCommentSuccess ? ' (Jira comment added)' : ''}`
+    });
+
+  } catch (error) {
+    console.error('❌ Error in connect Jira modal submit:', error);
+  }
+}
+
 module.exports = {
   handleFileUpload,
   handleApproveAction,
   handleRejectAction,
   handleEditAction,
-  handleEditModalSubmit
+  handleEditModalSubmit,
+  handleConnectJiraAction,
+  handleConnectJiraModalSubmit
 };
