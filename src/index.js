@@ -58,7 +58,7 @@ async function startApp() {
       },
       // API: Delete decision
       {
-        path: '/api/decisions/',
+        path: '/api/decisions/:id',
         method: ['DELETE'],
         handler: deleteDecision
       },
