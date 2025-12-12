@@ -21,15 +21,26 @@ function buildDecisionExtractionPrompt(transcriptText) {
 TASK: Analyze the following meeting transcript and extract ALL decisions that were made.
 
 DEFINITION OF A DECISION:
-- A concrete choice or commitment about what to do (or not do)
-- Has actionable implications for the team
-- Is more than just a discussion topic or question
-- Examples:
+A decision is when someone explicitly says they chose, agreed, or committed to something specific.
+
+Look for phrases like:
+- "We decided to..."
+- "Let's go with..."
+- "We'll use..."
+- "Agreed, we will..."
+- "The decision is to..."
+- "We're choosing..."
+
+Examples of DECISIONS:
   ✅ "We'll use React for the frontend"
   ✅ "We decided not to implement bidirectional sync"
-  ✅ "Let's defer the mobile app to Q2"
-  ❌ "We should probably think about performance" (too vague)
+  ✅ "Let's go with PostgreSQL"
+  ✅ "Agreed, we will launch in Q2"
+
+Examples of NOT decisions (just discussion):
+  ❌ "We should probably think about performance" (too vague, no commitment)
   ❌ "What if we used GraphQL?" (just a question)
+  ❌ "Maybe we could try..." (no commitment)
 
 FOR EACH DECISION, EXTRACT:
 1. **decision_text**: A clear, concise statement of the decision (1-2 sentences max)
