@@ -8,6 +8,13 @@ const {
   handleDecisionModalSubmit,
   handleDecisionsCommand
 } = require('./routes/slack');
+const {
+  handleFileUpload,
+  handleApproveAction,
+  handleRejectAction,
+  handleEditAction,
+  handleEditModalSubmit
+} = require('./routes/ai-decisions');
 
 /**
  * Main application entry point
@@ -68,6 +75,13 @@ async function startApp() {
   app.command('/decision', handleDecisionCommand);
   app.command('/decisions', handleDecisionsCommand);
   app.view('decision_modal', handleDecisionModalSubmit);
+
+  // Register AI decision extraction handlers
+  app.event('file_shared', handleFileUpload);
+  app.action('approve_suggestion', handleApproveAction);
+  app.action('reject_suggestion', handleRejectAction);
+  app.action('edit_suggestion', handleEditAction);
+  app.view('edit_suggestion_modal', handleEditModalSubmit);
 
   // Start the server
   await app.start(config.port);

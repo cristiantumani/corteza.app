@@ -13,8 +13,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@slack/bolt": "^4.6.0",
     "dotenv": "^17.2.3",
-    "mongodb": "^7.0.0"
+    "mammoth": "^1.11.0",
+    "mongodb": "^7.0.0",
+    "pdf-parse": "^2.4.5"
   }
 }
