@@ -544,7 +544,8 @@ async function handleEditAction({ ack, body, client }) {
         private_metadata: JSON.stringify({
           suggestion_id: suggestionId,
           channel_id: body.channel.id,
-          message_ts: body.message.ts
+          message_ts: body.message.ts,
+          user_id: body.user.id
         }),
         title: { type: 'plain_text', text: '✏️ Edit Decision' },
         submit: { type: 'plain_text', text: 'Approve' },
@@ -674,14 +675,14 @@ async function handleEditModalSubmit({ ack, view, client }) {
       console.log('>>> Suggestion not found or already processed');
       await client.chat.postEphemeral({
         channel: metadata.channel_id,
-        user: view.user.id,
+        user: metadata.user_id,
         text: '⚠️  This suggestion has already been processed or not found.'
       });
       return;
     }
 
     // Get user info
-    const userInfo = await client.users.info({ user: view.user.id });
+    const userInfo = await client.users.info({ user: metadata.user_id });
     const userName = userInfo.user.real_name || userInfo.user.name;
     console.log('>>> User:', userName);
 
@@ -708,7 +709,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
       tags: editedData.tags,
       alternatives: editedData.alternatives || `AI-suggested decision (edited by ${userName})`,
       creator: userName,
-      user_id: view.user.id,
+      user_id: metadata.user_id,
       channel_id: metadata.channel_id,
       timestamp: new Date().toISOString()
     };
@@ -734,7 +735,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
         $set: {
           status: 'edited_approved',
           reviewed_at: new Date().toISOString(),
-          reviewer_id: view.user.id,
+          reviewer_id: metadata.user_id,
           edits: editedData,
           final_decision_id: nextId
         }
@@ -744,7 +745,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
 
     // Save feedback with edits
     console.log('>>> Saving feedback...');
-    await saveFeedback(suggestion, 'edited_approved', editedData, view.user.id);
+    await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id);
     console.log('✅ Feedback saved');
 
     // Post confirmation
@@ -764,7 +765,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
       const metadata = JSON.parse(view.private_metadata);
       await client.chat.postEphemeral({
         channel: metadata.channel_id,
-        user: view.user.id,
+        user: metadata.user_id,
         text: `❌ Error approving decision: ${error.message}`
       });
     } catch (notifyError) {
@@ -869,7 +870,8 @@ async function handleConnectJiraAction({ ack, body, client }) {
         private_metadata: JSON.stringify({
           suggestion_id: suggestionId,
           channel_id: body.channel.id,
-          message_ts: body.message.ts
+          message_ts: body.message.ts,
+          user_id: body.user.id
         }),
         title: { type: 'plain_text', text: '🔗 Connect to Jira' },
         submit: { type: 'plain_text', text: 'Approve & Connect' },
@@ -922,7 +924,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       console.error('No epic key provided');
       await client.chat.postEphemeral({
         channel: metadata.channel_id,
-        user: view.user.id,
+        user: metadata.user_id,
         text: '⚠️  No epic key provided.'
       });
       return;
@@ -939,14 +941,14 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       console.log('>>> Suggestion not found or already processed');
       await client.chat.postEphemeral({
         channel: metadata.channel_id,
-        user: view.user.id,
+        user: metadata.user_id,
         text: '⚠️  This suggestion has already been processed or not found.'
       });
       return;
     }
 
     // Get user info
-    const userInfo = await client.users.info({ user: view.user.id });
+    const userInfo = await client.users.info({ user: metadata.user_id });
     const userName = userInfo.user.real_name || userInfo.user.name;
     console.log('>>> User:', userName);
 
@@ -970,7 +972,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       tags: suggestion.tags,
       alternatives: `AI-suggested decision (approved and connected to Jira by ${userName})`,
       creator: userName,
-      user_id: view.user.id,
+      user_id: metadata.user_id,
       channel_id: metadata.channel_id,
       timestamp: new Date().toISOString()
     };
@@ -1001,7 +1003,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
         $set: {
           status: 'approved',
           reviewed_at: new Date().toISOString(),
-          reviewer_id: view.user.id,
+          reviewer_id: metadata.user_id,
           final_decision_id: nextId
         }
       }
@@ -1010,7 +1012,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
 
     // Save feedback
     console.log('>>> Saving feedback...');
-    await saveFeedback(suggestion, 'approved', null, view.user.id);
+    await saveFeedback(suggestion, 'approved', null, metadata.user_id);
     console.log('✅ Feedback saved');
 
     // Post confirmation with appropriate message
@@ -1039,7 +1041,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       const metadata = JSON.parse(view.private_metadata);
       await client.chat.postEphemeral({
         channel: metadata.channel_id,
-        user: view.user.id,
+        user: metadata.user_id,
         text: `❌ Error approving and connecting decision: ${error.message}`
       });
     } catch (notifyError) {
