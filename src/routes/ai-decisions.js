@@ -901,15 +901,6 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     // Fetch Jira data
     const jiraData = await fetchJiraIssue(epicKey);
 
-    if (!jiraData) {
-      await client.chat.postEphemeral({
-        channel: metadata.channel_id,
-        user: view.user.id,
-        text: `⚠️  Could not fetch Jira issue ${epicKey}. The decision will be saved without Jira connection.`
-      });
-      return;
-    }
-
     // Create decision
     const decisionsCollection = getDecisionsCollection();
     const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
@@ -930,14 +921,20 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     };
 
     await decisionsCollection.insertOne(decision);
+    console.log(`✅ Decision #${nextId} created`);
 
-    // Add Jira comment
-    console.log('>>> Adding Jira comment...');
-    const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\nAI-extracted and approved via Decision Logger`;
-    const jiraCommentSuccess = await addJiraComment(epicKey, comment);
+    // Add Jira comment (only if Jira data was fetched successfully)
+    let jiraCommentSuccess = false;
+    if (jiraData) {
+      console.log('>>> Adding Jira comment...');
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\nAI-extracted and approved via Decision Logger`;
+      jiraCommentSuccess = await addJiraComment(epicKey, comment);
 
-    if (jiraCommentSuccess) {
-      console.log(`✅ Jira comment added to ${epicKey}`);
+      if (jiraCommentSuccess) {
+        console.log(`✅ Jira comment added to ${epicKey}`);
+      }
+    } else {
+      console.log(`⚠️  Could not fetch Jira issue ${epicKey}, decision saved without Jira data`);
     }
 
     // Update suggestion
@@ -956,10 +953,19 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     // Save feedback
     await saveFeedback(suggestion, 'approved', null, view.user.id);
 
-    // Post confirmation
+    // Post confirmation with appropriate message
+    let confirmationText;
+    if (jiraData && jiraCommentSuccess) {
+      confirmationText = `✅ Decision #${nextId} approved by ${userName} and connected to ${epicKey} (Jira comment added)`;
+    } else if (jiraData) {
+      confirmationText = `✅ Decision #${nextId} approved by ${userName} and connected to ${epicKey} (Jira comment failed)`;
+    } else {
+      confirmationText = `✅ Decision #${nextId} approved by ${userName}. ⚠️ Could not fetch ${epicKey} from Jira - decision saved without Jira link.`;
+    }
+
     await client.chat.postMessage({
       channel: metadata.channel_id,
-      text: `✅ Decision #${nextId} approved by ${userName} and connected to ${epicKey}${jiraCommentSuccess ? ' (Jira comment added)' : ''}`
+      text: confirmationText
     });
 
   } catch (error) {
