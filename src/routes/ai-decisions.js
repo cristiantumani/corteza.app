@@ -642,8 +642,10 @@ async function handleEditModalSubmit({ ack, view, client }) {
   await ack();
 
   try {
+    console.log('>>> Edit modal submit started');
     const metadata = JSON.parse(view.private_metadata);
     const values = view.state.values;
+    console.log('>>> Metadata:', metadata);
 
     const editedData = {
       decision_text: values.decision_text_block.decision_text_input.value,
@@ -655,34 +657,47 @@ async function handleEditModalSubmit({ ack, view, client }) {
         .filter(t => t),
       alternatives: values.alternatives_block.alternatives_input.value || null
     };
+    console.log('>>> Edited data:', editedData);
 
     // Check if user wants to add Jira comment
     const addComment = (values.jira_comment_block.jira_comment_checkbox.selected_options || []).length > 0;
+    console.log('>>> Add Jira comment:', addComment);
 
     // Fetch original suggestion
     const suggestionsCollection = getAISuggestionsCollection();
     const suggestion = await suggestionsCollection.findOne({
       suggestion_id: metadata.suggestion_id
     });
+    console.log('>>> Suggestion found:', !!suggestion);
 
     if (!suggestion || suggestion.status !== 'pending') {
+      console.log('>>> Suggestion not found or already processed');
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: '⚠️  This suggestion has already been processed or not found.'
+      });
       return;
     }
 
     // Get user info
     const userInfo = await client.users.info({ user: view.user.id });
     const userName = userInfo.user.real_name || userInfo.user.name;
+    console.log('>>> User:', userName);
 
     // Fetch Jira data if epic_key present
     let jiraData = null;
     if (editedData.epic_key) {
+      console.log('>>> Fetching Jira data for:', editedData.epic_key);
       jiraData = await fetchJiraIssue(editedData.epic_key);
+      console.log('>>> Jira data fetched:', !!jiraData);
     }
 
     // Create decision
     const decisionsCollection = getDecisionsCollection();
     const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
+    console.log('>>> Next decision ID:', nextId);
 
     const decision = {
       id: nextId,
@@ -698,7 +713,9 @@ async function handleEditModalSubmit({ ack, view, client }) {
       timestamp: new Date().toISOString()
     };
 
+    console.log('>>> Inserting decision...');
     await decisionsCollection.insertOne(decision);
+    console.log('✅ Decision inserted:', nextId);
 
     // Add Jira comment if requested
     if (addComment && editedData.epic_key && jiraData) {
@@ -710,6 +727,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
     }
 
     // Update suggestion
+    console.log('>>> Updating suggestion status...');
     await suggestionsCollection.updateOne(
       { suggestion_id: metadata.suggestion_id },
       {
@@ -722,18 +740,36 @@ async function handleEditModalSubmit({ ack, view, client }) {
         }
       }
     );
+    console.log('✅ Suggestion updated');
 
     // Save feedback with edits
+    console.log('>>> Saving feedback...');
     await saveFeedback(suggestion, 'edited_approved', editedData, view.user.id);
+    console.log('✅ Feedback saved');
 
     // Post confirmation
+    console.log('>>> Posting confirmation message...');
     await client.chat.postMessage({
       channel: metadata.channel_id,
       text: `✅ Decision #${nextId} edited and approved by ${userName}${addComment && editedData.epic_key ? ' (Jira comment added)' : ''}`
     });
+    console.log('✅ Edit modal submit completed successfully');
 
   } catch (error) {
     console.error('❌ Error in edit modal submit:', error);
+    console.error('Error stack:', error.stack);
+
+    // Try to notify user
+    try {
+      const metadata = JSON.parse(view.private_metadata);
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: `❌ Error approving decision: ${error.message}`
+      });
+    } catch (notifyError) {
+      console.error('❌ Could not notify user of error:', notifyError);
+    }
   }
 }
 
@@ -874,13 +910,21 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
   await ack();
 
   try {
+    console.log('>>> Connect to Jira modal submit started');
     const metadata = JSON.parse(view.private_metadata);
     const values = view.state.values;
+    console.log('>>> Metadata:', metadata);
 
     const epicKey = values.epic_block.epic_input.value?.trim() || null;
+    console.log('>>> Epic key:', epicKey);
 
     if (!epicKey) {
       console.error('No epic key provided');
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: '⚠️  No epic key provided.'
+      });
       return;
     }
 
@@ -889,22 +933,33 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     const suggestion = await suggestionsCollection.findOne({
       suggestion_id: metadata.suggestion_id
     });
+    console.log('>>> Suggestion found:', !!suggestion);
 
     if (!suggestion || suggestion.status !== 'pending') {
+      console.log('>>> Suggestion not found or already processed');
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: '⚠️  This suggestion has already been processed or not found.'
+      });
       return;
     }
 
     // Get user info
     const userInfo = await client.users.info({ user: view.user.id });
     const userName = userInfo.user.real_name || userInfo.user.name;
+    console.log('>>> User:', userName);
 
     // Fetch Jira data
+    console.log('>>> Fetching Jira data for:', epicKey);
     const jiraData = await fetchJiraIssue(epicKey);
+    console.log('>>> Jira data fetched:', !!jiraData);
 
     // Create decision
     const decisionsCollection = getDecisionsCollection();
     const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
+    console.log('>>> Next decision ID:', nextId);
 
     const decision = {
       id: nextId,
@@ -920,6 +975,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       timestamp: new Date().toISOString()
     };
 
+    console.log('>>> Inserting decision...');
     await decisionsCollection.insertOne(decision);
     console.log(`✅ Decision #${nextId} created`);
 
@@ -938,6 +994,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     }
 
     // Update suggestion
+    console.log('>>> Updating suggestion status...');
     await suggestionsCollection.updateOne(
       { suggestion_id: metadata.suggestion_id },
       {
@@ -949,9 +1006,12 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
         }
       }
     );
+    console.log('✅ Suggestion updated');
 
     // Save feedback
+    console.log('>>> Saving feedback...');
     await saveFeedback(suggestion, 'approved', null, view.user.id);
+    console.log('✅ Feedback saved');
 
     // Post confirmation with appropriate message
     let confirmationText;
@@ -963,13 +1023,28 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       confirmationText = `✅ Decision #${nextId} approved by ${userName}. ⚠️ Could not fetch ${epicKey} from Jira - decision saved without Jira link.`;
     }
 
+    console.log('>>> Posting confirmation message...');
     await client.chat.postMessage({
       channel: metadata.channel_id,
       text: confirmationText
     });
+    console.log('✅ Connect to Jira modal submit completed successfully');
 
   } catch (error) {
     console.error('❌ Error in connect Jira modal submit:', error);
+    console.error('Error stack:', error.stack);
+
+    // Try to notify user
+    try {
+      const metadata = JSON.parse(view.private_metadata);
+      await client.chat.postEphemeral({
+        channel: metadata.channel_id,
+        user: view.user.id,
+        text: `❌ Error approving and connecting decision: ${error.message}`
+      });
+    } catch (notifyError) {
+      console.error('❌ Could not notify user of error:', notifyError);
+    }
   }
 }
 
