@@ -748,6 +748,17 @@ async function handleEditModalSubmit({ ack, view, client }) {
     await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id);
     console.log('✅ Feedback saved');
 
+    // Update the original message to remove buttons
+    console.log('>>> Updating original message...');
+    await updateMessageFromModal(
+      client,
+      metadata.channel_id,
+      metadata.message_ts,
+      metadata.suggestion_id,
+      `✅ Edited and approved by ${userName} - Saved as Decision #${nextId}`
+    );
+    console.log('✅ Message updated');
+
     // Post confirmation
     console.log('>>> Posting confirmation message...');
     await client.chat.postMessage({
@@ -836,6 +847,51 @@ async function updateMessageButtons(client, body, statusText) {
     });
   } catch (error) {
     console.error('❌ Error updating message:', error);
+  }
+}
+
+/**
+ * Updates message from modal submission (uses suggestion_id to find the right action block)
+ */
+async function updateMessageFromModal(client, channelId, messageTs, suggestionId, statusText) {
+  try {
+    // Fetch the original message
+    const result = await client.conversations.history({
+      channel: channelId,
+      latest: messageTs,
+      limit: 1,
+      inclusive: true
+    });
+
+    if (!result.messages || result.messages.length === 0) {
+      console.error('❌ Could not fetch original message');
+      return;
+    }
+
+    const originalBlocks = result.messages[0].blocks;
+    const actionBlockId = `actions_${suggestionId}`;
+
+    const updatedBlocks = originalBlocks.map(block => {
+      if (block.block_id === actionBlockId) {
+        return {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `_${statusText}_`
+          }
+        };
+      }
+      return block;
+    });
+
+    await client.chat.update({
+      channel: channelId,
+      ts: messageTs,
+      blocks: updatedBlocks,
+      text: result.messages[0].text
+    });
+  } catch (error) {
+    console.error('❌ Error updating message from modal:', error);
   }
 }
 
@@ -1014,6 +1070,25 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     console.log('>>> Saving feedback...');
     await saveFeedback(suggestion, 'approved', null, metadata.user_id);
     console.log('✅ Feedback saved');
+
+    // Update the original message to remove buttons
+    console.log('>>> Updating original message...');
+    let messageStatus;
+    if (jiraData && jiraCommentSuccess) {
+      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId}`;
+    } else if (jiraData) {
+      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId} (Jira comment failed)`;
+    } else {
+      messageStatus = `✅ Approved by ${userName} - Saved as Decision #${nextId} (Jira fetch failed)`;
+    }
+    await updateMessageFromModal(
+      client,
+      metadata.channel_id,
+      metadata.message_ts,
+      metadata.suggestion_id,
+      messageStatus
+    );
+    console.log('✅ Message updated');
 
     // Post confirmation with appropriate message
     let confirmationText;
