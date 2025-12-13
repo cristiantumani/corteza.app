@@ -38,6 +38,12 @@ async function getDecisions(req, res) {
 
     // Build MongoDB filter
     const filter = {};
+
+    // Workspace filter (required for multi-tenancy)
+    if (validated.workspace_id) {
+      filter.workspace_id = validated.workspace_id;
+    }
+
     if (validated.type) {
       filter.type = validated.type;
     }
@@ -156,8 +162,19 @@ async function updateDecision(req, res) {
         sanitizedUpdates.updated_at = new Date().toISOString();
 
         const decisionsCollection = getDecisionsCollection();
+
+        // Build filter with optional workspace_id for security
+        const updateFilter = { id: id };
+        if (req.url.includes('workspace_id=')) {
+          const urlParams = new URL(req.url, 'http://localhost').searchParams;
+          const workspaceId = urlParams.get('workspace_id');
+          if (workspaceId) {
+            updateFilter.workspace_id = workspaceId;
+          }
+        }
+
         const result = await decisionsCollection.updateOne(
-          { id: id },
+          updateFilter,
           { $set: sanitizedUpdates }
         );
 
@@ -198,7 +215,18 @@ async function deleteDecision(req, res) {
     }
 
     const decisionsCollection = getDecisionsCollection();
-    const result = await decisionsCollection.deleteOne({ id: id });
+
+    // Build filter with optional workspace_id for security
+    const deleteFilter = { id: id };
+    if (req.url.includes('workspace_id=')) {
+      const urlParams = new URL(req.url, 'http://localhost').searchParams;
+      const workspaceId = urlParams.get('workspace_id');
+      if (workspaceId) {
+        deleteFilter.workspace_id = workspaceId;
+      }
+    }
+
+    const result = await decisionsCollection.deleteOne(deleteFilter);
 
     if (result.deletedCount === 0) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -221,15 +249,23 @@ async function deleteDecision(req, res) {
  */
 async function getStats(req, res) {
   try {
+    const query = parseQueryParams(req.url);
+    const validated = validateQueryParams(query);
+
     const decisionsCollection = getDecisionsCollection();
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Build base filter with optional workspace_id
+    const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
+
     const [total, byType, recentCount] = await Promise.all([
-      decisionsCollection.countDocuments(),
+      decisionsCollection.countDocuments(baseFilter),
       decisionsCollection.aggregate([
+        { $match: baseFilter },
         { $group: { _id: '$type', count: { $sum: 1 } } }
       ]).toArray(),
       decisionsCollection.countDocuments({
+        ...baseFilter,
         timestamp: { $gte: oneWeekAgo }
       })
     ]);

@@ -8,6 +8,7 @@ const { validateEpicKey, validateTags } = require('../middleware/validation');
 async function handleDecisionCommand({ command, ack, client, say }) {
   await ack();
 
+  const workspace_id = command.team_id;
   const decisionText = command.text.trim();
   if (!decisionText) {
     await say('❌ Provide text');
@@ -21,6 +22,7 @@ async function handleDecisionCommand({ command, ack, client, say }) {
         type: 'modal',
         callback_id: 'decision_modal',
         private_metadata: JSON.stringify({
+          workspace_id: workspace_id,
           channel_id: command.channel_id,
           user_id: command.user_id,
           decision_text: decisionText
@@ -107,11 +109,12 @@ async function handleDecisionCommand({ command, ack, client, say }) {
 /**
  * Decision modal submission handler
  */
-async function handleDecisionModalSubmit({ ack, view, client }) {
+async function handleDecisionModalSubmit({ ack, view, body, client }) {
   try {
     await ack();
 
     const metadata = JSON.parse(view.private_metadata);
+    const workspace_id = metadata.workspace_id; // Extract from metadata
     const values = view.state.values;
 
     // Extract and validate form values
@@ -123,6 +126,7 @@ async function handleDecisionModalSubmit({ ack, view, client }) {
     const addComment = (values.jira_comment_block.jira_comment_checkbox.selected_options || []).length > 0;
 
     console.log('=== Decision Modal ===');
+    console.log('Workspace:', workspace_id);
     console.log('Epic:', epicKey);
     console.log('Add Jira Comment:', addComment);
 
@@ -130,9 +134,12 @@ async function handleDecisionModalSubmit({ ack, view, client }) {
     const userInfo = await client.users.info({ user: metadata.user_id });
     const userName = userInfo.user.real_name || userInfo.user.name;
 
-    // Get next decision ID
+    // Get next decision ID (scoped by workspace)
     const decisionsCollection = getDecisionsCollection();
-    const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
+    const lastDecision = await decisionsCollection.findOne(
+      { workspace_id: workspace_id },
+      { sort: { id: -1 } }
+    );
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
 
     // Fetch Jira data if epic key provided
@@ -147,6 +154,7 @@ async function handleDecisionModalSubmit({ ack, view, client }) {
 
     // Save decision to database
     const decision = {
+      workspace_id: workspace_id,
       id: nextId,
       text: metadata.decision_text,
       type: decisionType,
@@ -249,16 +257,17 @@ async function postDecisionConfirmation(client, decision, channelId) {
 async function handleDecisionsCommand({ command, ack, say }) {
   await ack();
 
+  const workspace_id = command.team_id;
   const args = command.text.trim().split(' ');
   const cmd = args[0];
   const decisionsCollection = getDecisionsCollection();
 
   if (cmd === 'search') {
-    await handleSearchCommand(args, say, decisionsCollection);
+    await handleSearchCommand(args, say, decisionsCollection, workspace_id);
   } else if (cmd === 'recent') {
-    await handleRecentCommand(say, decisionsCollection);
+    await handleRecentCommand(say, decisionsCollection, workspace_id);
   } else if (cmd === 'epic' && args[1]) {
-    await handleEpicCommand(args[1], say, decisionsCollection);
+    await handleEpicCommand(args[1], say, decisionsCollection, workspace_id);
   } else {
     await say('Try: `/decisions search [keyword]` | `/decisions recent` | `/decisions epic [KEY]`');
   }
@@ -267,7 +276,7 @@ async function handleDecisionsCommand({ command, ack, say }) {
 /**
  * Handle search subcommand
  */
-async function handleSearchCommand(args, say, decisionsCollection) {
+async function handleSearchCommand(args, say, decisionsCollection, workspace_id) {
   const keyword = args.slice(1).join(' ');
   if (!keyword) {
     await say('❌ Provide keyword');
@@ -276,6 +285,7 @@ async function handleSearchCommand(args, say, decisionsCollection) {
 
   const results = await decisionsCollection
     .find({
+      workspace_id: workspace_id,
       $or: [
         { text: { $regex: keyword, $options: 'i' } },
         { tags: { $regex: keyword, $options: 'i' } }
@@ -308,9 +318,9 @@ async function handleSearchCommand(args, say, decisionsCollection) {
 /**
  * Handle recent subcommand
  */
-async function handleRecentCommand(say, decisionsCollection) {
+async function handleRecentCommand(say, decisionsCollection, workspace_id) {
   const recent = await decisionsCollection
-    .find({})
+    .find({ workspace_id: workspace_id })
     .sort({ timestamp: -1 })
     .limit(10)
     .toArray();
@@ -338,9 +348,12 @@ async function handleRecentCommand(say, decisionsCollection) {
 /**
  * Handle epic subcommand
  */
-async function handleEpicCommand(epic, say, decisionsCollection) {
+async function handleEpicCommand(epic, say, decisionsCollection, workspace_id) {
   const results = await decisionsCollection
-    .find({ epic_key: { $regex: epic, $options: 'i' } })
+    .find({
+      workspace_id: workspace_id,
+      epic_key: { $regex: epic, $options: 'i' }
+    })
     .sort({ timestamp: -1 })
     .toArray();
 

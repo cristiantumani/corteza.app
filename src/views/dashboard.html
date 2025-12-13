@@ -764,13 +764,32 @@
   </div>
 
   <script>
+    // Extract workspace_id from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const WORKSPACE_ID = urlParams.get('workspace_id');
+
+    // If no workspace_id provided, show error message
+    if (!WORKSPACE_ID) {
+      document.body.innerHTML = `
+        <div style="text-align:center; padding:50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px;">
+            <h1 style="font-size: 32px; margin-bottom: 20px; color: #1a202c;">⚠️ Workspace ID Required</h1>
+            <p style="font-size: 16px; color: #718096; margin-bottom: 15px;">Please access the dashboard with your workspace ID:</p>
+            <code style="background: #f8fafc; padding: 15px; border-radius: 8px; display: block; font-family: monospace; color: #667eea; font-size: 14px;">/dashboard?workspace_id=YOUR_WORKSPACE_ID</code>
+            <p style="font-size: 14px; color: #718096; margin-top: 20px;">You can find your workspace ID in Slack by typing <strong>/decision</strong> and checking the logs.</p>
+          </div>
+        </div>
+      `;
+      throw new Error('No workspace_id provided');
+    }
+
     let allDecisions = [];
     let deleteTargetId = null;
     let currentDecisionIndex = null;
 
     async function fetchStats() {
       try {
-        const r = await fetch('/api/stats');
+        const r = await fetch(`/api/stats?workspace_id=${WORKSPACE_ID}`);
         const d = await r.json();
         document.getElementById('total-count').textContent = d.total;
         document.getElementById('product-count').textContent = d.byType.product || 0;
@@ -789,6 +808,7 @@
         const dateTo = document.getElementById('date-to').value;
 
         const p = new URLSearchParams();
+        p.append('workspace_id', WORKSPACE_ID);  // ADD workspace_id
         if (s) p.append('search', s);
         if (t) p.append('type', t);
         if (e) p.append('epic', e);
@@ -960,7 +980,7 @@
       };
 
       try {
-        const response = await fetch(`/api/decisions/${decisionId}`, {
+        const response = await fetch(`/api/decisions/${decisionId}?workspace_id=${WORKSPACE_ID}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -987,7 +1007,7 @@
     async function confirmDelete() {
       if (!deleteTargetId) return;
       try {
-        const response = await fetch(`/api/decisions/${deleteTargetId}`, {
+        const response = await fetch(`/api/decisions/${deleteTargetId}?workspace_id=${WORKSPACE_ID}`, {
           method: 'DELETE'
         });
         if (response.ok) {

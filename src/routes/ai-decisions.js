@@ -16,9 +16,11 @@ const {
  * Handles file upload events from Slack
  * Triggered when user uploads a file to a channel
  */
-async function handleFileUpload({ event, client, say }) {
+async function handleFileUpload({ event, client, say, context }) {
   try {
-    console.log('📎 File upload detected:', event.file_id);
+    // Extract workspace_id from context (Slack Bolt provides team_id in context)
+    const workspace_id = context.teamId;
+    console.log('📎 File upload detected:', event.file_id, 'Workspace:', workspace_id);
 
     // Check if Claude is configured
     if (!isClaudeConfigured()) {
@@ -72,6 +74,7 @@ async function handleFileUpload({ event, client, say }) {
 
     // Process the transcript
     const result = await processTranscript(extraction.text, {
+      workspace_id: workspace_id,
       file_name: file.name,
       file_type: file.filetype,
       file_size: file.size,
@@ -175,6 +178,7 @@ async function processTranscript(transcriptContent, metadata) {
     const wordCount = transcriptContent.split(/\s+/).filter(w => w.length > 0).length;
 
     const transcript = {
+      workspace_id: metadata.workspace_id,
       transcript_id: transcriptId,
       file_name: metadata.file_name,
       file_type: metadata.file_type,
@@ -223,6 +227,7 @@ async function processTranscript(transcriptContent, metadata) {
 
     // Save suggestions to database
     const suggestions = aiResult.decisions.map((decision, index) => ({
+      workspace_id: metadata.workspace_id,
       suggestion_id: `ai_sugg_${Date.now()}_${index}`,
       meeting_transcript_id: transcriptId,
       status: 'pending',
@@ -362,11 +367,15 @@ async function handleApproveAction({ ack, body, client }) {
   await ack();
 
   try {
+    const workspace_id = body.team.id;
     const suggestionId = body.actions[0].value;
 
     // Fetch suggestion from DB
     const suggestionsCollection = getAISuggestionsCollection();
-    const suggestion = await suggestionsCollection.findOne({ suggestion_id: suggestionId });
+    const suggestion = await suggestionsCollection.findOne({
+      workspace_id: workspace_id,
+      suggestion_id: suggestionId
+    });
 
     if (!suggestion) {
       await client.chat.postEphemeral({
@@ -393,6 +402,7 @@ async function handleApproveAction({ ack, body, client }) {
     // Fetch meeting transcript to get meeting title
     const transcriptsCollection = getMeetingTranscriptsCollection();
     const transcript = await transcriptsCollection.findOne({
+      workspace_id: workspace_id,
       transcript_id: suggestion.meeting_transcript_id
     });
     const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
@@ -403,12 +413,16 @@ async function handleApproveAction({ ack, body, client }) {
       jiraData = await fetchJiraIssue(suggestion.epic_key);
     }
 
-    // Create decision in decisions collection
+    // Create decision in decisions collection (scoped by workspace)
     const decisionsCollection = getDecisionsCollection();
-    const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
+    const lastDecision = await decisionsCollection.findOne(
+      { workspace_id: workspace_id },
+      { sort: { id: -1 } }
+    );
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
 
     const decision = {
+      workspace_id: workspace_id,
       id: nextId,
       text: suggestion.decision_text,
       type: suggestion.decision_type,
@@ -426,7 +440,7 @@ async function handleApproveAction({ ack, body, client }) {
 
     // Update suggestion status
     await suggestionsCollection.updateOne(
-      { suggestion_id: suggestionId },
+      { workspace_id: workspace_id, suggestion_id: suggestionId },
       {
         $set: {
           status: 'approved',
@@ -438,7 +452,7 @@ async function handleApproveAction({ ack, body, client }) {
     );
 
     // Save feedback
-    await saveFeedback(suggestion, 'approved', null, body.user.id);
+    await saveFeedback(suggestion, 'approved', null, body.user.id, workspace_id);
 
     // Update the message to show approved
     await updateMessageButtons(client, body, `✅ Approved by ${userName} - Saved as Decision #${nextId}`);
@@ -466,11 +480,12 @@ async function handleRejectAction({ ack, body, client }) {
   await ack();
 
   try {
+    const workspace_id = body.team.id;
     const suggestionId = body.actions[0].value;
 
     // Fetch suggestion
     const suggestionsCollection = getAISuggestionsCollection();
-    const suggestion = await suggestionsCollection.findOne({ suggestion_id: suggestionId });
+    const suggestion = await suggestionsCollection.findOne({ workspace_id: workspace_id, suggestion_id: suggestionId });
 
     if (!suggestion || suggestion.status !== 'pending') {
       await client.chat.postEphemeral({
@@ -487,7 +502,7 @@ async function handleRejectAction({ ack, body, client }) {
 
     // Update status
     await suggestionsCollection.updateOne(
-      { suggestion_id: suggestionId },
+      { workspace_id: workspace_id, suggestion_id: suggestionId },
       {
         $set: {
           status: 'rejected',
@@ -527,11 +542,12 @@ async function handleEditAction({ ack, body, client }) {
   await ack();
 
   try {
+    const workspace_id = body.team.id;
     const suggestionId = body.actions[0].value;
 
     // Fetch suggestion
     const suggestionsCollection = getAISuggestionsCollection();
-    const suggestion = await suggestionsCollection.findOne({ suggestion_id: suggestionId });
+    const suggestion = await suggestionsCollection.findOne({ workspace_id: workspace_id, suggestion_id: suggestionId });
 
     if (!suggestion || suggestion.status !== 'pending') {
       await client.chat.postEphemeral({
@@ -646,7 +662,7 @@ async function handleEditAction({ ack, body, client }) {
 /**
  * Handles edit modal submission
  */
-async function handleEditModalSubmit({ ack, view, client }) {
+async function handleEditModalSubmit({ ack, view, body, client }) {
   await ack();
 
   try {
@@ -711,7 +727,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
 
     // Create decision
     const decisionsCollection = getDecisionsCollection();
-    const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
+    const lastDecision = await decisionsCollection.findOne({ workspace_id: workspace_id }, { sort: { id: -1 } });
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
     console.log('>>> Next decision ID:', nextId);
 
@@ -723,6 +739,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
     alternativesText += `AI-extracted and edited by ${userName}`;
 
     const decision = {
+      workspace_id: workspace_id,
       id: nextId,
       text: editedData.decision_text,
       type: editedData.decision_type,
@@ -810,11 +827,12 @@ async function handleEditModalSubmit({ ack, view, client }) {
 /**
  * Saves feedback to ai_feedback collection
  */
-async function saveFeedback(suggestion, action, finalVersion, userId) {
+async function saveFeedback(suggestion, action, finalVersion, userId, workspace_id) {
   try {
     const feedbackCollection = getAIFeedbackCollection();
 
     const feedback = {
+      workspace_id: workspace_id,
       feedback_id: `feedback_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       suggestion_id: suggestion.suggestion_id,
       transcript_id: suggestion.meeting_transcript_id.toString(),
@@ -924,11 +942,12 @@ async function handleConnectJiraAction({ ack, body, client }) {
   await ack();
 
   try {
+    const workspace_id = body.team.id;
     const suggestionId = body.actions[0].value;
 
     // Fetch suggestion
     const suggestionsCollection = getAISuggestionsCollection();
-    const suggestion = await suggestionsCollection.findOne({ suggestion_id: suggestionId });
+    const suggestion = await suggestionsCollection.findOne({ workspace_id: workspace_id, suggestion_id: suggestionId });
 
     if (!suggestion || suggestion.status !== 'pending') {
       await client.chat.postEphemeral({
@@ -986,7 +1005,7 @@ async function handleConnectJiraAction({ ack, body, client }) {
 /**
  * Handles connect to Jira modal submission
  */
-async function handleConnectJiraModalSubmit({ ack, view, client }) {
+async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
   await ack();
 
   try {
@@ -1045,11 +1064,12 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
 
     // Create decision
     const decisionsCollection = getDecisionsCollection();
-    const lastDecision = await decisionsCollection.findOne({}, { sort: { id: -1 } });
+    const lastDecision = await decisionsCollection.findOne({ workspace_id: workspace_id }, { sort: { id: -1 } });
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
     console.log('>>> Next decision ID:', nextId);
 
     const decision = {
+      workspace_id: workspace_id,
       id: nextId,
       text: suggestion.decision_text,
       type: suggestion.decision_type,

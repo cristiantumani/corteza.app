@@ -44,6 +44,20 @@ async function connectToMongoDB() {
     await aiFeedbackCollection.createIndex({ action: 1 });
     await aiFeedbackCollection.createIndex({ created_at: -1 });
 
+    // Workspace-scoped indexes for multi-tenancy
+    await decisionsCollection.createIndex({ workspace_id: 1, id: 1 }, { unique: true });
+    await decisionsCollection.createIndex({ workspace_id: 1, timestamp: -1 });
+    await decisionsCollection.createIndex({ workspace_id: 1, type: 1 });
+    await decisionsCollection.createIndex({ workspace_id: 1, epic_key: 1 });
+
+    await aiSuggestionsCollection.createIndex({ workspace_id: 1, suggestion_id: 1 }, { unique: true });
+    await aiSuggestionsCollection.createIndex({ workspace_id: 1, status: 1 });
+
+    await meetingTranscriptsCollection.createIndex({ workspace_id: 1, transcript_id: 1 }, { unique: true });
+    await meetingTranscriptsCollection.createIndex({ workspace_id: 1, uploaded_at: -1 });
+
+    await aiFeedbackCollection.createIndex({ workspace_id: 1, feedback_id: 1 }, { unique: true });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {
