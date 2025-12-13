@@ -91,6 +91,99 @@ async function getDecisions(req, res) {
 }
 
 /**
+ * PUT /api/decisions/:id - Update a decision by ID
+ */
+async function updateDecision(req, res) {
+  try {
+    const idString = parsePathId(req.url);
+    const id = validateDecisionId(idString);
+
+    if (!id) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid decision ID' }));
+      return;
+    }
+
+    // Read request body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const updates = JSON.parse(body);
+
+        // Validate and sanitize updates
+        const allowedFields = ['text', 'type', 'epic_key', 'tags', 'alternatives'];
+        const sanitizedUpdates = {};
+
+        if (updates.text && typeof updates.text === 'string' && updates.text.trim().length > 0) {
+          sanitizedUpdates.text = updates.text.trim();
+        }
+
+        if (updates.type && ['product', 'ux', 'technical'].includes(updates.type)) {
+          sanitizedUpdates.type = updates.type;
+        }
+
+        if (updates.epic_key !== undefined) {
+          if (updates.epic_key === null || updates.epic_key === '') {
+            sanitizedUpdates.epic_key = null;
+            sanitizedUpdates.jira_data = null;
+          } else if (typeof updates.epic_key === 'string' && /^[A-Z0-9-]+$/i.test(updates.epic_key.trim())) {
+            sanitizedUpdates.epic_key = updates.epic_key.trim().toUpperCase();
+            // TODO: Optionally fetch Jira data here
+          }
+        }
+
+        if (updates.tags && Array.isArray(updates.tags)) {
+          sanitizedUpdates.tags = updates.tags
+            .filter(t => typeof t === 'string' && t.trim().length > 0)
+            .map(t => t.trim().toLowerCase());
+        }
+
+        if (updates.alternatives !== undefined) {
+          sanitizedUpdates.alternatives = updates.alternatives === null ? null : String(updates.alternatives).trim();
+        }
+
+        if (Object.keys(sanitizedUpdates).length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'No valid fields to update' }));
+          return;
+        }
+
+        // Add updated timestamp
+        sanitizedUpdates.updated_at = new Date().toISOString();
+
+        const decisionsCollection = getDecisionsCollection();
+        const result = await decisionsCollection.updateOne(
+          { id: id },
+          { $set: sanitizedUpdates }
+        );
+
+        if (result.matchedCount === 0) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Decision not found' }));
+          return;
+        }
+
+        console.log(`✏️  Updated decision #${id}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, updated: id }));
+      } catch (error) {
+        console.error('Update parse error:', error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
+    });
+  } catch (error) {
+    console.error('Update error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Update failed' }));
+  }
+}
+
+/**
  * DELETE /api/decisions/:id - Delete a decision by ID
  */
 async function deleteDecision(req, res) {
@@ -184,6 +277,7 @@ function healthCheck(req, res) {
 
 module.exports = {
   getDecisions,
+  updateDecision,
   deleteDecision,
   getStats,
   healthCheck

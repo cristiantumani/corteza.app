@@ -71,6 +71,16 @@
     .date-inputs input { flex: 1; }
     .clear-dates-btn { background: #dc3545; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; }
     .clear-dates-btn:hover { background: #c82333; }
+    .edit-btn { background: #28a745; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .edit-btn:hover { background: #218838; }
+    .edit-modal { max-width: 600px; width: 90%; text-align: left; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: #1d1c1d; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; font-family: -apple-system, sans-serif; }
+    .form-group textarea { resize: vertical; }
+    .form-group small { display: block; margin-top: 5px; font-size: 12px; color: #616061; }
+    .modal-btn-primary { background: #611f69; color: #fff; }
+    .modal-btn-primary:hover { background: #4a154b; }
   </style>
 </head>
 <body>
@@ -159,7 +169,10 @@
     <div class="modal detail-modal">
       <div class="detail-header">
         <h2 id="detail-title">Decision Details</h2>
-        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
+          <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+        </div>
       </div>
 
       <div class="detail-section">
@@ -203,9 +216,60 @@
     </div>
   </div>
 
+  <!-- Edit Decision Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal edit-modal">
+      <div class="detail-header">
+        <h2>✏️ Edit Decision</h2>
+        <button class="close-btn" onclick="closeEditModal()">✕ Cancel</button>
+      </div>
+
+      <form id="edit-form" onsubmit="saveEdit(event)">
+        <input type="hidden" id="edit-decision-id">
+
+        <div class="form-group">
+          <label for="edit-decision-text">Decision Text *</label>
+          <textarea id="edit-decision-text" rows="4" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-decision-type">Type *</label>
+          <select id="edit-decision-type" required>
+            <option value="product">Product</option>
+            <option value="ux">UX</option>
+            <option value="technical">Technical</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-epic-key">Epic Key</label>
+          <input type="text" id="edit-epic-key" placeholder="e.g. LOK-123">
+          <small>Leave empty to remove epic link</small>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-tags">Tags</label>
+          <input type="text" id="edit-tags" placeholder="tag1, tag2, tag3">
+          <small>Comma-separated tags</small>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-alternatives">Additional Comments</label>
+          <textarea id="edit-alternatives" rows="3"></textarea>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="modal-btn modal-btn-primary">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     let allDecisions = [];
     let deleteTargetId = null;
+    let currentDecisionIndex = null;
 
     async function fetchStats() {
       try {
@@ -290,6 +354,7 @@
     }
 
     function openDetailModal(index) {
+      currentDecisionIndex = index;
       const decision = allDecisions[index];
 
       // Set title
@@ -347,6 +412,79 @@
 
     function closeDetailModal() {
       document.getElementById('detail-modal').classList.remove('active');
+    }
+
+    function openEditModal() {
+      if (currentDecisionIndex === null) return;
+
+      const decision = allDecisions[currentDecisionIndex];
+
+      // Pre-fill the form with current values
+      document.getElementById('edit-decision-id').value = decision.id;
+      document.getElementById('edit-decision-text').value = decision.text;
+      document.getElementById('edit-decision-type').value = decision.type;
+      document.getElementById('edit-epic-key').value = decision.epic_key || '';
+      document.getElementById('edit-tags').value = decision.tags ? decision.tags.join(', ') : '';
+      document.getElementById('edit-alternatives').value = decision.alternatives || '';
+
+      // Close detail modal and open edit modal
+      closeDetailModal();
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.remove('active');
+      // Optionally reopen the detail modal
+      if (currentDecisionIndex !== null) {
+        openDetailModal(currentDecisionIndex);
+      }
+    }
+
+    async function saveEdit(event) {
+      event.preventDefault();
+
+      const decisionId = document.getElementById('edit-decision-id').value;
+      const text = document.getElementById('edit-decision-text').value.trim();
+      const type = document.getElementById('edit-decision-type').value;
+      const epicKey = document.getElementById('edit-epic-key').value.trim();
+      const tagsString = document.getElementById('edit-tags').value.trim();
+      const alternatives = document.getElementById('edit-alternatives').value.trim();
+
+      // Parse tags
+      const tags = tagsString ? tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
+
+      // Build update payload
+      const updates = {
+        text,
+        type,
+        epic_key: epicKey || null,
+        tags,
+        alternatives: alternatives || null
+      };
+
+      try {
+        const response = await fetch(`/api/decisions/${decisionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updates)
+        });
+
+        if (response.ok) {
+          closeEditModal();
+          currentDecisionIndex = null;
+          await fetchStats();
+          await fetchDecisions();
+          alert('Decision updated successfully!');
+        } else {
+          const error = await response.json();
+          alert('Failed to update decision: ' + (error.error || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Error updating decision:', err);
+        alert('Error updating decision. Please try again.');
+      }
     }
 
     async function confirmDelete() {

@@ -1,7 +1,7 @@
 const { App } = require('@slack/bolt');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
-const { getDecisions, deleteDecision, getStats, healthCheck } = require('./routes/api');
+const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const {
   handleDecisionCommand,
@@ -57,6 +57,12 @@ async function startApp() {
         path: '/api/decisions',
         method: ['GET'],
         handler: getDecisions
+      },
+      // API: Update decision
+      {
+        path: '/api/decisions/:id',
+        method: ['PUT'],
+        handler: updateDecision
       },
       // API: Delete decision
       {
