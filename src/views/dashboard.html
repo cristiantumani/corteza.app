@@ -47,6 +47,22 @@
     .modal-btn-cancel:hover { background: #d0d0d0; }
     .modal-btn-delete { background: #dc3545; color: #fff; }
     .modal-btn-delete:hover { background: #c82333; }
+    .view-btn { background: #007bff; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin-right: 5px; }
+    .view-btn:hover { background: #0056b3; }
+    .decision-text { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .detail-modal { max-width: 700px; width: 90%; text-align: left; max-height: 90vh; overflow-y: auto; }
+    .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+    .detail-header h2 { margin: 0; font-size: 24px; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section h3 { font-size: 14px; color: #616061; margin-bottom: 8px; text-transform: uppercase; font-weight: 600; }
+    .detail-section .content { background: #f8f8f8; padding: 15px; border-radius: 6px; font-size: 15px; line-height: 1.6; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+    .detail-item { background: #f8f8f8; padding: 12px; border-radius: 6px; }
+    .detail-item label { font-size: 12px; color: #616061; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 5px; }
+    .detail-item .value { font-size: 14px; color: #1d1c1d; }
+    .confidence-badge { background: #28a745; color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-block; }
+    .close-btn { background: #e0e0e0; color: #333; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .close-btn:hover { background: #d0d0d0; }
   </style>
 </head>
 <body>
@@ -91,14 +107,13 @@
             <th>Decision</th>
             <th>Type</th>
             <th>Epic</th>
-            <th>Tags</th>
             <th>Creator</th>
             <th>Date</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="decisions-body">
-          <tr><td colspan="8" class="loading">Loading...</td></tr>
+          <tr><td colspan="7" class="loading">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -112,6 +127,55 @@
       <div class="modal-buttons">
         <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
         <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decision Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal detail-modal">
+      <div class="detail-header">
+        <h2 id="detail-title">Decision Details</h2>
+        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+      </div>
+
+      <div class="detail-section">
+        <h3>Decision</h3>
+        <div class="content" id="detail-decision-text"></div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Type</label>
+          <div class="value" id="detail-type"></div>
+        </div>
+        <div class="detail-item">
+          <label>Creator</label>
+          <div class="value" id="detail-creator"></div>
+        </div>
+        <div class="detail-item">
+          <label>Date</label>
+          <div class="value" id="detail-date"></div>
+        </div>
+        <div class="detail-item" id="detail-confidence-container" style="display: none;">
+          <label>AI Confidence</label>
+          <div class="value" id="detail-confidence"></div>
+        </div>
+      </div>
+
+      <div class="detail-section" id="detail-meeting-section" style="display: none;">
+        <h3>Meeting Context</h3>
+        <div class="content" id="detail-meeting-info"></div>
+      </div>
+
+      <div class="detail-section" id="detail-epic-section" style="display: none;">
+        <h3>Jira Epic</h3>
+        <div class="content" id="detail-epic-info"></div>
+      </div>
+
+      <div class="detail-section" id="detail-tags-section" style="display: none;">
+        <h3>Tags</h3>
+        <div class="content" id="detail-tags"></div>
       </div>
     </div>
   </div>
@@ -147,35 +211,40 @@
         allDecisions = d.decisions;
         renderDecisions(d.decisions);
       } catch (err) {
-        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="8">Error</td></tr>';
+        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="7">Error</td></tr>';
       }
     }
 
     function renderDecisions(decisions) {
       const tbody = document.getElementById('decisions-body');
       if (decisions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8">No decisions</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">No decisions</td></tr>';
         return;
       }
-      tbody.innerHTML = decisions.map(d => {
+      tbody.innerHTML = decisions.map((d, index) => {
         let epicCell = '-';
         if (d.epic_key) {
           if (d.jira_data && d.jira_data.url) {
-            epicCell = `<a href="${d.jira_data.url}" target="_blank" class="jira-link">${d.epic_key}</a><div class="jira-title">${d.jira_data.summary || ''}</div>`;
+            epicCell = `<a href="${d.jira_data.url}" target="_blank" class="jira-link">${d.epic_key}</a>`;
           } else {
             epicCell = d.epic_key;
           }
         }
-        const alternativesHtml = d.alternatives ? `<div style="margin-top: 8px; padding: 8px; background: #f8f8f8; border-radius: 4px; font-size: 0.85em; color: #666;">${d.alternatives.replace(/\n/g, '<br>')}</div>` : '';
+        // Truncate decision text if too long
+        const maxLength = 80;
+        const truncatedText = d.text.length > maxLength ? d.text.substring(0, maxLength) + '...' : d.text;
+
         return `<tr>
           <td><strong>#${d.id}</strong></td>
-          <td>${d.text}${alternativesHtml}</td>
+          <td class="decision-text" title="${d.text}">${truncatedText}</td>
           <td><span class="badge badge-${d.type}">${d.type}</span></td>
           <td>${epicCell}</td>
-          <td>${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}</td>
           <td>${d.creator}</td>
           <td>${new Date(d.timestamp).toLocaleDateString()}</td>
-          <td><button class="delete-btn" onclick="openDeleteModal(${d.id})">🗑️ Delete</button></td>
+          <td>
+            <button class="view-btn" onclick="openDetailModal(${index})">👁️ View</button>
+            <button class="delete-btn" onclick="openDeleteModal(${d.id})">🗑️</button>
+          </td>
         </tr>`;
       }).join('');
     }
@@ -189,6 +258,66 @@
     function closeDeleteModal() {
       deleteTargetId = null;
       document.getElementById('delete-modal').classList.remove('active');
+    }
+
+    function openDetailModal(index) {
+      const decision = allDecisions[index];
+
+      // Set title
+      document.getElementById('detail-title').textContent = `Decision #${decision.id}`;
+
+      // Set decision text
+      document.getElementById('detail-decision-text').textContent = decision.text;
+
+      // Set type with badge
+      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${decision.type}">${decision.type}</span>`;
+
+      // Set creator and date
+      document.getElementById('detail-creator').textContent = decision.creator;
+      document.getElementById('detail-date').textContent = new Date(decision.timestamp).toLocaleString();
+
+      // Handle meeting context / alternatives
+      if (decision.alternatives) {
+        document.getElementById('detail-meeting-section').style.display = 'block';
+        document.getElementById('detail-meeting-info').innerHTML = decision.alternatives.replace(/\n/g, '<br>');
+      } else {
+        document.getElementById('detail-meeting-section').style.display = 'none';
+      }
+
+      // Handle Jira epic
+      if (decision.epic_key) {
+        document.getElementById('detail-epic-section').style.display = 'block';
+        let epicHtml = '';
+        if (decision.jira_data && decision.jira_data.url) {
+          epicHtml = `
+            <strong><a href="${decision.jira_data.url}" target="_blank" class="jira-link">${decision.epic_key}</a></strong><br>
+            <div style="margin-top: 8px;">${decision.jira_data.summary || ''}</div>
+            <div style="margin-top: 5px; font-size: 13px; color: #616061;">
+              ${decision.jira_data.type || ''} • ${decision.jira_data.status || ''}
+            </div>
+          `;
+        } else {
+          epicHtml = decision.epic_key;
+        }
+        document.getElementById('detail-epic-info').innerHTML = epicHtml;
+      } else {
+        document.getElementById('detail-epic-section').style.display = 'none';
+      }
+
+      // Handle tags
+      if (decision.tags && decision.tags.length > 0) {
+        document.getElementById('detail-tags-section').style.display = 'block';
+        document.getElementById('detail-tags').innerHTML = decision.tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+      } else {
+        document.getElementById('detail-tags-section').style.display = 'none';
+      }
+
+      // Show modal
+      document.getElementById('detail-modal').classList.add('active');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.remove('active');
     }
 
     async function confirmDelete() {
@@ -243,14 +372,20 @@
       };
     }
 
-    // Close modal on overlay click
+    // Close modals on overlay click
     document.getElementById('delete-modal').addEventListener('click', function(e) {
       if (e.target === this) closeDeleteModal();
     });
+    document.getElementById('detail-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeDetailModal();
+    });
 
-    // Close modal on Escape key
+    // Close modals on Escape key
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeDeleteModal();
+      if (e.key === 'Escape') {
+        closeDeleteModal();
+        closeDetailModal();
+      }
     });
 
     fetchStats();
