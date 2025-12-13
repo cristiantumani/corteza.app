@@ -224,7 +224,7 @@ async function processTranscript(transcriptContent, metadata) {
     // Save suggestions to database
     const suggestions = aiResult.decisions.map((decision, index) => ({
       suggestion_id: `ai_sugg_${Date.now()}_${index}`,
-      meeting_transcript_id: insertResult.insertedId,
+      meeting_transcript_id: transcriptId,
       status: 'pending',
       decision_text: decision.decision_text,
       decision_type: decision.decision_type,
