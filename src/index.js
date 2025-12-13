@@ -4,6 +4,7 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
+const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const {
   handleDecisionCommand,
   handleDecisionModalSubmit,
@@ -82,6 +83,24 @@ async function startApp() {
         path: '/api/stats',
         method: ['GET'],
         handler: getStats
+      },
+      // GDPR: Get workspace data info
+      {
+        path: '/api/gdpr/info',
+        method: ['GET'],
+        handler: getWorkspaceDataInfo
+      },
+      // GDPR: Export workspace data
+      {
+        path: '/api/gdpr/export',
+        method: ['GET'],
+        handler: exportWorkspaceData
+      },
+      // GDPR: Delete all workspace data
+      {
+        path: '/api/gdpr/delete-all',
+        method: ['DELETE'],
+        handler: deleteAllWorkspaceData
       }
     ]
   };
@@ -111,6 +130,16 @@ async function startApp() {
   }
 
   const app = new App(appConfig);
+
+  // Add error handler for OAuth failures
+  if (config.slack.useOAuth) {
+    app.error(async (error) => {
+      console.error('❌ Slack App Error:', error);
+      if (error.code === 'slack_webapi_platform_error') {
+        console.error('Platform Error Details:', error.data);
+      }
+    });
+  }
 
   // Register Slack command handlers
   app.command('/decision', handleDecisionCommand);

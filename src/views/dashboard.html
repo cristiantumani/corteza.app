@@ -619,6 +619,89 @@
       font-size: 13px;
       color: #718096;
     }
+
+    .gdpr-section {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .gdpr-section h2 {
+      font-size: 20px;
+      margin-bottom: 12px;
+      color: #1a202c;
+      font-weight: 700;
+    }
+
+    .gdpr-section p {
+      color: #718096;
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .gdpr-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .gdpr-btn {
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .gdpr-btn-export {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .gdpr-btn-export:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .gdpr-btn-info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
+
+    .gdpr-btn-info:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .gdpr-btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .gdpr-btn-danger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .gdpr-warning {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .gdpr-warning p {
+      color: #92400e;
+      margin: 0;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -635,6 +718,28 @@
       <div class="stat-card"><h3>Technical</h3><div class="number" id="technical-count">-</div></div>
       <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
     </div>
+
+    <!-- GDPR / Data Management Section -->
+    <div class="gdpr-section">
+      <h2>🔒 Data Privacy & Export</h2>
+      <p>Manage your workspace data in compliance with GDPR and other privacy regulations.</p>
+
+      <div class="gdpr-actions">
+        <button class="gdpr-btn gdpr-btn-info" onclick="viewDataInfo()">
+          📊 View Data Summary
+        </button>
+        <button class="gdpr-btn gdpr-btn-export" onclick="exportData('json')">
+          📥 Export as JSON
+        </button>
+        <button class="gdpr-btn gdpr-btn-export" onclick="exportData('csv')">
+          📥 Export as CSV
+        </button>
+        <button class="gdpr-btn gdpr-btn-danger" onclick="openDeleteAllModal()">
+          🗑️ Delete All Workspace Data
+        </button>
+      </div>
+    </div>
+
     <div class="filters">
       <div class="filter-group">
         <label>Search</label>
@@ -816,6 +921,29 @@
           <button type="submit" class="modal-btn modal-btn-primary">💾 Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Delete All Workspace Data Modal -->
+  <div class="modal-overlay" id="delete-all-modal">
+    <div class="modal">
+      <h2>⚠️ Delete All Workspace Data</h2>
+      <div class="gdpr-warning">
+        <p><strong>WARNING:</strong> This action is PERMANENT and IRREVERSIBLE. All your workspace data will be deleted, including:</p>
+      </div>
+      <p style="text-align: left; margin: 16px 0;">
+        • All decisions (<strong id="delete-all-decisions-count">-</strong> decisions)<br>
+        • All AI suggestions (<strong id="delete-all-suggestions-count">-</strong> suggestions)<br>
+        • All meeting transcripts (<strong id="delete-all-transcripts-count">-</strong> transcripts)<br>
+        • All feedback data (<strong id="delete-all-feedback-count">-</strong> feedback)<br>
+        • Your app installation record
+      </p>
+      <p><strong>Type "DELETE ALL DATA" to confirm:</strong></p>
+      <input type="text" id="delete-all-confirm-input" placeholder="DELETE ALL DATA" style="width: 100%; padding: 12px; border: 2px solid #ef4444; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeDeleteAllModal()">Cancel</button>
+        <button class="modal-btn modal-btn-delete" onclick="confirmDeleteAll()" id="delete-all-confirm-btn" disabled>Delete Everything</button>
+      </div>
     </div>
   </div>
 
@@ -1182,8 +1310,122 @@
       if (e.key === 'Escape') {
         closeDeleteModal();
         closeDetailModal();
+        closeDeleteAllModal();
       }
     });
+
+    // GDPR Functions
+    async function viewDataInfo() {
+      try {
+        const response = await fetch(`/api/gdpr/info?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        alert(`📊 Workspace Data Summary\n\n` +
+          `Workspace ID: ${data.workspace_id}\n` +
+          `Installed: ${data.installed ? 'Yes' : 'No'}\n` +
+          `Installed At: ${data.installed_at || 'N/A'}\n\n` +
+          `Data Records:\n` +
+          `• Decisions: ${data.data_summary.decisions}\n` +
+          `• AI Suggestions: ${data.data_summary.ai_suggestions}\n` +
+          `• Meeting Transcripts: ${data.data_summary.meeting_transcripts}\n` +
+          `• AI Feedback: ${data.data_summary.ai_feedback}\n\n` +
+          `Total Records: ${data.total_records}\n\n` +
+          `GDPR Rights:\n` +
+          `✓ Export your data (JSON/CSV)\n` +
+          `✓ Delete all your data\n` +
+          `✓ Access all your data via dashboard`
+        );
+      } catch (err) {
+        alert('Failed to fetch data info. Please try again.');
+        console.error('Error fetching data info:', err);
+      }
+    }
+
+    function exportData(format) {
+      const exportUrl = `/api/gdpr/export?workspace_id=${WORKSPACE_ID}&format=${format}`;
+      const link = document.createElement('a');
+      link.href = exportUrl;
+      link.download = `workspace_${WORKSPACE_ID}_export.${format}`;
+      link.click();
+
+      console.log(`📥 Exporting data as ${format.toUpperCase()} for workspace ${WORKSPACE_ID}`);
+    }
+
+    async function openDeleteAllModal() {
+      try {
+        // Fetch data info to show counts
+        const response = await fetch(`/api/gdpr/info?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        document.getElementById('delete-all-decisions-count').textContent = data.data_summary.decisions;
+        document.getElementById('delete-all-suggestions-count').textContent = data.data_summary.ai_suggestions;
+        document.getElementById('delete-all-transcripts-count').textContent = data.data_summary.meeting_transcripts;
+        document.getElementById('delete-all-feedback-count').textContent = data.data_summary.ai_feedback;
+
+        document.getElementById('delete-all-modal').classList.add('active');
+      } catch (err) {
+        alert('Failed to load data info. Please try again.');
+        console.error('Error opening delete all modal:', err);
+      }
+    }
+
+    function closeDeleteAllModal() {
+      document.getElementById('delete-all-modal').classList.remove('active');
+      document.getElementById('delete-all-confirm-input').value = '';
+      document.getElementById('delete-all-confirm-btn').disabled = true;
+    }
+
+    // Enable delete button only when confirmation text is correct
+    document.getElementById('delete-all-confirm-input').addEventListener('input', function(e) {
+      const confirmBtn = document.getElementById('delete-all-confirm-btn');
+      if (e.target.value === 'DELETE ALL DATA') {
+        confirmBtn.disabled = false;
+      } else {
+        confirmBtn.disabled = true;
+      }
+    });
+
+    async function confirmDeleteAll() {
+      const confirmInput = document.getElementById('delete-all-confirm-input').value;
+
+      if (confirmInput !== 'DELETE ALL DATA') {
+        alert('Please type "DELETE ALL DATA" to confirm deletion.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/gdpr/delete-all?workspace_id=${WORKSPACE_ID}&confirm=DELETE_ALL_DATA`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(`✅ All workspace data has been permanently deleted!\n\n` +
+            `Deleted:\n` +
+            `• Decisions: ${result.summary.deleted.decisions}\n` +
+            `• AI Suggestions: ${result.summary.deleted.ai_suggestions}\n` +
+            `• Meeting Transcripts: ${result.summary.deleted.meeting_transcripts}\n` +
+            `• AI Feedback: ${result.summary.deleted.ai_feedback}\n` +
+            `• Installation: ${result.summary.deleted.installation}\n\n` +
+            `Total Records Deleted: ${result.summary.total_records_deleted}\n\n` +
+            `The page will now reload.`
+          );
+
+          closeDeleteAllModal();
+
+          // Reload page after 2 seconds
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          alert('Failed to delete data: ' + (result.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error deleting data. Please try again.');
+        console.error('Error deleting all data:', err);
+      }
+    }
 
     fetchStats();
     fetchDecisions();
