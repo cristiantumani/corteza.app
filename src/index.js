@@ -1,6 +1,7 @@
 const { App } = require('@slack/bolt');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
+const MongoInstallationStore = require('./config/installationStore');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const {
@@ -28,9 +29,15 @@ async function startApp() {
   // Connect to MongoDB
   await connectToMongoDB();
 
-  // Initialize Slack app
-  const app = new App({
-    token: config.slack.token,
+  // Initialize installation store for OAuth (if using OAuth)
+  let installationStore;
+  if (config.slack.useOAuth) {
+    installationStore = new MongoInstallationStore(config.mongodb.uri);
+    await installationStore.connect();
+  }
+
+  // Initialize Slack app with OAuth or single-workspace mode
+  const appConfig = {
     signingSecret: config.slack.signingSecret,
     socketMode: false,
     customRoutes: [
@@ -77,7 +84,32 @@ async function startApp() {
         handler: getStats
       }
     ]
-  });
+  };
+
+  // Add OAuth configuration if using OAuth mode
+  if (config.slack.useOAuth) {
+    appConfig.clientId = config.slack.clientId;
+    appConfig.clientSecret = config.slack.clientSecret;
+    appConfig.stateSecret = config.slack.stateSecret;
+    appConfig.scopes = [
+      'commands',
+      'files:read',
+      'chat:write',
+      'users:read',
+      'channels:history',
+      'chat:write.public',
+      'users:read.email'
+    ];
+    appConfig.installationStore = installationStore;
+    appConfig.installerOptions = {
+      directInstall: true, // Skip "Add to Slack" button, go straight to authorization
+    };
+  } else {
+    // Single-workspace mode - use bot token
+    appConfig.token = config.slack.token;
+  }
+
+  const app = new App(appConfig);
 
   // Register Slack command handlers
   app.command('/decision', handleDecisionCommand);
@@ -98,6 +130,11 @@ async function startApp() {
   console.log(`⚡️ Bot running on port ${config.port}!`);
   console.log(`📊 Dashboard: http://localhost:${config.port}/dashboard`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
+
+  if (config.slack.useOAuth) {
+    console.log(`🔐 OAuth install: http://localhost:${config.port}/slack/install`);
+    console.log(`🔄 OAuth redirect: http://localhost:${config.port}/slack/oauth_redirect`);
+  }
 }
 
 // Start the application

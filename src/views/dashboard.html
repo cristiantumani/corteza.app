@@ -578,6 +578,47 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
+
+    footer {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(0,0,0,0.05);
+      padding: 24px 0;
+      margin-top: 48px;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #764ba2;
+      text-decoration: underline;
+    }
+
+    .footer-links .separator {
+      color: #cbd5e0;
+      font-weight: 300;
+    }
+
+    .footer-copyright {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #718096;
+    }
   </style>
 </head>
 <body>
@@ -648,6 +689,21 @@
       </table>
     </div>
   </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/YOUR_USERNAME/decision-logger-bot/blob/main/PRIVACY_POLICY.md" target="_blank">Privacy Policy</a>
+        <span class="separator">•</span>
+        <a href="https://github.com/YOUR_USERNAME/decision-logger-bot/blob/main/TERMS_OF_SERVICE.md" target="_blank">Terms of Service</a>
+        <span class="separator">•</span>
+        <a href="mailto:[YOUR EMAIL ADDRESS]">Contact Support</a>
+      </div>
+      <div class="footer-copyright">
+        © 2024 Decision Logger Bot. All rights reserved.
+      </div>
+    </div>
+  </footer>
 
   <!-- Delete Confirmation Modal -->
   <div class="modal-overlay" id="delete-modal">

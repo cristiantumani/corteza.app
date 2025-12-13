@@ -5,11 +5,25 @@ require('dotenv').config();
  * @throws {Error} if required variables are missing
  */
 function validateEnvironment() {
-  const required = ['SLACK_BOT_TOKEN', 'SLACK_SIGNING_SECRET', 'MONGODB_URI'];
+  const required = ['SLACK_SIGNING_SECRET', 'MONGODB_URI'];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Check if using OAuth or single-workspace mode
+  const hasOAuth = process.env.SLACK_CLIENT_ID && process.env.SLACK_CLIENT_SECRET;
+  const hasBotToken = process.env.SLACK_BOT_TOKEN;
+
+  if (!hasOAuth && !hasBotToken) {
+    throw new Error('Either OAuth credentials (SLACK_CLIENT_ID, SLACK_CLIENT_SECRET) or SLACK_BOT_TOKEN must be provided');
+  }
+
+  if (hasOAuth) {
+    console.log('✅ Using OAuth mode (multi-workspace support)');
+  } else {
+    console.log('⚠️  Using single-workspace mode (SLACK_BOT_TOKEN only)');
   }
 
   // Check optional Jira config (all or nothing)
@@ -36,8 +50,12 @@ module.exports = {
     dbName: 'decision-logger'
   },
   slack: {
-    token: process.env.SLACK_BOT_TOKEN,
-    signingSecret: process.env.SLACK_SIGNING_SECRET
+    token: process.env.SLACK_BOT_TOKEN, // For single-workspace mode (optional if using OAuth)
+    signingSecret: process.env.SLACK_SIGNING_SECRET,
+    clientId: process.env.SLACK_CLIENT_ID, // For OAuth
+    clientSecret: process.env.SLACK_CLIENT_SECRET, // For OAuth
+    stateSecret: process.env.SLACK_STATE_SECRET || 'my-state-secret-' + Math.random(), // For OAuth security
+    useOAuth: !!(process.env.SLACK_CLIENT_ID && process.env.SLACK_CLIENT_SECRET)
   },
   jira: {
     url: process.env.JIRA_URL,
