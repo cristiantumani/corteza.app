@@ -63,6 +63,14 @@
     .confidence-badge { background: #28a745; color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-block; }
     .close-btn { background: #e0e0e0; color: #333; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
     .close-btn:hover { background: #d0d0d0; }
+    .date-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .preset-btn { background: #f0f0f0; border: 1px solid #e0e0e0; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .preset-btn:hover { background: #e8e8e8; }
+    .preset-btn.active { background: #611f69; color: #fff; border-color: #611f69; }
+    .date-inputs { display: flex; gap: 10px; }
+    .date-inputs input { flex: 1; }
+    .clear-dates-btn { background: #dc3545; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+    .clear-dates-btn:hover { background: #c82333; }
   </style>
 </head>
 <body>
@@ -96,6 +104,21 @@
       <div class="filter-group">
         <label>Epic</label>
         <input type="text" id="epic-filter" placeholder="LOK-123">
+      </div>
+      <div class="filter-group" style="flex: 2; min-width: 400px;">
+        <label>Date Range</label>
+        <div class="date-presets">
+          <button class="preset-btn" onclick="setDatePreset('today')">Today</button>
+          <button class="preset-btn" onclick="setDatePreset('last7')">Last 7 days</button>
+          <button class="preset-btn" onclick="setDatePreset('last30')">Last 30 days</button>
+          <button class="preset-btn" onclick="setDatePreset('thisMonth')">This month</button>
+          <button class="preset-btn" onclick="setDatePreset('lastMonth')">Last month</button>
+          <button class="clear-dates-btn" onclick="clearDateFilter()">Clear</button>
+        </div>
+        <div class="date-inputs">
+          <input type="date" id="date-from" placeholder="From">
+          <input type="date" id="date-to" placeholder="To">
+        </div>
       </div>
     </div>
     <button class="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
@@ -201,11 +224,17 @@
         const s = document.getElementById('search').value;
         const t = document.getElementById('type-filter').value;
         const e = document.getElementById('epic-filter').value;
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+
         const p = new URLSearchParams();
         if (s) p.append('search', s);
         if (t) p.append('type', t);
         if (e) p.append('epic', e);
+        if (dateFrom) p.append('date_from', dateFrom);
+        if (dateTo) p.append('date_to', dateTo);
         p.append('limit', '100');
+
         const r = await fetch(`/api/decisions?${p}`);
         const d = await r.json();
         allDecisions = d.decisions;
@@ -360,9 +389,66 @@
       a.click();
     }
 
+    function setDatePreset(preset) {
+      const today = new Date();
+      const dateFrom = document.getElementById('date-from');
+      const dateTo = document.getElementById('date-to');
+
+      // Clear active state from all preset buttons
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      switch(preset) {
+        case 'today':
+          dateFrom.value = formatDate(today);
+          dateTo.value = formatDate(today);
+          break;
+        case 'last7':
+          const last7 = new Date(today);
+          last7.setDate(today.getDate() - 7);
+          dateFrom.value = formatDate(last7);
+          dateTo.value = formatDate(today);
+          break;
+        case 'last30':
+          const last30 = new Date(today);
+          last30.setDate(today.getDate() - 30);
+          dateFrom.value = formatDate(last30);
+          dateTo.value = formatDate(today);
+          break;
+        case 'thisMonth':
+          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+          dateFrom.value = formatDate(firstDay);
+          dateTo.value = formatDate(today);
+          break;
+        case 'lastMonth':
+          const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+          dateFrom.value = formatDate(lastMonthStart);
+          dateTo.value = formatDate(lastMonthEnd);
+          break;
+      }
+      fetchDecisions();
+    }
+
+    function clearDateFilter() {
+      document.getElementById('date-from').value = '';
+      document.getElementById('date-to').value = '';
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      fetchDecisions();
+    }
+
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     document.getElementById('search').addEventListener('input', debounce(fetchDecisions, 500));
     document.getElementById('type-filter').addEventListener('change', fetchDecisions);
     document.getElementById('epic-filter').addEventListener('input', debounce(fetchDecisions, 500));
+    document.getElementById('date-from').addEventListener('change', fetchDecisions);
+    document.getElementById('date-to').addEventListener('change', fetchDecisions);
 
     function debounce(func, wait) {
       let timeout;

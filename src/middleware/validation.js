@@ -43,6 +43,23 @@ function validateQueryParams(query) {
     }
   }
 
+  // Date range filters (ISO date strings)
+  if (query.date_from) {
+    const dateFrom = new Date(query.date_from);
+    if (!isNaN(dateFrom.getTime())) {
+      validated.date_from = dateFrom.toISOString();
+    }
+  }
+
+  if (query.date_to) {
+    const dateTo = new Date(query.date_to);
+    if (!isNaN(dateTo.getTime())) {
+      // Set to end of day (23:59:59.999)
+      dateTo.setHours(23, 59, 59, 999);
+      validated.date_to = dateTo.toISOString();
+    }
+  }
+
   return validated;
 }
 

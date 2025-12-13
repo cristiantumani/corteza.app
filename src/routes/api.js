@@ -51,6 +51,17 @@ async function getDecisions(req, res) {
       ];
     }
 
+    // Date range filtering
+    if (validated.date_from || validated.date_to) {
+      filter.timestamp = {};
+      if (validated.date_from) {
+        filter.timestamp.$gte = validated.date_from;
+      }
+      if (validated.date_to) {
+        filter.timestamp.$lte = validated.date_to;
+      }
+    }
+
     const decisionsCollection = getDecisionsCollection();
     const [decisions, total] = await Promise.all([
       decisionsCollection
