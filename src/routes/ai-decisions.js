@@ -770,8 +770,16 @@ async function handleEditModalSubmit({ ack, view, client }) {
     await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id);
     console.log('✅ Feedback saved');
 
-    // Note: Message update disabled - requires additional Slack scopes (channels:history, groups:history)
-    // Users will see the confirmation message below instead
+    // Update the original message to remove buttons
+    console.log('>>> Updating original message...');
+    await updateMessageFromModal(
+      client,
+      metadata.channel_id,
+      metadata.message_ts,
+      metadata.suggestion_id,
+      `✅ Edited and approved by ${userName} - Saved as Decision #${nextId}`
+    );
+    console.log('✅ Message updated');
 
     // Post confirmation
     console.log('>>> Posting confirmation message...');
@@ -1093,8 +1101,24 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     await saveFeedback(suggestion, 'approved', null, metadata.user_id);
     console.log('✅ Feedback saved');
 
-    // Note: Message update disabled - requires additional Slack scopes (channels:history, groups:history)
-    // Users will see the confirmation message below instead
+    // Update the original message to remove buttons
+    console.log('>>> Updating original message...');
+    let messageStatus;
+    if (jiraData && jiraCommentSuccess) {
+      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId}`;
+    } else if (jiraData) {
+      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId} (Jira comment failed)`;
+    } else {
+      messageStatus = `✅ Approved by ${userName} - Saved as Decision #${nextId} (Jira fetch failed)`;
+    }
+    await updateMessageFromModal(
+      client,
+      metadata.channel_id,
+      metadata.message_ts,
+      metadata.suggestion_id,
+      messageStatus
+    );
+    console.log('✅ Message updated');
 
     // Post confirmation with appropriate message
     let confirmationText;
