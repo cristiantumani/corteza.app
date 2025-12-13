@@ -166,9 +166,10 @@
             epicCell = d.epic_key;
           }
         }
+        const alternativesHtml = d.alternatives ? `<div style="margin-top: 8px; padding: 8px; background: #f8f8f8; border-radius: 4px; font-size: 0.85em; color: #666;">${d.alternatives.replace(/\n/g, '<br>')}</div>` : '';
         return `<tr>
           <td><strong>#${d.id}</strong></td>
-          <td>${d.text}</td>
+          <td>${d.text}${alternativesHtml}</td>
           <td><span class="badge badge-${d.type}">${d.type}</span></td>
           <td>${epicCell}</td>
           <td>${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}</td>

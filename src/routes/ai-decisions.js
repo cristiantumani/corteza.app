@@ -743,7 +743,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
     // Add Jira comment if requested
     if (addComment && editedData.epic_key && jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${editedData.alternatives ? `Additional Comments: ${editedData.alternatives}\n\n` : ''}AI-extracted and approved via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via Decision Logger`;
       if (await addJiraComment(editedData.epic_key, comment)) {
         console.log(`✅ Jira comment added to ${editedData.epic_key}`);
       }
@@ -770,16 +770,8 @@ async function handleEditModalSubmit({ ack, view, client }) {
     await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id);
     console.log('✅ Feedback saved');
 
-    // Update the original message to remove buttons
-    console.log('>>> Updating original message...');
-    await updateMessageFromModal(
-      client,
-      metadata.channel_id,
-      metadata.message_ts,
-      metadata.suggestion_id,
-      `✅ Edited and approved by ${userName} - Saved as Decision #${nextId}`
-    );
-    console.log('✅ Message updated');
+    // Note: Message update disabled - requires additional Slack scopes (channels:history, groups:history)
+    // Users will see the confirmation message below instead
 
     // Post confirmation
     console.log('>>> Posting confirmation message...');
@@ -1071,7 +1063,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     let jiraCommentSuccess = false;
     if (jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\nAI-extracted and approved via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via Decision Logger`;
       jiraCommentSuccess = await addJiraComment(epicKey, comment);
 
       if (jiraCommentSuccess) {
@@ -1101,24 +1093,8 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     await saveFeedback(suggestion, 'approved', null, metadata.user_id);
     console.log('✅ Feedback saved');
 
-    // Update the original message to remove buttons
-    console.log('>>> Updating original message...');
-    let messageStatus;
-    if (jiraData && jiraCommentSuccess) {
-      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId}`;
-    } else if (jiraData) {
-      messageStatus = `✅ Approved by ${userName} and connected to ${epicKey} - Saved as Decision #${nextId} (Jira comment failed)`;
-    } else {
-      messageStatus = `✅ Approved by ${userName} - Saved as Decision #${nextId} (Jira fetch failed)`;
-    }
-    await updateMessageFromModal(
-      client,
-      metadata.channel_id,
-      metadata.message_ts,
-      metadata.suggestion_id,
-      messageStatus
-    );
-    console.log('✅ Message updated');
+    // Note: Message update disabled - requires additional Slack scopes (channels:history, groups:history)
+    // Users will see the confirmation message below instead
 
     // Post confirmation with appropriate message
     let confirmationText;
