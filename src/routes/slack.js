@@ -268,8 +268,10 @@ async function handleDecisionsCommand({ command, ack, say }) {
     await handleRecentCommand(say, decisionsCollection, workspace_id);
   } else if (cmd === 'epic' && args[1]) {
     await handleEpicCommand(args[1], say, decisionsCollection, workspace_id);
+  } else if (cmd === 'workspace' || cmd === 'info') {
+    await handleWorkspaceInfo(say, workspace_id, decisionsCollection, command);
   } else {
-    await say('Try: `/decisions search [keyword]` | `/decisions recent` | `/decisions epic [KEY]`');
+    await say('Try: `/decisions search [keyword]` | `/decisions recent` | `/decisions epic [KEY]` | `/decisions workspace`');
   }
 }
 
@@ -373,6 +375,64 @@ async function handleEpicCommand(epic, say, decisionsCollection, workspace_id) {
       text: { type: 'mrkdwn', text: `*#${d.id}* ${d.text}\n_${d.type} • ${d.creator}_` }
     });
   });
+
+  await say({ blocks });
+}
+
+/**
+ * Handle workspace info subcommand - shows workspace ID and stats
+ */
+async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, command) {
+  // Get workspace stats
+  const totalDecisions = await decisionsCollection.countDocuments({ workspace_id: workspace_id });
+
+  // Build dashboard URL (use RAILWAY_PUBLIC_DOMAIN if available, otherwise localhost)
+  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : `http://localhost:${process.env.PORT || 3000}`;
+  const dashboardUrl = `${baseUrl}/dashboard?workspace_id=${workspace_id}`;
+
+  const blocks = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `📊 *Workspace Information*`
+      }
+    },
+    { type: 'divider' },
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `*Workspace ID:*\n\`${workspace_id}\``
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Team Domain:*\n${command.team_domain || 'N/A'}`
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Total Decisions:*\n${totalDecisions}`
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Dashboard:*\n<${dashboardUrl}|Open Dashboard 📊>`
+        }
+      ]
+    },
+    { type: 'divider' },
+    {
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: `💡 Workspace ID: \`${workspace_id}\` • Click the dashboard link above to view your decisions!`
+        }
+      ]
+    }
+  ];
 
   await say({ blocks });
 }
