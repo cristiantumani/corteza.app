@@ -390,6 +390,13 @@ async function handleApproveAction({ ack, body, client }) {
     const userInfo = await client.users.info({ user: body.user.id });
     const userName = userInfo.user.real_name || userInfo.user.name;
 
+    // Fetch meeting transcript to get meeting title
+    const transcriptsCollection = getMeetingTranscriptsCollection();
+    const transcript = await transcriptsCollection.findOne({
+      transcript_id: suggestion.meeting_transcript_id
+    });
+    const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
+
     // Fetch Jira data if epic_key present
     let jiraData = null;
     if (suggestion.epic_key) {
@@ -408,7 +415,7 @@ async function handleApproveAction({ ack, body, client }) {
       epic_key: suggestion.epic_key,
       jira_data: jiraData,
       tags: suggestion.tags,
-      alternatives: `AI-suggested decision (${Math.round(suggestion.confidence_score * 100)}% confidence)`,
+      alternatives: `This decision was taken during "${meetingTitle}"\n\nAI-extracted with ${Math.round(suggestion.confidence_score * 100)}% confidence`,
       creator: userName,
       user_id: body.user.id,
       channel_id: body.channel.id,
@@ -686,6 +693,14 @@ async function handleEditModalSubmit({ ack, view, client }) {
     const userName = userInfo.user.real_name || userInfo.user.name;
     console.log('>>> User:', userName);
 
+    // Fetch meeting transcript to get meeting title
+    const transcriptsCollection = getMeetingTranscriptsCollection();
+    const transcript = await transcriptsCollection.findOne({
+      transcript_id: suggestion.meeting_transcript_id
+    });
+    const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
+    console.log('>>> Meeting title:', meetingTitle);
+
     // Fetch Jira data if epic_key present
     let jiraData = null;
     if (editedData.epic_key) {
@@ -700,6 +715,13 @@ async function handleEditModalSubmit({ ack, view, client }) {
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
     console.log('>>> Next decision ID:', nextId);
 
+    // Build alternatives field
+    let alternativesText = `This decision was taken during "${meetingTitle}"\n\n`;
+    if (editedData.alternatives) {
+      alternativesText += `${editedData.alternatives}\n\n`;
+    }
+    alternativesText += `AI-extracted and edited by ${userName}`;
+
     const decision = {
       id: nextId,
       text: editedData.decision_text,
@@ -707,7 +729,7 @@ async function handleEditModalSubmit({ ack, view, client }) {
       epic_key: editedData.epic_key,
       jira_data: jiraData,
       tags: editedData.tags,
-      alternatives: editedData.alternatives || `AI-suggested decision (edited by ${userName})`,
+      alternatives: alternativesText,
       creator: userName,
       user_id: metadata.user_id,
       channel_id: metadata.channel_id,
@@ -1008,6 +1030,14 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
     const userName = userInfo.user.real_name || userInfo.user.name;
     console.log('>>> User:', userName);
 
+    // Fetch meeting transcript to get meeting title
+    const transcriptsCollection = getMeetingTranscriptsCollection();
+    const transcript = await transcriptsCollection.findOne({
+      transcript_id: suggestion.meeting_transcript_id
+    });
+    const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
+    console.log('>>> Meeting title:', meetingTitle);
+
     // Fetch Jira data
     console.log('>>> Fetching Jira data for:', epicKey);
     const jiraData = await fetchJiraIssue(epicKey);
@@ -1026,7 +1056,7 @@ async function handleConnectJiraModalSubmit({ ack, view, client }) {
       epic_key: epicKey,
       jira_data: jiraData,
       tags: suggestion.tags,
-      alternatives: `AI-suggested decision (approved and connected to Jira by ${userName})`,
+      alternatives: `This decision was taken during "${meetingTitle}"\n\nAI-extracted and connected to Jira by ${userName}`,
       creator: userName,
       user_id: metadata.user_id,
       channel_id: metadata.channel_id,
