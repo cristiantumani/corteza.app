@@ -1,4 +1,5 @@
 const { App } = require('@slack/bolt');
+const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
@@ -21,11 +22,67 @@ const {
 } = require('./routes/ai-decisions');
 
 /**
+ * Fix corrupted OAuth installation records
+ * Runs once at startup to clean up any null team_id records
+ */
+async function fixOAuthDatabase() {
+  console.log('🔧 Checking for corrupted OAuth records...');
+
+  const client = new MongoClient(config.mongodb.uri);
+
+  try {
+    await client.connect();
+    const db = client.db('decision-logger');
+    const collection = db.collection('slack_installations');
+
+    // Drop the problematic unique index if it exists
+    try {
+      await collection.dropIndex('team.id_1');
+      console.log('✅ Dropped old team.id index');
+    } catch (error) {
+      // Index doesn't exist, that's fine
+    }
+
+    // Delete corrupted records
+    const result = await collection.deleteMany({
+      $or: [
+        { team_id: null },
+        { team_id: { $exists: false } }
+      ]
+    });
+
+    if (result.deletedCount > 0) {
+      console.log(`✅ Cleaned up ${result.deletedCount} corrupted record(s)`);
+    }
+
+    // Recreate index (excluding nulls)
+    await collection.createIndex(
+      { team_id: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { team_id: { $type: 'string', $ne: null } }
+      }
+    );
+    console.log('✅ OAuth database ready');
+
+  } catch (error) {
+    console.warn('⚠️  Could not fix OAuth database:', error.message);
+  } finally {
+    await client.close();
+  }
+}
+
+/**
  * Main application entry point
  */
 async function startApp() {
   // Validate environment variables
   config.validateEnvironment();
+
+  // Fix OAuth database if in OAuth mode
+  if (config.slack.useOAuth) {
+    await fixOAuthDatabase();
+  }
 
   // Initialize installation store for OAuth (if using OAuth)
   let installationStore;
