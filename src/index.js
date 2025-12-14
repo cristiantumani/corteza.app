@@ -134,6 +134,12 @@ async function startApp() {
   // Add error handler for OAuth failures
   if (config.slack.useOAuth) {
     app.error(async (error) => {
+      // Ignore authorization errors for uninstalled workspaces
+      if (error.code === 'slack_bolt_authorization_error') {
+        console.log(`⚠️  Skipping event from uninstalled workspace (this is normal if app was uninstalled)`);
+        return;
+      }
+
       console.error('❌ Slack App Error:', error);
       if (error.code === 'slack_webapi_platform_error') {
         console.error('Platform Error Details:', error.data);
