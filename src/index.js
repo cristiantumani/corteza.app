@@ -27,14 +27,16 @@ async function startApp() {
   // Validate environment variables
   config.validateEnvironment();
 
-  // Connect to MongoDB
-  await connectToMongoDB();
-
   // Initialize installation store for OAuth (if using OAuth)
   let installationStore;
   if (config.slack.useOAuth) {
-    installationStore = new MongoInstallationStore(config.mongodb.uri);
-    await installationStore.connect();
+    try {
+      installationStore = new MongoInstallationStore(config.mongodb.uri);
+      await installationStore.connect();
+    } catch (error) {
+      console.error('❌ Failed to connect installation store:', error.message);
+      console.error('⚠️  OAuth functionality may be limited. App will continue running.');
+    }
   }
 
   // Initialize Slack app with OAuth or single-workspace mode
@@ -161,7 +163,7 @@ async function startApp() {
   app.view('edit_suggestion_modal', handleEditModalSubmit);
   app.view('connect_jira_modal', handleConnectJiraModalSubmit);
 
-  // Start the server
+  // Start the server FIRST so Railway can health check it
   await app.start(config.port);
   console.log(`⚡️ Bot running on port ${config.port}!`);
   console.log(`📊 Dashboard: http://localhost:${config.port}/dashboard`);
@@ -170,6 +172,16 @@ async function startApp() {
   if (config.slack.useOAuth) {
     console.log(`🔐 OAuth install: http://localhost:${config.port}/slack/install`);
     console.log(`🔄 OAuth redirect: http://localhost:${config.port}/slack/oauth_redirect`);
+  }
+
+  // Connect to MongoDB after server is listening
+  // This ensures Railway health checks work even if MongoDB is slow/down
+  console.log('🔌 Connecting to MongoDB...');
+  try {
+    await connectToMongoDB();
+  } catch (error) {
+    console.error('❌ MongoDB connection error during startup:', error.message);
+    console.error('⚠️  App is running but database operations will fail');
   }
 }
 

@@ -61,8 +61,12 @@ async function connectToMongoDB() {
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {
-    console.error('❌ MongoDB error:', error);
-    process.exit(1);
+    console.error('❌ MongoDB connection failed:', error.message);
+    console.error('⚠️  App will continue running but database features will be unavailable');
+    console.error('⚠️  Please check MONGODB_URI environment variable and network connectivity');
+    // Don't exit - let the app continue running so Railway health checks work
+    // The health endpoint will show mongodb: "disconnected"
+    return null;
   }
 }
 
