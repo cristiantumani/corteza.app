@@ -23,7 +23,8 @@ class MongoInstallationStore {
       this.collection = this.db.collection('slack_installations');
 
       // Create index on team_id for fast lookups
-      await this.collection.createIndex({ 'team.id': 1 }, { unique: true });
+      // Note: We use team_id (our flattened field), not 'team.id' (Slack's nested field)
+      await this.collection.createIndex({ team_id: 1 }, { unique: true });
 
       console.log('✅ Installation store connected to MongoDB');
     }

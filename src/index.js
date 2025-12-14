@@ -35,19 +35,28 @@ async function fixOAuthDatabase() {
     const db = client.db('decision-logger');
     const collection = db.collection('slack_installations');
 
-    // Drop the problematic unique index if it exists
+    // Drop ALL old indexes (both team.id and team_id if they exist)
     try {
       await collection.dropIndex('team.id_1');
-      console.log('✅ Dropped old team.id index');
+      console.log('✅ Dropped old team.id_1 index');
     } catch (error) {
       // Index doesn't exist, that's fine
     }
 
-    // Delete corrupted records
+    try {
+      await collection.dropIndex('team_id_1');
+      console.log('✅ Dropped old team_id_1 index');
+    } catch (error) {
+      // Index doesn't exist, that's fine
+    }
+
+    // Delete corrupted records (both old 'team.id' format and new 'team_id' format)
     const result = await collection.deleteMany({
       $or: [
         { team_id: null },
-        { team_id: { $exists: false } }
+        { team_id: { $exists: false } },
+        { 'team.id': null },
+        { 'team.id': { $exists: false } }
       ]
     });
 
@@ -55,15 +64,7 @@ async function fixOAuthDatabase() {
       console.log(`✅ Cleaned up ${result.deletedCount} corrupted record(s)`);
     }
 
-    // Recreate index (excluding nulls)
-    await collection.createIndex(
-      { team_id: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { team_id: { $exists: true, $type: 'string' } }
-      }
-    );
-    console.log('✅ OAuth database ready');
+    console.log('✅ OAuth database cleanup complete');
 
   } catch (error) {
     console.warn('⚠️  Could not fix OAuth database:', error.message);
