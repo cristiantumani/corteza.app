@@ -1,5 +1,7 @@
-const pdfParse = require('pdf-parse');
-const mammoth = require('mammoth');
+// Lazy-load these dependencies only when needed to avoid startup issues
+// in environments that don't support native modules
+let pdfParse = null;
+let mammoth = null;
 
 /**
  * Extracts text from a file based on its type
@@ -70,6 +72,20 @@ function extractFromPlainText(fileBuffer) {
  */
 async function extractFromPDF(fileBuffer) {
   try {
+    // Lazy-load pdf-parse only when actually needed
+    if (!pdfParse) {
+      try {
+        pdfParse = require('pdf-parse');
+      } catch (error) {
+        console.error('❌ pdf-parse not available:', error.message);
+        return {
+          success: false,
+          text: '',
+          error: 'PDF parsing not available in this environment. Please upload .txt or .docx files instead.'
+        };
+      }
+    }
+
     const data = await pdfParse(fileBuffer);
 
     if (!data.text || data.text.trim().length === 0) {
@@ -110,6 +126,20 @@ async function extractFromPDF(fileBuffer) {
  */
 async function extractFromDOCX(fileBuffer) {
   try {
+    // Lazy-load mammoth only when actually needed
+    if (!mammoth) {
+      try {
+        mammoth = require('mammoth');
+      } catch (error) {
+        console.error('❌ mammoth not available:', error.message);
+        return {
+          success: false,
+          text: '',
+          error: 'DOCX parsing not available in this environment. Please upload .txt files instead.'
+        };
+      }
+    }
+
     const result = await mammoth.extractRawText({ buffer: fileBuffer });
 
     if (!result.value || result.value.trim().length === 0) {
