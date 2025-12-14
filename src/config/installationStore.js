@@ -36,8 +36,23 @@ class MongoInstallationStore {
   async storeInstallation(installation) {
     await this.connect();
 
+    // Validate that we have a valid team ID
+    const teamId = installation.team?.id;
+    if (!teamId) {
+      console.error('❌ Cannot store installation: team.id is missing');
+      console.error('   Installation object:', JSON.stringify(installation, null, 2));
+      throw new Error('Invalid installation: team.id is required');
+    }
+
+    // Clean up any corrupted records with null team_id before storing
+    try {
+      await this.collection.deleteMany({ team_id: null });
+    } catch (error) {
+      console.warn('⚠️  Could not clean up null team_id records:', error.message);
+    }
+
     const installationData = {
-      team_id: installation.team.id,
+      team_id: teamId,
       team_name: installation.team.name,
       enterprise_id: installation.enterprise?.id || null,
       bot_token: installation.bot.token,
@@ -51,12 +66,12 @@ class MongoInstallationStore {
     };
 
     await this.collection.updateOne(
-      { team_id: installation.team.id },
+      { team_id: teamId },
       { $set: installationData },
       { upsert: true }
     );
 
-    console.log(`✅ Stored installation for workspace: ${installation.team.name} (${installation.team.id})`);
+    console.log(`✅ Stored installation for workspace: ${installation.team.name} (${teamId})`);
     return;
   }
 
