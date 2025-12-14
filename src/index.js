@@ -29,13 +29,20 @@ async function startApp() {
 
   // Initialize installation store for OAuth (if using OAuth)
   let installationStore;
+  let oauthEnabled = false;
   if (config.slack.useOAuth) {
     try {
       installationStore = new MongoInstallationStore(config.mongodb.uri);
       await installationStore.connect();
+      oauthEnabled = true;
+      console.log('✅ OAuth installation store ready');
     } catch (error) {
       console.error('❌ Failed to connect installation store:', error.message);
-      console.error('⚠️  OAuth functionality may be limited. App will continue running.');
+      console.error('⚠️  Falling back to single-workspace mode (requires SLACK_BOT_TOKEN)');
+      // If OAuth fails, we need bot token
+      if (!config.slack.token) {
+        throw new Error('OAuth installation store failed and no SLACK_BOT_TOKEN provided. Cannot start app.');
+      }
     }
   }
 
@@ -107,8 +114,8 @@ async function startApp() {
     ]
   };
 
-  // Add OAuth configuration if using OAuth mode
-  if (config.slack.useOAuth) {
+  // Add OAuth configuration if OAuth is enabled and installation store connected
+  if (oauthEnabled && installationStore) {
     appConfig.clientId = config.slack.clientId;
     appConfig.clientSecret = config.slack.clientSecret;
     appConfig.stateSecret = config.slack.stateSecret;
@@ -134,7 +141,7 @@ async function startApp() {
   const app = new App(appConfig);
 
   // Add error handler for OAuth failures
-  if (config.slack.useOAuth) {
+  if (oauthEnabled) {
     app.error(async (error) => {
       // Ignore authorization errors for uninstalled workspaces
       if (error.code === 'slack_bolt_authorization_error') {
@@ -169,9 +176,11 @@ async function startApp() {
   console.log(`📊 Dashboard: http://localhost:${config.port}/dashboard`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
 
-  if (config.slack.useOAuth) {
+  if (oauthEnabled) {
     console.log(`🔐 OAuth install: http://localhost:${config.port}/slack/install`);
     console.log(`🔄 OAuth redirect: http://localhost:${config.port}/slack/oauth_redirect`);
+  } else {
+    console.log(`ℹ️  Running in single-workspace mode`);
   }
 
   // Connect to MongoDB after server is listening

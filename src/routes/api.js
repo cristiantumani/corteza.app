@@ -290,25 +290,17 @@ async function getStats(req, res) {
 
 /**
  * GET /health - Health check endpoint
+ * Simple health check that always returns 200 OK for Railway
+ * Does NOT depend on database connection
  */
 function healthCheck(req, res) {
-  const { getDatabase } = require('../config/database');
-
-  const status = {
-    status: 'ok',
-    mongodb: 'unknown',
-    jira: config.jira.isConfigured ? 'configured' : 'not configured'
-  };
-
-  try {
-    const db = getDatabase();
-    status.mongodb = db ? 'connected' : 'disconnected';
-  } catch (error) {
-    status.mongodb = 'disconnected';
-  }
-
+  // Always return 200 OK so Railway health checks pass
+  // Even if database is down, the app itself is running
   res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(status));
+  res.end(JSON.stringify({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  }));
 }
 
 module.exports = {
