@@ -62,7 +62,7 @@ async function fixOAuthDatabase() {
         { team_id: 1 },
         {
           unique: true,
-          partialFilterExpression: { team_id: { $type: 'string', $ne: null } }
+          partialFilterExpression: { team_id: { $exists: true, $type: 'string' } }
         }
       );
       console.log('✅ Created unique index on team_id (nulls excluded)');
