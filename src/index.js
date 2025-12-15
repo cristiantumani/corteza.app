@@ -13,6 +13,8 @@ const {
 } = require('./routes/slack');
 const {
   handleFileUpload,
+  handleExtractDecisionsButton,
+  handleIgnoreFileButton,
   handleApproveAction,
   handleRejectAction,
   handleEditAction,
@@ -221,6 +223,8 @@ async function startApp() {
 
   // Register AI decision extraction handlers
   app.event('file_shared', handleFileUpload);
+  app.action('extract_decisions_from_file', handleExtractDecisionsButton);
+  app.action('ignore_file_upload', handleIgnoreFileButton);
   app.action('approve_suggestion', handleApproveAction);
   app.action('reject_suggestion', handleRejectAction);
   app.action('edit_suggestion', handleEditAction);

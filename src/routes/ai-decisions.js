@@ -14,7 +14,7 @@ const {
 
 /**
  * Handles file upload events from Slack
- * Triggered when user uploads a file to a channel
+ * Posts an ephemeral message asking if user wants to extract decisions
  */
 async function handleFileUpload({ event, client, say, context }) {
   try {
@@ -24,8 +24,8 @@ async function handleFileUpload({ event, client, say, context }) {
 
     // Check if Claude is configured
     if (!isClaudeConfigured()) {
-      await say('❌ AI decision extraction is not configured. Contact your administrator.');
-      return;
+      console.log('⚠️  Claude not configured, skipping file upload prompt');
+      return; // Silently ignore if AI not configured
     }
 
     // Get file info from Slack
@@ -35,15 +35,81 @@ async function handleFileUpload({ event, client, say, context }) {
     // Validate file type and size
     const validation = validateUploadedFile(file);
     if (!validation.valid) {
-      await say(`❌ ${validation.error}`);
+      // Silently skip if not a supported file type (user probably just sharing a file)
+      console.log(`⏭️  Skipping file "${file.name}": ${validation.error}`);
       return;
     }
 
-    // Show processing message
-    await say(`🤖 Analyzing "${file.name}" with AI... This may take a moment.`);
+    // Post ephemeral message asking if user wants to extract decisions
+    await client.chat.postEphemeral({
+      channel: event.channel_id,
+      user: event.user_id,
+      text: `📄 I detected "${file.name}". Would you like me to extract decisions?`,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `📄 *${file.name}* uploaded\n\nI can analyze this ${file.filetype.toUpperCase()} file for decisions.`
+          }
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: '🔍 Extract Decisions' },
+              action_id: 'extract_decisions_from_file',
+              style: 'primary',
+              value: JSON.stringify({
+                file_id: file.id,
+                file_name: file.name,
+                workspace_id: workspace_id
+              })
+            },
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: 'Ignore' },
+              action_id: 'ignore_file_upload'
+            }
+          ]
+        }
+      ]
+    });
+
+    console.log(`✅ Posted extraction prompt for file "${file.name}" to user ${event.user_id}`);
+
+  } catch (error) {
+    console.error('❌ Error handling file upload:', error);
+    // Don't post error to channel - file uploads happen frequently
+  }
+}
+
+/**
+ * Handles the "Extract Decisions" button click
+ * Processes the file and extracts decisions
+ */
+async function handleExtractDecisionsButton({ ack, body, client, say }) {
+  try {
+    await ack(); // Acknowledge button click
+
+    // Parse the value from the button
+    const buttonValue = JSON.parse(body.actions[0].value);
+    const { file_id, file_name, workspace_id } = buttonValue;
+    const user_id = body.user.id;
+    const channel_id = body.channel.id;
+
+    console.log(`🔍 User ${user_id} requested extraction for file: ${file_name}`);
+
+    // Post processing message
+    await say(`🤖 Analyzing "${file_name}" with AI... This may take a moment.`);
+
+    // Get file details from Slack
+    const fileInfo = await client.files.info({ file: file_id });
+    const file = fileInfo.file;
 
     // Fetch file content
-    const fileContent = await fetchSlackFileContent(file.id, client);
+    const fileContent = await fetchSlackFileContent(file_id, client);
     if (!fileContent.success) {
       await say(`❌ ${fileContent.error}`);
       return;
@@ -69,7 +135,7 @@ async function handleFileUpload({ event, client, say, context }) {
     }
 
     // Get user info
-    const userInfo = await client.users.info({ user: event.user_id });
+    const userInfo = await client.users.info({ user: user_id });
     const userName = userInfo.user.real_name || userInfo.user.name;
 
     // Process the transcript
@@ -79,9 +145,9 @@ async function handleFileUpload({ event, client, say, context }) {
       file_type: file.filetype,
       file_size: file.size,
       slack_file_id: file.id,
-      user_id: event.user_id,
+      user_id: user_id,
       user_name: userName,
-      channel_id: event.channel_id
+      channel_id: channel_id
     });
 
     if (!result.success) {
@@ -93,12 +159,25 @@ async function handleFileUpload({ event, client, say, context }) {
     if (result.suggestions.length === 0) {
       await say('🤔 AI didn\'t find any clear decisions in this transcript. The file has been saved for future reference.');
     } else {
-      await postSuggestionsToSlack(client, result.suggestions, event.channel_id);
+      await postSuggestionsToSlack(client, result.suggestions, channel_id);
     }
 
   } catch (error) {
-    console.error('❌ Error handling file upload:', error);
+    console.error('❌ Error processing file extraction:', error);
     await say('⚠️  An error occurred while processing your file. Please try again.');
+  }
+}
+
+/**
+ * Handles the "Ignore" button click
+ * Simply acknowledges and dismisses the message
+ */
+async function handleIgnoreFileButton({ ack }) {
+  try {
+    await ack(); // Just acknowledge - message will disappear
+    console.log('✅ User chose to ignore file upload');
+  } catch (error) {
+    console.error('❌ Error handling ignore button:', error);
   }
 }
 
@@ -1177,6 +1256,8 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
 
 module.exports = {
   handleFileUpload,
+  handleExtractDecisionsButton,
+  handleIgnoreFileButton,
   handleApproveAction,
   handleRejectAction,
   handleEditAction,
