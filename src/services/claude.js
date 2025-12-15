@@ -16,9 +16,23 @@ function isClaudeConfigured() {
  * @returns {string} The formatted prompt
  */
 function buildDecisionExtractionPrompt(transcriptText) {
-  return `You are an expert at analyzing meeting transcripts and identifying decisions that were made.
+  // System message now contains all instructions
+  // This prompt just provides the transcript
+  return `Analyze the following meeting transcript and extract all decisions as a JSON array:
 
-TASK: Analyze the following meeting transcript and extract ALL decisions that were made.
+---
+${transcriptText}
+---`;
+}
+
+/**
+ * System message for Claude API (cached for efficiency)
+ * This stays the same across requests, so Claude caches it
+ */
+const DECISION_EXTRACTION_SYSTEM_MESSAGE = [
+  {
+    type: 'text',
+    text: `You are an expert at analyzing meeting transcripts and identifying decisions that were made.
 
 DEFINITION OF A DECISION:
 A decision is when someone explicitly says they chose, agreed, or committed to something specific.
@@ -76,15 +90,10 @@ IMPORTANT GUIDELINES:
 - Only extract actual decisions, not discussions or ideas
 - Be conservative with confidence scores - only use 0.9+ when absolutely certain
 - Tags should be relevant keywords from the context
-- Context should help the reader understand why this was identified as a decision
-
-TRANSCRIPT:
----
-${transcriptText}
----
-
-Now analyze this transcript and extract all decisions as JSON:`;
-}
+- Context should help the reader understand why this was identified as a decision`,
+    cache_control: { type: 'ephemeral' }
+  }
+];
 
 /**
  * Calls Claude API with retry logic
@@ -107,6 +116,7 @@ async function callClaudeAPI(prompt) {
       model: config.claude.model,
       max_tokens: config.claude.maxTokens,
       temperature: 0.2, // Lower temperature for more consistent extraction
+      system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
       messages: [
         {
           role: 'user',
@@ -122,11 +132,12 @@ async function callClaudeAPI(prompt) {
     if (error.status === 429) {
       console.log('⚠️  Claude API rate limit, retrying in 5s...');
       await new Promise(resolve => setTimeout(resolve, 5000));
-      // Retry once
-      return anthropic.messages.create({
+      // Retry once with same configuration (system message will be cached)
+      const retryResponse = await anthropic.messages.create({
         model: config.claude.model,
         max_tokens: config.claude.maxTokens,
         temperature: 0.2,
+        system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
         messages: [
           {
             role: 'user',
@@ -134,6 +145,7 @@ async function callClaudeAPI(prompt) {
           }
         ]
       });
+      return retryResponse;
     }
 
     // Log and re-throw other errors
