@@ -54,7 +54,14 @@ module.exports = {
     signingSecret: process.env.SLACK_SIGNING_SECRET,
     clientId: process.env.SLACK_CLIENT_ID, // For OAuth
     clientSecret: process.env.SLACK_CLIENT_SECRET, // For OAuth
-    stateSecret: process.env.SLACK_STATE_SECRET || 'my-state-secret-' + Math.random(), // For OAuth security
+    stateSecret: process.env.SLACK_STATE_SECRET || (() => {
+      // Generate cryptographically secure state secret if not provided
+      const crypto = require('crypto');
+      const generated = crypto.randomBytes(32).toString('hex');
+      console.warn('⚠️  SLACK_STATE_SECRET not set. Generated temporary secret (NOT suitable for production)');
+      console.warn('⚠️  Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+      return generated;
+    })(),
     useOAuth: !!(process.env.SLACK_CLIENT_ID && process.env.SLACK_CLIENT_SECRET)
   },
   jira: {

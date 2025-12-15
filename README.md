@@ -131,6 +131,112 @@ The bot requires these environment variables:
 
 ---
 
+## 🔐 Security Setup (IMPORTANT)
+
+### Secrets Management
+
+**⚠️ CRITICAL: Never commit the `.env` file to git!**
+
+The `.env` file contains sensitive credentials that, if exposed, could compromise your entire infrastructure. Follow these security best practices:
+
+### 1. Generate Secure State Secret (OAuth Mode)
+
+If using OAuth multi-workspace mode, generate a cryptographically secure state secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Add this to your `.env` or Railway environment variables as `SLACK_STATE_SECRET`.
+
+### 2. Environment Variables Setup
+
+**For Local Development:**
+```bash
+# Copy the template
+cp .env.example .env
+
+# Edit .env and fill in your actual values
+# NEVER commit this file!
+```
+
+**For Production (Railway):**
+1. Go to Railway dashboard → Your project → Variables tab
+2. Add each environment variable individually:
+   - `SLACK_SIGNING_SECRET` - From Slack app settings
+   - `SLACK_CLIENT_ID` - From Slack OAuth settings
+   - `SLACK_CLIENT_SECRET` - From Slack OAuth settings
+   - `SLACK_STATE_SECRET` - Generated using crypto (see above)
+   - `MONGODB_URI` - From MongoDB Atlas
+   - `ANTHROPIC_API_KEY` - From Claude dashboard
+   - `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` - Optional, for Jira integration
+
+3. Railway will automatically redeploy with new variables
+
+### 3. Credential Rotation Schedule
+
+For production environments, rotate credentials regularly:
+
+| Credential | Rotation Frequency | How to Rotate |
+|------------|-------------------|---------------|
+| `SLACK_STATE_SECRET` | Every 90 days | Generate new crypto random string |
+| `SLACK_CLIENT_SECRET` | Every 90 days | Regenerate in Slack app settings |
+| `MONGODB_URI` password | Every 90 days | Change in MongoDB Atlas |
+| `JIRA_API_TOKEN` | Every 90 days | Revoke old, create new in Atlassian |
+| `ANTHROPIC_API_KEY` | Every 90 days | Rotate in Claude dashboard |
+
+### 4. Security Checklist Before Production
+
+- [ ] `.env` file is in `.gitignore` (already done)
+- [ ] No secrets committed to git history
+- [ ] All environment variables set in Railway dashboard
+- [ ] State verification enabled (`stateVerification: true`)
+- [ ] Cryptographically secure state secret generated
+- [ ] MongoDB IP allowlist configured (if using IP restrictions)
+- [ ] Jira API token has minimal required permissions
+- [ ] Claude API key usage limits set
+- [ ] All team members aware of secrets management policy
+
+### 5. What to Do If Secrets Are Exposed
+
+If you accidentally commit secrets or they are otherwise exposed:
+
+1. **Immediately revoke the exposed credentials:**
+   - Slack: Regenerate client secret and bot token
+   - MongoDB: Change database password
+   - Jira: Revoke API token and create new one
+   - Claude: Rotate API key
+
+2. **Remove from git history** (if committed):
+   ```bash
+   # Use BFG Repo-Cleaner (recommended)
+   git clone --mirror https://github.com/YOUR-REPO.git
+   bfg --delete-files .env YOUR-REPO.git
+   cd YOUR-REPO.git
+   git reflog expire --expire=now --all
+   git gc --prune=now --aggressive
+   git push --force
+   ```
+
+3. **Update all environments** with new credentials
+
+4. **Monitor for suspicious activity** in Slack, MongoDB, Jira logs
+
+### 6. Additional Security Measures
+
+For enterprise deployments:
+
+- **Use a secrets manager:** HashiCorp Vault, AWS Secrets Manager, or Railway's built-in secrets
+- **Enable audit logging:** Track all access to credentials
+- **Implement least privilege:** Only grant necessary permissions
+- **Enable MFA:** On all accounts (Slack, MongoDB Atlas, Jira, Railway)
+- **Regular security audits:** Review access logs monthly
+- **Penetration testing:** Annual third-party security assessment
+
+For more details, see [SECURITY_ROADMAP.md](./SECURITY_ROADMAP.md).
+
+---
+
 ## 🔧 Local Development Setup
 
 ### Prerequisites

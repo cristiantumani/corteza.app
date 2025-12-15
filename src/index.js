@@ -191,7 +191,7 @@ async function startApp() {
     appConfig.installationStore = installationStore;
     appConfig.installerOptions = {
       directInstall: true, // Skip "Add to Slack" button, go straight to authorization
-      stateVerification: false, // Disable state verification for public distribution
+      stateVerification: true, // Enable CSRF protection via state parameter verification
     };
   } else {
     // Single-workspace mode - use bot token
