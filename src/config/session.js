@@ -1,5 +1,7 @@
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+// connect-mongo v6 is an ES module, need to handle both CommonJS and ES module exports
+const MongoStoreModule = require('connect-mongo');
+const MongoStore = MongoStoreModule.default || MongoStoreModule;
 const config = require('./environment');
 const crypto = require('crypto');
 
