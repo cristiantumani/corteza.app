@@ -109,10 +109,23 @@ async function startApp() {
     }
   }
 
+  // Create Express app first and add session middleware
+  // This ensures session is available to ALL routes, including Slack Bolt's OAuth routes
+  const express = require('express');
+  const expressApp = express();
+
+  // Add session middleware FIRST (before receiver creates OAuth routes)
+  const sessionMiddleware = createSessionMiddleware();
+  expressApp.use(sessionMiddleware);
+
+  // Add security headers to all responses
+  expressApp.use(addSecurityHeaders);
+
   // Create ExpressReceiver for custom Express middleware support
   const receiverConfig = {
     signingSecret: config.slack.signingSecret,
-    processBeforeResponse: true
+    processBeforeResponse: true,
+    app: expressApp // Pass our Express app with session middleware
   };
 
   // Add OAuth configuration if enabled
@@ -136,6 +149,7 @@ async function startApp() {
       callbackOptions: {
         success: async (installation, installOptions, req, res) => {
           // Create session after successful OAuth installation
+          // req.session is available because we added middleware to expressApp before creating receiver
           req.session.user = {
             user_id: installation.user.id,
             user_name: installation.user.name || 'User',
@@ -165,16 +179,6 @@ async function startApp() {
   }
 
   const receiver = new ExpressReceiver(receiverConfig);
-
-  // Get Express app from receiver
-  const expressApp = receiver.app;
-
-  // Add session middleware (must be before routes)
-  const sessionMiddleware = createSessionMiddleware();
-  expressApp.use(sessionMiddleware);
-
-  // Add security headers to all responses
-  expressApp.use(addSecurityHeaders);
 
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
