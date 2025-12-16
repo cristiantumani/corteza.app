@@ -1,6 +1,7 @@
 const { getDecisionsCollection } = require('../config/database');
 const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { validateEpicKey, validateTags } = require('../middleware/validation');
+const { generateLoginToken } = require('./dashboard-auth');
 
 /**
  * /decision command handler - Opens modal to log a decision
@@ -443,8 +444,6 @@ async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, comma
  */
 async function handleLoginCommand({ command, ack, respond }) {
   await ack();
-
-  const { generateLoginToken } = require('./dashboard-auth');
 
   try {
     // Get user and workspace info from command
