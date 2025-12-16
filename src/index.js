@@ -1,14 +1,11 @@
-const { App, ExpressReceiver } = require('@slack/bolt');
+const { App } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
-const { createSessionMiddleware } = require('./config/session');
-const { requireAuth, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
-const { handleLogin, handleCallback, handleMe, handleLogout } = require('./routes/auth');
 const {
   handleDecisionCommand,
   handleDecisionModalSubmit,
@@ -109,18 +106,80 @@ async function startApp() {
     }
   }
 
-  // Create ExpressReceiver for custom Express middleware support
-  const receiverConfig = {
+  // Initialize Slack app with OAuth or single-workspace mode
+  const appConfig = {
     signingSecret: config.slack.signingSecret,
-    processBeforeResponse: true
+    socketMode: false,
+    customRoutes: [
+      // Redirect root to dashboard
+      {
+        path: '/',
+        method: ['GET'],
+        handler: redirectToDashboard
+      },
+      // Health check endpoint
+      {
+        path: '/health',
+        method: ['GET'],
+        handler: healthCheck
+      },
+      // Dashboard
+      {
+        path: '/dashboard',
+        method: ['GET'],
+        handler: serveDashboard
+      },
+      // API: Get decisions with filtering
+      {
+        path: '/api/decisions',
+        method: ['GET'],
+        handler: getDecisions
+      },
+      // API: Update decision
+      {
+        path: '/api/decisions/:id',
+        method: ['PUT'],
+        handler: updateDecision
+      },
+      // API: Delete decision
+      {
+        path: '/api/decisions/:id',
+        method: ['DELETE'],
+        handler: deleteDecision
+      },
+      // API: Get statistics
+      {
+        path: '/api/stats',
+        method: ['GET'],
+        handler: getStats
+      },
+      // GDPR: Get workspace data info
+      {
+        path: '/api/gdpr/info',
+        method: ['GET'],
+        handler: getWorkspaceDataInfo
+      },
+      // GDPR: Export workspace data
+      {
+        path: '/api/gdpr/export',
+        method: ['GET'],
+        handler: exportWorkspaceData
+      },
+      // GDPR: Delete all workspace data
+      {
+        path: '/api/gdpr/delete-all',
+        method: ['DELETE'],
+        handler: deleteAllWorkspaceData
+      }
+    ]
   };
 
-  // Add OAuth configuration if enabled
+  // Add OAuth configuration if OAuth is enabled and installation store connected
   if (oauthEnabled && installationStore) {
-    receiverConfig.clientId = config.slack.clientId;
-    receiverConfig.clientSecret = config.slack.clientSecret;
-    receiverConfig.stateSecret = config.slack.stateSecret;
-    receiverConfig.scopes = [
+    appConfig.clientId = config.slack.clientId;
+    appConfig.clientSecret = config.slack.clientSecret;
+    appConfig.stateSecret = config.slack.stateSecret;
+    appConfig.scopes = [
       'commands',
       'files:read',
       'chat:write',
@@ -129,56 +188,13 @@ async function startApp() {
       'chat:write.public',
       'users:read.email'
     ];
-    receiverConfig.installationStore = installationStore;
-    receiverConfig.installerOptions = {
-      directInstall: true,
-      stateVerification: true // Enable CSRF protection
+    appConfig.installationStore = installationStore;
+    appConfig.installerOptions = {
+      directInstall: true, // Skip "Add to Slack" button, go straight to authorization
+      stateVerification: true, // Enable CSRF protection via state parameter verification
     };
-  }
-
-  const receiver = new ExpressReceiver(receiverConfig);
-
-  // Get Express app from receiver
-  const expressApp = receiver.app;
-
-  // Add session middleware (must be before routes)
-  const sessionMiddleware = createSessionMiddleware();
-  expressApp.use(sessionMiddleware);
-
-  // Add security headers to all responses
-  expressApp.use(addSecurityHeaders);
-
-  // Public routes (no authentication required)
-  expressApp.get('/', redirectToDashboard);
-  expressApp.get('/health', healthCheck);
-
-  // Authentication routes (public)
-  expressApp.get('/auth/login', handleLogin);
-  expressApp.get('/auth/callback', handleCallback);
-  expressApp.get('/auth/me', handleMe);
-  expressApp.get('/auth/logout', handleLogout);
-
-  // Protected routes - Dashboard (requires authentication)
-  expressApp.get('/dashboard', requireAuth, serveDashboard);
-
-  // Protected routes - API (requires authentication + workspace access)
-  expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);
-  expressApp.put('/api/decisions/:id', requireAuth, requireWorkspaceAccess, updateDecision);
-  expressApp.delete('/api/decisions/:id', requireAuth, requireWorkspaceAccess, deleteDecision);
-  expressApp.get('/api/stats', requireAuth, requireWorkspaceAccess, getStats);
-
-  // Protected routes - GDPR (requires authentication + workspace access)
-  expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
-  expressApp.get('/api/gdpr/export', requireAuth, requireWorkspaceAccess, exportWorkspaceData);
-  expressApp.delete('/api/gdpr/delete-all', requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
-
-  // Create Slack App with the custom receiver
-  const appConfig = {
-    receiver: receiver
-  };
-
-  // Add token for single-workspace mode (if not using OAuth)
-  if (!oauthEnabled && config.slack.token) {
+  } else {
+    // Single-workspace mode - use bot token
     appConfig.token = config.slack.token;
   }
 
@@ -219,18 +235,14 @@ async function startApp() {
   // Start the server FIRST so Railway can health check it
   await app.start(config.port);
   console.log(`⚡️ Bot running on port ${config.port}!`);
+  console.log(`📊 Dashboard: http://localhost:${config.port}/dashboard`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
-  console.log(`\n🔐 Authentication:`);
-  console.log(`   Login: http://localhost:${config.port}/auth/login`);
-  console.log(`   Logout: http://localhost:${config.port}/auth/logout`);
-  console.log(`\n📊 Dashboard (requires auth): http://localhost:${config.port}/dashboard`);
 
   if (oauthEnabled) {
-    console.log(`\n🔧 Slack App OAuth:`);
-    console.log(`   Install: http://localhost:${config.port}/slack/install`);
-    console.log(`   Redirect: http://localhost:${config.port}/slack/oauth_redirect`);
+    console.log(`🔐 OAuth install: http://localhost:${config.port}/slack/install`);
+    console.log(`🔄 OAuth redirect: http://localhost:${config.port}/slack/oauth_redirect`);
   } else {
-    console.log(`\nℹ️  Running in single-workspace mode`);
+    console.log(`ℹ️  Running in single-workspace mode`);
   }
 
   // Connect to MongoDB after server is listening
