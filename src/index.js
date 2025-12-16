@@ -3,12 +3,9 @@ const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
-const { createSessionMiddleware } = require('./config/session');
-const { requireAuth, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
-const { handleLogin, handleCallback, handleMe, handleLogout } = require('./routes/auth');
 const {
   handleDecisionCommand,
   handleDecisionModalSubmit,
@@ -25,49 +22,6 @@ const {
   handleConnectJiraAction,
   handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
-
-/**
- * Wraps a route handler with session and authentication middleware
- * @param {Function} handler - Original handler function
- * @param {Object} options - Options for middleware { auth: boolean, workspaceAccess: boolean }
- * @returns {Function} Wrapped handler
- */
-function withMiddleware(handler, options = {}) {
-  const sessionMiddleware = createSessionMiddleware();
-
-  return async (req, res) => {
-    // Apply security headers
-    addSecurityHeaders(req, res, () => {});
-
-    // Apply session middleware
-    sessionMiddleware(req, res, async () => {
-      // If authentication required, check it
-      if (options.auth) {
-        // Check if authenticated
-        if (!req.session || !req.session.user) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            error: 'Unauthorized',
-            message: 'Please log in at /auth/login to access this resource'
-          }));
-          return;
-        }
-
-        // If workspace access verification required
-        if (options.workspaceAccess) {
-          requireWorkspaceAccess(req, res, () => {
-            // Call original handler
-            handler(req, res);
-          });
-          return;
-        }
-      }
-
-      // Call original handler
-      await handler(req, res);
-    });
-  };
-}
 
 /**
  * Fix corrupted OAuth installation records
@@ -161,82 +115,61 @@ async function startApp() {
       {
         path: '/',
         method: ['GET'],
-        handler: withMiddleware(redirectToDashboard)
+        handler: redirectToDashboard
       },
-      // Health check endpoint (public - no auth needed)
+      // Health check endpoint
       {
         path: '/health',
         method: ['GET'],
         handler: healthCheck
       },
-      // Authentication routes (public)
-      {
-        path: '/auth/login',
-        method: ['GET'],
-        handler: withMiddleware(handleLogin)
-      },
-      {
-        path: '/auth/callback',
-        method: ['GET'],
-        handler: withMiddleware(handleCallback)
-      },
-      {
-        path: '/auth/me',
-        method: ['GET'],
-        handler: withMiddleware(handleMe)
-      },
-      {
-        path: '/auth/logout',
-        method: ['GET'],
-        handler: withMiddleware(handleLogout)
-      },
-      // Dashboard (requires auth)
+      // Dashboard
       {
         path: '/dashboard',
         method: ['GET'],
-        handler: withMiddleware(serveDashboard, { auth: true })
+        handler: serveDashboard
       },
-      // API: Get decisions with filtering (requires auth + workspace access)
+      // API: Get decisions with filtering
       {
         path: '/api/decisions',
         method: ['GET'],
-        handler: withMiddleware(getDecisions, { auth: true, workspaceAccess: true })
+        handler: getDecisions
       },
-      // API: Update decision (requires auth + workspace access)
+      // API: Update decision
       {
         path: '/api/decisions/:id',
         method: ['PUT'],
-        handler: withMiddleware(updateDecision, { auth: true, workspaceAccess: true })
+        handler: updateDecision
       },
-      // API: Delete decision (requires auth + workspace access)
+      // API: Delete decision
       {
         path: '/api/decisions/:id',
         method: ['DELETE'],
-        handler: withMiddleware(deleteDecision, { auth: true, workspaceAccess: true })
+        handler: deleteDecision
       },
-      // API: Get statistics (requires auth + workspace access)
+      // API: Get statistics
       {
         path: '/api/stats',
         method: ['GET'],
-        handler: withMiddleware(getStats, { auth: true, workspaceAccess: true })
+        handler: getStats
       },
-      // GDPR: Get workspace data info (requires auth + workspace access)
+      // GDPR: Get workspace data info
       {
         path: '/api/gdpr/info',
         method: ['GET'],
-        handler: withMiddleware(getWorkspaceDataInfo, { auth: true, workspaceAccess: true })
+        handler: getWorkspaceDataInfo
       },
-      // GDPR: Export workspace data (requires auth + workspace access)
+      // GDPR: Export workspace data
       {
         path: '/api/gdpr/export',
         method: ['GET'],
-        handler: withMiddleware(exportWorkspaceData, { auth: true, workspaceAccess: true })
+        handler: exportWorkspaceData
       },
-      // GDPR: Delete all workspace data (requires auth + workspace access)
+      // GDPR: Delete all workspace data
       {
         path: '/api/gdpr/delete-all',
         method: ['DELETE'],
-        handler: withMiddleware(deleteAllWorkspaceData, { auth: true, workspaceAccess: true })
+        handler: deleteAllWorkspaceData
       }
     ]
   };
@@ -302,18 +235,14 @@ async function startApp() {
   // Start the server FIRST so Railway can health check it
   await app.start(config.port);
   console.log(`⚡️ Bot running on port ${config.port}!`);
+  console.log(`📊 Dashboard: http://localhost:${config.port}/dashboard`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
-  console.log(`\n🔐 Authentication:`);
-  console.log(`   Login: http://localhost:${config.port}/auth/login`);
-  console.log(`   Logout: http://localhost:${config.port}/auth/logout`);
-  console.log(`\n📊 Dashboard (requires auth): http://localhost:${config.port}/dashboard`);
 
   if (oauthEnabled) {
-    console.log(`\n🔧 Slack App OAuth:`);
-    console.log(`   Install: http://localhost:${config.port}/slack/install`);
-    console.log(`   Redirect: http://localhost:${config.port}/slack/oauth_redirect`);
+    console.log(`🔐 OAuth install: http://localhost:${config.port}/slack/install`);
+    console.log(`🔄 OAuth redirect: http://localhost:${config.port}/slack/oauth_redirect`);
   } else {
-    console.log(`\nℹ️  Running in single-workspace mode`);
+    console.log(`ℹ️  Running in single-workspace mode`);
   }
 
   // Connect to MongoDB after server is listening

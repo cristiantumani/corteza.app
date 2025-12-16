@@ -949,52 +949,23 @@
   </div>
 
   <script>
-    // Authentication check - must be logged in to access dashboard
-    let currentUser = null;
-    let WORKSPACE_ID = null;
+    // Extract workspace_id from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const WORKSPACE_ID = urlParams.get('workspace_id');
 
-    // Check authentication status on page load
-    async function checkAuth() {
-      try {
-        const response = await fetch('/auth/me');
-        const data = await response.json();
-
-        if (!data.authenticated) {
-          // Not authenticated - redirect to login
-          window.location.href = '/auth/login?return=' + encodeURIComponent(window.location.pathname);
-          return false;
-        }
-
-        // Authenticated - store user info
-        currentUser = data.user;
-        WORKSPACE_ID = data.user.workspace_id;
-
-        // Update header with user info
-        updateHeader();
-
-        return true;
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        // Redirect to login on error
-        window.location.href = '/auth/login';
-        return false;
-      }
-    }
-
-    // Update header with user info and logout button
-    function updateHeader() {
-      const header = document.querySelector('header .container');
-      const h1 = header.querySelector('h1');
-
-      // Add user info next to title
-      h1.innerHTML += `
-        <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
-          ${currentUser.workspace_name} • ${currentUser.user_name}
-        </span>
-        <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
-          Logout →
-        </a>
+    // If no workspace_id provided, show error message
+    if (!WORKSPACE_ID) {
+      document.body.innerHTML = `
+        <div style="text-align:center; padding:50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px;">
+            <h1 style="font-size: 32px; margin-bottom: 20px; color: #1a202c;">⚠️ Workspace ID Required</h1>
+            <p style="font-size: 16px; color: #718096; margin-bottom: 15px;">Please access the dashboard with your workspace ID:</p>
+            <code style="background: #f8fafc; padding: 15px; border-radius: 8px; display: block; font-family: monospace; color: #667eea; font-size: 14px;">/dashboard?workspace_id=YOUR_WORKSPACE_ID</code>
+            <p style="font-size: 14px; color: #718096; margin-top: 20px;">You can find your workspace ID in Slack by typing <strong>/decision</strong> and checking the logs.</p>
+          </div>
+        </div>
       `;
+      throw new Error('No workspace_id provided');
     }
 
     let allDecisions = [];
@@ -1457,15 +1428,9 @@
       }
     }
 
-    // Initialize dashboard - check auth first, then load data
-    (async function init() {
-      const authenticated = await checkAuth();
-      if (authenticated) {
-        fetchStats();
-        fetchDecisions();
-        setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
-      }
-    })();
+    fetchStats();
+    fetchDecisions();
+    setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
   </script>
 </body>
 </html>

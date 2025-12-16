@@ -16,9 +16,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@slack/bolt": "^4.6.0",
-    "connect-mongo": "^6.0.0",
     "dotenv": "^17.2.3",
-    "express-session": "^1.18.2",
     "mammoth": "^1.11.0",
     "mongodb": "^7.0.0",
     "pdf-parse": "^2.4.5"
