@@ -5,7 +5,7 @@
 
 /**
  * Middleware to require authentication for API endpoints
- * Checks if user has valid session from Slack OAuth
+ * Returns JSON 401 error if not authenticated
  */
 function requireAuth(req, res, next) {
   // Check if user is authenticated (session exists)
@@ -14,6 +14,22 @@ function requireAuth(req, res, next) {
       error: 'Unauthorized',
       message: 'Authentication required. Please log in at /auth/login'
     });
+  }
+
+  // User is authenticated, continue to next middleware
+  next();
+}
+
+/**
+ * Middleware to require authentication for browser pages (HTML)
+ * Redirects to login page if not authenticated
+ */
+function requireAuthBrowser(req, res, next) {
+  // Check if user is authenticated (session exists)
+  if (!req.session || !req.session.user) {
+    // Redirect to login with return URL
+    const returnUrl = encodeURIComponent(req.originalUrl);
+    return res.redirect(`/auth/login?return=${returnUrl}`);
   }
 
   // User is authenticated, continue to next middleware
@@ -76,6 +92,7 @@ function addSecurityHeaders(req, res, next) {
 
 module.exports = {
   requireAuth,
+  requireAuthBrowser,
   requireWorkspaceAccess,
   addSecurityHeaders
 };

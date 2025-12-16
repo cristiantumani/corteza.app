@@ -4,7 +4,7 @@ const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
-const { requireAuth, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
+const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
@@ -158,8 +158,8 @@ async function startApp() {
   expressApp.get('/auth/me', handleMe);
   expressApp.get('/auth/logout', handleLogout);
 
-  // Protected routes - Dashboard (requires authentication)
-  expressApp.get('/dashboard', requireAuth, serveDashboard);
+  // Protected routes - Dashboard (requires authentication, redirects to login)
+  expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
 
   // Protected routes - API (requires authentication + workspace access)
   expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);
