@@ -508,7 +508,7 @@ async function handleApproveAction({ ack, body, client }) {
       epic_key: suggestion.epic_key,
       jira_data: jiraData,
       tags: suggestion.tags,
-      alternatives: `This decision was taken during "${meetingTitle}"\n\nAI-extracted with ${Math.round(suggestion.confidence_score * 100)}% confidence`,
+      alternatives: `This decision was taken during "${meetingTitle}"\n\n${suggestion.context ? `Context: ${suggestion.context}\n\n` : ''}AI-extracted with ${Math.round(suggestion.confidence_score * 100)}% confidence`,
       creator: userName,
       user_id: body.user.id,
       channel_id: body.channel.id,
@@ -815,6 +815,9 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
 
     // Build alternatives field
     let alternativesText = `This decision was taken during "${meetingTitle}"\n\n`;
+    if (suggestion.context) {
+      alternativesText += `Context: ${suggestion.context}\n\n`;
+    }
     if (editedData.alternatives) {
       alternativesText += `${editedData.alternatives}\n\n`;
     }
@@ -1210,7 +1213,7 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
       epic_key: epicKey,
       jira_data: jiraData,
       tags: suggestion.tags,
-      alternatives: `This decision was taken during "${meetingTitle}"\n\nAI-extracted and connected to Jira by ${userName}`,
+      alternatives: `This decision was taken during "${meetingTitle}"\n\n${suggestion.context ? `Context: ${suggestion.context}\n\n` : ''}AI-extracted and connected to Jira by ${userName}`,
       creator: userName,
       user_id: metadata.user_id,
       channel_id: metadata.channel_id,
