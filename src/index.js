@@ -28,57 +28,8 @@ const {
   handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
 
-/**
- * Fix corrupted OAuth installation records
- * Runs once at startup to clean up any null team_id records
- */
-async function fixOAuthDatabase() {
-  console.log('🔧 Checking for corrupted OAuth records...');
-
-  const client = new MongoClient(config.mongodb.uri);
-
-  try {
-    await client.connect();
-    const db = client.db('decision-logger');
-    const collection = db.collection('slack_installations');
-
-    // Drop ALL old indexes (both team.id and team_id if they exist)
-    try {
-      await collection.dropIndex('team.id_1');
-      console.log('✅ Dropped old team.id_1 index');
-    } catch (error) {
-      // Index doesn't exist, that's fine
-    }
-
-    try {
-      await collection.dropIndex('team_id_1');
-      console.log('✅ Dropped old team_id_1 index');
-    } catch (error) {
-      // Index doesn't exist, that's fine
-    }
-
-    // Delete corrupted records (both old 'team.id' format and new 'team_id' format)
-    const result = await collection.deleteMany({
-      $or: [
-        { team_id: null },
-        { team_id: { $exists: false } },
-        { 'team.id': null },
-        { 'team.id': { $exists: false } }
-      ]
-    });
-
-    if (result.deletedCount > 0) {
-      console.log(`✅ Cleaned up ${result.deletedCount} corrupted record(s)`);
-    }
-
-    console.log('✅ OAuth database cleanup complete');
-
-  } catch (error) {
-    console.warn('⚠️  Could not fix OAuth database:', error.message);
-  } finally {
-    await client.close();
-  }
-}
+// fixOAuthDatabase() function removed - was a one-time fix that's no longer needed
+// Running it on every startup was causing installation store issues
 
 /**
  * Main application entry point
@@ -86,11 +37,6 @@ async function fixOAuthDatabase() {
 async function startApp() {
   // Validate environment variables
   config.validateEnvironment();
-
-  // Fix OAuth database if in OAuth mode
-  if (config.slack.useOAuth) {
-    await fixOAuthDatabase();
-  }
 
   // Initialize installation store for OAuth (if using OAuth)
   let installationStore;
