@@ -109,23 +109,23 @@ async function startApp() {
     }
   }
 
-  // Create Express app first and add session middleware
-  // This ensures session is available to ALL routes, including Slack Bolt's OAuth routes
-  const express = require('express');
-  const expressApp = express();
-
-  // Add session middleware FIRST (before receiver creates OAuth routes)
+  // Prepare session middleware
   const sessionMiddleware = createSessionMiddleware();
-  expressApp.use(sessionMiddleware);
 
-  // Add security headers to all responses
-  expressApp.use(addSecurityHeaders);
-
-  // Create ExpressReceiver for custom Express middleware support
+  // Create ExpressReceiver with custom routes to add session middleware early
   const receiverConfig = {
     signingSecret: config.slack.signingSecret,
     processBeforeResponse: true,
-    app: expressApp // Pass our Express app with session middleware
+    customRoutes: [
+      {
+        path: '/',
+        method: ['GET', 'POST'],
+        handler: (req, res, next) => {
+          // Apply session middleware to all routes including OAuth
+          sessionMiddleware(req, res, next);
+        }
+      }
+    ]
   };
 
   // Add OAuth configuration if enabled
@@ -149,7 +149,13 @@ async function startApp() {
       callbackOptions: {
         success: async (installation, installOptions, req, res) => {
           // Create session after successful OAuth installation
-          // req.session is available because we added middleware to expressApp before creating receiver
+          // req.session should be available via customRoutes middleware
+          if (!req.session) {
+            console.error('❌ Session not available in OAuth callback!');
+            res.send('<html><body>Session error. Please try <a href="/dashboard">accessing dashboard</a></body></html>');
+            return;
+          }
+
           req.session.user = {
             user_id: installation.user.id,
             user_name: installation.user.name || 'User',
@@ -179,6 +185,15 @@ async function startApp() {
   }
 
   const receiver = new ExpressReceiver(receiverConfig);
+
+  // Get Express app from receiver
+  const expressApp = receiver.app;
+
+  // Trust Railway proxy (required for OAuth redirect_uri generation)
+  expressApp.set('trust proxy', true);
+
+  // Add security headers to all responses (after session middleware in customRoutes)
+  expressApp.use(addSecurityHeaders);
 
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
