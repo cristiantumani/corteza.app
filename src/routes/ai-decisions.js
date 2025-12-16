@@ -746,8 +746,10 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
 
   try {
     console.log('>>> Edit modal submit started');
+    const workspace_id = body.team.id;
     const metadata = JSON.parse(view.private_metadata);
     const values = view.state.values;
+    console.log('>>> Workspace ID:', workspace_id);
     console.log('>>> Metadata:', metadata);
 
     const editedData = {
@@ -769,6 +771,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     // Fetch original suggestion
     const suggestionsCollection = getAISuggestionsCollection();
     const suggestion = await suggestionsCollection.findOne({
+      workspace_id: workspace_id,
       suggestion_id: metadata.suggestion_id
     });
     console.log('>>> Suggestion found:', !!suggestion);
