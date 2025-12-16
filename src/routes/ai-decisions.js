@@ -16,10 +16,7 @@ const {
  * Handles file upload events from Slack
  * Posts an ephemeral message asking if user wants to extract decisions
  */
-async function handleFileUpload({ event, client, say, context, ack }) {
-  // Acknowledge immediately to avoid timeout warning
-  await ack();
-
+async function handleFileUpload({ event, client, say, context }) {
   try {
     // Extract workspace_id from context (Slack Bolt provides team_id in context)
     const workspace_id = context.teamId;
