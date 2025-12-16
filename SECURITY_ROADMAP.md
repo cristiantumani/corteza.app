@@ -1,7 +1,7 @@
 # Security Roadmap - Decision Logger Bot
 
-**Last Updated:** 2025-12-15
-**Status:** Pre-GA Security Hardening
+**Last Updated:** 2025-12-16
+**Status:** Pre-GA Security Hardening - Day 2 Complete
 **Target:** Enterprise Security Team Approval
 
 ---
@@ -10,15 +10,22 @@
 
 This document outlines the security vulnerabilities identified in the Decision Logger Slack Bot and the remediation plan before General Availability (GA). The application is currently in **BETA** and undergoing security hardening.
 
-**Current Status:** 37 vulnerabilities identified (3 CRITICAL, 15 HIGH, 19 MEDIUM)
-**Target Completion:** 3 weeks before GA launch
+**Original Status:** 37 vulnerabilities identified (3 CRITICAL, 15 HIGH, 19 MEDIUM)
+**Current Status:** 11 vulnerabilities RESOLVED, 26 remaining
+**Completion:** Phase 1 (CRITICAL) - 75% complete (Day 1-2 done)
+**Target Completion:** 2 weeks before GA launch
 **Priority:** Address all CRITICAL and HIGH severity issues before enterprise deployment
+
+### Progress Summary
+- ✅ **Day 1 Complete:** Secrets management, CSRF protection
+- ✅ **Day 2 Complete:** API authentication, session management, workspace isolation
+- 🔄 **Day 3 In Progress:** XSS vulnerabilities, input sanitization
 
 ---
 
 ## Phase 1: CRITICAL Issues (Week 1) - MUST FIX BEFORE DEMO
 
-### 1.1 Secrets Management ⚠️ CRITICAL
+### 1.1 Secrets Management ✅ COMPLETED (Day 1)
 **Issue:** Production credentials hardcoded in `.env` file committed to git history
 - Slack bot token exposed
 - MongoDB credentials exposed
@@ -28,19 +35,22 @@ This document outlines the security vulnerabilities identified in the Decision L
 **Risk:** Complete infrastructure compromise
 
 **Remediation:**
-- [ ] Immediately revoke ALL exposed credentials (Slack, MongoDB, Jira)
-- [ ] Generate new credentials and update in production
-- [ ] Remove `.env` from git history using `git filter-branch` or BFG Repo-Cleaner
-- [ ] Migrate to secrets management system (Railway environment variables or HashiCorp Vault)
-- [ ] Add `.env.example` template without actual secrets
-- [ ] Verify `.gitignore` properly excludes `.env`
-- [ ] Implement automatic secret scanning in CI/CD (Trufflehog, GitLeaks)
+- ⚠️ **User Action Required:** Revoke ALL exposed credentials (Slack, MongoDB, Jira)
+- ⚠️ **User Action Required:** Generate new credentials and update in Railway
+- ✅ Verified `.env` was never committed to git history (git log --all -- .env shows clean)
+- ✅ All secrets stored in Railway environment variables
+- ✅ Added `.env.example` template without actual secrets
+- ✅ Verified `.gitignore` properly excludes `.env`
+- ✅ Added comprehensive security documentation to README.md
+- ✅ Implemented cryptographically secure random generation for state secrets
+- 📝 **TODO:** Implement automatic secret scanning in CI/CD (post-GA)
 
-**Timeline:** IMMEDIATE (Day 1)
+**Status:** ✅ **COMPLETE** (except credential rotation - user action required)
+**Completed:** 2025-12-15
 
 ---
 
-### 1.2 API Authentication ⚠️ CRITICAL
+### 1.2 API Authentication ✅ COMPLETED (Day 2)
 **Issue:** All API endpoints completely unauthenticated - anyone can access, modify, or delete data
 
 **Affected Endpoints:**
@@ -51,94 +61,112 @@ This document outlines the security vulnerabilities identified in the Decision L
 - `GET /api/stats` - View statistics
 - `GET /api/gdpr/export` - Export all data
 
-**Current "Security":** Only workspace_id parameter (NOT secret, users know their own ID)
+**Risk:** Any attacker can view, modify, or delete workspace data
 
-**Risk:** Any attacker can:
-- View all decisions from any workspace
-- Delete all workspace data
-- Modify decision records
-- Export sensitive data
+**Implementation: Token-Based Authentication via Slack Command**
 
-**Remediation Plan:**
+✅ **Chosen Approach:** Custom token-based authentication using `/login` Slack command
+- Users type `/login` in Slack to get secure one-time login link
+- One-time tokens expire after 5 minutes
+- Session stored in MongoDB with 7-day expiration
+- Workspace isolation enforced via `requireWorkspaceAccess` middleware
 
-**Option A: Slack OAuth for Dashboard (RECOMMENDED)**
-- Add "Sign in with Slack" button to dashboard
-- Use Slack OAuth to authenticate users
-- Store session in MongoDB or Redis
-- Verify user is member of requested workspace
-- Add middleware to protect all `/api/*` routes
+**Completed Tasks:**
+- ✅ Created `requireAuth` middleware for API endpoints (returns 401 JSON)
+- ✅ Created `requireAuthBrowser` middleware for dashboard (redirects to login)
+- ✅ Created `requireWorkspaceAccess` middleware for workspace isolation
+- ✅ Implemented MongoDB session storage with `express-session` and `connect-mongo`
+- ✅ Protected ALL `/api/*` routes with authentication
+- ✅ Protected `/dashboard` route with authentication
+- ✅ Implemented `/login` Slack command for token generation
+- ✅ Created token validation endpoint `/auth/token`
+- ✅ Added proper HTTP 401/403 responses
+- ✅ Updated dashboard authentication flow
+- ✅ Configured secure session cookies (httpOnly, sameSite: 'lax', secure in production)
+- ✅ Added security headers to all responses
 
-**Option B: API Key per Workspace**
-- Generate unique API key for each workspace on installation
-- Store hashed API key in MongoDB
-- Require `X-API-Key` header on all API requests
-- Rotate keys periodically (90 days)
+**Security Features:**
+- ✅ One-time use tokens (deleted after validation)
+- ✅ 5-minute token expiration
+- ✅ Cryptographically secure token generation (crypto.randomBytes(32))
+- ✅ Workspace-level data isolation
+- ✅ Session expiration (7 days)
+- ✅ Secure cookie settings
+- ✅ Trust proxy configuration for Railway deployment
 
-**Option C: JWT Tokens**
-- Issue JWT token after Slack authentication
-- Include workspace_id and user_id in token claims
-- Validate token signature on every request
-- Short expiration (1 hour) with refresh token mechanism
-
-**Implementation Tasks:**
-- [ ] Choose authentication method (recommend Option A)
-- [ ] Create authentication middleware
-- [ ] Add session storage (MongoDB or Redis)
-- [ ] Protect all API routes with auth middleware
-- [ ] Add proper HTTP 401/403 responses
-- [ ] Update dashboard to handle authentication flow
-- [ ] Test with multiple workspaces
-
-**Timeline:** Week 1 (5 days)
+**Status:** ✅ **COMPLETE**
+**Completed:** 2025-12-16
 
 ---
 
-### 1.3 CSRF Protection ⚠️ CRITICAL
+### 1.3 CSRF Protection ✅ COMPLETED (Day 1)
 **Issue:** OAuth state verification DISABLED - vulnerable to account hijacking
 
-**Current Code:**
+**Previous Code:**
 ```javascript
-stateVerification: false, // Disable state verification for public distribution
-stateSecret: process.env.SLACK_STATE_SECRET || 'my-state-secret-' + Math.random()
+stateVerification: false, // VULNERABLE
+stateSecret: process.env.SLACK_STATE_SECRET || 'my-state-secret-' + Math.random() // WEAK
 ```
 
-**Risk:** Attackers can force users to authorize malicious workspaces
+**Risk:** Attackers could force users to authorize malicious workspaces
 
-**Remediation:**
-- [ ] ENABLE state verification: `stateVerification: true`
-- [ ] Use cryptographically secure state secret: `crypto.randomBytes(32).toString('hex')`
-- [ ] Store state secret in environment variables (NOT code)
-- [ ] Never fall back to weak random generation
-- [ ] Add state timeout (5 minutes max)
+**Remediation Completed:**
+- ✅ ENABLED state verification: `stateVerification: true`
+- ✅ Implemented cryptographically secure state secret generation:
+  ```javascript
+  stateSecret: process.env.SLACK_STATE_SECRET || (() => {
+    const crypto = require('crypto');
+    const generated = crypto.randomBytes(32).toString('hex');
+    console.warn('⚠️  SLACK_STATE_SECRET not set. Generated temporary secret');
+    return generated;
+  })()
+  ```
+- ✅ State secret stored in Railway environment variables
+- ✅ Added warning when falling back to generated secret
+- ✅ Documented secret generation in README.md
+- ✅ Slack Bolt handles state timeout automatically (default: 10 minutes)
 
-**Timeline:** Day 2
+**Status:** ✅ **COMPLETE**
+**Completed:** 2025-12-15
 
 ---
 
-### 1.4 GDPR Deletion Verification ⚠️ CRITICAL
+### 1.4 GDPR Deletion Verification 🔄 IN PROGRESS
 **Issue:** Anyone with workspace_id can permanently delete ALL workspace data - no verification
 
-**Current Code:**
+**Previous Code:**
 ```javascript
 if (query.confirm !== 'DELETE_ALL_DATA') {
   res.writeHead(400, ...);
   return;
 }
-// Proceed with deletion - NO AUTHENTICATION CHECK
+// Proceed with deletion - NO AUTHENTICATION CHECK (VULNERABLE)
 ```
 
 **Risk:** Accidental or malicious permanent data loss
 
-**Remediation:**
-- [ ] Require authentication (see 1.2) before deletion
-- [ ] Add email confirmation step (send verification code)
-- [ ] Require workspace admin role (not just any member)
-- [ ] Add 24-hour grace period (soft delete first)
-- [ ] Create audit log entry with user_id, timestamp, IP
-- [ ] Add TOTP/2FA for deletion operations
-- [ ] Implement deletion job queue (recoverable for 7 days)
+**Remediation Progress:**
+- ✅ **COMPLETED:** Require authentication before deletion (via requireAuth + requireWorkspaceAccess)
+- ✅ **COMPLETED:** Workspace isolation (users can only delete their own workspace)
+- ✅ **COMPLETED:** Session tracking (user_id and timestamp available in session)
+- 📝 **TODO:** Add email confirmation step (send verification code)
+- 📝 **TODO:** Require workspace admin role (not just any member)
+- 📝 **TODO:** Add 24-hour grace period (soft delete first)
+- 📝 **TODO:** Create audit log entry with user_id, timestamp, IP
+- 📝 **TODO:** Add TOTP/2FA for deletion operations (post-GA)
+- 📝 **TODO:** Implement deletion job queue (recoverable for 7 days)
 
-**Timeline:** Week 1 (3 days)
+**Current Security:**
+- ✅ Authentication required (must be logged in)
+- ✅ Workspace verification (can only delete own workspace)
+- ✅ Confirmation parameter required (`confirm=DELETE_ALL_DATA`)
+- ⚠️ No email verification
+- ⚠️ No admin role check
+- ⚠️ No grace period (immediate deletion)
+- ⚠️ No audit logging
+
+**Status:** 🔄 **PARTIALLY COMPLETE** - Authentication added, verification steps pending
+**Next Steps:** Add email confirmation and admin role verification (Week 2)
 
 ---
 
@@ -181,52 +209,44 @@ element.innerHTML = DOMPurify.sanitize(decision.alternatives.replace(/\n/g, '<br
 
 ---
 
-### 2.2 Security Headers 🔴 HIGH
+### 2.2 Security Headers ✅ COMPLETED (Day 2)
 **Issue:** Missing HTTP security headers - vulnerable to client-side attacks
 
-**Current Response:**
+**Previous Response:**
 ```javascript
-res.writeHead(200, { 'Content-Type': 'text/html' });
+res.writeHead(200, { 'Content-Type': 'text/html' }); // NO SECURITY HEADERS
 ```
 
-**Missing Headers:**
-- `Content-Security-Policy` - Allows any script execution
-- `X-Content-Type-Options: nosniff` - MIME sniffing attacks
-- `X-Frame-Options: DENY` - Clickjacking
-- `X-XSS-Protection: 1; mode=block` - XSS filtering
-- `Strict-Transport-Security` - HTTPS enforcement
-- `Referrer-Policy: no-referrer` - Privacy protection
-- `Permissions-Policy` - Feature restrictions
+**Remediation Completed:**
+- ✅ Created `addSecurityHeaders` middleware in `src/middleware/auth.js`
+- ✅ Applied to all routes via Express app.use()
+- ✅ Added all critical security headers:
+  - ✅ `X-Content-Type-Options: nosniff` - Prevents MIME sniffing attacks
+  - ✅ `X-Frame-Options: DENY` - Prevents clickjacking
+  - ✅ `X-XSS-Protection: 1; mode=block` - Enables XSS filtering
+  - ✅ `Referrer-Policy: no-referrer` - Privacy protection
+  - ✅ `Strict-Transport-Security` - HTTPS enforcement (production only)
+- 📝 **TODO:** Implement Content-Security-Policy (CSP) - requires inline script refactoring
+- 📝 **TODO:** Add Permissions-Policy for feature restrictions
 
-**Remediation:**
-- [ ] Install `helmet` npm package
-- [ ] Configure CSP to only allow same-origin scripts
-- [ ] Add all security headers to responses
-- [ ] Test with securityheaders.com
-- [ ] Implement in all route handlers
-
-**Example Implementation:**
+**Implementation:**
 ```javascript
-const helmet = require('helmet');
+function addSecurityHeaders(req, res, next) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'no-referrer');
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-}));
+
+  next();
+}
 ```
 
-**Timeline:** Week 2 (1 day)
+**Status:** ✅ **COMPLETE** (CSP pending - requires Day 3 XSS fixes)
+**Completed:** 2025-12-16
 
 ---
 
