@@ -1,18 +1,8 @@
 /**
- * Simplified authentication using bot installation OAuth
- * No separate user OAuth needed - reuses existing bot OAuth flow
+ * Authentication using one-time login tokens from /login Slack command
+ * Token-based auth is handled in dashboard-auth.js
+ * This file only handles /auth/me and /auth/logout
  */
-
-/**
- * Initiates Slack OAuth flow for dashboard authentication
- * Redirects to bot installation which creates session on success
- * GET /auth/login
- */
-function handleLogin(req, res) {
-  // Simply redirect to bot installation OAuth
-  // The success callback in src/index.js will create the session
-  res.redirect('/slack/install');
-}
 
 /**
  * Returns current authenticated user info
@@ -53,7 +43,6 @@ function handleLogout(req, res) {
 }
 
 module.exports = {
-  handleLogin,
   handleMe,
   handleLogout
 };

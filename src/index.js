@@ -8,11 +8,13 @@ const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHead
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
 const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
-const { handleLogin, handleMe, handleLogout } = require('./routes/auth');
+const { handleMe, handleLogout } = require('./routes/auth');
+const { handleLoginPage, handleTokenLogin } = require('./routes/dashboard-auth');
 const {
   handleDecisionCommand,
   handleDecisionModalSubmit,
-  handleDecisionsCommand
+  handleDecisionsCommand,
+  handleLoginCommand
 } = require('./routes/slack');
 const {
   handleFileUpload,
@@ -109,23 +111,10 @@ async function startApp() {
     }
   }
 
-  // Prepare session middleware
-  const sessionMiddleware = createSessionMiddleware();
-
-  // Create ExpressReceiver with custom routes to add session middleware early
+  // Create ExpressReceiver for Slack Bot
   const receiverConfig = {
     signingSecret: config.slack.signingSecret,
-    processBeforeResponse: true,
-    customRoutes: [
-      {
-        path: '/',
-        method: ['GET', 'POST'],
-        handler: (req, res, next) => {
-          // Apply session middleware to all routes including OAuth
-          sessionMiddleware(req, res, next);
-        }
-      }
-    ]
+    processBeforeResponse: true
   };
 
   // Add OAuth configuration if enabled
@@ -145,42 +134,9 @@ async function startApp() {
     receiverConfig.installationStore = installationStore;
     receiverConfig.installerOptions = {
       directInstall: true,
-      stateVerification: true, // Enable CSRF protection
-      callbackOptions: {
-        success: async (installation, installOptions, req, res) => {
-          // Create session after successful OAuth installation
-          // req.session should be available via customRoutes middleware
-          if (!req.session) {
-            console.error('❌ Session not available in OAuth callback!');
-            res.send('<html><body>Session error. Please try <a href="/dashboard">accessing dashboard</a></body></html>');
-            return;
-          }
-
-          req.session.user = {
-            user_id: installation.user.id,
-            user_name: installation.user.name || 'User',
-            workspace_id: installation.team.id,
-            workspace_name: installation.team.name || 'Workspace',
-            authenticated_at: new Date().toISOString()
-          };
-
-          // Save session and redirect to dashboard
-          req.session.save((err) => {
-            if (err) {
-              console.error('❌ Failed to save session after OAuth:', err);
-              res.send('<html><body>Authentication successful, but failed to create session. Please try accessing <a href="/dashboard">/dashboard</a></body></html>');
-              return;
-            }
-
-            console.log(`✅ User authenticated via bot OAuth: ${installation.user.name || installation.user.id} from workspace ${installation.team.name || installation.team.id}`);
-            res.redirect('/dashboard');
-          });
-        },
-        failure: (error, installOptions, req, res) => {
-          console.error('❌ OAuth installation failed:', error);
-          res.send('<html><body>Installation failed. Please try again at <a href="/slack/install">/slack/install</a></body></html>');
-        }
-      }
+      stateVerification: true // Enable CSRF protection
+      // No callbackOptions - let OAuth complete normally
+      // Authentication will be handled separately via /auth/login
     };
   }
 
@@ -192,7 +148,11 @@ async function startApp() {
   // Trust Railway proxy (required for OAuth redirect_uri generation)
   expressApp.set('trust proxy', true);
 
-  // Add security headers to all responses (after session middleware in customRoutes)
+  // Add session middleware to all routes
+  const sessionMiddleware = createSessionMiddleware();
+  expressApp.use(sessionMiddleware);
+
+  // Add security headers to all responses
   expressApp.use(addSecurityHeaders);
 
   // Public routes (no authentication required)
@@ -200,7 +160,8 @@ async function startApp() {
   expressApp.get('/health', healthCheck);
 
   // Authentication routes (public)
-  expressApp.get('/auth/login', handleLogin);
+  expressApp.get('/auth/login', handleLoginPage); // Shows instructions to use /login in Slack
+  expressApp.get('/auth/token', handleTokenLogin); // Validates token and creates session
   expressApp.get('/auth/me', handleMe);
   expressApp.get('/auth/logout', handleLogout);
 
@@ -249,6 +210,7 @@ async function startApp() {
   // Register Slack command handlers
   app.command('/decision', handleDecisionCommand);
   app.command('/decisions', handleDecisionsCommand);
+  app.command('/login', handleLoginCommand);
   app.view('decision_modal', handleDecisionModalSubmit);
 
   // Register AI decision extraction handlers

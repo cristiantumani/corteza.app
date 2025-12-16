@@ -437,8 +437,51 @@ async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, comma
   await say({ blocks });
 }
 
+/**
+ * Handles /login command - generates dashboard login link
+ * POST /login
+ */
+async function handleLoginCommand({ command, ack, respond }) {
+  await ack();
+
+  const { generateLoginToken } = require('./dashboard-auth');
+
+  try {
+    // Get user and workspace info from command
+    const userId = command.user_id;
+    const userName = command.user_name;
+    const workspaceId = command.team_id;
+    const workspaceDomain = command.team_domain;
+
+    // Generate one-time login token
+    const token = generateLoginToken(userId, userName, workspaceId, workspaceDomain);
+
+    // Build login URL
+    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : 'http://localhost:3000';
+    const loginUrl = `${baseUrl}/auth/token?token=${token}`;
+
+    // Send ephemeral message with login link
+    await respond({
+      response_type: 'ephemeral', // Only visible to user who ran command
+      text: `🔐 *Dashboard Login Link*\n\nClick the link below to access the Decision Logger dashboard:\n\n<${loginUrl}|Login to Dashboard>\n\n_This link expires in 5 minutes and can only be used once._`
+    });
+
+    console.log(`✅ Generated login token for ${userName} (${workspaceId})`);
+
+  } catch (error) {
+    console.error('❌ Error generating login token:', error);
+    await respond({
+      response_type: 'ephemeral',
+      text: '❌ Failed to generate login link. Please try again.'
+    });
+  }
+}
+
 module.exports = {
   handleDecisionCommand,
   handleDecisionModalSubmit,
-  handleDecisionsCommand
+  handleDecisionsCommand,
+  handleLoginCommand
 };
