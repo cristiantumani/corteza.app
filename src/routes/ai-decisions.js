@@ -950,6 +950,7 @@ async function updateMessageButtons(client, body, statusText) {
 
     const updatedBlocks = originalBlocks.map(block => {
       if (block.block_id === actionBlockId) {
+        // Replace this action block with status text
         return {
           type: 'section',
           text: {
@@ -958,6 +959,31 @@ async function updateMessageButtons(client, body, statusText) {
           }
         };
       }
+
+      // Fix HTML entity re-encoding for other action blocks
+      if (block.type === 'actions' && block.elements) {
+        return {
+          ...block,
+          elements: block.elements.map(element => {
+            if (element.type === 'button') {
+              return {
+                ...element,
+                text: {
+                  type: 'plain_text',
+                  // Reconstruct text to avoid HTML entity re-encoding
+                  text: element.text.text
+                    .replace(/&amp;/g, '&')  // Decode &amp; back to &
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                }
+              };
+            }
+            return element;
+          })
+        };
+      }
+
       return block;
     });
 
@@ -995,6 +1021,7 @@ async function updateMessageFromModal(client, channelId, messageTs, suggestionId
 
     const updatedBlocks = originalBlocks.map(block => {
       if (block.block_id === actionBlockId) {
+        // Replace this action block with status text
         return {
           type: 'section',
           text: {
@@ -1003,6 +1030,31 @@ async function updateMessageFromModal(client, channelId, messageTs, suggestionId
           }
         };
       }
+
+      // Fix HTML entity re-encoding for other action blocks
+      if (block.type === 'actions' && block.elements) {
+        return {
+          ...block,
+          elements: block.elements.map(element => {
+            if (element.type === 'button') {
+              return {
+                ...element,
+                text: {
+                  type: 'plain_text',
+                  // Reconstruct text to avoid HTML entity re-encoding
+                  text: element.text.text
+                    .replace(/&amp;/g, '&')  // Decode &amp; back to &
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                }
+              };
+            }
+            return element;
+          })
+        };
+      }
+
       return block;
     });
 
