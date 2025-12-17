@@ -11,6 +11,7 @@ const {
   validateUploadedFile,
   validateTranscriptContent
 } = require('../middleware/ai-validation');
+const { createDecisionInNotion } = require('../services/notion');
 
 /**
  * Handles file upload events from Slack
@@ -517,6 +518,11 @@ async function handleApproveAction({ ack, body, client }) {
 
     await decisionsCollection.insertOne(decision);
 
+    // Sync to Notion (non-blocking)
+    createDecisionInNotion(decision).catch(err => {
+      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
+    });
+
     // Update suggestion status
     await suggestionsCollection.updateOne(
       { workspace_id: workspace_id, suggestion_id: suggestionId },
@@ -841,6 +847,11 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     console.log('>>> Inserting decision...');
     await decisionsCollection.insertOne(decision);
     console.log('✅ Decision inserted:', nextId);
+
+    // Sync to Notion (non-blocking)
+    createDecisionInNotion(decision).catch(err => {
+      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
+    });
 
     // Add Jira comment if requested
     if (addComment && editedData.epic_key && jiraData) {
@@ -1223,6 +1234,11 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     console.log('>>> Inserting decision...');
     await decisionsCollection.insertOne(decision);
     console.log(`✅ Decision #${nextId} created`);
+
+    // Sync to Notion (non-blocking)
+    createDecisionInNotion(decision).catch(err => {
+      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
+    });
 
     // Add Jira comment (only if Jira data was fetched successfully)
     let jiraCommentSuccess = false;

@@ -39,6 +39,16 @@ function validateEnvironment() {
     console.warn('⚠️  ANTHROPIC_API_KEY not set. AI decision extraction will be disabled.');
   }
 
+  // Check optional Notion config (all or nothing)
+  const notionVars = ['NOTION_API_KEY', 'NOTION_DATABASE_ID'];
+  const notionSet = notionVars.filter(key => process.env[key]);
+
+  if (notionSet.length > 0 && notionSet.length < notionVars.length) {
+    console.warn('⚠️  Partial Notion configuration detected. Both variables required: NOTION_API_KEY, NOTION_DATABASE_ID');
+  } else if (notionSet.length === notionVars.length) {
+    console.log('✅ Notion integration configured');
+  }
+
   console.log('✅ Environment variables validated');
 }
 
@@ -75,5 +85,10 @@ module.exports = {
     model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
     maxTokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '4096'),
     isConfigured: !!process.env.ANTHROPIC_API_KEY
+  },
+  notion: {
+    apiKey: process.env.NOTION_API_KEY,
+    databaseId: process.env.NOTION_DATABASE_ID,
+    isConfigured: !!(process.env.NOTION_API_KEY && process.env.NOTION_DATABASE_ID)
   }
 };

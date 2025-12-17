@@ -27,6 +27,7 @@ const {
   handleConnectJiraAction,
   handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
+const { initializeNotion } = require('./services/notion');
 
 // fixOAuthDatabase() function removed - was a one-time fix that's no longer needed
 // Running it on every startup was causing installation store issues
@@ -196,6 +197,9 @@ async function startApp() {
     console.error('❌ MongoDB connection error during startup:', error.message);
     console.error('⚠️  App is running but database operations will fail');
   }
+
+  // Initialize Notion integration (optional)
+  initializeNotion();
 }
 
 // Start the application
