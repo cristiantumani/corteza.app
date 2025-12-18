@@ -686,17 +686,24 @@ async function handleRejectModalSubmit({ ack, view, body, client }) {
     // Save feedback with rejection reason
     await saveFeedback(suggestion, 'rejected', null, body.user.id, workspace_id, rejectionReason);
 
-    // Update the message to show rejection
-    await client.chat.update({
+    // Update the message to show rejection (only for THIS specific suggestion)
+    const messageHistory = await client.conversations.history({
       channel: metadata.channel_id,
-      ts: metadata.message_ts,
-      blocks: (await client.conversations.history({
-        channel: metadata.channel_id,
-        latest: metadata.message_ts,
-        limit: 1,
-        inclusive: true
-      })).messages[0].blocks.map(block => {
-        if (block.type === 'actions') {
+      latest: metadata.message_ts,
+      limit: 1,
+      inclusive: true
+    });
+
+    const originalBlocks = messageHistory.messages[0].blocks;
+    const updatedBlocks = originalBlocks.map((block, index) => {
+      // Find the actions block that contains this specific suggestion_id
+      if (block.type === 'actions' && block.elements) {
+        const hasThisSuggestion = block.elements.some(
+          element => element.value === suggestionId
+        );
+
+        if (hasThisSuggestion) {
+          // Replace ONLY this suggestion's action buttons with rejection message
           return {
             type: 'section',
             text: {
@@ -705,8 +712,14 @@ async function handleRejectModalSubmit({ ack, view, body, client }) {
             }
           };
         }
-        return block;
-      })
+      }
+      return block;
+    });
+
+    await client.chat.update({
+      channel: metadata.channel_id,
+      ts: metadata.message_ts,
+      blocks: updatedBlocks
     });
 
     // Send ephemeral confirmation
