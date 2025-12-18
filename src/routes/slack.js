@@ -3,6 +3,7 @@ const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { validateEpicKey, validateTags } = require('../middleware/validation');
 const { generateLoginToken } = require('./dashboard-auth');
 const { createDecisionInNotion } = require('../services/notion');
+const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 
 /**
  * /decision command handler - Opens modal to log a decision
@@ -172,6 +173,21 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
 
     await decisionsCollection.insertOne(decision);
     console.log(`✅ Saved decision #${decision.id}`);
+
+    // Generate embedding for semantic search (non-blocking)
+    if (isEmbeddingsEnabled()) {
+      generateDecisionEmbedding(decision)
+        .then(async (embedding) => {
+          await decisionsCollection.updateOne(
+            { _id: decision._id },
+            { $set: { embedding } }
+          );
+          console.log(`🔍 Embedding generated for decision #${decision.id}`);
+        })
+        .catch(err => {
+          console.error(`⚠️  Embedding generation failed for decision #${decision.id}:`, err.message);
+        });
+    }
 
     // Sync to Notion (non-blocking)
     createDecisionInNotion(decision).catch(err => {

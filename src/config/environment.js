@@ -49,6 +49,13 @@ function validateEnvironment() {
     console.log('✅ Notion integration configured');
   }
 
+  // Check optional OpenAI config for semantic search
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('⚠️  OPENAI_API_KEY not set. Semantic search will be disabled.');
+  } else {
+    console.log('✅ Semantic search configured (OpenAI embeddings)');
+  }
+
   console.log('✅ Environment variables validated');
 }
 
@@ -90,5 +97,10 @@ module.exports = {
     apiKey: process.env.NOTION_API_KEY,
     databaseId: process.env.NOTION_DATABASE_ID,
     isConfigured: !!(process.env.NOTION_API_KEY && process.env.NOTION_DATABASE_ID)
+  },
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY,
+    embeddingModel: 'text-embedding-3-small',
+    isConfigured: !!process.env.OPENAI_API_KEY
   }
 };

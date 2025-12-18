@@ -6,6 +6,7 @@ const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck } = require('./routes/api');
+const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -29,6 +30,7 @@ const {
   handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
 const { initializeNotion } = require('./services/notion');
+const { initializeEmbeddings } = require('./services/embeddings');
 
 // fixOAuthDatabase() function removed - was a one-time fix that's no longer needed
 // Running it on every startup was causing installation store issues
@@ -123,6 +125,8 @@ async function startApp() {
   expressApp.delete('/api/decisions/:id', requireAuth, requireWorkspaceAccess, deleteDecision);
   expressApp.get('/api/stats', requireAuth, requireWorkspaceAccess, getStats);
   expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
+  expressApp.post('/api/semantic-search', requireAuth, requireWorkspaceAccess, handleSemanticSearch);
+  expressApp.get('/api/search-suggestions', requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
 
   // Protected routes - GDPR (requires authentication + workspace access)
   expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
@@ -204,6 +208,9 @@ async function startApp() {
 
   // Initialize Notion integration (optional)
   initializeNotion();
+
+  // Initialize semantic search (optional)
+  initializeEmbeddings();
 }
 
 // Start the application

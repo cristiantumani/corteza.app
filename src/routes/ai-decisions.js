@@ -12,6 +12,26 @@ const {
   validateTranscriptContent
 } = require('../middleware/ai-validation');
 const { createDecisionInNotion } = require('../services/notion');
+const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
+
+/**
+ * Helper: Generate and save embedding for a decision (non-blocking)
+ */
+async function generateAndSaveEmbedding(decision) {
+  if (!isEmbeddingsEnabled()) return;
+
+  try {
+    const embedding = await generateDecisionEmbedding(decision);
+    const decisionsCollection = getDecisionsCollection();
+    await decisionsCollection.updateOne(
+      { _id: decision._id },
+      { $set: { embedding } }
+    );
+    console.log(`🔍 Embedding generated for decision #${decision.id}`);
+  } catch (err) {
+    console.error(`⚠️  Embedding generation failed for decision #${decision.id}:`, err.message);
+  }
+}
 
 /**
  * Handles file upload events from Slack
@@ -518,6 +538,11 @@ async function handleApproveAction({ ack, body, client }) {
 
     await decisionsCollection.insertOne(decision);
 
+    // Generate embedding for semantic search (non-blocking)
+    generateAndSaveEmbedding(decision).catch(err => {
+      console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
+    });
+
     // Sync to Notion (non-blocking)
     createDecisionInNotion(decision).catch(err => {
       console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
@@ -964,6 +989,11 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     await decisionsCollection.insertOne(decision);
     console.log('✅ Decision inserted:', nextId);
 
+    // Generate embedding for semantic search (non-blocking)
+    generateAndSaveEmbedding(decision).catch(err => {
+      console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
+    });
+
     // Sync to Notion (non-blocking)
     createDecisionInNotion(decision).catch(err => {
       console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
@@ -1351,6 +1381,11 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     console.log('>>> Inserting decision...');
     await decisionsCollection.insertOne(decision);
     console.log(`✅ Decision #${nextId} created`);
+
+    // Generate embedding for semantic search (non-blocking)
+    generateAndSaveEmbedding(decision).catch(err => {
+      console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
+    });
 
     // Sync to Notion (non-blocking)
     createDecisionInNotion(decision).catch(err => {
