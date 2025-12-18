@@ -7,12 +7,26 @@ const dashboardHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load AI analytics HTML once at startup
+const aiAnalyticsHTML = fs.readFileSync(
+  path.join(__dirname, '../views/ai-analytics.html'),
+  'utf8'
+);
+
 /**
  * GET /dashboard - Serves the dashboard HTML
  */
 function serveDashboard(req, res) {
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(dashboardHTML);
+}
+
+/**
+ * GET /ai-analytics - Serves the AI analytics dashboard HTML
+ */
+function serveAIAnalytics(req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(aiAnalyticsHTML);
 }
 
 /**
@@ -25,5 +39,6 @@ function redirectToDashboard(req, res) {
 
 module.exports = {
   serveDashboard,
+  serveAIAnalytics,
   redirectToDashboard
 };

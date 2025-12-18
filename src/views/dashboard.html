@@ -23,6 +23,26 @@
       z-index: 100;
     }
 
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: #6366f1;
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
     .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
 
     h1 {
@@ -718,7 +738,13 @@
 <body>
   <header>
     <div class="container">
-      <h1>📝 Decision Logger</h1>
+      <div class="header-content">
+        <h1>📝 Decision Logger</h1>
+        <div class="nav-links">
+          <a href="/ai-analytics?workspace_id=<WORKSPACE_ID>">🤖 AI Analytics</a>
+          <a href="/auth/logout">Logout</a>
+        </div>
+      </div>
     </div>
   </header>
   <div class="container">
@@ -995,6 +1021,12 @@
     function updateHeader() {
       const header = document.querySelector('header .container');
       const h1 = header.querySelector('h1');
+
+      // Update AI analytics link with workspace_id
+      const analyticsLink = document.querySelector('a[href*="ai-analytics"]');
+      if (analyticsLink) {
+        analyticsLink.href = `/ai-analytics?workspace_id=${WORKSPACE_ID}`;
+      }
 
       // Add user info next to title
       h1.innerHTML += `

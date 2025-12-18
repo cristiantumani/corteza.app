@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Analytics - Decision Logger</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 30px 0;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 32px;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card .number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .label {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .section {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      color: #0f172a;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+    }
+
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .bar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bar-label {
+      min-width: 120px;
+      font-size: 14px;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    .bar-wrapper {
+      flex: 1;
+      background: #f1f5f9;
+      border-radius: 6px;
+      height: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+      border-radius: 6px;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 12px;
+    }
+
+    .bar-value {
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .reason-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .reason-item {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .reason-item:last-child {
+      border-bottom: none;
+    }
+
+    .reason-text {
+      flex: 1;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .reason-count {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .timeline-date {
+      min-width: 100px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .timeline-bar {
+      flex: 1;
+      height: 24px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timeline-fill {
+      height: 100%;
+      background: #10b981;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .timeline-label {
+      font-size: 12px;
+      color: #64748b;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+
+    .empty-state h3 {
+      font-size: 20px;
+      color: #475569;
+      margin-bottom: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+      font-size: 18px;
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+
+    .nav-links {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .nav-links a {
+      color: #6366f1;
+      text-decoration: none;
+      margin-right: 20px;
+      font-size: 14px;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .badge-success {
+      background: #d1fae5;
+      color: #047857;
+    }
+
+    .badge-warning {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .badge-danger {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 AI Analytics Dashboard</h1>
+      <p class="subtitle">Performance metrics for AI-powered decision extraction</p>
+    </header>
+
+    <div id="loading" class="loading">Loading analytics...</div>
+    <div id="error" class="error" style="display:none;"></div>
+    <div id="content" style="display:none;">
+
+      <!-- Overview Stats -->
+      <div class="stats-grid" id="overview-stats"></div>
+
+      <!-- Confidence Accuracy -->
+      <div class="section">
+        <h2>📊 Accuracy by Confidence Score</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+          Shows approval rate for different AI confidence levels. Higher confidence should correlate with higher approval rates.
+        </p>
+        <div class="chart-container">
+          <div class="bar-chart" id="confidence-chart"></div>
+        </div>
+      </div>
+
+      <!-- Decision Type Accuracy -->
+      <div class="section">
+        <h2>🎯 Accuracy by Decision Type</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+          Which types of decisions the AI extracts most accurately.
+        </p>
+        <div class="chart-container">
+          <div class="bar-chart" id="type-accuracy-chart"></div>
+        </div>
+      </div>
+
+      <!-- Top Rejection Reasons -->
+      <div class="section">
+        <h2>❌ Top Rejection Reasons</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+          Common reasons users reject AI suggestions. This helps identify patterns in what NOT to extract.
+        </p>
+        <ul class="reason-list" id="rejection-reasons"></ul>
+      </div>
+
+      <!-- Edit Patterns -->
+      <div class="section">
+        <h2>✏️ What Users Edit Most</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+          When users approve with edits, which fields do they change?
+        </p>
+        <div class="chart-container">
+          <div class="bar-chart" id="edit-patterns-chart"></div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="section">
+        <h2>📈 Approval Rate Over Time (Last 30 Days)</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+          Track AI improvement as it learns from feedback.
+        </p>
+        <div class="timeline" id="timeline-chart"></div>
+      </div>
+
+      <div class="nav-links">
+        <a href="/dashboard">← Back to Dashboard</a>
+        <a href="/api/ai-analytics?workspace_id=<WORKSPACE_ID>" target="_blank">View Raw JSON</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Extract workspace_id from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const WORKSPACE_ID = urlParams.get('workspace_id');
+
+    if (!WORKSPACE_ID) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = '⚠️ Workspace ID required. Please access with: /ai-analytics?workspace_id=YOUR_WORKSPACE_ID';
+      throw new Error('No workspace_id provided');
+    }
+
+    // Fetch and render analytics
+    async function fetchAnalytics() {
+      try {
+        const response = await fetch(`/api/ai-analytics?workspace_id=${WORKSPACE_ID}`);
+
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderAnalytics(data);
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = `❌ Failed to load analytics: ${error.message}`;
+      }
+    }
+
+    function renderAnalytics(data) {
+      // Update nav link with workspace_id
+      document.querySelector('.nav-links a[target="_blank"]').href =
+        `/api/ai-analytics?workspace_id=${WORKSPACE_ID}`;
+
+      // 1. Overview Stats
+      const overview = data.overview;
+      const overviewHTML = `
+        <div class="stat-card">
+          <h3>Total Suggestions</h3>
+          <div class="number">${overview.totalSuggestions}</div>
+          <div class="label">${overview.pendingReview} pending review</div>
+        </div>
+        <div class="stat-card">
+          <h3>Approval Rate</h3>
+          <div class="number">${overview.approvalRate}%</div>
+          <div class="label">${overview.feedbackStats.approved + overview.feedbackStats.edited_approved} approved</div>
+        </div>
+        <div class="stat-card">
+          <h3>Rejection Rate</h3>
+          <div class="number">${overview.rejectionRate}%</div>
+          <div class="label">${overview.feedbackStats.rejected} rejected</div>
+        </div>
+        <div class="stat-card">
+          <h3>Edit Rate</h3>
+          <div class="number">${overview.editRate}%</div>
+          <div class="label">${overview.feedbackStats.edited_approved} edited before approval</div>
+        </div>
+      `;
+      document.getElementById('overview-stats').innerHTML = overviewHTML;
+
+      // 2. Confidence Accuracy Chart
+      if (data.confidenceAccuracy && data.confidenceAccuracy.length > 0) {
+        const confidenceHTML = data.confidenceAccuracy
+          .filter(item => item.range !== 'unknown')
+          .map(item => `
+            <div class="bar-item">
+              <div class="bar-label">${item.range}</div>
+              <div class="bar-wrapper">
+                <div class="bar-fill" style="width: ${item.approvalRate}%">
+                  <span class="bar-value">${item.approvalRate}%</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        document.getElementById('confidence-chart').innerHTML = confidenceHTML ||
+          '<p style="color: #64748b;">No data yet</p>';
+      } else {
+        document.getElementById('confidence-chart').innerHTML =
+          '<p style="color: #64748b;">No data yet. Upload transcripts and provide feedback to see confidence accuracy.</p>';
+      }
+
+      // 3. Type Accuracy Chart
+      if (data.accuracyByType && data.accuracyByType.length > 0) {
+        const typeHTML = data.accuracyByType.map(item => `
+          <div class="bar-item">
+            <div class="bar-label">${item.type || 'Unknown'}</div>
+            <div class="bar-wrapper">
+              <div class="bar-fill" style="width: ${item.approvalRate}%">
+                <span class="bar-value">${item.approvalRate}% (${item.approved}/${item.total})</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('type-accuracy-chart').innerHTML = typeHTML;
+      } else {
+        document.getElementById('type-accuracy-chart').innerHTML =
+          '<p style="color: #64748b;">No data yet</p>';
+      }
+
+      // 4. Rejection Reasons
+      if (data.topRejectionReasons && data.topRejectionReasons.length > 0) {
+        const reasonsHTML = data.topRejectionReasons.map(r => `
+          <li class="reason-item">
+            <span class="reason-text">${r.reason}</span>
+            <span class="reason-count">${r.count}</span>
+          </li>
+        `).join('');
+        document.getElementById('rejection-reasons').innerHTML = reasonsHTML;
+      } else {
+        document.getElementById('rejection-reasons').innerHTML =
+          '<li class="reason-item"><span class="reason-text" style="color: #64748b;">No rejection reasons recorded yet. When rejecting suggestions, add a reason to help the AI learn!</span></li>';
+      }
+
+      // 5. Edit Patterns
+      const editPatterns = data.editPatterns;
+      if (editPatterns.totalEdits > 0) {
+        const editPatternsHTML = `
+          <div class="bar-item">
+            <div class="bar-label">Decision Text</div>
+            <div class="bar-wrapper">
+              <div class="bar-fill" style="width: ${(editPatterns.textEdits / editPatterns.totalEdits * 100)}%">
+                <span class="bar-value">${editPatterns.textEdits} edits</span>
+              </div>
+            </div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label">Decision Type</div>
+            <div class="bar-wrapper">
+              <div class="bar-fill" style="width: ${(editPatterns.typeEdits / editPatterns.totalEdits * 100)}%">
+                <span class="bar-value">${editPatterns.typeEdits} edits</span>
+              </div>
+            </div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label">Tags</div>
+            <div class="bar-wrapper">
+              <div class="bar-fill" style="width: ${(editPatterns.tagsEdits / editPatterns.totalEdits * 100)}%">
+                <span class="bar-value">${editPatterns.tagsEdits} edits</span>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('edit-patterns-chart').innerHTML = editPatternsHTML;
+      } else {
+        document.getElementById('edit-patterns-chart').innerHTML =
+          '<p style="color: #64748b;">No edits recorded yet</p>';
+      }
+
+      // 6. Timeline
+      if (data.timeline && data.timeline.length > 0) {
+        const timelineHTML = data.timeline.slice(-14).map(t => `
+          <div class="timeline-item">
+            <div class="timeline-date">${new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+            <div class="timeline-bar">
+              <div class="timeline-fill" style="width: ${t.approvalRate}%"></div>
+            </div>
+            <div class="timeline-label">${t.approvalRate}% (${t.approved}/${t.total})</div>
+          </div>
+        `).join('');
+        document.getElementById('timeline-chart').innerHTML = timelineHTML;
+      } else {
+        document.getElementById('timeline-chart').innerHTML =
+          '<p style="color: #64748b;">No timeline data yet. Data will appear as you provide feedback over time.</p>';
+      }
+    }
+
+    // Load analytics on page load
+    fetchAnalytics();
+  </script>
+</body>
+</html>

@@ -289,6 +289,233 @@ async function getStats(req, res) {
 }
 
 /**
+ * GET /api/ai-analytics - Get AI feedback analytics
+ * Returns comprehensive metrics on AI suggestion quality and user feedback
+ */
+async function getAIAnalytics(req, res) {
+  try {
+    const query = parseQueryParams(req.url);
+    const validated = validateQueryParams(query);
+
+    const { getAIFeedbackCollection, getAISuggestionsCollection } = require('../config/database');
+    const feedbackCollection = getAIFeedbackCollection();
+    const suggestionsCollection = getAISuggestionsCollection();
+
+    // Build base filter with optional workspace_id
+    const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
+
+    // 1. Overall feedback stats
+    const [totalSuggestions, totalFeedback, feedbackByAction] = await Promise.all([
+      suggestionsCollection.countDocuments(baseFilter),
+      feedbackCollection.countDocuments(baseFilter),
+      feedbackCollection.aggregate([
+        { $match: baseFilter },
+        { $group: { _id: '$action', count: { $sum: 1 } } }
+      ]).toArray()
+    ]);
+
+    const feedbackStats = feedbackByAction.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, { approved: 0, rejected: 0, edited_approved: 0 });
+
+    const totalReviewed = totalFeedback;
+    const approvalRate = totalReviewed > 0
+      ? ((feedbackStats.approved + feedbackStats.edited_approved) / totalReviewed * 100).toFixed(1)
+      : 0;
+    const rejectionRate = totalReviewed > 0
+      ? (feedbackStats.rejected / totalReviewed * 100).toFixed(1)
+      : 0;
+    const editRate = totalReviewed > 0
+      ? (feedbackStats.edited_approved / totalReviewed * 100).toFixed(1)
+      : 0;
+
+    // 2. Accuracy by confidence score ranges
+    const confidenceRanges = await feedbackCollection.aggregate([
+      { $match: baseFilter },
+      {
+        $bucket: {
+          groupBy: '$original_suggestion.confidence',
+          boundaries: [0, 0.5, 0.7, 0.9, 1.0, 2.0], // 2.0 catches edge cases
+          default: 'unknown',
+          output: {
+            total: { $sum: 1 },
+            approved: {
+              $sum: {
+                $cond: [{ $in: ['$action', ['approved', 'edited_approved']] }, 1, 0]
+              }
+            },
+            rejected: {
+              $sum: {
+                $cond: [{ $eq: ['$action', 'rejected'] }, 1, 0]
+              }
+            }
+          }
+        }
+      }
+    ]).toArray();
+
+    const confidenceStats = confidenceRanges.map(range => ({
+      range: range._id === 'unknown' ? 'unknown' : `${range._id}-${range._id + 0.2}`,
+      total: range.total,
+      approved: range.approved,
+      rejected: range.rejected,
+      approvalRate: range.total > 0 ? (range.approved / range.total * 100).toFixed(1) : 0
+    }));
+
+    // 3. Top rejection reasons
+    const rejectionReasons = await feedbackCollection.aggregate([
+      {
+        $match: {
+          ...baseFilter,
+          action: 'rejected',
+          rejection_reason: { $ne: null, $ne: '' }
+        }
+      },
+      { $group: { _id: '$rejection_reason', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]).toArray();
+
+    const topReasons = rejectionReasons.map(r => ({
+      reason: r._id,
+      count: r.count
+    }));
+
+    // 4. Accuracy by decision type
+    const typeAccuracy = await feedbackCollection.aggregate([
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: '$original_suggestion.decision_type',
+          total: { $sum: 1 },
+          approved: {
+            $sum: {
+              $cond: [{ $in: ['$action', ['approved', 'edited_approved']] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]).toArray();
+
+    const accuracyByType = typeAccuracy.map(t => ({
+      type: t._id,
+      total: t.total,
+      approved: t.approved,
+      approvalRate: t.total > 0 ? (t.approved / t.total * 100).toFixed(1) : 0
+    }));
+
+    // 5. Timeline (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const timeline = await feedbackCollection.aggregate([
+      {
+        $match: {
+          ...baseFilter,
+          created_at: { $gte: thirtyDaysAgo.toISOString() }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: { $toDate: '$created_at' } }
+          },
+          total: { $sum: 1 },
+          approved: {
+            $sum: {
+              $cond: [{ $in: ['$action', ['approved', 'edited_approved']] }, 1, 0]
+            }
+          }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+
+    const timelineData = timeline.map(t => ({
+      date: t._id,
+      total: t.total,
+      approved: t.approved,
+      approvalRate: t.total > 0 ? (t.approved / t.total * 100).toFixed(1) : 0
+    }));
+
+    // 6. Most common edits (what fields users edit most)
+    const editedFields = await feedbackCollection.aggregate([
+      {
+        $match: {
+          ...baseFilter,
+          action: 'edited_approved',
+          final_version: { $exists: true }
+        }
+      },
+      {
+        $project: {
+          textChanged: {
+            $ne: ['$original_suggestion.decision_text', '$final_version.decision_text']
+          },
+          typeChanged: {
+            $ne: ['$original_suggestion.decision_type', '$final_version.decision_type']
+          },
+          tagsChanged: {
+            $ne: ['$original_suggestion.tags', '$final_version.tags']
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          textEdits: { $sum: { $cond: ['$textChanged', 1, 0] } },
+          typeEdits: { $sum: { $cond: ['$typeChanged', 1, 0] } },
+          tagsEdits: { $sum: { $cond: ['$tagsChanged', 1, 0] } },
+          total: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    const editPatterns = editedFields.length > 0 ? {
+      textEdits: editedFields[0].textEdits,
+      typeEdits: editedFields[0].typeEdits,
+      tagsEdits: editedFields[0].tagsEdits,
+      totalEdits: editedFields[0].total
+    } : {
+      textEdits: 0,
+      typeEdits: 0,
+      tagsEdits: 0,
+      totalEdits: 0
+    };
+
+    // Return comprehensive analytics
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      overview: {
+        totalSuggestions,
+        totalReviewed,
+        pendingReview: totalSuggestions - totalReviewed,
+        approvalRate: parseFloat(approvalRate),
+        rejectionRate: parseFloat(rejectionRate),
+        editRate: parseFloat(editRate),
+        feedbackStats
+      },
+      confidenceAccuracy: confidenceStats,
+      topRejectionReasons: topReasons,
+      accuracyByType,
+      timeline: timelineData,
+      editPatterns,
+      workspace_id: validated.workspace_id || 'all',
+      generatedAt: new Date().toISOString()
+    }));
+
+  } catch (error) {
+    console.error('Error fetching AI analytics:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'Failed to fetch AI analytics',
+      details: error.message
+    }));
+  }
+}
+
+/**
  * GET /health - Health check endpoint
  * Simple health check that always returns 200 OK for Railway
  * Does NOT depend on database connection
@@ -308,5 +535,6 @@ module.exports = {
   updateDecision,
   deleteDecision,
   getStats,
+  getAIAnalytics,
   healthCheck
 };

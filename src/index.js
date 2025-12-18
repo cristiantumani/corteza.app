@@ -5,8 +5,8 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
-const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck } = require('./routes/api');
-const { serveDashboard, redirectToDashboard } = require('./routes/dashboard');
+const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck } = require('./routes/api');
+const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { handleMe, handleLogout } = require('./routes/auth');
 const { handleLoginPage, handleTokenLogin } = require('./routes/dashboard-auth');
@@ -22,6 +22,7 @@ const {
   handleIgnoreFileButton,
   handleApproveAction,
   handleRejectAction,
+  handleRejectModalSubmit,
   handleEditAction,
   handleEditModalSubmit,
   handleConnectJiraAction,
@@ -114,12 +115,14 @@ async function startApp() {
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
+  expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
 
   // Protected routes - API (requires authentication + workspace access)
   expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);
   expressApp.put('/api/decisions/:id', requireAuth, requireWorkspaceAccess, updateDecision);
   expressApp.delete('/api/decisions/:id', requireAuth, requireWorkspaceAccess, deleteDecision);
   expressApp.get('/api/stats', requireAuth, requireWorkspaceAccess, getStats);
+  expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
 
   // Protected routes - GDPR (requires authentication + workspace access)
   expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
@@ -168,6 +171,7 @@ async function startApp() {
   app.action('reject_suggestion', handleRejectAction);
   app.action('edit_suggestion', handleEditAction);
   app.action('connect_jira_suggestion', handleConnectJiraAction);
+  app.view('reject_suggestion_modal', handleRejectModalSubmit);
   app.view('edit_suggestion_modal', handleEditModalSubmit);
   app.view('connect_jira_modal', handleConnectJiraModalSubmit);
 

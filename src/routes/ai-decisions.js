@@ -281,8 +281,8 @@ async function processTranscript(transcriptContent, metadata) {
     const insertResult = await transcriptsCollection.insertOne(transcript);
     console.log(`✅ Saved transcript: ${transcriptId}`);
 
-    // Call Claude API to extract decisions
-    const aiResult = await extractDecisionsFromTranscript(transcriptContent);
+    // Call Claude API to extract decisions (with few-shot learning from workspace feedback)
+    const aiResult = await extractDecisionsFromTranscript(transcriptContent, metadata.workspace_id);
 
     // Update transcript with processing results
     await transcriptsCollection.updateOne(
@@ -568,7 +568,7 @@ async function handleRejectAction({ ack, body, client }) {
     const workspace_id = body.team.id;
     const suggestionId = body.actions[0].value;
 
-    // Fetch suggestion
+    // Fetch suggestion to show in modal
     const suggestionsCollection = getAISuggestionsCollection();
     const suggestion = await suggestionsCollection.findOne({ workspace_id: workspace_id, suggestion_id: suggestionId });
 
@@ -578,6 +578,92 @@ async function handleRejectAction({ ack, body, client }) {
         user: body.user.id,
         text: '⚠️  This suggestion has already been processed.'
       });
+      return;
+    }
+
+    // Open modal to collect rejection reason
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: {
+        type: 'modal',
+        callback_id: 'reject_suggestion_modal',
+        private_metadata: JSON.stringify({
+          workspace_id: workspace_id,
+          suggestion_id: suggestionId,
+          channel_id: body.channel.id,
+          message_ts: body.message.ts
+        }),
+        title: { type: 'plain_text', text: '❌ Reject Decision' },
+        submit: { type: 'plain_text', text: 'Reject' },
+        close: { type: 'plain_text', text: 'Cancel' },
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Decision being rejected:*\n"${suggestion.decision_text}"`
+            }
+          },
+          { type: 'divider' },
+          {
+            type: 'input',
+            block_id: 'reason_block',
+            optional: true,
+            element: {
+              type: 'plain_text_input',
+              action_id: 'reason_input',
+              multiline: true,
+              placeholder: {
+                type: 'plain_text',
+                text: 'e.g., "Operational decision, not strategic" or "Not actually a decision, just discussion"'
+              }
+            },
+            label: {
+              type: 'plain_text',
+              text: 'Why are you rejecting this? (Optional)'
+            },
+            hint: {
+              type: 'plain_text',
+              text: 'This helps the AI learn what NOT to extract in the future. Common reasons: operational decisions, too vague, discussion not decision, irrelevant.'
+            }
+          }
+        ]
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error opening reject modal:', error);
+    await client.chat.postEphemeral({
+      channel: body.channel.id,
+      user: body.user.id,
+      text: '⚠️  An error occurred. Please try again.'
+    });
+  }
+}
+
+/**
+ * Handles reject modal submission
+ */
+async function handleRejectModalSubmit({ ack, view, body, client }) {
+  await ack();
+
+  try {
+    const metadata = JSON.parse(view.private_metadata);
+    const workspace_id = metadata.workspace_id;
+    const suggestionId = metadata.suggestion_id;
+
+    // Get rejection reason (optional)
+    const rejectionReason = view.state.values.reason_block.reason_input.value || null;
+
+    // Fetch suggestion
+    const suggestionsCollection = getAISuggestionsCollection();
+    const suggestion = await suggestionsCollection.findOne({
+      workspace_id: workspace_id,
+      suggestion_id: suggestionId
+    });
+
+    if (!suggestion || suggestion.status !== 'pending') {
+      // Already processed, just return
       return;
     }
 
@@ -597,26 +683,43 @@ async function handleRejectAction({ ack, body, client }) {
       }
     );
 
-    // Save feedback
-    await saveFeedback(suggestion, 'rejected', null, body.user.id);
+    // Save feedback with rejection reason
+    await saveFeedback(suggestion, 'rejected', null, body.user.id, workspace_id, rejectionReason);
 
-    // Update the message
-    await updateMessageButtons(client, body, `❌ Rejected by ${userName}`);
-
-    // Ephemeral confirmation
-    await client.chat.postEphemeral({
-      channel: body.channel.id,
-      user: body.user.id,
-      text: '✅ Suggestion rejected and feedback saved for AI learning.'
+    // Update the message to show rejection
+    await client.chat.update({
+      channel: metadata.channel_id,
+      ts: metadata.message_ts,
+      blocks: (await client.conversations.history({
+        channel: metadata.channel_id,
+        latest: metadata.message_ts,
+        limit: 1,
+        inclusive: true
+      })).messages[0].blocks.map(block => {
+        if (block.type === 'actions') {
+          return {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `_❌ Rejected by ${userName}${rejectionReason ? `: "${rejectionReason}"` : ''}_`
+            }
+          };
+        }
+        return block;
+      })
     });
+
+    // Send ephemeral confirmation
+    await client.chat.postEphemeral({
+      channel: metadata.channel_id,
+      user: body.user.id,
+      text: `✅ Suggestion rejected${rejectionReason ? ' with reason' : ''} and feedback saved for AI learning.`
+    });
+
+    console.log(`✅ Suggestion rejected${rejectionReason ? ' with reason: ' + rejectionReason : ''}`);
 
   } catch (error) {
-    console.error('❌ Error rejecting suggestion:', error);
-    await client.chat.postEphemeral({
-      channel: body.channel.id,
-      user: body.user.id,
-      text: '⚠️  An error occurred. Please try again.'
-    });
+    console.error('❌ Error in reject modal submit:', error);
   }
 }
 
@@ -880,7 +983,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
 
     // Save feedback with edits
     console.log('>>> Saving feedback...');
-    await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id);
+    await saveFeedback(suggestion, 'edited_approved', editedData, metadata.user_id, workspace_id);
     console.log('✅ Feedback saved');
 
     // Update the original message to remove buttons
@@ -923,7 +1026,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
 /**
  * Saves feedback to ai_feedback collection
  */
-async function saveFeedback(suggestion, action, finalVersion, userId, workspace_id) {
+async function saveFeedback(suggestion, action, finalVersion, userId, workspace_id, rejectionReason = null) {
   try {
     const feedbackCollection = getAIFeedbackCollection();
 
@@ -941,13 +1044,14 @@ async function saveFeedback(suggestion, action, finalVersion, userId, workspace_
         confidence_score: suggestion.confidence_score
       },
       final_version: finalVersion,
+      rejection_reason: rejectionReason, // NEW: Store why user rejected
       transcript_context: suggestion.context,
       created_at: new Date().toISOString(),
       user_id: userId
     };
 
     await feedbackCollection.insertOne(feedback);
-    console.log(`✅ Feedback saved: ${action}`);
+    console.log(`✅ Feedback saved: ${action}${rejectionReason ? ' with reason' : ''}`);
   } catch (error) {
     console.error('❌ Error saving feedback:', error);
   }
@@ -1271,7 +1375,7 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
 
     // Save feedback
     console.log('>>> Saving feedback...');
-    await saveFeedback(suggestion, 'approved', null, metadata.user_id);
+    await saveFeedback(suggestion, 'approved', null, metadata.user_id, suggestion.workspace_id);
     console.log('✅ Feedback saved');
 
     // Update the original message to remove buttons
@@ -1334,6 +1438,7 @@ module.exports = {
   handleIgnoreFileButton,
   handleApproveAction,
   handleRejectAction,
+  handleRejectModalSubmit,
   handleEditAction,
   handleEditModalSubmit,
   handleConnectJiraAction,

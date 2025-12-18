@@ -1,6 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
+const { getAIFeedbackCollection } = require('../config/database');
 
 /**
  * Checks if Claude API is configured
@@ -11,14 +12,97 @@ function isClaudeConfigured() {
 }
 
 /**
+ * Fetches approved feedback examples for few-shot learning
+ * @param {string} workspace_id - Workspace ID to filter examples
+ * @param {number} limit - Maximum number of examples to fetch
+ * @returns {Promise<Array>} Array of approved feedback examples
+ */
+async function getApprovedExamples(workspace_id, limit = 5) {
+  try {
+    const feedbackCollection = getAIFeedbackCollection();
+    const examples = await feedbackCollection
+      .find({
+        workspace_id: workspace_id,
+        action: { $in: ['approved', 'edited_approved'] }
+      })
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .toArray();
+
+    return examples;
+  } catch (error) {
+    console.error('Error fetching approved examples:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Fetches rejected feedback examples for few-shot learning
+ * @param {string} workspace_id - Workspace ID to filter examples
+ * @param {number} limit - Maximum number of examples to fetch
+ * @returns {Promise<Array>} Array of rejected feedback examples
+ */
+async function getRejectedExamples(workspace_id, limit = 5) {
+  try {
+    const feedbackCollection = getAIFeedbackCollection();
+    const examples = await feedbackCollection
+      .find({
+        workspace_id: workspace_id,
+        action: 'rejected'
+      })
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .toArray();
+
+    return examples;
+  } catch (error) {
+    console.error('Error fetching rejected examples:', error.message);
+    return [];
+  }
+}
+
+/**
  * Builds the prompt for Claude API to extract decisions from transcript
  * @param {string} transcriptText - The meeting transcript text
+ * @param {Array} approvedExamples - Recent approved decision examples from this workspace
+ * @param {Array} rejectedExamples - Recent rejected decision examples from this workspace
  * @returns {string} The formatted prompt
  */
-function buildDecisionExtractionPrompt(transcriptText) {
-  // System message now contains all instructions
-  // This prompt just provides the transcript
-  return `Analyze the following meeting transcript and extract all decisions as a JSON array:
+function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], rejectedExamples = []) {
+  let examplesSection = '';
+
+  // Add few-shot learning examples if available
+  if (approvedExamples.length > 0 || rejectedExamples.length > 0) {
+    examplesSection = '\n\nLEARNING FROM YOUR PAST FEEDBACK:\n\n';
+
+    if (approvedExamples.length > 0) {
+      examplesSection += '✅ CORRECTLY IDENTIFIED DECISIONS FROM YOUR MEETINGS:\n';
+      approvedExamples.forEach((ex, idx) => {
+        const decision = ex.final_version || ex.original_suggestion;
+        examplesSection += `${idx + 1}. "${decision.decision_text}" (${decision.decision_type})\n`;
+        if (ex.transcript_context) {
+          examplesSection += `   Context: "${ex.transcript_context.substring(0, 150)}..."\n`;
+        }
+      });
+      examplesSection += '\n';
+    }
+
+    if (rejectedExamples.length > 0) {
+      examplesSection += '❌ INCORRECTLY IDENTIFIED (NOT DECISIONS) FROM YOUR MEETINGS:\n';
+      rejectedExamples.forEach((ex, idx) => {
+        examplesSection += `${idx + 1}. "${ex.original_suggestion.decision_text}"`;
+        if (ex.rejection_reason) {
+          examplesSection += ` - Reason: ${ex.rejection_reason}`;
+        }
+        examplesSection += '\n';
+      });
+      examplesSection += '\n';
+    }
+
+    examplesSection += 'Use these examples to better understand what this workspace considers a decision vs just discussion.\n\n';
+  }
+
+  return `${examplesSection}Analyze the following meeting transcript and extract all decisions as a JSON array:
 
 ---
 ${transcriptText}
@@ -204,18 +288,37 @@ function parseDecisionResponse(claudeResponse) {
 }
 
 /**
- * Extracts decisions from meeting transcript using Claude API
+ * Extracts decisions from meeting transcript using Claude API with few-shot learning
  * @param {string} transcriptText - The meeting transcript content
- * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string }
+ * @param {string} workspace_id - Workspace ID for fetching relevant feedback examples
+ * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean }
  */
-async function extractDecisionsFromTranscript(transcriptText) {
+async function extractDecisionsFromTranscript(transcriptText, workspace_id) {
   const startTime = Date.now();
 
   // Sanitize the transcript text
   const sanitized = sanitizeTranscriptText(transcriptText);
 
-  // Build the prompt
-  const prompt = buildDecisionExtractionPrompt(sanitized);
+  // Fetch recent feedback examples from this workspace (few-shot learning)
+  let approvedExamples = [];
+  let rejectedExamples = [];
+  if (workspace_id) {
+    try {
+      [approvedExamples, rejectedExamples] = await Promise.all([
+        getApprovedExamples(workspace_id, 5),
+        getRejectedExamples(workspace_id, 5)
+      ]);
+
+      if (approvedExamples.length > 0 || rejectedExamples.length > 0) {
+        console.log(`🎯 Using ${approvedExamples.length} approved + ${rejectedExamples.length} rejected examples for few-shot learning`);
+      }
+    } catch (error) {
+      console.warn('⚠️  Could not fetch feedback examples, proceeding without few-shot learning:', error.message);
+    }
+  }
+
+  // Build the prompt with examples
+  const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples);
 
   // Call Claude API
   const response = await callClaudeAPI(prompt);
@@ -233,7 +336,8 @@ async function extractDecisionsFromTranscript(transcriptText) {
   return {
     decisions,
     processingTime,
-    model: response.model
+    model: response.model,
+    usedExamples: approvedExamples.length > 0 || rejectedExamples.length > 0
   };
 }
 
