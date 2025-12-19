@@ -1028,6 +1028,12 @@
         analyticsLink.href = `/ai-analytics?workspace_id=${WORKSPACE_ID}`;
       }
 
+      // Update chat workspace info
+      const chatWorkspaceInfo = document.getElementById('chat-workspace-info');
+      if (chatWorkspaceInfo) {
+        chatWorkspaceInfo.textContent = `Workspace: ${currentUser.workspace_name} (${WORKSPACE_ID})`;
+      }
+
       // Add user info next to title
       h1.innerHTML += `
         <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
@@ -1523,6 +1529,7 @@
         <div>
           <h3>🤖 Ask about your decisions</h3>
           <p>Semantic search powered by AI</p>
+          <p id="chat-workspace-info" style="font-size: 11px; opacity: 0.7; margin-top: 4px;"></p>
         </div>
         <button id="chat-close" class="chat-close-btn">×</button>
       </div>

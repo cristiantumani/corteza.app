@@ -3,15 +3,15 @@
  */
 
 require('dotenv').config();
-const { MongoClient } = require('mongodb');
-const config = require('../src/config/environment');
+const { connectToMongoDB, getDecisionsCollection } = require('../src/config/database');
 const { initializeEmbeddings, isEmbeddingsEnabled } = require('../src/services/embeddings');
 const { hybridSearch } = require('../src/services/semantic-search');
 
 async function testSemanticSearch() {
   console.log('🧪 Testing Semantic Search\n');
 
-  // Initialize
+  // Initialize database and embeddings
+  await connectToMongoDB();
   initializeEmbeddings();
 
   if (!isEmbeddingsEnabled()) {
@@ -19,12 +19,8 @@ async function testSemanticSearch() {
     process.exit(1);
   }
 
-  const client = new MongoClient(config.mongodb.uri);
-
   try {
-    await client.connect();
-    const db = client.db(config.mongodb.dbName);
-    const decisionsCollection = db.collection('decisions');
+    const decisionsCollection = getDecisionsCollection();
 
     // Get a sample decision to get workspace_id
     const sampleDecision = await decisionsCollection.findOne({});
@@ -80,7 +76,7 @@ async function testSemanticSearch() {
     console.error('❌ Test failed:', error.message);
     console.error(error.stack);
   } finally {
-    await client.close();
+    process.exit(0);
   }
 }
 

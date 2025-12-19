@@ -49,6 +49,11 @@ async function handleSemanticSearch(req, res) {
       try {
         const requestData = JSON.parse(body);
 
+        console.log('🔍 Semantic search request received:');
+        console.log(`   - Query: "${requestData.query}"`);
+        console.log(`   - Workspace ID: ${requestData.workspace_id}`);
+        console.log(`   - Conversational: ${requestData.conversational !== false}`);
+
         // Validate required fields
         if (!requestData.query) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -89,6 +94,13 @@ async function handleSemanticSearch(req, res) {
 
         // Perform hybrid search
         const searchResult = await hybridSearch(requestData.query, searchOptions);
+
+        console.log(`✅ Search completed:`);
+        console.log(`   - Method: ${searchResult.searchMethod}`);
+        console.log(`   - Results: ${searchResult.results.all.length}`);
+        if (searchResult.results.all.length > 0) {
+          console.log(`   - Top score: ${(searchResult.results.all[0].score * 100).toFixed(1)}%`);
+        }
 
         // Generate conversational response (if requested)
         let conversationalResponse = null;
