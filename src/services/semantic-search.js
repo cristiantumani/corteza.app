@@ -257,6 +257,9 @@ async function hybridSearch(query, options = {}) {
   let searchMethod = 'semantic';
   let results = null;
 
+  console.log(`🔍 Hybrid search starting...`);
+  console.log(`   - Embeddings enabled: ${isEmbeddingsEnabled()}`);
+
   // Try semantic search first
   if (isEmbeddingsEnabled()) {
     try {

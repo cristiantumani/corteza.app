@@ -9,14 +9,26 @@ let embeddingsEnabled = false;
 function initializeEmbeddings() {
   const apiKey = process.env.OPENAI_API_KEY;
 
+  console.log('🔧 Initializing embeddings service...');
+  console.log(`   - OPENAI_API_KEY present: ${apiKey ? 'YES' : 'NO'}`);
+  if (apiKey) {
+    console.log(`   - Key format: ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`);
+  }
+
   if (!apiKey) {
-    console.log('ℹ️  Semantic search disabled (OPENAI_API_KEY not set)');
+    console.log('⚠️  Semantic search DISABLED (OPENAI_API_KEY not set)');
+    embeddingsEnabled = false;
     return;
   }
 
-  openaiClient = new OpenAI({ apiKey });
-  embeddingsEnabled = true;
-  console.log('✅ Semantic search enabled (OpenAI embeddings)');
+  try {
+    openaiClient = new OpenAI({ apiKey });
+    embeddingsEnabled = true;
+    console.log('✅ Semantic search ENABLED (OpenAI embeddings initialized)');
+  } catch (error) {
+    console.error('❌ Failed to initialize OpenAI client:', error.message);
+    embeddingsEnabled = false;
+  }
 }
 
 /**
