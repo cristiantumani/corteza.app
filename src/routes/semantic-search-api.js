@@ -72,7 +72,7 @@ async function handleSemanticSearch(req, res) {
         const searchOptions = {
           workspace_id: requestData.workspace_id,
           limit: requestData.limit || 10,
-          minScore: requestData.minScore || 0.6
+          minScore: requestData.minScore || 0.5  // Lowered from 0.6 to 0.5 for better recall
         };
 
         if (requestData.type) {

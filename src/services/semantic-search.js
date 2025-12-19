@@ -106,7 +106,16 @@ async function semanticSearch(query, options = {}) {
 
     const results = await decisionsCollection.aggregate(pipeline).toArray();
 
-    console.log(`✅ Found ${results.length} results (score >= ${minScore})`);
+    console.log(`🔍 Vector search completed:`);
+    console.log(`   - Query: "${query}"`);
+    console.log(`   - Workspace: ${workspace_id}`);
+    console.log(`   - Min score: ${minScore}`);
+    console.log(`   - Raw results: ${results.length}`);
+
+    if (results.length > 0) {
+      console.log(`   - Top score: ${(results[0].score * 100).toFixed(1)}%`);
+      console.log(`   - Lowest score: ${(results[results.length - 1].score * 100).toFixed(1)}%`);
+    }
 
     // Categorize results by relevance
     const categorized = {
@@ -116,10 +125,13 @@ async function semanticSearch(query, options = {}) {
       all: results
     };
 
+    console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant, ${categorized.somewhatRelevant.length} somewhat relevant`);
+
     return categorized;
 
   } catch (error) {
     console.error('❌ Semantic search error:', error.message);
+    console.error('   Full error:', error);
 
     // If vector search index doesn't exist, provide helpful error
     if (error.message.includes('index') || error.code === 291) {
