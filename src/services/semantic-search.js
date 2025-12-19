@@ -177,7 +177,7 @@ Format using markdown for readability. Keep it under 400 words.`;
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20250122', // Use Haiku for speed and cost
+      model: 'claude-3-5-haiku-20241022', // Use Haiku 3.5 for speed and cost
       max_tokens: 800,
       temperature: 0.3,
       messages: [{
