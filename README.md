@@ -1,76 +1,132 @@
-# Decision Logger Bot
+# 🎯 Decision Logger Bot
 
-A Slack bot that helps Product Managers track and manage decisions made during the discovery, refinement, and development process. Integrates with Jira to automatically fetch epic details and add decision comments to issues.
+**Never lose track of important decisions again.** A Slack bot that helps teams log, search, and learn from their product, technical, and UX decisions using AI-powered semantic search.
 
-## 📋 Overview
-
-**The Problem:**
-During product discovery and refinement, teams make important decisions across multiple tools (Figma, Jira, Miro, Slack). These decisions get scattered, forgotten, or disconnected from the user stories that implement them.
-
-**The Solution:**
-Decision Logger captures decisions where they happen (Slack), stores them in a centralized database with full Jira integration, and provides a beautiful web dashboard for visibility and analytics.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![Slack](https://img.shields.io/badge/slack-bot-4A154B.svg)
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
-### Core Features
-- ✅ **Slack Commands**
-  - `/decision [text]` - Opens a form to log a decision
-  - `/decisions recent` - Shows the 10 most recent decisions
-  - `/decisions search [keyword]` - Search decisions by text, tags, or epic
-  - `/decisions epic [JIRA-123]` - Find all decisions related to a specific epic
+### 📝 Decision Logging
+- **Slash Commands:** Quick decision logging with `/decision` command in Slack
+- **Rich Context:** Capture decision type (product/technical/UX), alternatives considered, tags, and Jira epics
+- **File Upload:** Upload meeting transcripts - AI extracts decisions automatically
+- **AI Analysis:** Claude AI analyzes transcripts and suggests structured decisions
 
-- ✅ **Decision Metadata**
-  - Decision type (Product, UX, Technical)
-  - Epic/Story key (e.g., LOK-123)
-  - Tags (comma-separated for easy filtering)
-  - Alternatives considered
-  - Creator and timestamp
+### 🔍 Semantic Search
+- **Natural Language Queries:** Ask "show me AEM decisions" and find results even if they mention "Adobe Experience Manager"
+- **Conversational AI:** Chat interface with Claude-powered responses
+- **Relevance Scoring:** Results ranked by similarity (highly relevant 85%+, relevant 70%+)
+- **Vector Search:** MongoDB Atlas Vector Search with OpenAI embeddings
 
-- ✅ **Jira Integration** 🔥
-  - Auto-fetch epic/story details from Jira (title, type, status)
-  - Display clickable Jira links in Slack and dashboard
-  - Optional: Add decision as a comment directly in Jira issue
-  - Store Jira metadata with each decision
+### 📊 Dashboard & Analytics
+- **Web Dashboard:** Browse, search, and filter all decisions
+- **Statistics:** Decision velocity, type distribution, team insights
+- **AI Analytics:** Track AI suggestion accuracy and team feedback
+- **GDPR Compliance:** Export and delete workspace data
 
-- ✅ **Web Dashboard**
-  - Real-time statistics (total decisions, by type, this week)
-  - Advanced filtering (search, type, epic)
-  - Sortable table view with Jira links
-  - Export to CSV
-  - Auto-refresh every 30 seconds
-
-- ✅ **Persistent Storage**
-  - All decisions stored in MongoDB
-  - Survives bot restarts
-  - Full-text search capability
-
-- ✅ **Cloud Deployment**
-  - Runs 24/7 on Railway
-  - No local setup needed
-  - Automatic scaling
+### 🔗 Integrations
+- **Jira:** Link decisions to epics, auto-create tickets
+- **Slack OAuth:** Secure workspace authentication
+- **Multi-Tenancy:** Complete workspace isolation
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Quick Start for Beta Testers
 
-### Core Technologies
-- **Runtime:** Node.js (v18+)
-- **Framework:** Slack Bolt SDK (@slack/bolt)
-- **Database:** MongoDB Atlas (Free tier)
-- **Hosting:** Railway (Cloud platform)
-- **Version Control:** Git + GitHub
-- **Jira API:** Jira REST API v3
+### **[📘 Complete Installation Guide](INSTALLATION_GUIDE.md)** ← Start here!
 
-### Key Dependencies
-```json
-{
-  "@slack/bolt": "^3.17.1",
-  "mongodb": "^6.x",
-  "dotenv": "^16.3.1"
-}
+**What you'll need:**
+- Slack workspace admin access
+- ~45 minutes
+- Credit card for API verification (free tiers available)
+
+**Quick Overview:**
+1. Create Slack App (10 min)
+2. Set up MongoDB Atlas (10 min)
+3. Get API keys (OpenAI, Anthropic, Jira) (10 min)
+4. Deploy to Railway (10 min)
+5. Test & configure (5 min)
+
+---
+
+## 💬 Usage Examples
+
+### Log a Decision
 ```
+/decision
+```
+Fill in the modal with:
+- Decision text
+- Type (product/technical/UX)
+- Alternatives considered
+- Tags
+- Related Jira epic (optional)
+
+### Search Decisions
+```
+/decisions
+```
+Or use the dashboard chat:
+- "Show me all technical decisions from December"
+- "What did we decide about authentication?"
+- "Decisions related to Adobe Experience Manager"
+
+### Upload Meeting Notes
+Upload a `.txt` file with meeting transcript to any channel where the bot is present. AI will:
+1. Analyze the transcript
+2. Extract decisions
+3. Present them for approval
+4. Log approved decisions automatically
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐
+│    Slack    │
+│   (User)    │
+└──────┬──────┘
+       │
+       │ Slash Commands,
+       │ Events, OAuth
+       │
+       ▼
+┌─────────────────────────────────┐
+│      Node.js Backend            │
+│   (Slack Bolt Framework)        │
+│                                 │
+│  ┌──────────┐  ┌─────────────┐ │
+│  │  Routes  │  │  Services   │ │
+│  │          │  │             │ │
+│  │ • Slack  │  │ • Jira API  │ │
+│  │ • API    │  │ • Embeddings│ │
+│  │ • Auth   │  │ • Semantic  │ │
+│  │ • GDPR   │  │   Search    │ │
+│  └──────────┘  └─────────────┘ │
+└────────┬────────────────────────┘
+         │
+         │ Database & AI APIs
+         │
+    ┌────┴────┬────────────┬──────────┐
+    │         │            │          │
+    ▼         ▼            ▼          ▼
+┌────────┐ ┌─────┐  ┌──────────┐ ┌────────┐
+│MongoDB │ │Jira │  │Anthropic │ │ OpenAI │
+│ Atlas  │ │ API │  │ (Claude) │ │(Embed) │
+└────────┘ └─────┘  └──────────┘ └────────┘
+```
+
+**Tech Stack:**
+- **Backend:** Node.js, Express, Slack Bolt SDK
+- **Database:** MongoDB Atlas with Vector Search
+- **AI:** Claude 3.5 Sonnet (analysis), OpenAI text-embedding-3-small (search)
+- **Deployment:** Railway (or any Node.js host)
+- **Frontend:** Server-side rendered HTML with vanilla JS
 
 ---
 
@@ -78,633 +134,267 @@ Decision Logger captures decisions where they happen (Slack), stores them in a c
 
 ```
 decision-logger-bot/
-├── index.js                 # Main bot application with Jira integration
-├── package.json             # Node.js dependencies
-├── package-lock.json        # Locked dependency versions
-├── .env                     # Environment variables (local only, not in git)
-├── .gitignore              # Git ignore rules
-└── README.md               # This file
+├── src/
+│   ├── config/
+│   │   ├── database.js          # MongoDB connection & collections
+│   │   └── environment.js       # Environment variable validation
+│   ├── middleware/
+│   │   ├── auth.js              # Slack OAuth middleware
+│   │   └── validation.js        # Input validation & sanitization
+│   ├── routes/
+│   │   ├── slack.js             # Slash commands (/decision, /decisions)
+│   │   ├── ai-decisions.js      # AI transcript analysis & approvals
+│   │   ├── api.js               # REST API endpoints
+│   │   ├── auth.js              # Slack OAuth flow
+│   │   ├── gdpr.js              # Data export & deletion
+│   │   └── semantic-search-api.js # Semantic search endpoints
+│   ├── services/
+│   │   ├── jira.js              # Jira API integration
+│   │   ├── embeddings.js        # OpenAI embeddings generation
+│   │   └── semantic-search.js   # Vector search & hybrid search
+│   ├── views/
+│   │   ├── dashboard.html       # Main decision dashboard
+│   │   └── ai-analytics.html    # AI feedback analytics
+│   └── index.js                 # App entry point
+├── scripts/
+│   ├── migrate-embeddings.js    # Batch generate embeddings
+│   ├── check-embeddings.js      # Verify embeddings exist
+│   ├── check-workspaces.js      # View workspace data
+│   └── test-semantic-search.js  # Test vector search locally
+├── INSTALLATION_GUIDE.md        # Step-by-step setup for beta testers
+├── FEEDBACK_LOG.md              # User feedback tracking
+└── package.json
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🔒 Security & Privacy
+
+- **Multi-Tenancy:** Complete workspace isolation - no data sharing between companies
+- **OAuth Authentication:** Secure Slack workspace authentication
+- **Input Validation:** All inputs sanitized to prevent injection attacks
+- **GDPR Compliance:** Users can export and delete all workspace data
+- **API Key Security:** Environment variables for sensitive credentials
+- **Workspace Verification:** All operations verify user belongs to workspace
+
+---
+
+## 🛠️ Development
+
+### Local Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/cristiantumani/decision-logger-bot.git
+cd decision-logger-bot
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+# Edit .env with your credentials
+
+# Run locally
+npm start
+
+# Or use nodemon for development
+npm run dev
+```
 
 ### Environment Variables
 
-The bot requires these environment variables:
+See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for detailed setup instructions.
 
-| Variable | Description | Example | Required |
-|----------|-------------|---------|----------|
-| `SLACK_BOT_TOKEN` | Bot User OAuth Token from Slack | `xoxb-1234567890...` | Yes |
-| `SLACK_SIGNING_SECRET` | Signing secret from Slack app settings | `abc123def456...` | Yes |
-| `MONGODB_URI` | MongoDB connection string | `mongodb+srv://user:pass@...` | Yes |
-| `PORT` | Port for the web server | `3000` | Yes |
-| `JIRA_URL` | Your Jira Cloud URL | `https://yourcompany.atlassian.net` | Optional* |
-| `JIRA_EMAIL` | Your Atlassian account email | `you@company.com` | Optional* |
-| `JIRA_API_TOKEN` | Jira API token | `ATATT3xF...` | Optional* |
+Required variables:
+- `SLACK_BOT_TOKEN` - Bot User OAuth Token
+- `SLACK_SIGNING_SECRET` - Signing secret from Slack app
+- `MONGODB_URI` - MongoDB Atlas connection string
+- `ANTHROPIC_API_KEY` - Claude API key
+- `OPENAI_API_KEY` - OpenAI API key
 
-*Jira variables are optional but required for Jira integration features.
-
-### Where to Find These Values
-
-#### Slack Tokens
-1. Go to https://api.slack.com/apps
-2. Select your app
-3. **Bot Token:** OAuth & Permissions → Bot User OAuth Token
-4. **Signing Secret:** Basic Information → App Credentials → Signing Secret
-
-#### MongoDB URI
-1. Go to https://cloud.mongodb.com/
-2. Select your cluster
-3. Click "Connect" → "Drivers"
-4. Copy the connection string
-
-#### Jira Credentials
-1. **Jira URL:** Your Jira Cloud URL (e.g., `https://yourcompany.atlassian.net`)
-2. **Jira Email:** The email you use to log into Jira
-3. **API Token:** 
-   - Go to https://id.atlassian.com/manage-profile/security/api-tokens
-   - Click "Create API token"
-   - Label it "decision-logger-bot"
-   - Copy the token (you won't see it again!)
+Optional:
+- `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` - For Jira integration
+- `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` - For OAuth
 
 ---
 
-## 🔐 Security Setup (IMPORTANT)
+## 📊 Database Schema
 
-### Secrets Management
+### Collections
 
-**⚠️ CRITICAL: Never commit the `.env` file to git!**
-
-The `.env` file contains sensitive credentials that, if exposed, could compromise your entire infrastructure. Follow these security best practices:
-
-### 1. Generate Secure State Secret (OAuth Mode)
-
-If using OAuth multi-workspace mode, generate a cryptographically secure state secret:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Add this to your `.env` or Railway environment variables as `SLACK_STATE_SECRET`.
-
-### 2. Environment Variables Setup
-
-**For Local Development:**
-```bash
-# Copy the template
-cp .env.example .env
-
-# Edit .env and fill in your actual values
-# NEVER commit this file!
-```
-
-**For Production (Railway):**
-1. Go to Railway dashboard → Your project → Variables tab
-2. Add each environment variable individually:
-   - `SLACK_SIGNING_SECRET` - From Slack app settings
-   - `SLACK_CLIENT_ID` - From Slack OAuth settings
-   - `SLACK_CLIENT_SECRET` - From Slack OAuth settings
-   - `SLACK_STATE_SECRET` - Generated using crypto (see above)
-   - `MONGODB_URI` - From MongoDB Atlas
-   - `ANTHROPIC_API_KEY` - From Claude dashboard
-   - `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` - Optional, for Jira integration
-
-3. Railway will automatically redeploy with new variables
-
-### 3. Credential Rotation Schedule
-
-For production environments, rotate credentials regularly:
-
-| Credential | Rotation Frequency | How to Rotate |
-|------------|-------------------|---------------|
-| `SLACK_STATE_SECRET` | Every 90 days | Generate new crypto random string |
-| `SLACK_CLIENT_SECRET` | Every 90 days | Regenerate in Slack app settings |
-| `MONGODB_URI` password | Every 90 days | Change in MongoDB Atlas |
-| `JIRA_API_TOKEN` | Every 90 days | Revoke old, create new in Atlassian |
-| `ANTHROPIC_API_KEY` | Every 90 days | Rotate in Claude dashboard |
-
-### 4. Security Checklist Before Production
-
-- [ ] `.env` file is in `.gitignore` (already done)
-- [ ] No secrets committed to git history
-- [ ] All environment variables set in Railway dashboard
-- [ ] State verification enabled (`stateVerification: true`)
-- [ ] Cryptographically secure state secret generated
-- [ ] MongoDB IP allowlist configured (if using IP restrictions)
-- [ ] Jira API token has minimal required permissions
-- [ ] Claude API key usage limits set
-- [ ] All team members aware of secrets management policy
-
-### 5. What to Do If Secrets Are Exposed
-
-If you accidentally commit secrets or they are otherwise exposed:
-
-1. **Immediately revoke the exposed credentials:**
-   - Slack: Regenerate client secret and bot token
-   - MongoDB: Change database password
-   - Jira: Revoke API token and create new one
-   - Claude: Rotate API key
-
-2. **Remove from git history** (if committed):
-   ```bash
-   # Use BFG Repo-Cleaner (recommended)
-   git clone --mirror https://github.com/YOUR-REPO.git
-   bfg --delete-files .env YOUR-REPO.git
-   cd YOUR-REPO.git
-   git reflog expire --expire=now --all
-   git gc --prune=now --aggressive
-   git push --force
-   ```
-
-3. **Update all environments** with new credentials
-
-4. **Monitor for suspicious activity** in Slack, MongoDB, Jira logs
-
-### 6. Additional Security Measures
-
-For enterprise deployments:
-
-- **Use a secrets manager:** HashiCorp Vault, AWS Secrets Manager, or Railway's built-in secrets
-- **Enable audit logging:** Track all access to credentials
-- **Implement least privilege:** Only grant necessary permissions
-- **Enable MFA:** On all accounts (Slack, MongoDB Atlas, Jira, Railway)
-- **Regular security audits:** Review access logs monthly
-- **Penetration testing:** Annual third-party security assessment
-
-For more details, see [SECURITY_ROADMAP.md](./SECURITY_ROADMAP.md).
-
----
-
-## 🔧 Local Development Setup
-
-### Prerequisites
-- Node.js v18 or higher
-- npm (comes with Node.js)
-- MongoDB Atlas account (free)
-- Slack workspace with admin access
-- Jira Cloud account (optional, for Jira integration)
-
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/cristiantumani/decision-logger-bot.git
-   cd decision-logger-bot
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Create `.env` file**
-   ```bash
-   # Copy these to .env and fill in your actual values
-   SLACK_BOT_TOKEN=xoxb-your-token-here
-   SLACK_SIGNING_SECRET=your-secret-here
-   MONGODB_URI=mongodb+srv://your-connection-string
-   PORT=3000
-   
-   # Optional: Jira Integration
-   JIRA_URL=https://yourcompany.atlassian.net
-   JIRA_EMAIL=you@company.com
-   JIRA_API_TOKEN=your-jira-token
-   ```
-
-4. **Run the bot locally**
-   ```bash
-   node index.js
-   ```
-
-5. **Expose local server (for testing)**
-   ```bash
-   # In a separate terminal
-   cloudflared tunnel --url http://localhost:3000
-   ```
-   Copy the URL and update Slack app settings.
-
----
-
-## 🚀 Deployment (Railway)
-
-### Current Deployment
-- **Platform:** Railway
-- **URL:** https://decision-logger-bot-production.up.railway.app
-- **Dashboard:** https://decision-logger-bot-production.up.railway.app/dashboard
-- **Status:** Production
-- **Region:** Auto-selected by Railway
-
-### Deploy Your Own Instance
-
-1. **Push code to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/YOUR-USERNAME/decision-logger-bot.git
-   git push -u origin main
-   ```
-
-2. **Deploy to Railway**
-   - Go to https://railway.app/
-   - Login with GitHub
-   - New Project → Deploy from GitHub repo
-   - Select your repository
-   - Click "Deploy Now"
-
-3. **Add environment variables in Railway**
-   - Click on your deployment
-   - Go to "Variables" tab
-   - Add all required variables:
-     - `SLACK_BOT_TOKEN`
-     - `SLACK_SIGNING_SECRET`
-     - `MONGODB_URI`
-     - `PORT` (set to `3000`)
-     - `JIRA_URL` (optional)
-     - `JIRA_EMAIL` (optional)
-     - `JIRA_API_TOKEN` (optional)
-   - Railway will automatically redeploy
-
-4. **Generate a domain**
-   - Go to "Settings" tab
-   - Under "Domains", click "Generate Domain"
-   - Copy the generated URL
-
-5. **Update Slack URLs**
-   - Go to https://api.slack.com/apps → Your app
-   - Update these URLs to your Railway domain + `/slack/events`:
-     - Interactivity & Shortcuts → Request URL
-     - Slash Commands → `/decision` → Request URL
-     - Slash Commands → `/decisions` → Request URL
-
----
-
-## 💾 Database Schema
-
-### Decisions Collection
-
+**decisions:**
 ```javascript
 {
-  _id: ObjectId,                    // MongoDB auto-generated
-  id: Number,                       // Sequential ID (1, 2, 3...)
-  text: String,                     // Decision description
-  type: String,                     // "product" | "ux" | "technical"
-  epic_key: String | null,          // e.g., "LOK-123", "AP-456"
-  jira_data: {                      // Auto-fetched from Jira (if configured)
-    key: String,                    // "LOK-123"
-    summary: String,                // "Implement AEM integration"
-    type: String,                   // "Epic", "Story", etc.
-    status: String,                 // "In Progress", "Done", etc.
-    url: String                     // Full Jira URL
-  } | null,
-  tags: Array<String>,              // ["aem", "integration", "scope"]
-  alternatives: String | null,      // Alternatives considered
-  creator: String,                  // Slack user's real name
-  user_id: String,                  // Slack user ID
-  channel_id: String,               // Slack channel ID where logged
-  timestamp: ISOString              // "2024-12-06T21:30:00.000Z"
+  workspace_id: "T0WKH1NGL",
+  id: 1,                    // Sequential per workspace
+  text: "Decision to use PostgreSQL",
+  type: "technical",        // product | technical | ux
+  epic_key: "PROJ-123",
+  jira_data: { ... },
+  tags: ["database", "architecture"],
+  alternatives: ["MySQL", "MongoDB"],
+  creator: "John Doe",
+  timestamp: "2024-12-21T10:00:00Z",
+  embedding: [0.123, ...]   // 1536-dim vector for semantic search
 }
 ```
 
-### Indexes
-- Text index on `text` and `tags` for full-text search
-- Descending index on `timestamp` for recent queries
-- Index on `epic_key` for epic-based filtering
+**ai_suggestions:**
+```javascript
+{
+  workspace_id: "T0WKH1NGL",
+  suggestion_id: "ai_sugg_123",
+  meeting_transcript_id: "transcript_123",
+  decision_text: "Use React for frontend",
+  alternatives: ["Vue", "Angular"],
+  status: "pending",        // pending | approved | rejected | edited
+  created_at: "2024-12-21T10:00:00Z"
+}
+```
+
+**meeting_transcripts:**
+```javascript
+{
+  workspace_id: "T0WKH1NGL",
+  transcript_id: "transcript_123",
+  file_id: "F123ABC",
+  uploaded_by: "U123ABC",
+  uploaded_at: "2024-12-21T10:00:00Z",
+  suggestions_count: 3
+}
+```
+
+**ai_feedback:**
+```javascript
+{
+  workspace_id: "T0WKH1NGL",
+  feedback_id: "feedback_123",
+  suggestion_id: "ai_sugg_123",
+  action: "approved",       // approved | rejected | edited
+  original_suggestion: { ... },
+  final_decision: { ... },
+  created_at: "2024-12-21T10:00:00Z"
+}
+```
 
 ---
 
-## 📊 Usage Examples
+## 🤝 Contributing
 
-### Logging a Decision with Jira Integration
+We're currently in **beta testing phase**. Contributions, feedback, and bug reports are welcome!
 
-```
-/decision We will only sync AEM → Lokalise, not bidirectional
-```
+### How to Contribute
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This opens a modal where you fill in:
-- **Type:** Product
-- **Epic:** `LOK-456` (auto-fetches title from Jira!)
-- **Tags:** `aem, integration, scope`
-- **Alternatives:** `Considered bidirectional sync but decided against due to resource constraints`
-- **☑ Add this decision as a comment in Jira** (optional)
-
-**Result:**
-- Decision saved to MongoDB
-- Jira epic title displayed in Slack: "LOK-456: AEM Integration Phase 1"
-- Clickable link to Jira issue
-- Optional: Comment added to Jira issue with decision details
-- Visible in dashboard with Jira metadata
-
-### Searching Decisions
-
-```
-/decisions search aem
-```
-Returns all decisions mentioning "aem" in text, tags, or epic
-
-### Finding Decisions by Epic
-
-```
-/decisions epic LOK-456
-```
-Returns all decisions tagged with epic LOK-456
-
-### Viewing Recent Decisions
-
-```
-/decisions recent
-```
-Shows the 10 most recent decisions
+### Reporting Issues
+- Use the [GitHub Issues](https://github.com/cristiantumani/decision-logger-bot/issues) page
+- Include steps to reproduce
+- Include error messages and logs
+- Mention your environment (Node version, deployment platform)
 
 ---
 
-## 🎯 Dashboard Features
+## 📝 Roadmap
 
-Access the dashboard at: `https://your-railway-url.up.railway.app/dashboard`
+### Current Features ✅
+- [x] Decision logging via Slack slash commands
+- [x] AI-powered transcript analysis
+- [x] Semantic search with vector embeddings
+- [x] Web dashboard with chat interface
+- [x] Jira integration
+- [x] Multi-workspace support
+- [x] GDPR compliance tools
 
-### Features:
-- **Statistics Cards**
-  - Total decisions
-  - Breakdown by type (Product, UX, Technical)
-  - Decisions logged this week
+### Under Consideration (Based on User Feedback) 🤔
+- [ ] Passive decision detection (bot monitors channels)
+- [ ] Bulk import from Slack history
+- [ ] Decision templates & frameworks
+- [ ] Team alignment dashboard
+- [ ] Decision reversal tracking
+- [ ] Integration triggers (Jira ticket close, PR merge)
 
-- **Advanced Filtering**
-  - Search by text
-  - Filter by decision type
-  - Filter by epic key
-
-- **Jira Integration**
-  - Clickable epic links
-  - Epic titles displayed under keys
-  - Visual indication of Jira-linked decisions
-
-- **Export Functionality**
-  - Export all decisions to CSV
-  - Includes Jira summary in export
-
-- **Auto-Refresh**
-  - Dashboard updates every 30 seconds
-  - Real-time decision tracking
+See [FEEDBACK_LOG.md](FEEDBACK_LOG.md) for detailed feedback from beta testers.
 
 ---
 
-## 🔗 Jira Integration Details
+## 💰 Expected Costs (Monthly)
 
-### What Gets Auto-Fetched
+For a small team (~10 people, ~100 decisions/month):
 
-When you enter a Jira issue key (e.g., `LOK-123`), the bot automatically fetches:
-- Issue summary/title
-- Issue type (Epic, Story, Bug, etc.)
-- Current status
-- Direct URL to the issue
+- **MongoDB Atlas:** FREE (M0 tier)
+- **Railway:** FREE tier (500 hours/month) or $5/month for hobby plan
+- **OpenAI (embeddings):** ~$0.01-0.10/month
+- **Anthropic (Claude):** ~$1-5/month depending on usage
 
-### Adding Comments to Jira
-
-When you check "Add this decision as a comment in Jira", the bot posts:
-
-```
-📝 Decision #42 logged by Cristian Tumani
-
-Type: product
-Decision: We will only sync AEM → Lokalise, not bidirectional
-
-Alternatives considered: Considered bidirectional sync but decided against due to resource constraints
-
-Logged via Decision Logger Bot
-```
-
-### Permissions Required
-
-The Jira API token needs:
-- Read access to issues (to fetch epic details)
-- Write access to comments (to add decision notes)
-
-### Troubleshooting Jira Integration
-
-**Issue not found:**
-- Verify the issue key is correct (e.g., `LOK-123`, not the full URL)
-- Ensure your Jira account has access to the project
-- Check that the issue exists in your Jira instance
-
-**Comments not appearing:**
-- Verify `JIRA_API_TOKEN` is set in Railway
-- Check Railway logs for error messages
-- Ensure your Jira account has permission to comment on issues
-
----
-
-## 🔐 Security & Best Practices
-
-### Environment Variables
-- ✅ Never commit `.env` file to git
-- ✅ Use `.gitignore` to exclude sensitive files
-- ✅ Store secrets in Railway's environment variables
-- ✅ Rotate tokens periodically (every 90 days recommended)
-
-### MongoDB Security
-- ✅ Use strong passwords
-- ✅ Whitelist IP addresses or use 0.0.0.0/0 for cloud deployment
-- ✅ Use connection string with SSL enabled
-- ✅ Regular backups enabled on MongoDB Atlas
-
-### Slack Security
-- ✅ Request signing verification enabled
-- ✅ Minimum required OAuth scopes
-- ✅ Bot token (not user token)
-
-### Jira Security
-- ✅ API tokens instead of passwords
-- ✅ Tokens scoped to specific user account
-- ✅ Rotate tokens regularly
-- ✅ Never share tokens in public repositories
+**Total:** $0-10/month for small teams
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### "Dispatch failed" when using slash commands
+**Problem:** Slack can't reach your Railway app
+**Solutions:**
+- Verify Railway deployment is successful
+- Check all Slack URLs are updated with Railway domain
+- Verify Railway app is not sleeping
 
-#### "dispatch_failed" error in Slack
-- **Cause:** Slack can't reach your bot
-- **Fix:** Check Railway logs, verify URLs in Slack settings match Railway domain
+### "Semantic search disabled" message
+**Problem:** OpenAI API key not configured
+**Solutions:**
+- Verify `OPENAI_API_KEY` is set in Railway (exact name, no typo)
+- Check you've added billing to OpenAI account
+- Redeploy after adding the variable
 
-#### "signature mismatch" error
-- **Cause:** Wrong `SLACK_SIGNING_SECRET`
-- **Fix:** Copy correct secret from Slack → Update in Railway
+### Dashboard shows "Authentication required"
+**Problem:** Slack OAuth not configured
+**Solutions:**
+- Follow OAuth setup in INSTALLATION_GUIDE.md
+- Verify redirect URL is correct
+- Check client ID and secret are set
 
-#### Bot not responding
-- **Cause:** Bot not running or wrong environment variables
-- **Fix:** Check Railway logs for errors, verify all env vars are set
+### MongoDB connection errors
+**Problem:** Can't connect to database
+**Solutions:**
+- Verify connection string is correct
+- Check password encoding
+- Verify IP allowlist includes "Allow from Anywhere"
 
-#### Decisions not persisting
-- **Cause:** MongoDB connection failed
-- **Fix:** Check `MONGODB_URI` is correct, verify MongoDB Atlas network access
-
-#### Jira integration not working
-- **Cause:** Missing or incorrect Jira credentials
-- **Fix:** 
-  1. Verify `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` are set in Railway
-  2. Check Railway logs for "⚠️ Jira not configured" message
-  3. Test Jira credentials manually by visiting the API URL
-  4. Regenerate API token if necessary
-
-#### Epic title not showing
-- **Cause:** Jira credentials not configured or issue doesn't exist
-- **Fix:** Check Railway logs for Jira fetch errors, verify issue key is correct
-
-### Railway Logs
-
-View logs: Railway Dashboard → Your Service → Deployments → View Logs
-
-Look for:
-- ✅ "Connected to MongoDB!"
-- ✅ "Database ready!"
-- ✅ "Bot running on port 3000!"
-- ✅ "Fetching Jira: LOK-123"
-- ✅ "Jira: [issue title]"
-- ❌ Any error messages
+### Vector search not working
+**Problem:** Search index not ready
+**Solutions:**
+- Check index status is "READY" in MongoDB Atlas
+- Verify index name is `vector_search_index`
+- Wait 5 minutes after creating index
 
 ---
 
-## 📈 Roadmap
+## 📜 License
 
-### Completed Features
-- ✅ Slack bot with decision logging
-- ✅ MongoDB persistent storage
-- ✅ Web dashboard with filtering
-- ✅ CSV export
-- ✅ Jira integration (auto-fetch + comments)
-- ✅ Cloud deployment on Railway
-
-### Planned Features
-
-#### Phase 3: Enhanced Jira Integration
-- [ ] Bulk link decisions to epics
-- [ ] Create Jira stories from decisions
-- [ ] Show decisions in Jira panel (Jira app)
-- [ ] Sync decision status with Jira status
-
-#### Phase 4: Advanced Dashboard
-- [ ] Decision timeline visualization
-- [ ] Analytics charts (decisions over time, by creator)
-- [ ] Decision impact tracking
-- [ ] Custom filters and saved views
-
-#### Phase 5: Notifications & Collaboration
-- [ ] Weekly digest emails
-- [ ] Slack notifications for epic updates
-- [ ] Decision threads (updates/comments)
-- [ ] @mentions and notifications
-- [ ] Decision approval workflow
-
-#### Phase 6: Integrations
-- [ ] Figma integration (capture decisions from comments)
-- [ ] Miro integration
-- [ ] Confluence export
-- [ ] Mobile app
-
----
-
-## 👥 Team & Contact
-
-**Created by:** Cristian Tumani  
-**Repository:** https://github.com/cristiantumani/decision-logger-bot  
-**Company:** Lokalise  
-**Jira Instance:** https://lokalise.atlassian.net
-
----
-
-## 📝 License
-
-Private project - All rights reserved.
+MIT License - see LICENSE file for details
 
 ---
 
 ## 🙏 Acknowledgments
 
-Built with:
-- [Slack Bolt SDK](https://slack.dev/bolt-js/)
-- [MongoDB](https://www.mongodb.com/)
-- [Railway](https://railway.app/)
-- [Node.js](https://nodejs.org/)
-- [Jira REST API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
+- Built with [Slack Bolt for JavaScript](https://slack.dev/bolt-js/)
+- AI powered by [Anthropic Claude](https://www.anthropic.com/)
+- Semantic search with [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings)
+- Vector search by [MongoDB Atlas](https://www.mongodb.com/atlas/database)
 
 ---
 
-## 📚 Additional Documentation
+## 📞 Support
 
-### Useful Links
-- [Slack API Documentation](https://api.slack.com/)
-- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
-- [Railway Documentation](https://docs.railway.app/)
-- [Slack Bolt SDK Guide](https://slack.dev/bolt-js/tutorial/getting-started)
-- [Jira REST API v3](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
-
-### Commands Reference
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/decision [text]` | Open form to log a decision | `/decision No bidirectional sync` |
-| `/decisions recent` | Show 10 most recent decisions | `/decisions recent` |
-| `/decisions search [keyword]` | Search by keyword | `/decisions search aem` |
-| `/decisions epic [key]` | Find decisions by epic | `/decisions epic LOK-456` |
-
-### Dashboard URL
-
-```
-https://decision-logger-bot-production.up.railway.app/dashboard
-```
-
-### API Endpoints
-
-- `GET /api/decisions` - Get all decisions (with pagination & filters)
-- `GET /api/stats` - Get decision statistics
-- `GET /health` - Health check
+- **Documentation:** [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+- **Issues:** [GitHub Issues](https://github.com/cristiantumani/decision-logger-bot/issues)
+- **Feedback:** [FEEDBACK_LOG.md](FEEDBACK_LOG.md)
 
 ---
 
-## 🎓 Getting Started Guide
-
-### For New Team Members
-
-1. **Add the bot to your Slack channel:**
-   ```
-   /invite @Decision Logger
-   ```
-
-2. **Log your first decision:**
-   ```
-   /decision We decided to use React for the frontend
-   ```
-
-3. **Fill in the form:**
-   - Type: Technical
-   - Epic: (your Jira epic key)
-   - Tags: react, frontend, architecture
-   - Check "Add as Jira comment" if you want it documented in Jira
-
-4. **View all decisions:**
-   - Dashboard: https://decision-logger-bot-production.up.railway.app/dashboard
-   - Or use `/decisions recent` in Slack
-
-5. **Search for decisions:**
-   ```
-   /decisions search react
-   /decisions epic YOUR-EPIC-KEY
-   ```
-
-### Best Practices
-
-- ✅ Always tag decisions with relevant keywords
-- ✅ Link decisions to Jira epics for traceability
-- ✅ Include alternatives considered for context
-- ✅ Use the Jira comment feature for important decisions
-- ✅ Review the dashboard weekly to stay aligned
-- ✅ Export to CSV for quarterly reviews
-
----
-
-**Last Updated:** December 9, 2024  
-**Version:** 2.0.0 (with Jira Integration)
+**Made with ❤️ for teams who want to learn from their decisions**
