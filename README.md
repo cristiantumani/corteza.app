@@ -1,4 +1,4 @@
-# 🎯 Decision Logger Bot
+# 🎯 Corteza
 
 **Never lose track of important decisions again.** A Slack bot that helps teams log, search, and learn from their product, technical, and UX decisions using AI-powered semantic search.
 
@@ -133,7 +133,7 @@ Upload a `.txt` file with meeting transcript to any channel where the bot is pre
 ## 📁 Project Structure
 
 ```
-decision-logger-bot/
+corteza/
 ├── src/
 │   ├── config/
 │   │   ├── database.js          # MongoDB connection & collections
@@ -185,8 +185,8 @@ decision-logger-bot/
 
 ```bash
 # Clone the repository
-git clone https://github.com/cristiantumani/decision-logger-bot.git
-cd decision-logger-bot
+git clone https://github.com/cristiantumani/corteza.app.git
+cd corteza.app
 
 # Install dependencies
 npm install
@@ -292,7 +292,7 @@ We're currently in **beta testing phase**. Contributions, feedback, and bug repo
 5. Open a Pull Request
 
 ### Reporting Issues
-- Use the [GitHub Issues](https://github.com/cristiantumani/decision-logger-bot/issues) page
+- Use the [GitHub Issues](https://github.com/cristiantumani/corteza.app/issues) page
 - Include steps to reproduce
 - Include error messages and logs
 - Mention your environment (Node version, deployment platform)
@@ -392,7 +392,7 @@ MIT License - see LICENSE file for details
 ## 📞 Support
 
 - **Documentation:** [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
-- **Issues:** [GitHub Issues](https://github.com/cristiantumani/decision-logger-bot/issues)
+- **Issues:** [GitHub Issues](https://github.com/cristiantumani/corteza.app/issues)
 - **Feedback:** [FEEDBACK_LOG.md](FEEDBACK_LOG.md)
 
 ---

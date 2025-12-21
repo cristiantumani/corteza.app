@@ -1,7 +1,7 @@
 {
-  "name": "decision-logger-bot",
+  "name": "corteza",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI-powered decision tracking for Slack teams",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

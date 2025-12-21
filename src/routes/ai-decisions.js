@@ -1002,7 +1002,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     // Add Jira comment if requested
     if (addComment && editedData.epic_key && jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via corteza.app`;
       if (await addJiraComment(editedData.epic_key, comment)) {
         console.log(`✅ Jira comment added to ${editedData.epic_key}`);
       }
@@ -1396,7 +1396,7 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     let jiraCommentSuccess = false;
     if (jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via corteza.app`;
       jiraCommentSuccess = await addJiraComment(epicKey, comment);
 
       if (jiraCommentSuccess) {

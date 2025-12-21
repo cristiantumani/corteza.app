@@ -1,4 +1,4 @@
-# User Feedback & Product Insights
+# Corteza - User Feedback & Product Insights
 
 This document tracks feedback from demos, user interviews, and real-world usage to inform product direction.
 

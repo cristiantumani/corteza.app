@@ -197,7 +197,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
     // Add Jira comment if requested
     if (addComment && epicKey && jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nDecision: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via Decision Logger`;
+      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nDecision: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via corteza.app`;
       if (await addJiraComment(epicKey, comment)) {
         console.log(`✅ Jira comment added to ${epicKey}`);
       }
@@ -486,7 +486,7 @@ async function handleLoginCommand({ command, ack, respond }) {
     // Send ephemeral message with login link
     await respond({
       response_type: 'ephemeral', // Only visible to user who ran command
-      text: `🔐 *Dashboard Login Link*\n\nClick the link below to access the Decision Logger dashboard:\n\n<${loginUrl}|Login to Dashboard>\n\n_This link expires in 5 minutes and can only be used once._`
+      text: `🔐 *Dashboard Login Link*\n\nClick the link below to access your dashboard:\n\n<${loginUrl}|Login to Dashboard>\n\n_This link expires in 5 minutes and can only be used once._`
     });
 
     console.log(`✅ Generated login token for ${userName} (${workspaceId})`);

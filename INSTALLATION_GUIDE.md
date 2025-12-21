@@ -1,6 +1,6 @@
-# Decision Logger Bot - Installation Guide for Beta Testers
+# Corteza - Installation Guide for Beta Testers
 
-Welcome! This guide will walk you through installing the Decision Logger Bot in your Slack workspace.
+Welcome! This guide will walk you through installing Corteza in your Slack workspace.
 
 **Time Required:** ~30-45 minutes
 **Cost:** Free tier available for all services (MongoDB, Railway, OpenAI, Anthropic)
@@ -22,7 +22,7 @@ Before starting, ensure you have:
 
 1. **Go to Slack API:** https://api.slack.com/apps
 2. **Click "Create New App"** → Select "From scratch"
-3. **Name your app:** `Decision Logger` (or any name you prefer)
+3. **Name your app:** `corteza.app` (or any name you prefer)
 4. **Select your workspace** from the dropdown
 5. **Click "Create App"**
 
@@ -174,7 +174,7 @@ Before starting, ensure you have:
 
 1. **Go to:** https://id.atlassian.com/manage-profile/security/api-tokens
 2. Click **"Create API token"**
-3. Label: `Decision Logger`
+3. Label: `corteza.app`
 4. Click **"Create"**
 5. **Copy the token** - you'll need:
    - Your Jira URL (e.g., `https://yourcompany.atlassian.net`)
@@ -187,7 +187,7 @@ Before starting, ensure you have:
 2. **Sign up** for an account
 3. Go to **"API Keys"**
 4. Click **"Create Key"**
-5. Name: `Decision Logger`
+5. Name: `corteza.app`
 6. **Copy the key** (starts with `sk-ant-`)
 7. **Add credits:** You'll need to add at least $5 in credits to use the API
 
@@ -197,7 +197,7 @@ Before starting, ensure you have:
 2. **Sign up** for an account
 3. Go to **"API Keys"**: https://platform.openai.com/api-keys
 4. Click **"Create new secret key"**
-5. Name: `Decision Logger`
+5. Name: `corteza.app`
 6. **Copy the key** (starts with `sk-proj-`)
 7. **Add billing:** Add payment method in Billing section (minimal costs - embeddings are ~$0.0001 per decision)
 
@@ -211,7 +211,7 @@ Before starting, ensure you have:
 4. Select **"Deploy from GitHub repo"**
 5. Click **"Configure GitHub App"**
 6. **Fork the repository first:**
-   - Go to: https://github.com/cristiantumani/decision-logger-bot
+   - Go to: https://github.com/cristiantumani/corteza.app
    - Click **"Fork"** in the top right
    - Select your account
 
@@ -388,7 +388,7 @@ For a small team (~10 people, ~100 decisions/month):
 If you run into issues:
 - Check the troubleshooting section above
 - Review Railway deployment logs for errors
-- Open an issue: https://github.com/cristiantumani/decision-logger-bot/issues
+- Open an issue: https://github.com/cristiantumani/corteza.app/issues
 
 ---
 
@@ -402,3 +402,10 @@ You should now have:
 - ✅ Team can start logging decisions
 
 **Next:** Share `/decision` command with your team and start building your decision database!
+
+---
+
+## 🌐 Learn More
+
+- **Website:** https://corteza.app
+- **GitHub:** https://github.com/cristiantumani/corteza.app
