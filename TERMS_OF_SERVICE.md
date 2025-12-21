@@ -1,4 +1,4 @@
-# Terms of Service for Decision Logger Bot
+# Terms of Service for Corteza.app
 
 **Last Updated:** December 13, 2024
 
@@ -8,15 +8,15 @@
 
 ## 1. Acceptance of Terms
 
-Welcome to Decision Logger Bot ("the Service," "we," "our," or "us").
+Welcome to Corteza.app ("the Service," "we," "our," or "us").
 
-By installing, accessing, or using Decision Logger Bot in your Slack workspace, you ("you," "your," or "User") agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not install or use the Service.
+By installing, accessing, or using Corteza.app in your Slack workspace, you ("you," "your," or "User") agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must not install or use the Service.
 
 **These Terms constitute a legally binding agreement between you and:**
 
-- **Service Provider:** [YOUR FULL NAME]
-- **Email:** [YOUR EMAIL ADDRESS]
-- **Service Name:** Decision Logger Bot
+- **Service Provider:** Cristian Tumani 
+- **Email:** cristiantumani@gmail.com
+- **Service Name:** corteza.app
 
 If you are using the Service on behalf of an organization or company, you represent and warrant that you have the authority to bind that organization to these Terms, and "you" refers to that organization.
 
@@ -24,7 +24,7 @@ If you are using the Service on behalf of an organization or company, you repres
 
 ## 2. Description of Service
 
-Decision Logger Bot is a Slack application that helps teams:
+corteza.app is a Slack application that helps teams:
 
 - **Log decisions** made during meetings and discussions
 - **Organize decisions** by type (product, UX, technical), tags, and Jira epics
@@ -43,7 +43,7 @@ The Service is currently provided **free of charge** during our beta period. We 
 To use the Service, you must:
 
 1. Have a Slack workspace with appropriate permissions to install apps
-2. Install Decision Logger Bot through Slack's OAuth flow
+2. Install Corteza.app through Slack's OAuth flow
 3. Grant the requested permissions (scopes) necessary for the Service to function
 
 ### 3.2 Workspace Administrator Responsibilities
@@ -104,7 +104,7 @@ You are solely responsible for:
 
 ### 5.1 Service Ownership
 
-Decision Logger Bot, including all software, code, design, features, and documentation, is owned by [YOUR FULL NAME] and is protected by copyright, trademark, and other intellectual property laws.
+corteza.app, including all software, code, design, features, and documentation, is owned by Cristian Tumani and is protected by copyright, trademark, and other intellectual property laws.
 
 You are granted a limited, non-exclusive, non-transferable, revocable license to use the Service for its intended purpose. You may not:
 
@@ -269,7 +269,7 @@ However, you are responsible for:
 
 You may terminate your use of the Service at any time by:
 
-1. Uninstalling Decision Logger Bot from your Slack workspace
+1. Uninstalling Corteza.app from your Slack workspace
 2. Requesting deletion of all your data by emailing us at [YOUR EMAIL ADDRESS]
 
 Upon termination:
@@ -450,9 +450,9 @@ BY INSTALLING, ACCESSING, OR USING DECISION LOGGER BOT, YOU ACKNOWLEDGE THAT:
 
 ## Appendix: Key Definitions
 
-- **"Service"** or **"Decision Logger Bot"**: The Slack application and web dashboard described in these Terms
+- **"Service"** or **"Corteza.app"**: The Slack application and web dashboard described in these Terms
 - **"You"** or **"User"**: The individual or organization using the Service
-- **"We"** or **"Us"**: [YOUR FULL NAME], the service provider
-- **"Workspace"**: A Slack workspace where the Decision Logger Bot is installed
+- **"We"** or **"Us"**: Cristian Tumani, the service provider
+- **"Workspace"**: A Slack workspace where the Corteza.app is installed
 - **"Content"**: Any data, text, files, or information you submit to the Service
 - **"Personal Data"**: Information that identifies you or your users, as defined in our Privacy Policy

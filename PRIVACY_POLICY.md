@@ -1,4 +1,4 @@
-# Privacy Policy for Decision Logger Bot
+# Privacy Policy for Corteza.app
 
 **Last Updated:** December 13, 2024
 
@@ -8,14 +8,14 @@
 
 ## 1. Introduction
 
-This Privacy Policy describes how Decision Logger Bot ("we," "our," or "the Service") collects, uses, stores, and protects your information when you use our Slack application.
+This Privacy Policy describes how Corteza.app ("we," "our," or "the Service") collects, uses, stores, and protects your information when you use our Slack application.
 
 **Your privacy is important to us.** We are committed to protecting your personal data and being transparent about what information we collect and how we use it.
 
 **Contact Information:**
-- **Service Provider:** [YOUR FULL NAME]
-- **Email:** [YOUR EMAIL ADDRESS]
-- **Service Name:** Decision Logger Bot
+- **Service Provider:** Cristian Tumani
+- **Email:** cristiantumani@gmail.com
+- **Service Name:** corteza.app
 
 ---
 
@@ -23,7 +23,7 @@ This Privacy Policy describes how Decision Logger Bot ("we," "our," or "the Serv
 
 ### 2.1 Information from Slack
 
-When you install and use Decision Logger Bot in your Slack workspace, we automatically collect:
+When you install and use Corteza.app in your Slack workspace, we automatically collect:
 
 - **Workspace Information:** Workspace ID, workspace name, team domain
 - **User Information:** User ID, username, display name, email address (if made available by your workspace settings)
@@ -197,7 +197,7 @@ You can object to processing of your data for specific purposes (e.g., analytics
 
 ### 6.7 Right to Withdraw Consent
 
-You can uninstall the Decision Logger Bot from your Slack workspace at any time, which will stop all data collection.
+You can uninstall the Corteza.app from your Slack workspace at any time, which will stop all data collection.
 
 ### 6.8 How to Exercise Your Rights
 
@@ -215,7 +215,7 @@ We will respond to your request within 30 days.
 
 If you are located outside the United States, please be aware that your data may be transferred to, stored, and processed in the United States and other countries where our service providers operate.
 
-By using Decision Logger Bot, you consent to the transfer of your data to countries that may have different data protection laws than your country of residence.
+By using Corteza.app, you consent to the transfer of your data to countries that may have different data protection laws than your country of residence.
 
 **For EU Users:** We rely on Standard Contractual Clauses and adequacy decisions to ensure appropriate safeguards for data transfers.
 
@@ -223,7 +223,7 @@ By using Decision Logger Bot, you consent to the transfer of your data to countr
 
 ## 8. Children's Privacy
 
-Decision Logger Bot is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children under 16.
+Corteza.app is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children under 16.
 
 If you believe we have collected information from a child under 16, please contact us immediately at [YOUR EMAIL ADDRESS] and we will delete the information.
 
@@ -335,7 +335,7 @@ All rights listed in Section 6 apply, including:
 
 ### Data Protection Officer
 
-For GDPR-related inquiries, contact: [YOUR EMAIL ADDRESS]
+For GDPR-related inquiries, contact: cristiantumani@gmail.com
 
 ---
 
@@ -343,8 +343,8 @@ For GDPR-related inquiries, contact: [YOUR EMAIL ADDRESS]
 
 If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
 
-**Service Provider:** [YOUR FULL NAME]
-**Email:** [YOUR EMAIL ADDRESS]
+**Service Provider:** Cristian Tumani
+**Email:** cristiantumani@gmail.com
 **Response Time:** We aim to respond within 48 hours for general inquiries and 30 days for formal data requests.
 
 ---
@@ -355,4 +355,4 @@ If you are located in the EEA, UK, or Switzerland and believe we have not addres
 
 ---
 
-**By using Decision Logger Bot, you acknowledge that you have read and understood this Privacy Policy and agree to the collection, use, and sharing of your information as described herein.**
+**By using Corteza.app, you acknowledge that you have read and understood this Privacy Policy and agree to the collection, use, and sharing of your information as described herein.**
