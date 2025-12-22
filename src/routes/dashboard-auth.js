@@ -99,7 +99,7 @@ function handleLoginPage(req, res) {
   res.send(`
     <html>
       <head>
-        <title>Decision Logger - Login</title>
+        <title>Login - corteza.app</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -138,12 +138,12 @@ function handleLoginPage(req, res) {
       </head>
       <body>
         <div class="card">
-          <h1>🔐 Decision Logger Dashboard</h1>
+          <h1>🔐 Dashboard Login</h1>
           <p>To access the dashboard, get a login link from Slack:</p>
 
           <div class="steps">
             <ol>
-              <li>Open your Slack workspace where Decision Logger is installed</li>
+              <li>Open your Slack workspace where corteza.app is installed</li>
               <li>Type <code>/login</code> in any channel</li>
               <li>Click the login link sent to you (only visible to you)</li>
             </ol>
