@@ -16,24 +16,6 @@ async function connectToMongoDB() {
     await client.connect();
     console.log('✅ Connected to MongoDB!');
 
-    // Log outbound IP for MongoDB allowlist configuration
-    try {
-      const https = require('https');
-      https.get('https://api.ipify.org?format=json', (resp) => {
-        let data = '';
-        resp.on('data', (chunk) => { data += chunk; });
-        resp.on('end', () => {
-          const ip = JSON.parse(data).ip;
-          console.log('🌐 Railway outbound IP:', ip);
-          console.log('💡 Add this IP to MongoDB Atlas Network Access allowlist');
-        });
-      }).on('error', (err) => {
-        console.log('⚠️  Could not detect outbound IP:', err.message);
-      });
-    } catch (ipError) {
-      console.log('⚠️  IP detection skipped');
-    }
-
     db = client.db(config.mongodb.dbName);
     decisionsCollection = db.collection('decisions');
     aiSuggestionsCollection = db.collection('ai_suggestions');
