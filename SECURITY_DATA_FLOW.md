@@ -1,7 +1,7 @@
 # Corteza - Security & Data Flow Documentation
 
 **Last Updated:** December 22, 2024
-**Version:** 1.0 (Beta)
+**Version:** 1.1 (Beta - Security Hardened)
 
 This document provides a comprehensive overview of data flows, external service integrations, data storage, and security considerations for Corteza.
 
@@ -65,8 +65,7 @@ When users upload `.txt`, `.docx`, or `.pdf` files to channels where the bot is 
 
 **Exception:** The bot listens for `file_shared` events to detect transcript uploads, but does NOT read message text itself.
 
-**OAuth Scopes Requested:**
-- `channels:history`, `groups:history`, `im:history`, `mpim:history` - These are requested but **currently unused**. They could theoretically allow reading message history if code were changed.
+**OAuth Scopes:** ✅ **History-reading scopes removed** (as of Dec 22, 2024) - The app no longer requests permissions to read message history.
 
 ---
 
@@ -95,7 +94,7 @@ When users upload `.txt`, `.docx`, or `.pdf` files to channels where the bot is 
 **Access control:**
 - Database credentials stored in Railway environment variables
 - Single database user with full read/write access
-- IP allowlist: "Allow from Anywhere" (0.0.0.0/0) - **Security concern**
+- IP allowlist: ✅ **Restricted to Railway production server only** (34.145.2.57/32)
 
 ### **B. Anthropic (Claude API)**
 
@@ -292,34 +291,37 @@ When users upload `.txt`, `.docx`, or `.pdf` files to channels where the bot is 
 
 ### **Requested Scopes**
 
+✅ **Updated Dec 22, 2024** - Unused history-reading scopes removed for security.
+
 ```
-channels:history     - Read message history in public channels
 channels:read        - View basic public channel info
 chat:write           - Send messages as @corteza.app
 commands             - Add slash commands (/decision, /decisions)
 files:read           - Access files shared in channels
-groups:history       - Read message history in private channels
 groups:read          - View basic private channel info
-im:history           - Read direct message history
-mpim:history         - Read group direct message history
 users:read           - View user information (names, emails)
 ```
 
-### **Currently Used vs. Potentially Abusable**
+**Removed scopes (no longer requested):**
+```
+channels:history     - ❌ REMOVED (was unused)
+groups:history       - ❌ REMOVED (was unused)
+im:history           - ❌ REMOVED (was unused)
+mpim:history         - ❌ REMOVED (was unused)
+```
 
-| Scope | Currently Used? | Potential Risk |
-|-------|----------------|----------------|
+### **Currently Used vs. Risk Assessment**
+
+| Scope | Currently Used? | Risk Level |
+|-------|----------------|------------|
 | `commands` | ✅ Yes | ✅ Low - Required for slash commands |
 | `chat:write` | ✅ Yes | ✅ Low - Required to post responses |
-| `files:read` | ✅ Yes | ⚠️ Medium - Can read all uploaded files |
+| `files:read` | ✅ Yes | ⚠️ Medium - Can read all uploaded files in channels where bot is present |
 | `users:read` | ✅ Yes | ✅ Low - Only reads user display names |
 | `channels:read` | ✅ Yes | ✅ Low - Only reads channel IDs |
-| `channels:history` | ❌ NO | 🔴 **HIGH - Could read all channel messages** |
-| `groups:history` | ❌ NO | 🔴 **HIGH - Could read all private channel messages** |
-| `im:history` | ❌ NO | 🔴 **CRITICAL - Could read all DMs** |
-| `mpim:history` | ❌ NO | 🔴 **HIGH - Could read all group DMs** |
+| `groups:read` | ✅ Yes | ✅ Low - Only reads private channel IDs |
 
-**⚠️ SECURITY CONCERN:** The app requests message history scopes but doesn't currently use them. These should be **removed** to follow principle of least privilege.
+**✅ SECURITY IMPROVEMENT (Dec 22, 2024):** Dangerous message history scopes (`channels:history`, `groups:history`, `im:history`, `mpim:history`) have been removed. The app now follows the principle of least privilege.
 
 ### **Can It Be Limited to Specific Channels?**
 
@@ -335,7 +337,7 @@ users:read           - View user information (names, emails)
    - Bot ignores events from non-allowlisted channels
    - Scopes still granted workspace-wide, but bot self-restricts
 
-**Recommendation:** Remove unused history scopes + implement channel allowlist.
+**Status:** ✅ History scopes removed (Dec 22, 2024). Channel allowlist remains optional for future enhancement.
 
 ---
 
@@ -423,57 +425,61 @@ users:read           - View user information (names, emails)
 
 ## 🔒 Security Recommendations
 
+### **Completed Security Improvements ✅**
+
+1. **✅ COMPLETED (Dec 22, 2024) - Removed unused OAuth scopes:**
+   - Removed: `channels:history`, `groups:history`, `im:history`, `mpim:history`
+   - These scopes allowed reading message history but were unused
+   - App now follows principle of least privilege
+
+2. **✅ COMPLETED (Dec 22, 2024) - Implemented MongoDB IP allowlist:**
+   - Removed: "Allow from Anywhere" (0.0.0.0/0)
+   - Added: Railway production server IP only (34.145.2.57/32)
+   - Database now only accessible from authorized application server
+
 ### **Immediate (Pre-GA)**
 
-1. **Remove unused OAuth scopes:**
-   - ❌ Remove: `channels:history`, `groups:history`, `im:history`, `mpim:history`
-   - These allow reading message history but are unused
-
-2. **Implement MongoDB IP allowlist:**
-   - ❌ Current: Allow from Anywhere (0.0.0.0/0)
-   - ✅ Recommended: Allowlist only Railway IPs
-
-3. **Add audit logging:**
+1. **Add audit logging:**
    - Log all data access (who viewed/searched/exported)
    - Store logs separately from application database
 
-4. **Implement data retention policy:**
+2. **Implement data retention policy:**
    - Auto-delete transcripts after 90 days (configurable)
    - Auto-delete embeddings when decisions are deleted
 
-5. **Add encryption at rest for sensitive fields:**
+3. **Add encryption at rest for sensitive fields:**
    - Encrypt `text`, `alternatives`, `file_content` fields in MongoDB
    - Use MongoDB field-level encryption or application-level encryption
 
 ### **Medium-Term**
 
-6. **Implement channel allowlist:**
+4. **Implement channel allowlist:**
    - Environment variable: `ALLOWED_CHANNELS=C123,C456`
    - Reject events from non-allowlisted channels
 
-7. **Add role-based access control:**
+5. **Add role-based access control:**
    - Workspace admins can configure settings
    - Regular users can only log/view decisions
 
-8. **Implement data anonymization for AI feedback:**
+6. **Implement data anonymization for AI feedback:**
    - Store only decision structure, not actual text
    - Use hashed IDs instead of real user names
 
-9. **Add data residency controls:**
+7. **Add data residency controls:**
    - Allow customers to choose MongoDB region (EU/US)
    - Document where data is stored
 
-10. **Regular security audits:**
-    - Penetration testing
-    - Dependency vulnerability scanning (npm audit)
-    - Code security review
+8. **Regular security audits:**
+   - Penetration testing
+   - Dependency vulnerability scanning (npm audit)
+   - Code security review
 
 ### **Long-Term**
 
-11. **SOC 2 compliance** (if required for enterprise customers)
-12. **GDPR/CCPA compliance documentation**
-13. **Data processing agreements (DPA)** for customers
-14. **Bring Your Own Key (BYOK)** for encryption
+9. **SOC 2 compliance** (if required for enterprise customers)
+10. **GDPR/CCPA compliance documentation**
+11. **Data processing agreements (DPA)** for customers
+12. **Bring Your Own Key (BYOK)** for encryption
 
 ---
 
