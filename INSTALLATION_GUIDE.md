@@ -104,7 +104,7 @@ Before starting, ensure you have:
    - Select **FREE** tier (M0)
    - Choose a cloud provider (AWS recommended)
    - Choose region closest to you
-   - Cluster name: `decision-logger` (or any name)
+   - Cluster name: `corteza` (or any name)
    - Click **"Create"**
 
 4. **Set up database access:**
@@ -231,7 +231,7 @@ Before starting, ensure you have:
    SLACK_SIGNING_SECRET=your-signing-secret-here
 
    # MongoDB
-   MONGODB_URI=mongodb+srv://dbuser:password@cluster.mongodb.net/decision-logger
+   MONGODB_URI=mongodb+srv://dbuser:password@cluster.mongodb.net/corteza
 
    # Port
    PORT=3000
@@ -248,6 +248,11 @@ Before starting, ensure you have:
 
    # OpenAI (for semantic search)
    OPENAI_API_KEY=sk-proj-your-key-here
+
+   # Custom Domain (IMPORTANT - add after setting up custom domain)
+   APP_BASE_URL=your-custom-domain.com
+   # Example: APP_BASE_URL=app.corteza.app
+   # Leave blank initially, add after Step 6 (Custom Domain Setup)
    ```
 
 9. **Generate public URL:**
@@ -270,7 +275,43 @@ Before starting, ensure you have:
 
 ---
 
-### Step 5: Test Your Installation (5 minutes)
+### Step 5: Configure Slack OAuth (Required for Dashboard - 5 minutes)
+
+The dashboard requires OAuth for user authentication.
+
+1. **In Slack App Settings** → **OAuth & Permissions**
+2. **Add Redirect URLs:**
+   ```
+   https://your-app.up.railway.app/auth/slack/callback
+   https://your-app.up.railway.app/slack/oauth_redirect
+   ```
+   (Replace `your-app.up.railway.app` with your Railway domain from Step 4)
+
+3. **Get OAuth Credentials:**
+   - Go to **"Basic Information"** in left sidebar
+   - Scroll to **"App Credentials"**
+   - **Copy "Client ID"** and **"Client Secret"**
+
+4. **Generate State Secret:**
+   Run this command locally:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+   Copy the output (it will be a long hex string)
+
+5. **Add to Railway Variables:**
+   Go back to Railway → **Variables** tab → Add these:
+   ```bash
+   SLACK_CLIENT_ID=your-client-id
+   SLACK_CLIENT_SECRET=your-client-secret
+   SLACK_STATE_SECRET=the-hex-string-you-generated
+   ```
+
+6. **Wait for redeploy** (Railway auto-redeploys when variables change)
+
+---
+
+### Step 6: Test Your Installation (5 minutes)
 
 1. **Open Slack** and go to any channel
 2. **Type:** `/decision`
@@ -297,25 +338,51 @@ Before starting, ensure you have:
 
 ### Invite Your Team
 1. Go to Slack workspace settings
-2. Add the Decision Logger app to relevant channels
+2. Add Corteza to relevant channels
 3. Team members can start using `/decision` immediately
 
-### Configure Workspace OAuth (Recommended)
+### Set Up Custom Domain (Optional but Recommended)
 
-For better security, set up proper OAuth:
+Using a custom domain makes your dashboard URLs professional (e.g., `app.yourdomain.com` instead of `your-app.up.railway.app`).
 
-1. In Slack App settings, go to **"OAuth & Permissions"**
-2. Add Redirect URL: `https://your-app.up.railway.app/auth/slack/callback`
-3. In Railway, add these environment variables:
-   ```bash
-   SLACK_CLIENT_ID=your-client-id
-   SLACK_CLIENT_SECRET=your-client-secret
-   SLACK_STATE_SECRET=generate-random-32-char-hex
+**Requirements:**
+- Own a domain (e.g., from Namecheap, GoDaddy, Squarespace)
+- Access to DNS settings
+
+**Steps:**
+
+1. **Add DNS Record** (at your domain registrar):
    ```
-4. Generate state secret:
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   Type: CNAME
+   Host: app (or your preferred subdomain)
+   Value: [your-railway-domain].up.railway.app
    ```
+
+2. **Add Custom Domain in Railway:**
+   - Settings → Networking → Custom Domains
+   - Click "Add Custom Domain"
+   - Enter: `app.yourdomain.com`
+   - Select port: `3000`
+   - Wait for SSL certificate (2-5 minutes)
+
+3. **Update Environment Variable:**
+   - Railway → Variables → Add:
+   ```bash
+   APP_BASE_URL=app.yourdomain.com
+   ```
+
+4. **Update All Slack URLs:**
+   - Go to https://api.slack.com/apps → Your app
+   - Replace all `your-app.up.railway.app` URLs with `app.yourdomain.com`:
+     - OAuth & Permissions → Redirect URLs
+     - Interactivity & Shortcuts → Request URL
+     - Event Subscriptions → Request URL
+     - Slash Commands → Request URLs
+
+5. **Test:**
+   - Run `/decisions` in Slack
+   - Click login link - should use your custom domain
+   - Dashboard URL should be `https://app.yourdomain.com/dashboard`
 
 ---
 
@@ -344,9 +411,10 @@ For better security, set up proper OAuth:
 **Problem:** Slack OAuth not configured
 
 **Solutions:**
-- Follow "Configure Workspace OAuth" steps above
-- Verify redirect URL is correct in Slack settings
-- Check `SLACK_CLIENT_ID` and `SLACK_CLIENT_SECRET` are set
+- Follow Step 5 (Configure Slack OAuth) if you skipped it
+- Verify redirect URLs are correct in Slack settings
+- Check `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`, and `SLACK_STATE_SECRET` are set in Railway
+- Make sure Railway redeployed after adding OAuth variables
 
 ### MongoDB connection errors
 
