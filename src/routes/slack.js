@@ -409,9 +409,9 @@ async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, comma
   // Get workspace stats
   const totalDecisions = await decisionsCollection.countDocuments({ workspace_id: workspace_id });
 
-  // Build dashboard URL (use RAILWAY_PUBLIC_DOMAIN if available, otherwise localhost)
-  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+  // Build dashboard URL (use APP_BASE_URL if available, otherwise localhost)
+  const baseUrl = process.env.APP_BASE_URL
+    ? `https://${process.env.APP_BASE_URL}`
     : `http://localhost:${process.env.PORT || 3000}`;
   const dashboardUrl = `${baseUrl}/dashboard?workspace_id=${workspace_id}`;
 
@@ -478,8 +478,8 @@ async function handleLoginCommand({ command, ack, respond }) {
     const token = generateLoginToken(userId, userName, workspaceId, workspaceDomain);
 
     // Build login URL
-    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    const baseUrl = process.env.APP_BASE_URL
+      ? `https://${process.env.APP_BASE_URL}`
       : 'http://localhost:3000';
     const loginUrl = `${baseUrl}/auth/token?token=${token}`;
 
