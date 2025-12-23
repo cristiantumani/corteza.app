@@ -12,6 +12,24 @@ let aiFeedbackCollection = null;
  */
 async function connectToMongoDB() {
   try {
+    // Log outbound IP for debugging MongoDB allowlist issues
+    try {
+      const https = require('https');
+      https.get('https://api.ipify.org?format=json', (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => { data += chunk; });
+        resp.on('end', () => {
+          const ip = JSON.parse(data).ip;
+          console.log('🌐 Railway outbound IP:', ip);
+          console.log('💡 Verify this IP is in MongoDB Atlas Network Access allowlist');
+        });
+      }).on('error', (err) => {
+        console.log('⚠️  Could not detect outbound IP:', err.message);
+      });
+    } catch (ipError) {
+      console.log('⚠️  IP detection skipped');
+    }
+
     const client = new MongoClient(config.mongodb.uri);
     await client.connect();
     console.log('✅ Connected to MongoDB!');
