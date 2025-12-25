@@ -30,13 +30,13 @@ async function handleDecisionCommand({ command, ack, client, say }) {
           user_id: command.user_id,
           decision_text: decisionText
         }),
-        title: { type: 'plain_text', text: '📝 Log Decision' },
+        title: { type: 'plain_text', text: '🧠 Add to Team Memory' },
         submit: { type: 'plain_text', text: 'Save' },
         close: { type: 'plain_text', text: 'Cancel' },
         blocks: [
           {
             type: 'section',
-            text: { type: 'mrkdwn', text: `*Decision:*\n${decisionText}` }
+            text: { type: 'mrkdwn', text: `*Memory:*\n${decisionText}` }
           },
           { type: 'divider' },
           {
@@ -46,12 +46,12 @@ async function handleDecisionCommand({ command, ack, client, say }) {
               type: 'static_select',
               action_id: 'type_select',
               options: [
-                { text: { type: 'plain_text', text: '📦 Product' }, value: 'product' },
-                { text: { type: 'plain_text', text: '🎨 UX' }, value: 'ux' },
-                { text: { type: 'plain_text', text: '⚙️ Technical' }, value: 'technical' }
+                { text: { type: 'plain_text', text: '✅ Decision - A choice that was made' }, value: 'decision' },
+                { text: { type: 'plain_text', text: '💡 Explanation - How something works' }, value: 'explanation' },
+                { text: { type: 'plain_text', text: '📌 Context - Background information' }, value: 'context' }
               ]
             },
-            label: { type: 'plain_text', text: 'Decision Type' }
+            label: { type: 'plain_text', text: 'Item Type' }
           },
           {
             type: 'input',
@@ -197,7 +197,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
     // Add Jira comment if requested
     if (addComment && epicKey && jiraData) {
       console.log('>>> Adding Jira comment...');
-      const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nDecision: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via corteza.app`;
+      const comment = `🧠 Memory #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nContent: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via corteza.app`;
       if (await addJiraComment(epicKey, comment)) {
         console.log(`✅ Jira comment added to ${epicKey}`);
       }
@@ -215,12 +215,12 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
  * Posts a decision confirmation message to Slack
  */
 async function postDecisionConfirmation(client, decision, channelId) {
-  const typeEmoji = { product: '📦', ux: '🎨', technical: '⚙️' };
+  const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
 
   const blocks = [
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `✅ *Decision #${decision.id}* logged by ${decision.creator}` }
+      text: { type: 'mrkdwn', text: `✅ *Memory #${decision.id}* logged by ${decision.creator}` }
     },
     {
       type: 'section',
@@ -231,7 +231,7 @@ async function postDecisionConfirmation(client, decision, channelId) {
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `*Decision:*\n${decision.text}` }
+      text: { type: 'mrkdwn', text: `*Content:*\n${decision.text}` }
     }
   ];
 
@@ -270,7 +270,7 @@ async function postDecisionConfirmation(client, decision, channelId) {
   await client.chat.postMessage({
     channel: channelId,
     blocks,
-    text: `Decision #${decision.id} logged`
+    text: `Memory #${decision.id} logged`
   });
 }
 

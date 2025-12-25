@@ -163,6 +163,7 @@ async function startApp() {
 
   // Register Slack command handlers
   app.command('/decision', handleDecisionCommand);
+  app.command('/memory', handleDecisionCommand); // New Team Memory command (alias)
   app.command('/decisions', handleDecisionsCommand);
   app.command('/login', handleLoginCommand);
   app.view('decision_modal', handleDecisionModalSubmit);

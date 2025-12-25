@@ -21,7 +21,7 @@ function validateQueryParams(query) {
   }
 
   // Type filter (must be one of the allowed types)
-  const allowedTypes = ['product', 'ux', 'technical'];
+  const allowedTypes = ['decision', 'explanation', 'context'];
   if (query.type && allowedTypes.includes(query.type.toLowerCase())) {
     validated.type = query.type.toLowerCase();
   }
