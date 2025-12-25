@@ -314,23 +314,30 @@ The dashboard requires OAuth for user authentication.
 ### Step 6: Test Your Installation (5 minutes)
 
 1. **Open Slack** and go to any channel
-2. **Type:** `/decision`
-3. You should see a modal pop up to log a decision
-4. **Fill it out and submit**
-5. **Type:** `/decisions` to see your logged decision
+2. **Type:** `/decision` or `/memory`
+3. You should see a modal pop up: "🧠 Add to Team Memory"
+4. **Fill it out and submit** (choose type: decision/explanation/context)
+5. **Type:** `/decisions` to see your logged memory
 
 #### Test the Dashboard
 
 1. **Open:** `https://your-app.up.railway.app/dashboard`
 2. You'll be redirected to Slack OAuth login
 3. Authorize the app
-4. You should see your dashboard with the decision you just logged
+4. You should see your dashboard with the memory you just logged
 
 #### Test Semantic Search
 
 1. In the dashboard, click the **purple chat bubble** in bottom right
-2. Ask: "Show me all product decisions"
+2. Ask: "Show me all decisions" or "What explanations do we have?"
 3. You should get a conversational response from the AI
+
+#### Test AI Transcript Extraction
+
+1. Upload a meeting transcript file (`.txt`, `.docx`, or `.pdf`) to Slack
+2. AI will analyze and extract decisions, explanations, and context
+3. Review and approve/reject each suggestion
+4. Approved items will be logged to team memory
 
 ---
 
@@ -339,7 +346,8 @@ The dashboard requires OAuth for user authentication.
 ### Invite Your Team
 1. Go to Slack workspace settings
 2. Add Corteza to relevant channels
-3. Team members can start using `/decision` immediately
+3. Team members can start using `/decision` or `/memory` immediately
+4. Upload meeting transcripts to automatically extract decisions, explanations, and context
 
 ### Set Up Custom Domain (Optional but Recommended)
 
