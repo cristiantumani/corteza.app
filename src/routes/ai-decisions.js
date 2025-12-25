@@ -827,7 +827,7 @@ async function handleEditAction({ ack, body, client }) {
           message_ts: body.message.ts,
           user_id: body.user.id
         }),
-        title: { type: 'plain_text', text: '✏️ Edit Decision' },
+        title: { type: 'plain_text', text: '✏️ Edit Memory' },
         submit: { type: 'plain_text', text: 'Approve' },
         close: { type: 'plain_text', text: 'Cancel' },
         blocks: [
@@ -840,7 +840,7 @@ async function handleEditAction({ ack, body, client }) {
               initial_value: suggestion.decision_text,
               multiline: true
             },
-            label: { type: 'plain_text', text: 'Decision Text' }
+            label: { type: 'plain_text', text: 'Content' }
           },
           {
             type: 'input',
@@ -853,12 +853,12 @@ async function handleEditAction({ ack, body, client }) {
                 value: suggestion.decision_type
               },
               options: [
-                { text: { type: 'plain_text', text: 'product' }, value: 'product' },
-                { text: { type: 'plain_text', text: 'ux' }, value: 'ux' },
-                { text: { type: 'plain_text', text: 'technical' }, value: 'technical' }
+                { text: { type: 'plain_text', text: 'decision' }, value: 'decision' },
+                { text: { type: 'plain_text', text: 'explanation' }, value: 'explanation' },
+                { text: { type: 'plain_text', text: 'context' }, value: 'context' }
               ]
             },
-            label: { type: 'plain_text', text: 'Decision Type' }
+            label: { type: 'plain_text', text: 'Type' }
           },
           {
             type: 'input',
@@ -913,6 +913,17 @@ async function handleEditAction({ ack, body, client }) {
 
   } catch (error) {
     console.error('❌ Error opening edit modal:', error);
+    console.error('Error details:', error.message);
+    // Try to send error to user
+    try {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: `❌ Failed to open edit modal: ${error.message}`
+      });
+    } catch (ephemeralError) {
+      console.error('Could not send error message to user');
+    }
   }
 }
 
