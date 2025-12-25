@@ -849,13 +849,13 @@ async function handleEditAction({ ack, body, client }) {
               type: 'static_select',
               action_id: 'type_select',
               initial_option: {
-                text: { type: 'plain_text', text: suggestion.decision_type },
+                text: { type: 'plain_text', text: suggestion.decision_type.charAt(0).toUpperCase() + suggestion.decision_type.slice(1) },
                 value: suggestion.decision_type
               },
               options: [
-                { text: { type: 'plain_text', text: 'decision' }, value: 'decision' },
-                { text: { type: 'plain_text', text: 'explanation' }, value: 'explanation' },
-                { text: { type: 'plain_text', text: 'context' }, value: 'context' }
+                { text: { type: 'plain_text', text: 'Decision' }, value: 'decision' },
+                { text: { type: 'plain_text', text: 'Explanation' }, value: 'explanation' },
+                { text: { type: 'plain_text', text: 'Context' }, value: 'context' }
               ]
             },
             label: { type: 'plain_text', text: 'Type' }
