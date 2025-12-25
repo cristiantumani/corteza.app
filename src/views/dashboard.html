@@ -817,7 +817,7 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Decision</th>
+            <th>Memory</th>
             <th>Type</th>
             <th>Epic</th>
             <th>Creator</th>
@@ -850,8 +850,8 @@
   <!-- Delete Confirmation Modal -->
   <div class="modal-overlay" id="delete-modal">
     <div class="modal">
-      <h2>🗑️ Delete Decision</h2>
-      <p>Are you sure you want to delete decision <strong id="delete-decision-id">#0</strong>? This action cannot be undone.</p>
+      <h2>🗑️ Delete Memory</h2>
+      <p>Are you sure you want to delete memory <strong id="delete-decision-id">#0</strong>? This action cannot be undone.</p>
       <div class="modal-buttons">
         <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
         <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
@@ -863,7 +863,7 @@
   <div class="modal-overlay" id="detail-modal">
     <div class="modal detail-modal">
       <div class="detail-header">
-        <h2 id="detail-title">Decision Details</h2>
+        <h2 id="detail-title">Memory Details</h2>
         <div style="display: flex; gap: 10px;">
           <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
           <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
@@ -871,7 +871,7 @@
       </div>
 
       <div class="detail-section">
-        <h3>Decision</h3>
+        <h3>Content</h3>
         <div class="content" id="detail-decision-text"></div>
       </div>
 
@@ -915,7 +915,7 @@
   <div class="modal-overlay" id="edit-modal">
     <div class="modal edit-modal">
       <div class="detail-header">
-        <h2>✏️ Edit Decision</h2>
+        <h2>✏️ Edit Memory</h2>
         <button class="close-btn" onclick="closeEditModal()">✕ Cancel</button>
       </div>
 
@@ -923,16 +923,16 @@
         <input type="hidden" id="edit-decision-id">
 
         <div class="form-group">
-          <label for="edit-decision-text">Decision Text *</label>
+          <label for="edit-decision-text">Content *</label>
           <textarea id="edit-decision-text" rows="4" required></textarea>
         </div>
 
         <div class="form-group">
           <label for="edit-decision-type">Type *</label>
           <select id="edit-decision-type" required>
-            <option value="product">Product</option>
-            <option value="ux">UX</option>
-            <option value="technical">Technical</option>
+            <option value="decision">Decision</option>
+            <option value="explanation">Explanation</option>
+            <option value="context">Context</option>
           </select>
         </div>
 
@@ -1090,7 +1090,7 @@
     function renderDecisions(decisions) {
       const tbody = document.getElementById('decisions-body');
       if (decisions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No decisions</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">No memories found</td></tr>';
         return;
       }
       tbody.innerHTML = decisions.map((d, index) => {
