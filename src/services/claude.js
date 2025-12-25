@@ -116,65 +116,75 @@ ${transcriptText}
 const DECISION_EXTRACTION_SYSTEM_MESSAGE = [
   {
     type: 'text',
-    text: `You are an expert at analyzing meeting transcripts and identifying decisions that were made.
+    text: `You are an expert at analyzing meeting transcripts and extracting important information for team memory.
 
-DEFINITION OF A DECISION:
-A decision is when someone explicitly says they chose, agreed, or committed to something specific.
+WHAT TO EXTRACT (3 TYPES):
 
-Look for phrases like:
-- "We decided to..."
-- "Let's go with..."
-- "We'll use..."
-- "Agreed, we will..."
-- "The decision is to..."
-- "We're choosing..."
+1. **DECISIONS** - When someone explicitly chose, agreed, or committed to something specific
+   Look for: "We decided to...", "Let's go with...", "We'll use...", "Agreed, we will...", "The decision is to..."
+   ✅ Examples: "We'll use React for the frontend", "We decided not to implement bidirectional sync"
 
-Examples of DECISIONS:
-  ✅ "We'll use React for the frontend"
-  ✅ "We decided not to implement bidirectional sync"
-  ✅ "Let's go with PostgreSQL"
-  ✅ "Agreed, we will launch in Q2"
+2. **EXPLANATIONS** - When someone explains how something works, technical details, or system behavior
+   Look for: "This works by...", "The way it functions is...", "Technically speaking...", "Here's how..."
+   ✅ Examples: "The AEM API works by sending a webhook to our endpoint", "Authentication happens through OAuth2 flow"
 
-Examples of NOT decisions (just discussion):
-  ❌ "We should probably think about performance" (too vague, no commitment)
-  ❌ "What if we used GraphQL?" (just a question)
-  ❌ "Maybe we could try..." (no commitment)
+3. **CONTEXT** - Important background information, clarifications, constraints, or relevant details
+   Look for: "To clarify...", "Background: ...", "The reason is...", "Keep in mind that...", "Important to note..."
+   ✅ Examples: "We can't do bidirectional sync because AEM doesn't support webhooks", "Budget approved for Q2"
 
-FOR EACH DECISION, EXTRACT:
-1. **decision_text**: A clear, concise statement of the decision (1-2 sentences max)
-2. **decision_type**: Classify as "product", "ux", or "technical"
-   - product: Features, roadmap, business decisions
-   - ux: User experience, design, interaction decisions
-   - technical: Architecture, technology choices, implementation decisions
+DO NOT EXTRACT:
+  ❌ Vague discussions ("We should probably think about...")
+  ❌ Questions without answers ("What if we used GraphQL?")
+  ❌ Speculation without commitment ("Maybe we could try...")
+
+FOR EACH ITEM, EXTRACT:
+1. **decision_text**: A clear, concise statement (1-2 sentences max)
+2. **decision_type**: Classify as "decision", "explanation", or "context"
 3. **epic_key**: If a Jira key is mentioned nearby (format: ABC-123 or ABC-1234), extract it. Otherwise null.
 4. **tags**: Extract 2-5 relevant tags/keywords (lowercase, single words or short phrases)
-5. **confidence**: Your confidence this is truly a decision (0.0 to 1.0, where 0.9+ is very confident, 0.6-0.8 is moderate, below 0.6 is uncertain)
-6. **context**: The exact surrounding text from the transcript (up to 200 chars before and after the decision)
+5. **confidence**: Your confidence (0.0 to 1.0, where 0.9+ is very confident, 0.6-0.8 is moderate, below 0.6 is uncertain)
+6. **context**: The exact surrounding text from the transcript (up to 200 chars before and after)
 
 OUTPUT FORMAT:
-Return ONLY a valid JSON array of decision objects. Do not include any explanatory text before or after the JSON.
+Return ONLY a valid JSON array. Do not include any explanatory text before or after the JSON.
 
 Example format:
 \`\`\`json
 [
   {
-    "decision_text": "We will use Claude API for AI-powered decision extraction",
-    "decision_type": "technical",
+    "decision_text": "We will use Claude API for AI-powered extraction",
+    "decision_type": "decision",
     "epic_key": "LOK-456",
     "tags": ["ai", "claude", "automation"],
     "confidence": 0.95,
-    "context": "After discussing options, we decided that we will use Claude API for AI-powered decision extraction since it has the best accuracy. This will be part of LOK-456 for the next sprint."
+    "context": "After discussing options, we decided that we will use Claude API..."
+  },
+  {
+    "decision_text": "The Claude API works by sending the transcript as a prompt and parsing the JSON response",
+    "decision_type": "explanation",
+    "epic_key": null,
+    "tags": ["claude", "api", "technical"],
+    "confidence": 0.9,
+    "context": "John explained: The Claude API works by sending the transcript as a prompt..."
+  },
+  {
+    "decision_text": "Budget has been approved for Q2 implementation",
+    "decision_type": "context",
+    "epic_key": null,
+    "tags": ["budget", "q2", "timeline"],
+    "confidence": 0.85,
+    "context": "Sarah mentioned that budget has been approved for Q2 implementation..."
   }
 ]
 \`\`\`
 
-If no decisions are found, return an empty array: []
+If nothing relevant is found, return an empty array: []
 
 IMPORTANT GUIDELINES:
-- Only extract actual decisions, not discussions or ideas
+- Extract all 3 types: decisions, explanations, and context
 - Be conservative with confidence scores - only use 0.9+ when absolutely certain
 - Tags should be relevant keywords from the context
-- Context should help the reader understand why this was identified as a decision`,
+- Context should help the reader understand the item`,
     cache_control: { type: 'ephemeral' }
   }
 ];
