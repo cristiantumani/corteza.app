@@ -1347,9 +1347,11 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
 
   try {
     console.log('>>> Connect to Jira modal submit started');
+    const workspace_id = body.team.id;
     const metadata = JSON.parse(view.private_metadata);
     const values = view.state.values;
     console.log('>>> Metadata:', metadata);
+    console.log('>>> Workspace ID:', workspace_id);
 
     const epicKey = values.epic_block.epic_input.value?.trim() || null;
     console.log('>>> Epic key:', epicKey);
