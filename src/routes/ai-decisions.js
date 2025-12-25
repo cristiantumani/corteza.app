@@ -373,24 +373,52 @@ async function processTranscript(transcriptContent, metadata) {
 async function postSuggestionsToSlack(client, suggestions, channelId) {
   const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
 
-  // Build message blocks
-  const blocks = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `🤖 *AI found ${suggestions.length} item${suggestions.length > 1 ? 's' : ''} in the transcript*\n\nReview each suggestion below:`
-      }
-    },
-    { type: 'divider' }
-  ];
+  // Slack has a 50-block limit per message, so we need to split into chunks
+  // Each suggestion uses ~5 blocks (section + actions + divider)
+  // Safe limit: 8 suggestions per message (40 blocks + header)
+  const SUGGESTIONS_PER_MESSAGE = 8;
+  const chunks = [];
 
-  suggestions.forEach((suggestion, index) => {
+  for (let i = 0; i < suggestions.length; i += SUGGESTIONS_PER_MESSAGE) {
+    chunks.push(suggestions.slice(i, i + SUGGESTIONS_PER_MESSAGE));
+  }
+
+  // Send each chunk as a separate message
+  for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+    const chunk = chunks[chunkIndex];
+    const isFirstChunk = chunkIndex === 0;
+    const startIndex = chunkIndex * SUGGESTIONS_PER_MESSAGE;
+
+    // Build message blocks for this chunk
+    const blocks = [];
+
+    if (isFirstChunk) {
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `🤖 *AI found ${suggestions.length} item${suggestions.length > 1 ? 's' : ''} in the transcript*\n\nReview each suggestion below:`
+        }
+      });
+      blocks.push({ type: 'divider' });
+    } else {
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `📋 *Continued... (items ${startIndex + 1}-${Math.min(startIndex + chunk.length, suggestions.length)})*`
+        }
+      });
+      blocks.push({ type: 'divider' });
+    }
+
+  chunk.forEach((suggestion, index) => {
+    const globalIndex = startIndex + index;
     const confidence = suggestion.confidence_score;
     const confidenceEmoji = confidence >= 0.8 ? '🟢' : confidence >= 0.6 ? '🟡' : '🔴';
     const confidencePercent = Math.round(confidence * 100);
 
-    let decisionBlock = `*Memory ${index + 1}* ${confidenceEmoji} (${confidencePercent}% confidence)\n\n`;
+    let decisionBlock = `*Memory ${globalIndex + 1}* ${confidenceEmoji} (${confidencePercent}% confidence)\n\n`;
     decisionBlock += `${typeEmoji[suggestion.decision_type]} *Type:* ${suggestion.decision_type}\n`;
     decisionBlock += `*Content:* ${suggestion.decision_text}\n`;
 
@@ -453,11 +481,14 @@ async function postSuggestionsToSlack(client, suggestions, channelId) {
     );
   });
 
-  await client.chat.postMessage({
-    channel: channelId,
-    blocks,
-    text: `AI found ${suggestions.length} decisions`
-  });
+    await client.chat.postMessage({
+      channel: channelId,
+      blocks,
+      text: isFirstChunk
+        ? `AI found ${suggestions.length} items`
+        : `Continued... (items ${startIndex + 1}-${Math.min(startIndex + chunk.length, suggestions.length)})`
+    });
+  }
 }
 
 /**
