@@ -96,7 +96,7 @@ function validateAISuggestion(suggestion) {
   }
 
   // Validate decision_type
-  const validTypes = ['product', 'ux', 'technical'];
+  const validTypes = ['decision', 'explanation', 'context'];
   if (!validTypes.includes(suggestion.decision_type)) {
     console.log(`❌ Invalid decision_type: ${suggestion.decision_type}`);
     return false;
