@@ -371,7 +371,7 @@ async function processTranscript(transcriptContent, metadata) {
  * @param {string} channelId - Slack channel ID
  */
 async function postSuggestionsToSlack(client, suggestions, channelId) {
-  const typeEmoji = { product: '📦', ux: '🎨', technical: '⚙️' };
+  const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
 
   // Build message blocks
   const blocks = [
@@ -379,7 +379,7 @@ async function postSuggestionsToSlack(client, suggestions, channelId) {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `🤖 *AI found ${suggestions.length} decision${suggestions.length > 1 ? 's' : ''} in the transcript*\n\nReview each suggestion below:`
+        text: `🤖 *AI found ${suggestions.length} item${suggestions.length > 1 ? 's' : ''} in the transcript*\n\nReview each suggestion below:`
       }
     },
     { type: 'divider' }
@@ -390,9 +390,9 @@ async function postSuggestionsToSlack(client, suggestions, channelId) {
     const confidenceEmoji = confidence >= 0.8 ? '🟢' : confidence >= 0.6 ? '🟡' : '🔴';
     const confidencePercent = Math.round(confidence * 100);
 
-    let decisionBlock = `*Decision ${index + 1}* ${confidenceEmoji} (${confidencePercent}% confidence)\n\n`;
+    let decisionBlock = `*Memory ${index + 1}* ${confidenceEmoji} (${confidencePercent}% confidence)\n\n`;
     decisionBlock += `${typeEmoji[suggestion.decision_type]} *Type:* ${suggestion.decision_type}\n`;
-    decisionBlock += `*Decision:* ${suggestion.decision_text}\n`;
+    decisionBlock += `*Content:* ${suggestion.decision_text}\n`;
 
     if (suggestion.epic_key) {
       decisionBlock += `*Epic:* ${suggestion.epic_key}\n`;
