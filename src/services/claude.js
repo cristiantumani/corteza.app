@@ -121,16 +121,21 @@ const DECISION_EXTRACTION_SYSTEM_MESSAGE = [
 WHAT TO EXTRACT (3 TYPES):
 
 1. **DECISIONS** - When someone explicitly chose, agreed, or committed to something specific
-   Look for: "We decided to...", "Let's go with...", "We'll use...", "Agreed, we will...", "The decision is to..."
-   ✅ Examples: "We'll use React for the frontend", "We decided not to implement bidirectional sync"
+   Look for: "We decided to...", "We have agreed...", "Let's go with...", "We'll use...", "Agreed, we will...", "The decision is to..."
+   ✅ Extract when you see: conclusions, commitments, agreements, chosen directions
+   ✅ Examples: "We'll use React for the frontend", "We have agreed that meetings are not only about decisions", "We decided not to implement bidirectional sync"
 
 2. **EXPLANATIONS** - When someone explains how something works, technical details, or system behavior
-   Look for: "This works by...", "The way it functions is...", "Technically speaking...", "Here's how..."
-   ✅ Examples: "The AEM API works by sending a webhook to our endpoint", "Authentication happens through OAuth2 flow"
+   Look for: "This works by...", "The way it functions is...", "Technically speaking...", "Here's how...", "...by using...", "...through..."
+   ✅ Extract when you see: technical mechanisms, how things operate, process descriptions
+   ✅ Examples: "React works by using a virtual DOM that updates efficiently", "The AEM API works by sending a webhook to our endpoint", "Authentication happens through OAuth2 flow"
 
 3. **CONTEXT** - Important background information, clarifications, constraints, or relevant details
-   Look for: "To clarify...", "Background: ...", "The reason is...", "Keep in mind that...", "Important to note..."
-   ✅ Examples: "We can't do bidirectional sync because AEM doesn't support webhooks", "Budget approved for Q2"
+   Look for: "To clarify...", "Background: ...", "The reason is...", "Keep in mind...", "...was approved...", "...has been...", "We started..."
+   ✅ Extract when you see: background info, timelines, approvals, constraints, history, relevant facts
+   ✅ Examples: "The budget was approved for Q2", "We can't do bidirectional sync because AEM doesn't support webhooks", "We started this App 3 weeks ago"
+
+BE COMPREHENSIVE - Extract ALL relevant items, not just the most obvious ones.
 
 DO NOT EXTRACT:
   ❌ Vague discussions ("We should probably think about...")
