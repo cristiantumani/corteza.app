@@ -1,6 +1,6 @@
 # 🎯 Corteza
 
-**Never lose track of important decisions again.** A Slack bot that helps teams log, search, and learn from their product, technical, and UX decisions using AI-powered semantic search.
+**Your team's searchable memory.** A Slack bot that helps teams capture decisions, explanations, and context from meetings using AI-powered extraction and semantic search.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
@@ -10,11 +10,14 @@
 
 ## ✨ Features
 
-### 📝 Decision Logging
-- **Slash Commands:** Quick decision logging with `/decision` command in Slack
-- **Rich Context:** Capture decision type (product/technical/UX), alternatives considered, tags, and Jira epics
-- **File Upload:** Upload meeting transcripts - AI extracts decisions automatically
-- **AI Analysis:** Claude AI analyzes transcripts and suggests structured decisions
+### 🧠 Team Memory Logging
+- **Slash Commands:** Log memories with `/decision` or `/memory` in Slack
+- **3 Memory Types:**
+  - ✅ **Decisions** - Choices and commitments made
+  - 💡 **Explanations** - How things work, technical details
+  - 📌 **Context** - Background info, constraints, timelines
+- **File Upload:** Upload meeting transcripts - AI extracts all 3 types automatically
+- **AI Analysis:** Claude AI analyzes transcripts and suggests structured items for approval
 
 ### 🔍 Semantic Search
 - **Natural Language Queries:** Ask "show me AEM decisions" and find results even if they mention "Adobe Experience Manager"
@@ -55,32 +58,37 @@
 
 ## 💬 Usage Examples
 
-### Log a Decision
+### Add to Team Memory
 ```
-/decision
+/decision We will use React for the frontend
 ```
+or
+```
+/memory The API works by sending webhooks to our endpoint
+```
+
 Fill in the modal with:
-- Decision text
-- Type (product/technical/UX)
-- Alternatives considered
+- Content text
+- Type (decision/explanation/context)
+- Additional comments
 - Tags
 - Related Jira epic (optional)
 
-### Search Decisions
+### Search Team Memory
 ```
-/decisions
+/decisions search authentication
 ```
 Or use the dashboard chat:
-- "Show me all technical decisions from December"
-- "What did we decide about authentication?"
-- "Decisions related to Adobe Experience Manager"
+- "Show me all decisions from December"
+- "What explanations do we have about the API?"
+- "Context about Adobe Experience Manager integration"
 
-### Upload Meeting Notes
-Upload a `.txt` file with meeting transcript to any channel where the bot is present. AI will:
+### Upload Meeting Transcripts
+Upload a `.txt`, `.docx`, or `.pdf` file to any channel where the bot is present. AI will:
 1. Analyze the transcript
-2. Extract decisions
-3. Present them for approval
-4. Log approved decisions automatically
+2. Extract decisions, explanations, and context
+3. Present them for review (approve/edit/reject)
+4. Log approved items automatically
 
 ---
 
