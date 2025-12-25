@@ -205,7 +205,8 @@ async function callClaudeAPI(prompt) {
   }
 
   const anthropic = new Anthropic({
-    apiKey: config.claude.apiKey
+    apiKey: config.claude.apiKey,
+    timeout: 60000 // 60 second timeout
   });
 
   try {
