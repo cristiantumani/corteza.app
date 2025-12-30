@@ -313,6 +313,349 @@ async function getStats(req, res) {
 }
 
 /**
+ * Helper: Get user productivity metrics
+ * @param {string} workspace_id - Workspace ID
+ * @returns {Object} Productivity metrics including totals, timeline, and breakdowns
+ */
+async function getUserProductivityMetrics(workspace_id) {
+  const decisionsCollection = getDecisionsCollection();
+  const { getMeetingTranscriptsCollection } = require('../config/database');
+  const transcriptsCollection = getMeetingTranscriptsCollection();
+
+  const baseFilter = workspace_id ? { workspace_id } : {};
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+  // Get totals and breakdowns
+  const [total, byType, byCategory, totalThisMonth, aiExtracted, totalMeetings] = await Promise.all([
+    decisionsCollection.countDocuments(baseFilter),
+
+    decisionsCollection.aggregate([
+      { $match: baseFilter },
+      { $group: { _id: '$type', count: { $sum: 1 } } }
+    ]).toArray(),
+
+    decisionsCollection.aggregate([
+      { $match: baseFilter },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]).toArray(),
+
+    decisionsCollection.countDocuments({
+      ...baseFilter,
+      timestamp: { $gte: thirtyDaysAgo.toISOString() }
+    }),
+
+    // AI-extracted decisions have the pattern in alternatives field
+    decisionsCollection.countDocuments({
+      ...baseFilter,
+      alternatives: { $regex: /This decision was taken during/i }
+    }),
+
+    transcriptsCollection.countDocuments(baseFilter)
+  ]);
+
+  const manualEntries = total - aiExtracted;
+  const averagePerMeeting = totalMeetings > 0 ? (aiExtracted / totalMeetings) : 0;
+
+  // Format type stats
+  const typeStats = byType.reduce((acc, item) => {
+    if (item._id) acc[item._id] = item.count;
+    return acc;
+  }, { decision: 0, explanation: 0, context: 0 });
+
+  // Format category stats
+  const categoryStats = byCategory.reduce((acc, item) => {
+    if (item._id) acc[item._id] = item.count;
+    return acc;
+  }, { product: 0, ux: 0, technical: 0 });
+
+  // Weekly timeline for last 90 days
+  const weeklyTimeline = await decisionsCollection.aggregate([
+    {
+      $match: {
+        ...baseFilter,
+        timestamp: { $gte: ninetyDaysAgo.toISOString() }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          week: {
+            $dateToString: {
+              format: '%Y-W%U',
+              date: { $toDate: '$timestamp' }
+            }
+          },
+          type: '$type'
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $group: {
+        _id: '$_id.week',
+        total: { $sum: '$count' },
+        byType: {
+          $push: {
+            type: '$_id.type',
+            count: '$count'
+          }
+        }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]).toArray();
+
+  return {
+    totalMemories: total,
+    totalThisMonth,
+    manualEntries,
+    aiExtracted,
+    averagePerMeeting: Math.round(averagePerMeeting * 10) / 10,
+    byType: typeStats,
+    byCategory: categoryStats,
+    timeline: {
+      weekly: weeklyTimeline.map(w => ({
+        week: w._id,
+        count: w.total,
+        byType: w.byType
+      }))
+    }
+  };
+}
+
+/**
+ * Helper: Get meeting insights
+ * @param {string} workspace_id - Workspace ID
+ * @returns {Object} Meeting productivity metrics
+ */
+async function getMeetingInsights(workspace_id) {
+  const decisionsCollection = getDecisionsCollection();
+  const { getMeetingTranscriptsCollection } = require('../config/database');
+  const transcriptsCollection = getMeetingTranscriptsCollection();
+
+  const baseFilter = workspace_id ? { workspace_id } : {};
+
+  // Top 5 most productive meetings
+  const topMeetings = await transcriptsCollection.aggregate([
+    { $match: baseFilter },
+    { $sort: { decisions_found: -1 } },
+    { $limit: 5 },
+    {
+      $project: {
+        fileName: '$file_name',
+        uploadedAt: '$uploaded_at',
+        uploadedBy: '$uploaded_by_name',
+        itemsCaptured: '$decisions_found',
+        transcriptId: '$transcript_id',
+        wordCount: '$word_count'
+      }
+    }
+  ]).toArray();
+
+  // Bottom 5 least productive meetings (but > 0)
+  const leastProductiveMeetings = await transcriptsCollection.aggregate([
+    {
+      $match: {
+        ...baseFilter,
+        decisions_found: { $gt: 0 }
+      }
+    },
+    { $sort: { decisions_found: 1 } },
+    { $limit: 5 },
+    {
+      $project: {
+        fileName: '$file_name',
+        uploadedAt: '$uploaded_at',
+        uploadedBy: '$uploaded_by_name',
+        itemsCaptured: '$decisions_found',
+        transcriptId: '$transcript_id',
+        wordCount: '$word_count'
+      }
+    }
+  ]).toArray();
+
+  // Channel activity breakdown
+  const channelActivity = await decisionsCollection.aggregate([
+    { $match: baseFilter },
+    {
+      $group: {
+        _id: '$channel_id',
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]).toArray();
+
+  return {
+    topMeetings,
+    leastProductiveMeetings,
+    channelActivity: channelActivity.map(c => ({
+      channelId: c._id,
+      count: c.count
+    }))
+  };
+}
+
+/**
+ * Helper: Get team engagement metrics
+ * @param {string} workspace_id - Workspace ID
+ * @returns {Object} Engagement metrics including contributors and patterns
+ */
+async function getEngagementMetrics(workspace_id) {
+  const decisionsCollection = getDecisionsCollection();
+  const { getAIFeedbackCollection } = require('../config/database');
+  const feedbackCollection = getAIFeedbackCollection();
+
+  const baseFilter = workspace_id ? { workspace_id } : {};
+
+  // Count manual entries by creator
+  const manualContributors = await decisionsCollection.aggregate([
+    {
+      $match: {
+        ...baseFilter,
+        alternatives: { $not: { $regex: /This decision was taken during/i } }
+      }
+    },
+    {
+      $group: {
+        _id: { userId: '$user_id', userName: '$creator' },
+        manualEntries: { $sum: 1 }
+      }
+    }
+  ]).toArray();
+
+  // Count AI reviews by user_id
+  const aiReviewers = await feedbackCollection.aggregate([
+    {
+      $match: {
+        ...baseFilter,
+        action: { $in: ['approved', 'edited_approved'] }
+      }
+    },
+    {
+      $group: {
+        _id: '$user_id',
+        aiReviews: { $sum: 1 }
+      }
+    }
+  ]).toArray();
+
+  // Combine manual and AI contributions
+  const contributorMap = new Map();
+
+  manualContributors.forEach(c => {
+    contributorMap.set(c._id.userId, {
+      userName: c._id.userName,
+      userId: c._id.userId,
+      manualEntries: c.manualEntries,
+      aiReviews: 0
+    });
+  });
+
+  aiReviewers.forEach(r => {
+    const existing = contributorMap.get(r._id);
+    if (existing) {
+      existing.aiReviews = r.aiReviews;
+    } else {
+      contributorMap.set(r._id, {
+        userId: r._id,
+        userName: 'User',
+        manualEntries: 0,
+        aiReviews: r.aiReviews
+      });
+    }
+  });
+
+  const topContributors = Array.from(contributorMap.values())
+    .map(c => ({
+      ...c,
+      totalContributions: c.manualEntries + c.aiReviews
+    }))
+    .sort((a, b) => b.totalContributions - a.totalContributions)
+    .slice(0, 10);
+
+  // Bot command usage
+  const totalManual = manualContributors.reduce((sum, c) => sum + c.manualEntries, 0);
+  const totalAIReviews = aiReviewers.reduce((sum, r) => sum + r.aiReviews, 0);
+
+  return {
+    topContributors,
+    botCommandUsage: {
+      manualCommands: totalManual,
+      aiReviews: totalAIReviews
+    }
+  };
+}
+
+/**
+ * Helper: Get content analysis
+ * @param {string} workspace_id - Workspace ID
+ * @returns {Object} Content metrics including tags, epics, and patterns
+ */
+async function getContentAnalysis(workspace_id) {
+  const decisionsCollection = getDecisionsCollection();
+  const baseFilter = workspace_id ? { workspace_id } : {};
+
+  // Top 20 tags (unwind array and count)
+  const topTags = await decisionsCollection.aggregate([
+    { $match: baseFilter },
+    { $unwind: '$tags' },
+    { $group: { _id: '$tags', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 20 }
+  ]).toArray();
+
+  // Top 10 epics
+  const topEpics = await decisionsCollection.aggregate([
+    {
+      $match: {
+        ...baseFilter,
+        epic_key: { $ne: null, $ne: '' }
+      }
+    },
+    { $group: { _id: '$epic_key', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]).toArray();
+
+  // Day-of-week activity
+  const dayOfWeekActivity = await decisionsCollection.aggregate([
+    { $match: baseFilter },
+    {
+      $group: {
+        _id: {
+          $dayOfWeek: { $toDate: '$timestamp' }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]).toArray();
+
+  // Map 1=Sunday to day names
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const formattedDayActivity = dayOfWeekActivity.map(d => ({
+    day: dayNames[d._id - 1],
+    dayNumber: d._id,
+    count: d.count
+  }));
+
+  return {
+    topTags: topTags.map(t => ({
+      tag: t._id,
+      count: t.count
+    })),
+    topEpics: topEpics.map(e => ({
+      epicKey: e._id,
+      count: e.count
+    })),
+    dayOfWeekActivity: formattedDayActivity
+  };
+}
+
+/**
  * GET /api/ai-analytics - Get AI feedback analytics
  * Returns comprehensive metrics on AI suggestion quality and user feedback
  */
@@ -320,13 +663,33 @@ async function getAIAnalytics(req, res) {
   try {
     const query = parseQueryParams(req.url);
     const validated = validateQueryParams(query);
+    const view = query.view || 'all'; // 'user', 'ai', or 'all'
 
-    const { getAIFeedbackCollection, getAISuggestionsCollection } = require('../config/database');
-    const feedbackCollection = getAIFeedbackCollection();
-    const suggestionsCollection = getAISuggestionsCollection();
+    const result = {};
 
-    // Build base filter with optional workspace_id
-    const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
+    // User-centric metrics
+    if (view === 'user' || view === 'all') {
+      const [productivity, meetings, engagement, content] = await Promise.all([
+        getUserProductivityMetrics(validated.workspace_id),
+        getMeetingInsights(validated.workspace_id),
+        getEngagementMetrics(validated.workspace_id),
+        getContentAnalysis(validated.workspace_id)
+      ]);
+
+      result.productivity = productivity;
+      result.meetings = meetings;
+      result.engagement = engagement;
+      result.contentAnalysis = content;
+    }
+
+    // AI model metrics (existing analytics)
+    if (view === 'ai' || view === 'all') {
+      const { getAIFeedbackCollection, getAISuggestionsCollection } = require('../config/database');
+      const feedbackCollection = getAIFeedbackCollection();
+      const suggestionsCollection = getAISuggestionsCollection();
+
+      // Build base filter with optional workspace_id
+      const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
 
     // 1. Overall feedback stats
     const [totalSuggestions, totalFeedback, feedbackByAction] = await Promise.all([
@@ -508,26 +871,32 @@ async function getAIAnalytics(req, res) {
       totalEdits: 0
     };
 
+      // Store AI model metrics in result
+      result.aiModel = {
+        overview: {
+          totalSuggestions,
+          totalReviewed,
+          pendingReview: totalSuggestions - totalReviewed,
+          approvalRate: parseFloat(approvalRate),
+          rejectionRate: parseFloat(rejectionRate),
+          editRate: parseFloat(editRate),
+          feedbackStats
+        },
+        confidenceAccuracy: confidenceStats,
+        topRejectionReasons: topReasons,
+        accuracyByType,
+        timeline: timelineData,
+        editPatterns
+      };
+    }
+
+    // Add metadata
+    result.workspace_id = validated.workspace_id || 'all';
+    result.generatedAt = new Date().toISOString();
+
     // Return comprehensive analytics
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      overview: {
-        totalSuggestions,
-        totalReviewed,
-        pendingReview: totalSuggestions - totalReviewed,
-        approvalRate: parseFloat(approvalRate),
-        rejectionRate: parseFloat(rejectionRate),
-        editRate: parseFloat(editRate),
-        feedbackStats
-      },
-      confidenceAccuracy: confidenceStats,
-      topRejectionReasons: topReasons,
-      accuracyByType,
-      timeline: timelineData,
-      editPatterns,
-      workspace_id: validated.workspace_id || 'all',
-      generatedAt: new Date().toISOString()
-    }));
+    res.end(JSON.stringify(result));
 
   } catch (error) {
     console.error('Error fetching AI analytics:', error);
