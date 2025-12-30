@@ -68,6 +68,11 @@ async function connectToMongoDB() {
     await decisionsCollection.createIndex({ workspace_id: 1, type: 1 });
     await decisionsCollection.createIndex({ workspace_id: 1, epic_key: 1 });
 
+    // Analytics performance indexes
+    await decisionsCollection.createIndex({ workspace_id: 1, creator: 1 }); // Top contributors
+    await decisionsCollection.createIndex({ workspace_id: 1, channel_id: 1 }); // Channel activity
+    await decisionsCollection.createIndex({ tags: 1 }); // Tag cloud aggregation
+
     await aiSuggestionsCollection.createIndex({ workspace_id: 1, suggestion_id: 1 }, { unique: true });
     await aiSuggestionsCollection.createIndex({ workspace_id: 1, status: 1 });
 

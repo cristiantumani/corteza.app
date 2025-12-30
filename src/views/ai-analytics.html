@@ -350,6 +350,7 @@
       color: #dc2626;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -371,8 +372,94 @@
     <div id="error" class="error" style="display:none;"></div>
     <div id="content" style="display:none;">
 
-      <!-- Overview Stats -->
-      <div class="stats-grid" id="overview-stats"></div>
+      <!-- Team Productivity View -->
+      <div id="productivity-view" class="view active">
+        <div class="stats-grid" id="productivity-stats"></div>
+
+        <div class="section">
+          <h2>📈 Activity Timeline (Last 90 Days)</h2>
+          <div class="chart-container">
+            <canvas id="productivity-timeline-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="section half-width">
+            <h2>📝 By Type</h2>
+            <div class="chart-container">
+              <canvas id="type-pie-chart"></canvas>
+            </div>
+          </div>
+          <div class="section half-width">
+            <h2>🏷️ By Category</h2>
+            <div class="chart-container">
+              <canvas id="category-bar-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meeting Insights View -->
+      <div id="meetings-view" class="view">
+        <div class="section">
+          <h2>🏆 Most Productive Meetings</h2>
+          <div id="top-meetings-table"></div>
+        </div>
+
+        <div class="section">
+          <h2>💤 Least Productive Meetings</h2>
+          <div id="bottom-meetings-table"></div>
+        </div>
+
+        <div class="section">
+          <h2>📊 Channel Activity</h2>
+          <div class="chart-container">
+            <canvas id="channel-activity-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Engagement View -->
+      <div id="engagement-view" class="view">
+        <div class="stats-grid" id="engagement-stats"></div>
+
+        <div class="section">
+          <h2>👥 Top Contributors</h2>
+          <div id="contributors-leaderboard"></div>
+        </div>
+
+        <div class="section">
+          <h2>📊 Bot Usage Breakdown</h2>
+          <div class="chart-container">
+            <canvas id="bot-usage-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Analysis View -->
+      <div id="content-view" class="view">
+        <div class="section">
+          <h2>🏷️ Popular Tags</h2>
+          <div id="tag-cloud"></div>
+        </div>
+
+        <div class="section">
+          <h2>🎯 Top Epics</h2>
+          <div id="epics-list"></div>
+        </div>
+
+        <div class="section">
+          <h2>📅 Activity by Day of Week</h2>
+          <div class="chart-container">
+            <canvas id="day-of-week-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Model Performance View -->
+      <div id="ai-model-view" class="view">
+        <!-- Overview Stats -->
+        <div class="stats-grid" id="overview-stats"></div>
 
       <!-- Confidence Accuracy -->
       <div class="section">
@@ -424,6 +511,8 @@
         </p>
         <div class="timeline" id="timeline-chart"></div>
       </div>
+      </div>
+      <!-- End AI Model Performance View -->
 
       <div class="nav-links">
         <a href="/dashboard">← Back to Dashboard</a>
@@ -444,17 +533,50 @@
       throw new Error('No workspace_id provided');
     }
 
-    // Fetch and render analytics
+    // Data cache
+    let userAnalyticsData = null;
+    let aiModelData = null;
+
+    // Setup tab switching
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      const views = document.querySelectorAll('.view');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', async () => {
+          const viewName = tab.dataset.view;
+
+          // Update active states
+          tabs.forEach(t => t.classList.remove('active'));
+          views.forEach(v => v.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById(`${viewName}-view`).classList.add('active');
+
+          // Lazy load AI model data when that tab is clicked
+          if (viewName === 'ai-model' && !aiModelData) {
+            await loadAIModelData();
+          }
+        });
+      });
+    }
+
+    // Fetch user-centric analytics (productivity, meetings, engagement, content)
     async function fetchAnalytics() {
       try {
-        const response = await fetch(`/api/ai-analytics?workspace_id=${WORKSPACE_ID}`);
+        const response = await fetch(`/api/ai-analytics?workspace_id=${WORKSPACE_ID}&view=user`);
 
         if (!response.ok) {
           throw new Error(`API returned ${response.status}`);
         }
 
         const data = await response.json();
-        renderAnalytics(data);
+        userAnalyticsData = data;
+
+        // Render user-centric views
+        renderProductivityView(data.productivity);
+        renderMeetingsView(data.meetings);
+        renderEngagementView(data.engagement);
+        renderContentView(data.contentAnalysis);
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
@@ -466,7 +588,443 @@
       }
     }
 
-    function renderAnalytics(data) {
+    // Lazy load AI model performance data
+    async function loadAIModelData() {
+      if (aiModelData) return; // Already loaded
+
+      try {
+        const response = await fetch(`/api/ai-analytics?workspace_id=${WORKSPACE_ID}&view=ai`);
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        aiModelData = data.aiModel;
+        renderAIModelView(aiModelData);
+      } catch (error) {
+        console.error('Error loading AI model data:', error);
+        document.getElementById('ai-model-view').innerHTML =
+          `<div class="error">❌ Failed to load AI model data: ${error.message}</div>`;
+      }
+    }
+
+    // Render functions for each view
+    function renderProductivityView(data) {
+      if (!data) return;
+
+      // Stats cards
+      const statsHTML = `
+        <div class="stat-card">
+          <h3>Total Team Memory</h3>
+          <div class="number">${data.total}</div>
+          <div class="label">All time</div>
+        </div>
+        <div class="stat-card">
+          <h3>This Month</h3>
+          <div class="number">${data.totalThisMonth}</div>
+          <div class="label">Last 30 days</div>
+        </div>
+        <div class="stat-card">
+          <h3>Avg Per Meeting</h3>
+          <div class="number">${data.averagePerMeeting.toFixed(1)}</div>
+          <div class="label">${data.aiExtracted} from ${data.totalMeetings} meetings</div>
+        </div>
+        <div class="stat-card">
+          <h3>Manual vs AI</h3>
+          <div class="number">${data.manualEntries} / ${data.aiExtracted}</div>
+          <div class="label">Manual / AI-extracted</div>
+        </div>
+      `;
+      document.getElementById('productivity-stats').innerHTML = statsHTML;
+
+      // Timeline chart
+      if (data.weeklyTimeline && data.weeklyTimeline.length > 0) {
+        const ctx = document.getElementById('productivity-timeline-chart');
+        if (ctx) {
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: data.weeklyTimeline.map(w => w.week),
+              datasets: [
+                {
+                  label: 'Decisions',
+                  data: data.weeklyTimeline.map(w => w.decisions || 0),
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                },
+                {
+                  label: 'Explanations',
+                  data: data.weeklyTimeline.map(w => w.explanations || 0),
+                  borderColor: '#6366f1',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                },
+                {
+                  label: 'Context',
+                  data: data.weeklyTimeline.map(w => w.context || 0),
+                  borderColor: '#f59e0b',
+                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top'
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // Type pie chart
+      const typeCtx = document.getElementById('type-pie-chart');
+      if (typeCtx) {
+        new Chart(typeCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Decisions', 'Explanations', 'Context'],
+            datasets: [{
+              data: [
+                data.byType.decision || 0,
+                data.byType.explanation || 0,
+                data.byType.context || 0
+              ],
+              backgroundColor: ['#10b981', '#6366f1', '#f59e0b']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            }
+          }
+        });
+      }
+
+      // Category bar chart
+      const categoryCtx = document.getElementById('category-bar-chart');
+      if (categoryCtx) {
+        new Chart(categoryCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Product', 'UX', 'Technical'],
+            datasets: [{
+              label: 'Count',
+              data: [
+                data.byCategory.product || 0,
+                data.byCategory.ux || 0,
+                data.byCategory.technical || 0
+              ],
+              backgroundColor: ['#10b981', '#6366f1', '#f59e0b']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function renderMeetingsView(data) {
+      if (!data) return;
+
+      // Top meetings table
+      if (data.topMeetings && data.topMeetings.length > 0) {
+        const topHTML = `
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; text-align: left;">
+                <th style="padding: 12px;">Meeting</th>
+                <th style="padding: 12px;">Uploaded</th>
+                <th style="padding: 12px;">Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.topMeetings.map(m => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 12px;">${m.fileName}</td>
+                  <td style="padding: 12px;">${new Date(m.uploadedAt).toLocaleDateString()} • ${m.uploadedBy}</td>
+                  <td style="padding: 12px; font-weight: bold;">${m.itemsCaptured}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        document.getElementById('top-meetings-table').innerHTML = topHTML;
+      } else {
+        document.getElementById('top-meetings-table').innerHTML =
+          '<p style="color: #64748b;">No meetings analyzed yet.</p>';
+      }
+
+      // Bottom meetings table
+      if (data.bottomMeetings && data.bottomMeetings.length > 0) {
+        const bottomHTML = `
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; text-align: left;">
+                <th style="padding: 12px;">Meeting</th>
+                <th style="padding: 12px;">Uploaded</th>
+                <th style="padding: 12px;">Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.bottomMeetings.map(m => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 12px;">${m.fileName}</td>
+                  <td style="padding: 12px;">${new Date(m.uploadedAt).toLocaleDateString()} • ${m.uploadedBy}</td>
+                  <td style="padding: 12px;">${m.itemsCaptured}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        document.getElementById('bottom-meetings-table').innerHTML = bottomHTML;
+      } else {
+        document.getElementById('bottom-meetings-table').innerHTML =
+          '<p style="color: #64748b;">No data available.</p>';
+      }
+
+      // Channel activity chart
+      if (data.channelActivity && data.channelActivity.length > 0) {
+        const channelCtx = document.getElementById('channel-activity-chart');
+        if (channelCtx) {
+          new Chart(channelCtx, {
+            type: 'bar',
+            data: {
+              labels: data.channelActivity.map(c => c.channelName || c.channelId),
+              datasets: [{
+                label: 'Decisions',
+                data: data.channelActivity.map(c => c.count),
+                backgroundColor: '#6366f1'
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    function renderEngagementView(data) {
+      if (!data) return;
+
+      // Stats cards
+      const statsHTML = `
+        <div class="stat-card">
+          <h3>Manual Entries</h3>
+          <div class="number">${data.botUsage.manual}</div>
+          <div class="label">Via /decision command</div>
+        </div>
+        <div class="stat-card">
+          <h3>AI-Extracted</h3>
+          <div class="number">${data.botUsage.aiExtracted}</div>
+          <div class="label">From meeting transcripts</div>
+        </div>
+        <div class="stat-card">
+          <h3>Active Contributors</h3>
+          <div class="number">${data.topContributors.length}</div>
+          <div class="label">Team members</div>
+        </div>
+      `;
+      document.getElementById('engagement-stats').innerHTML = statsHTML;
+
+      // Contributors leaderboard
+      if (data.topContributors && data.topContributors.length > 0) {
+        const leaderboardHTML = `
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${data.topContributors.map((c, idx) => `
+              <div style="display: flex; align-items: center; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                <div style="font-size: 24px; font-weight: bold; color: ${idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#c77b53' : '#64748b'}; width: 40px;">
+                  ${idx + 1}
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; font-size: 16px;">${c.userName}</div>
+                  <div style="font-size: 14px; color: #64748b;">
+                    ${c.manualEntries} manual • ${c.aiReviews} reviews
+                  </div>
+                </div>
+                <div style="font-size: 20px; font-weight: bold; color: #6366f1;">
+                  ${c.totalContributions}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        document.getElementById('contributors-leaderboard').innerHTML = leaderboardHTML;
+      } else {
+        document.getElementById('contributors-leaderboard').innerHTML =
+          '<p style="color: #64748b;">No contributors yet.</p>';
+      }
+
+      // Bot usage chart
+      if (data.botUsage) {
+        const botUsageCtx = document.getElementById('bot-usage-chart');
+        if (botUsageCtx) {
+          new Chart(botUsageCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Manual Entries', 'AI-Extracted'],
+              datasets: [{
+                data: [data.botUsage.manual, data.botUsage.aiExtracted],
+                backgroundColor: ['#10b981', '#6366f1']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    function renderContentView(data) {
+      if (!data) return;
+
+      // Tag cloud
+      if (data.topTags && data.topTags.length > 0) {
+        const maxCount = Math.max(...data.topTags.map(t => t.count));
+        const tagCloudHTML = `
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 20px;">
+            ${data.topTags.map(tag => {
+              const fontSize = 14 + (tag.count / maxCount) * 20;
+              return `
+                <span style="
+                  font-size: ${fontSize}px;
+                  font-weight: ${tag.count > maxCount / 2 ? 'bold' : 'normal'};
+                  color: #6366f1;
+                  padding: 8px 12px;
+                  background: #f0f1ff;
+                  border-radius: 6px;
+                  cursor: pointer;
+                " title="${tag.count} uses">
+                  ${tag.tag}
+                </span>
+              `;
+            }).join('')}
+          </div>
+        `;
+        document.getElementById('tag-cloud').innerHTML = tagCloudHTML;
+      } else {
+        document.getElementById('tag-cloud').innerHTML =
+          '<p style="color: #64748b;">No tags yet.</p>';
+      }
+
+      // Top epics
+      if (data.topEpics && data.topEpics.length > 0) {
+        const epicsHTML = `
+          <ul style="list-style: none; padding: 0;">
+            ${data.topEpics.map(epic => `
+              <li style="padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                <span style="font-weight: 500;">${epic.epic || 'No Epic'}</span>
+                <span style="color: #64748b;">${epic.count} decisions</span>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+        document.getElementById('epics-list').innerHTML = epicsHTML;
+      } else {
+        document.getElementById('epics-list').innerHTML =
+          '<p style="color: #64748b;">No epics linked yet.</p>';
+      }
+
+      // Day-of-week chart
+      if (data.dayOfWeekActivity && data.dayOfWeekActivity.length > 0) {
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeekCtx = document.getElementById('day-of-week-chart');
+        if (dayOfWeekCtx) {
+          new Chart(dayOfWeekCtx, {
+            type: 'bar',
+            data: {
+              labels: data.dayOfWeekActivity.map(d => dayNames[d.day - 1] || `Day ${d.day}`),
+              datasets: [{
+                label: 'Decisions',
+                data: data.dayOfWeekActivity.map(d => d.count),
+                backgroundColor: '#10b981'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    function renderAIModelView(data) {
       // Update nav link with workspace_id
       document.querySelector('.nav-links a[target="_blank"]').href =
         `/api/ai-analytics?workspace_id=${WORKSPACE_ID}`;
@@ -604,6 +1162,7 @@
     }
 
     // Load analytics on page load
+    setupTabs();
     fetchAnalytics();
   </script>
 </body>
