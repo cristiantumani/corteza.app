@@ -406,21 +406,32 @@ async function getUserProductivityMetrics(workspace_id) {
     { $sort: { _id: 1 } }
   ]).toArray();
 
+  // Format weekly timeline for frontend
+  const formattedTimeline = weeklyTimeline.map(w => {
+    const byTypeObj = w.byType.reduce((acc, item) => {
+      acc[item.type] = item.count;
+      return acc;
+    }, {});
+
+    return {
+      week: w._id,
+      total: w.total,
+      decisions: byTypeObj.decision || 0,
+      explanations: byTypeObj.explanation || 0,
+      context: byTypeObj.context || 0
+    };
+  });
+
   return {
-    totalMemories: total,
+    total,
     totalThisMonth,
+    totalMeetings,
     manualEntries,
     aiExtracted,
     averagePerMeeting: Math.round(averagePerMeeting * 10) / 10,
     byType: typeStats,
     byCategory: categoryStats,
-    timeline: {
-      weekly: weeklyTimeline.map(w => ({
-        week: w._id,
-        count: w.total,
-        byType: w.byType
-      }))
-    }
+    weeklyTimeline: formattedTimeline
   };
 }
 
@@ -490,9 +501,10 @@ async function getMeetingInsights(workspace_id) {
 
   return {
     topMeetings,
-    leastProductiveMeetings,
+    bottomMeetings: leastProductiveMeetings,
     channelActivity: channelActivity.map(c => ({
       channelId: c._id,
+      channelName: c._id, // Could be enriched with actual channel names from Slack API
       count: c.count
     }))
   };
@@ -576,15 +588,20 @@ async function getEngagementMetrics(workspace_id) {
     .sort((a, b) => b.totalContributions - a.totalContributions)
     .slice(0, 10);
 
-  // Bot command usage
+  // Bot usage stats
   const totalManual = manualContributors.reduce((sum, c) => sum + c.manualEntries, 0);
-  const totalAIReviews = aiReviewers.reduce((sum, r) => sum + r.aiReviews, 0);
+
+  // Get total AI-extracted decisions
+  const totalAIExtracted = await decisionsCollection.countDocuments({
+    ...baseFilter,
+    alternatives: { $regex: /This decision was taken during/i }
+  });
 
   return {
     topContributors,
-    botCommandUsage: {
-      manualCommands: totalManual,
-      aiReviews: totalAIReviews
+    botUsage: {
+      manual: totalManual,
+      aiExtracted: totalAIExtracted
     }
   };
 }
@@ -634,24 +651,19 @@ async function getContentAnalysis(workspace_id) {
     { $sort: { _id: 1 } }
   ]).toArray();
 
-  // Map 1=Sunday to day names
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const formattedDayActivity = dayOfWeekActivity.map(d => ({
-    day: dayNames[d._id - 1],
-    dayNumber: d._id,
-    count: d.count
-  }));
-
   return {
     topTags: topTags.map(t => ({
       tag: t._id,
       count: t.count
     })),
     topEpics: topEpics.map(e => ({
-      epicKey: e._id,
+      epic: e._id,
       count: e.count
     })),
-    dayOfWeekActivity: formattedDayActivity
+    dayOfWeekActivity: dayOfWeekActivity.map(d => ({
+      day: d._id, // 1-7 where 1=Sunday
+      count: d.count
+    }))
   };
 }
 
