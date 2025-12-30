@@ -26,6 +26,12 @@ function validateQueryParams(query) {
     validated.type = query.type.toLowerCase();
   }
 
+  // Category filter (must be one of the allowed categories)
+  const allowedCategories = ['product', 'ux', 'technical'];
+  if (query.category && allowedCategories.includes(query.category.toLowerCase())) {
+    validated.category = query.category.toLowerCase();
+  }
+
   // Epic filter (alphanumeric and hyphens only)
   if (query.epic) {
     const epic = query.epic.trim();

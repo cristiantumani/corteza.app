@@ -47,6 +47,9 @@ async function getDecisions(req, res) {
     if (validated.type) {
       filter.type = validated.type;
     }
+    if (validated.category) {
+      filter.category = validated.category;
+    }
     if (validated.epic) {
       filter.epic_key = { $regex: validated.epic, $options: 'i' };
     }
@@ -121,15 +124,24 @@ async function updateDecision(req, res) {
         const updates = JSON.parse(body);
 
         // Validate and sanitize updates
-        const allowedFields = ['text', 'type', 'epic_key', 'tags', 'alternatives'];
+        const allowedFields = ['text', 'type', 'category', 'epic_key', 'tags', 'alternatives'];
         const sanitizedUpdates = {};
 
         if (updates.text && typeof updates.text === 'string' && updates.text.trim().length > 0) {
           sanitizedUpdates.text = updates.text.trim();
         }
 
-        if (updates.type && ['product', 'ux', 'technical'].includes(updates.type)) {
+        if (updates.type && ['decision', 'explanation', 'context'].includes(updates.type)) {
           sanitizedUpdates.type = updates.type;
+        }
+
+        // Validate category field (product/ux/technical)
+        if (updates.category !== undefined) {
+          if (updates.category === null || updates.category === '') {
+            sanitizedUpdates.category = null;
+          } else if (['product', 'ux', 'technical'].includes(updates.category)) {
+            sanitizedUpdates.category = updates.category;
+          }
         }
 
         if (updates.epic_key !== undefined) {
@@ -258,11 +270,15 @@ async function getStats(req, res) {
     // Build base filter with optional workspace_id
     const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
 
-    const [total, byType, recentCount] = await Promise.all([
+    const [total, byType, byCategory, recentCount] = await Promise.all([
       decisionsCollection.countDocuments(baseFilter),
       decisionsCollection.aggregate([
         { $match: baseFilter },
         { $group: { _id: '$type', count: { $sum: 1 } } }
+      ]).toArray(),
+      decisionsCollection.aggregate([
+        { $match: baseFilter },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
       ]).toArray(),
       decisionsCollection.countDocuments({
         ...baseFilter,
@@ -275,10 +291,18 @@ async function getStats(req, res) {
       return acc;
     }, {});
 
+    const categoryStats = byCategory.reduce((acc, item) => {
+      if (item._id) { // Skip null categories
+        acc[item._id] = item.count;
+      }
+      return acc;
+    }, {});
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       total,
       byType: typeStats,
+      byCategory: categoryStats,
       lastWeek: recentCount
     }));
   } catch (error) {

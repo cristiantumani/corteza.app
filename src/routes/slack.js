@@ -55,6 +55,23 @@ async function handleDecisionCommand({ command, ack, client, say }) {
           },
           {
             type: 'input',
+            block_id: 'category_block',
+            optional: true,
+            element: {
+              type: 'static_select',
+              action_id: 'category_select',
+              placeholder: { type: 'plain_text', text: 'Select category (optional)' },
+              options: [
+                { text: { type: 'plain_text', text: '🎯 Product' }, value: 'product' },
+                { text: { type: 'plain_text', text: '🎨 UX' }, value: 'ux' },
+                { text: { type: 'plain_text', text: '⚙️ Technical' }, value: 'technical' }
+              ]
+            },
+            label: { type: 'plain_text', text: 'Category (optional)' },
+            hint: { type: 'plain_text', text: 'Product, UX, or Technical domain' }
+          },
+          {
+            type: 'input',
             block_id: 'epic_block',
             optional: true,
             element: {
@@ -122,6 +139,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
 
     // Extract and validate form values
     const decisionType = values.type_block.type_select.selected_option.value;
+    const category = values.category_block.category_select.selected_option?.value || null;
     const epicKeyRaw = values.epic_block.epic_input.value || null;
     const epicKey = validateEpicKey(epicKeyRaw);
     const tags = validateTags(values.tags_block.tags_input.value);
@@ -161,6 +179,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
       id: nextId,
       text: metadata.decision_text,
       type: decisionType,
+      category: category,
       epic_key: epicKey,
       jira_data: jiraData,
       tags,
@@ -234,6 +253,14 @@ async function postDecisionConfirmation(client, decision, channelId) {
       text: { type: 'mrkdwn', text: `*Content:*\n${decision.text}` }
     }
   ];
+
+  // Add category if available
+  if (decision.category) {
+    blocks[1].fields.push({
+      type: 'mrkdwn',
+      text: `*Category:*\n${decision.category}`
+    });
+  }
 
   // Add epic info if available
   if (decision.epic_key && decision.jira_data) {

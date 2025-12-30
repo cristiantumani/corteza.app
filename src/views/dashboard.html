@@ -189,6 +189,24 @@
       border-color: #fde68a;
     }
 
+    .badge-decision {
+      background: #dbeafe;
+      color: #1e40af;
+      border-color: #93c5fd;
+    }
+
+    .badge-explanation {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fcd34d;
+    }
+
+    .badge-context {
+      background: #e0e7ff;
+      color: #4338ca;
+      border-color: #a5b4fc;
+    }
+
     .tag {
       background: #f1f5f9;
       color: #334155;
@@ -750,6 +768,9 @@
   <div class="container">
     <div class="stats">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
+      <div class="stat-card"><h3>Decisions</h3><div class="number" id="decision-count">-</div></div>
+      <div class="stat-card"><h3>Explanations</h3><div class="number" id="explanation-count">-</div></div>
+      <div class="stat-card"><h3>Context</h3><div class="number" id="context-count">-</div></div>
       <div class="stat-card"><h3>Product</h3><div class="number" id="product-count">-</div></div>
       <div class="stat-card"><h3>UX</h3><div class="number" id="ux-count">-</div></div>
       <div class="stat-card"><h3>Technical</h3><div class="number" id="technical-count">-</div></div>
@@ -785,7 +806,16 @@
       <div class="filter-group">
         <label>Type</label>
         <select id="type-filter">
-          <option value="">All</option>
+          <option value="">All Types</option>
+          <option value="decision">Decision</option>
+          <option value="explanation">Explanation</option>
+          <option value="context">Context</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Category</label>
+        <select id="category-filter">
+          <option value="">All Categories</option>
           <option value="product">Product</option>
           <option value="ux">UX</option>
           <option value="technical">Technical</option>
@@ -819,6 +849,7 @@
             <th>#</th>
             <th>Memory</th>
             <th>Type</th>
+            <th>Category</th>
             <th>Epic</th>
             <th>Creator</th>
             <th>Date</th>
@@ -826,7 +857,7 @@
           </tr>
         </thead>
         <tbody id="decisions-body">
-          <tr><td colspan="7" class="loading">Loading...</td></tr>
+          <tr><td colspan="8" class="loading">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -934,6 +965,17 @@
             <option value="explanation">Explanation</option>
             <option value="context">Context</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-decision-category">Category (optional)</label>
+          <select id="edit-decision-category">
+            <option value="">None</option>
+            <option value="product">Product</option>
+            <option value="ux">UX</option>
+            <option value="technical">Technical</option>
+          </select>
+          <small>Product, UX, or Technical domain</small>
         </div>
 
         <div class="form-group">
@@ -1054,9 +1096,12 @@
         const r = await fetch(`/api/stats?workspace_id=${WORKSPACE_ID}`);
         const d = await r.json();
         document.getElementById('total-count').textContent = d.total;
-        document.getElementById('product-count').textContent = d.byType.product || 0;
-        document.getElementById('ux-count').textContent = d.byType.ux || 0;
-        document.getElementById('technical-count').textContent = d.byType.technical || 0;
+        document.getElementById('decision-count').textContent = d.byType.decision || 0;
+        document.getElementById('explanation-count').textContent = d.byType.explanation || 0;
+        document.getElementById('context-count').textContent = d.byType.context || 0;
+        document.getElementById('product-count').textContent = d.byCategory?.product || 0;
+        document.getElementById('ux-count').textContent = d.byCategory?.ux || 0;
+        document.getElementById('technical-count').textContent = d.byCategory?.technical || 0;
         document.getElementById('week-count').textContent = d.lastWeek;
       } catch (e) {}
     }
@@ -1065,6 +1110,7 @@
       try {
         const s = document.getElementById('search').value;
         const t = document.getElementById('type-filter').value;
+        const c = document.getElementById('category-filter').value;
         const e = document.getElementById('epic-filter').value;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
@@ -1073,6 +1119,7 @@
         p.append('workspace_id', WORKSPACE_ID);  // ADD workspace_id
         if (s) p.append('search', s);
         if (t) p.append('type', t);
+        if (c) p.append('category', c);
         if (e) p.append('epic', e);
         if (dateFrom) p.append('date_from', dateFrom);
         if (dateTo) p.append('date_to', dateTo);
@@ -1083,14 +1130,14 @@
         allDecisions = d.decisions;
         renderDecisions(d.decisions);
       } catch (err) {
-        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="7">Error</td></tr>';
+        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="8">Error</td></tr>';
       }
     }
 
     function renderDecisions(decisions) {
       const tbody = document.getElementById('decisions-body');
       if (decisions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No memories found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8">No memories found</td></tr>';
         return;
       }
       tbody.innerHTML = decisions.map((d, index) => {
@@ -1106,10 +1153,22 @@
         const maxLength = 80;
         const truncatedText = d.text.length > maxLength ? d.text.substring(0, maxLength) + '...' : d.text;
 
+        // Backward compatibility: if type has old values, treat as category
+        let actualType = d.type;
+        let actualCategory = d.category;
+        if (['product', 'ux', 'technical'].includes(d.type)) {
+          actualCategory = d.type;
+          actualType = null;
+        }
+
+        const typeBadge = actualType ? `<span class="badge badge-${actualType}">${actualType}</span>` : '-';
+        const categoryBadge = actualCategory ? `<span class="badge badge-${actualCategory}">${actualCategory}</span>` : '-';
+
         return `<tr>
           <td><strong>#${d.id}</strong></td>
           <td class="decision-text" title="${d.text}">${truncatedText}</td>
-          <td><span class="badge badge-${d.type}">${d.type}</span></td>
+          <td>${typeBadge}</td>
+          <td>${categoryBadge}</td>
           <td>${epicCell}</td>
           <td>${d.creator}</td>
           <td>${new Date(d.timestamp).toLocaleDateString()}</td>
@@ -1202,6 +1261,7 @@
       document.getElementById('edit-decision-id').value = decision.id;
       document.getElementById('edit-decision-text').value = decision.text;
       document.getElementById('edit-decision-type').value = decision.type;
+      document.getElementById('edit-decision-category').value = decision.category || '';
       document.getElementById('edit-epic-key').value = decision.epic_key || '';
       document.getElementById('edit-tags').value = decision.tags ? decision.tags.join(', ') : '';
       document.getElementById('edit-alternatives').value = decision.alternatives || '';
@@ -1225,6 +1285,7 @@
       const decisionId = document.getElementById('edit-decision-id').value;
       const text = document.getElementById('edit-decision-text').value.trim();
       const type = document.getElementById('edit-decision-type').value;
+      const category = document.getElementById('edit-decision-category').value || null;
       const epicKey = document.getElementById('edit-epic-key').value.trim();
       const tagsString = document.getElementById('edit-tags').value.trim();
       const alternatives = document.getElementById('edit-alternatives').value.trim();
@@ -1236,6 +1297,7 @@
       const updates = {
         text,
         type,
+        category,
         epic_key: epicKey || null,
         tags,
         alternatives: alternatives || null
@@ -1286,11 +1348,12 @@
 
     function exportToCSV() {
       const csv = [
-        ['ID', 'Decision', 'Type', 'Epic', 'Summary', 'Tags', 'Creator', 'Date'],
+        ['ID', 'Decision', 'Type', 'Category', 'Epic', 'Summary', 'Tags', 'Creator', 'Date'],
         ...allDecisions.map(d => [
           d.id,
           d.text,
-          d.type,
+          d.type || '',
+          d.category || '',
           d.epic_key || '',
           (d.jira_data && d.jira_data.summary) || '',
           d.tags.join(','),
@@ -1363,6 +1426,7 @@
 
     document.getElementById('search').addEventListener('input', debounce(fetchDecisions, 500));
     document.getElementById('type-filter').addEventListener('change', fetchDecisions);
+    document.getElementById('category-filter').addEventListener('change', fetchDecisions);
     document.getElementById('epic-filter').addEventListener('input', debounce(fetchDecisions, 500));
     document.getElementById('date-from').addEventListener('change', fetchDecisions);
     document.getElementById('date-to').addEventListener('change', fetchDecisions);

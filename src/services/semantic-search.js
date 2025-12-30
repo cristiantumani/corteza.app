@@ -9,7 +9,8 @@ const config = require('../config/environment');
  * @param {string} query - Natural language search query
  * @param {Object} options - Search options
  * @param {string} options.workspace_id - Required workspace ID for multi-tenancy
- * @param {string} options.type - Optional decision type filter (product/ux/technical)
+ * @param {string} options.type - Optional type filter (decision/explanation/context)
+ * @param {string} options.category - Optional category filter (product/ux/technical)
  * @param {Date} options.dateFrom - Optional start date filter
  * @param {Date} options.dateTo - Optional end date filter
  * @param {number} options.limit - Max results to return (default 10)
@@ -24,6 +25,7 @@ async function semanticSearch(query, options = {}) {
   const {
     workspace_id,
     type,
+    category,
     dateFrom,
     dateTo,
     limit = 10,
@@ -44,6 +46,10 @@ async function semanticSearch(query, options = {}) {
 
     if (type) {
       preFilter.type = type;
+    }
+
+    if (category) {
+      preFilter.category = category;
     }
 
     if (dateFrom || dateTo) {
