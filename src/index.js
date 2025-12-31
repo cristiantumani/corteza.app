@@ -1,6 +1,5 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
-const path = require('path');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
