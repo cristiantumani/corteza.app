@@ -1,5 +1,6 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
+const path = require('path');
 const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
@@ -114,6 +115,11 @@ async function startApp() {
   expressApp.get('/auth/token', handleTokenLogin); // Validates token and creates session
   expressApp.get('/auth/me', handleMe);
   expressApp.get('/auth/logout', handleLogout);
+
+  // Install page (public) - redirects to Slack OAuth
+  expressApp.get('/install', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'install.html'));
+  });
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
