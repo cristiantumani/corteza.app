@@ -109,6 +109,11 @@ async function startApp() {
   expressApp.get('/', redirectToDashboard);
   expressApp.get('/health', healthCheck);
 
+  // Test route to verify routing works
+  expressApp.get('/test', (req, res) => {
+    res.send('Route registration works!');
+  });
+
   // Authentication routes (public)
   expressApp.get('/auth/login', handleLoginPage); // Shows instructions to use /login in Slack
   expressApp.get('/auth/token', handleTokenLogin); // Validates token and creates session
