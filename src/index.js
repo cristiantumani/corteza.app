@@ -185,12 +185,6 @@ async function startApp() {
       Add to Slack
     </a>
   </div>
-  <script>
-    // Auto-redirect after 2 seconds
-    setTimeout(() => {
-      window.location.href = '${slackOAuthUrl}';
-    }, 2000);
-  </script>
 </body>
 </html>
     `);
