@@ -118,7 +118,78 @@ async function startApp() {
 
   // Install page (public) - redirects to Slack OAuth
   expressApp.get('/install', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'install.html'));
+    const slackOAuthUrl = 'https://slack.com/oauth/v2/authorize?client_id=30663056564.10060673235955&scope=channels:history,channels:read,chat:write,chat:write.public,commands,files:read,groups:history,im:history,mpim:history,users:read,users:read.email&user_scope=';
+
+    res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Install Corteza</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    h1 { font-size: 32px; color: #1f2937; margin-bottom: 16px; }
+    p { font-size: 16px; color: #6b7280; margin-bottom: 32px; line-height: 1.6; }
+    .install-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background-color: #6366f1;
+      color: white;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .install-btn:hover {
+      background-color: #4f46e5;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Install Corteza</h1>
+    <p>Click the button below to add Corteza to your Slack workspace. You'll need admin permissions to complete the installation.</p>
+    <a href="${slackOAuthUrl}" class="install-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 8a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8zm0 8a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1z"/>
+        <path d="M16 8a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3V8zm0 8a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3v-1z"/>
+      </svg>
+      Add to Slack
+    </a>
+  </div>
+  <script>
+    // Auto-redirect after 2 seconds
+    setTimeout(() => {
+      window.location.href = '${slackOAuthUrl}';
+    }, 2000);
+  </script>
+</body>
+</html>
+    `);
   });
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
