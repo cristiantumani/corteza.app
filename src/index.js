@@ -116,7 +116,7 @@ async function startApp() {
   expressApp.get('/auth/logout', handleLogout);
 
   // Install page (public) - redirects to Slack OAuth
-  expressApp.get('/install', (req, res) => {
+  expressApp.get('/get-started', (req, res) => {
     const slackOAuthUrl = 'https://slack.com/oauth/v2/authorize?client_id=30663056564.10060673235955&scope=channels:history,channels:read,chat:write,chat:write.public,commands,files:read,groups:history,im:history,mpim:history,users:read,users:read.email&user_scope=';
 
     res.send(`
