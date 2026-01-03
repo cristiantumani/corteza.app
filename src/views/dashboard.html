@@ -1453,7 +1453,79 @@
         closeDeleteModal();
         closeDetailModal();
         closeDeleteAllModal();
+        closeFeedbackModal();
       }
+    });
+
+    // Feedback Widget Functions
+    function openFeedbackModal() {
+      document.getElementById('feedback-modal').classList.add('active');
+    }
+
+    function closeFeedbackModal() {
+      document.getElementById('feedback-modal').classList.remove('active');
+      document.getElementById('feedback-form').reset();
+    }
+
+    async function submitFeedback(event) {
+      event.preventDefault();
+
+      const type = document.getElementById('feedback-type').value;
+      const text = document.getElementById('feedback-text').value.trim();
+      const email = document.getElementById('feedback-email').value.trim();
+      const submitBtn = document.getElementById('feedback-submit-btn');
+
+      // Disable submit button during submission
+      submitBtn.disabled = true;
+      submitBtn.textContent = '📤 Sending...';
+
+      const feedbackData = {
+        type,
+        feedback: text,
+        email: email || null,
+        workspace_id: WORKSPACE_ID,
+        workspace_name: currentUser?.workspace_name || 'Unknown',
+        user_name: currentUser?.user_name || 'Unknown',
+        user_id: currentUser?.user_id || 'Unknown',
+        timestamp: new Date().toISOString(),
+        source: 'dashboard'
+      };
+
+      try {
+        // Send to n8n webhook
+        const webhookUrl = 'https://cristiantumani.app.n8n.cloud/webhook/feedback';
+
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(feedbackData)
+        });
+
+        if (response.ok) {
+          // Success
+          alert('✅ Thank you for your feedback! We\'ve received it and will review it soon.');
+          closeFeedbackModal();
+        } else {
+          throw new Error('Webhook returned non-OK status');
+        }
+      } catch (error) {
+        console.error('Feedback submission error:', error);
+        alert('⚠️ There was an issue submitting your feedback. Please try again or email us directly at cristiantumani@gmail.com');
+      } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📤 Send Feedback';
+      }
+    }
+
+    // Feedback toggle click handler
+    document.getElementById('feedback-toggle').addEventListener('click', openFeedbackModal);
+
+    // Close feedback modal on overlay click
+    document.getElementById('feedback-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeFeedbackModal();
     });
 
     // GDPR Functions
@@ -1580,6 +1652,52 @@
     })();
   </script>
 
+  <!-- Feedback Widget -->
+  <div id="feedback-widget" class="feedback-widget">
+    <button id="feedback-toggle" class="feedback-toggle">
+      💡 Share Idea
+    </button>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div class="modal-overlay" id="feedback-modal">
+    <div class="modal feedback-modal">
+      <div class="detail-header">
+        <h2>💡 Share Your Feedback</h2>
+        <button class="close-btn" onclick="closeFeedbackModal()">✕ Close</button>
+      </div>
+
+      <form id="feedback-form" onsubmit="submitFeedback(event)">
+        <div class="form-group">
+          <label for="feedback-type">Type *</label>
+          <select id="feedback-type" required>
+            <option value="">Select type...</option>
+            <option value="bug">🐛 Bug Report</option>
+            <option value="feature">✨ Feature Request</option>
+            <option value="general">💬 General Feedback</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="feedback-text">Your Feedback *</label>
+          <textarea id="feedback-text" rows="6" required placeholder="Share your thoughts, ideas, or issues..."></textarea>
+          <small>Be as detailed as possible. We read every submission!</small>
+        </div>
+
+        <div class="form-group">
+          <label for="feedback-email">Your Email (optional)</label>
+          <input type="email" id="feedback-email" placeholder="your@email.com">
+          <small>If you'd like us to follow up with you</small>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="modal-btn modal-btn-cancel" onclick="closeFeedbackModal()">Cancel</button>
+          <button type="submit" class="modal-btn modal-btn-primary" id="feedback-submit-btn">📤 Send Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Semantic Search Chat Widget -->
   <div id="chat-widget" class="chat-widget">
     <div id="chat-toggle" class="chat-toggle">
@@ -1618,6 +1736,58 @@
   </div>
 
   <style>
+    /* Feedback Widget Styles */
+    .feedback-widget {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1000;
+    }
+
+    .feedback-toggle {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feedback-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+    }
+
+    .feedback-modal {
+      max-width: 550px;
+      width: 90%;
+      text-align: left;
+    }
+
+    .feedback-modal .form-group textarea {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    @media (max-width: 768px) {
+      .feedback-widget {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 100px;
+      }
+
+      .feedback-toggle {
+        font-size: 14px;
+        padding: 12px 20px;
+      }
+    }
+
     .chat-widget {
       position: fixed;
       bottom: 24px;
