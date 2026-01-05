@@ -194,6 +194,9 @@ async function startApp() {
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
 
+  // Feedback route (early registration to avoid conflicts)
+  expressApp.post('/api/feedback', require('express').json(), requireAuth, submitFeedback);
+
   // Protected routes - API (requires authentication + workspace access)
   expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);
   expressApp.put('/api/decisions/:id', requireAuth, requireWorkspaceAccess, updateDecision);
@@ -202,7 +205,6 @@ async function startApp() {
   expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
-  expressApp.post('/api/feedback', require('express').json(), requireAuth, submitFeedback);
 
   // Protected routes - GDPR (requires authentication + workspace access)
   expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);

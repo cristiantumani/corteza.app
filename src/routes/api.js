@@ -940,8 +940,10 @@ function healthCheck(req, res) {
  * Proxies feedback from frontend to n8n to avoid CORS issues
  */
 async function submitFeedback(req, res) {
+  console.log('📝 Feedback endpoint called');
   try {
     const feedbackData = req.body;
+    console.log('📝 Feedback data:', feedbackData);
 
     // Validate required fields
     if (!feedbackData.type || !feedbackData.feedback) {
