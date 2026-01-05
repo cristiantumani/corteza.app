@@ -957,6 +957,7 @@ async function submitFeedback(req, res) {
 
     // Forward to n8n webhook (server-to-server, no CORS)
     const n8nWebhookUrl = 'https://cristiantumani.app.n8n.cloud/webhook/feedback';
+    console.log('📤 Forwarding to n8n:', n8nWebhookUrl);
 
     const https = require('https');
     const url = require('url');
@@ -975,7 +976,10 @@ async function submitFeedback(req, res) {
       }
     };
 
+    console.log('📤 Request options:', options);
+
     const webhookReq = https.request(options, (webhookRes) => {
+      console.log('✅ n8n responded with status:', webhookRes.statusCode);
       let responseData = '';
 
       webhookRes.on('data', (chunk) => {
@@ -983,17 +987,19 @@ async function submitFeedback(req, res) {
       });
 
       webhookRes.on('end', () => {
+        console.log('✅ n8n response complete:', responseData);
         // Forward n8n response to frontend
         res.writeHead(webhookRes.statusCode, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: webhookRes.statusCode === 200,
           message: 'Feedback submitted successfully'
         }));
+        console.log('✅ Response sent to frontend');
       });
     });
 
     webhookReq.on('error', (error) => {
-      console.error('Error forwarding to n8n:', error);
+      console.error('❌ Error forwarding to n8n:', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: false,
@@ -1003,6 +1009,7 @@ async function submitFeedback(req, res) {
 
     webhookReq.write(postData);
     webhookReq.end();
+    console.log('📤 Request sent to n8n');
 
   } catch (error) {
     console.error('Error submitting feedback:', error);
