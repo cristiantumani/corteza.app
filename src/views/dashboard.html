@@ -1520,13 +1520,21 @@
       }
     }
 
-    // Feedback toggle click handler
-    document.getElementById('feedback-toggle').addEventListener('click', openFeedbackModal);
+    // Initialize feedback widget after DOM is loaded
+    function initFeedbackWidget() {
+      const feedbackToggle = document.getElementById('feedback-toggle');
+      const feedbackModal = document.getElementById('feedback-modal');
 
-    // Close feedback modal on overlay click
-    document.getElementById('feedback-modal').addEventListener('click', function(e) {
-      if (e.target === this) closeFeedbackModal();
-    });
+      if (feedbackToggle) {
+        feedbackToggle.addEventListener('click', openFeedbackModal);
+      }
+
+      if (feedbackModal) {
+        feedbackModal.addEventListener('click', function(e) {
+          if (e.target === this) closeFeedbackModal();
+        });
+      }
+    }
 
     // GDPR Functions
     async function viewDataInfo() {
@@ -1649,6 +1657,8 @@
         fetchDecisions();
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
       }
+      // Initialize feedback widget
+      initFeedbackWidget();
     })();
   </script>
 
