@@ -98,6 +98,9 @@ async function startApp() {
   // Trust Railway proxy (required for OAuth redirect_uri generation)
   expressApp.set('trust proxy', true);
 
+  // Add JSON body parser for API endpoints
+  expressApp.use(require('express').json());
+
   // Add session middleware to all routes
   const sessionMiddleware = createSessionMiddleware();
   expressApp.use(sessionMiddleware);
