@@ -935,11 +935,89 @@ function healthCheck(req, res) {
   }));
 }
 
+/**
+ * POST /api/feedback - Submit user feedback to n8n webhook
+ * Proxies feedback from frontend to n8n to avoid CORS issues
+ */
+async function submitFeedback(req, res) {
+  try {
+    const feedbackData = req.body;
+
+    // Validate required fields
+    if (!feedbackData.type || !feedbackData.feedback) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: 'Missing required fields: type and feedback'
+      }));
+      return;
+    }
+
+    // Forward to n8n webhook (server-to-server, no CORS)
+    const n8nWebhookUrl = 'https://cristiantumani.app.n8n.cloud/webhook/feedback';
+
+    const https = require('https');
+    const url = require('url');
+
+    const webhookUrl = url.parse(n8nWebhookUrl);
+    const postData = JSON.stringify(feedbackData);
+
+    const options = {
+      hostname: webhookUrl.hostname,
+      port: 443,
+      path: webhookUrl.path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const webhookReq = https.request(options, (webhookRes) => {
+      let responseData = '';
+
+      webhookRes.on('data', (chunk) => {
+        responseData += chunk;
+      });
+
+      webhookRes.on('end', () => {
+        // Forward n8n response to frontend
+        res.writeHead(webhookRes.statusCode, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: webhookRes.statusCode === 200,
+          message: 'Feedback submitted successfully'
+        }));
+      });
+    });
+
+    webhookReq.on('error', (error) => {
+      console.error('Error forwarding to n8n:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: 'Failed to submit feedback to webhook'
+      }));
+    });
+
+    webhookReq.write(postData);
+    webhookReq.end();
+
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to submit feedback'
+    }));
+  }
+}
+
 module.exports = {
   getDecisions,
   updateDecision,
   deleteDecision,
   getStats,
   getAIAnalytics,
-  healthCheck
+  healthCheck,
+  submitFeedback
 };

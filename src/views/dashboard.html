@@ -1492,10 +1492,8 @@
       };
 
       try {
-        // Send to n8n webhook
-        const webhookUrl = 'https://cristiantumani.app.n8n.cloud/webhook/feedback';
-
-        const response = await fetch(webhookUrl, {
+        // Send to backend API (which forwards to n8n webhook)
+        const response = await fetch('/api/feedback', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1503,12 +1501,14 @@
           body: JSON.stringify(feedbackData)
         });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
           // Success
           alert('✅ Thank you for your feedback! We\'ve received it and will review it soon.');
           closeFeedbackModal();
         } else {
-          throw new Error('Webhook returned non-OK status');
+          throw new Error(result.error || 'Failed to submit feedback');
         }
       } catch (error) {
         console.error('Feedback submission error:', error);

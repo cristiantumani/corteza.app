@@ -5,7 +5,7 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
-const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck } = require('./routes/api');
+const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
@@ -202,6 +202,7 @@ async function startApp() {
   expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
+  expressApp.post('/api/feedback', requireAuth, submitFeedback);
 
   // Protected routes - GDPR (requires authentication + workspace access)
   expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
