@@ -98,9 +98,6 @@ async function startApp() {
   // Trust Railway proxy (required for OAuth redirect_uri generation)
   expressApp.set('trust proxy', true);
 
-  // Add JSON body parser for API endpoints
-  expressApp.use(require('express').json());
-
   // Add session middleware to all routes
   const sessionMiddleware = createSessionMiddleware();
   expressApp.use(sessionMiddleware);
@@ -205,7 +202,7 @@ async function startApp() {
   expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
-  expressApp.post('/api/feedback', requireAuth, submitFeedback);
+  expressApp.post('/api/feedback', require('express').json(), requireAuth, submitFeedback);
 
   // Protected routes - GDPR (requires authentication + workspace access)
   expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
