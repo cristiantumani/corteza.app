@@ -5,7 +5,7 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
-const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback } = require('./routes/api');
+const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
@@ -196,6 +196,9 @@ async function startApp() {
 
   // Feedback route (early registration to avoid conflicts)
   expressApp.post('/api/feedback', require('express').json(), requireAuth, submitFeedback);
+
+  // AI extraction route (for n8n automation)
+  expressApp.post('/api/extract-decisions', require('express').json(), requireAuth, extractDecisionsFromText);
 
   // Protected routes - API (requires authentication + workspace access)
   expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);

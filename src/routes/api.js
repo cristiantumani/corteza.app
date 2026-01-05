@@ -1021,6 +1021,78 @@ async function submitFeedback(req, res) {
   }
 }
 
+/**
+ * POST /api/extract-decisions - Extract decisions from transcript text
+ * Used by n8n automation (Google Drive → AI Extract)
+ */
+async function extractDecisionsFromText(req, res) {
+  console.log('🤖 AI extraction endpoint called');
+
+  try {
+    const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../services/claude');
+
+    // Check if Claude is configured
+    if (!isClaudeConfigured()) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: 'AI extraction not configured (missing ANTHROPIC_API_KEY)'
+      }));
+      return;
+    }
+
+    const { text, fileName, workspace_id, user_id, user_name } = req.body;
+
+    // Validate required fields
+    if (!text || !workspace_id) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: 'Missing required fields: text and workspace_id'
+      }));
+      return;
+    }
+
+    console.log('🤖 Extracting decisions from:', fileName || 'text', `(${text.length} chars)`);
+
+    // Extract decisions using Claude
+    const extractedDecisions = await extractDecisionsFromTranscript(text);
+
+    if (!extractedDecisions || extractedDecisions.length === 0) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        decisions: [],
+        message: 'No decisions found in transcript'
+      }));
+      return;
+    }
+
+    console.log(`✅ Extracted ${extractedDecisions.length} decisions`);
+
+    // Return extracted decisions
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      decisions: extractedDecisions,
+      count: extractedDecisions.length,
+      fileName: fileName || 'transcript.txt',
+      workspace_id,
+      user_id,
+      user_name
+    }));
+
+  } catch (error) {
+    console.error('❌ Error extracting decisions:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to extract decisions',
+      details: error.message
+    }));
+  }
+}
+
 module.exports = {
   getDecisions,
   updateDecision,
@@ -1028,5 +1100,6 @@ module.exports = {
   getStats,
   getAIAnalytics,
   healthCheck,
-  submitFeedback
+  submitFeedback,
+  extractDecisionsFromText
 };
