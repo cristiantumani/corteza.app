@@ -3,24 +3,16 @@ const session = require('express-session');
 const MongoStoreModule = require('connect-mongo');
 const MongoStore = MongoStoreModule.default || MongoStoreModule;
 const config = require('./environment');
-const crypto = require('crypto');
 
 /**
  * Creates and configures express-session middleware with MongoDB store
  * @returns {Function} Session middleware
  */
 function createSessionMiddleware() {
-  // Generate session secret from environment or create secure random one
-  const sessionSecret = process.env.SESSION_SECRET || (() => {
-    const generated = crypto.randomBytes(32).toString('hex');
-    console.warn('⚠️  SESSION_SECRET not set. Generated temporary secret (NOT suitable for production)');
-    console.warn('⚠️  Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-    return generated;
-  })();
-
+  // Security: SESSION_SECRET is required (validated in environment.js)
   return session({
     // Session secret for signing cookies
-    secret: sessionSecret,
+    secret: process.env.SESSION_SECRET,
 
     // Use MongoDB to store sessions
     store: MongoStore.create({

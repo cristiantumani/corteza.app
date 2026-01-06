@@ -215,3 +215,14 @@ Create a database with these properties:
 - Create Jira tickets automatically for bugs
 - Track feedback trends over time
 - Send weekly digest of all feedback
+
+
+## Notion API Configuration
+
+To use Notion integration:
+1. Create an internal integration at https://www.notion.so/my-integrations
+2. Copy the secret and add to n8n credentials
+3. Share your database with the integration
+
+
+

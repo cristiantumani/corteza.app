@@ -19,6 +19,7 @@
     "@slack/bolt": "^4.6.0",
     "connect-mongo": "^6.0.0",
     "dotenv": "^17.2.3",
+    "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
     "mammoth": "^1.11.0",
     "mongodb": "^7.0.0",

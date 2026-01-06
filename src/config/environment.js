@@ -5,7 +5,7 @@ require('dotenv').config();
  * @throws {Error} if required variables are missing
  */
 function validateEnvironment() {
-  const required = ['SLACK_SIGNING_SECRET', 'MONGODB_URI'];
+  const required = ['SLACK_SIGNING_SECRET', 'MONGODB_URI', 'SESSION_SECRET'];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
@@ -22,6 +22,14 @@ function validateEnvironment() {
 
   if (hasOAuth) {
     console.log('✅ Using OAuth mode (multi-workspace support)');
+
+    // Security: SLACK_STATE_SECRET is required for OAuth to prevent CSRF attacks
+    if (!process.env.SLACK_STATE_SECRET) {
+      throw new Error(
+        'SLACK_STATE_SECRET is required when using OAuth mode.\n' +
+        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+      );
+    }
   } else {
     console.log('⚠️  Using single-workspace mode (SLACK_BOT_TOKEN only)');
   }
@@ -71,14 +79,7 @@ module.exports = {
     signingSecret: process.env.SLACK_SIGNING_SECRET,
     clientId: process.env.SLACK_CLIENT_ID, // For OAuth
     clientSecret: process.env.SLACK_CLIENT_SECRET, // For OAuth
-    stateSecret: process.env.SLACK_STATE_SECRET || (() => {
-      // Generate cryptographically secure state secret if not provided
-      const crypto = require('crypto');
-      const generated = crypto.randomBytes(32).toString('hex');
-      console.warn('⚠️  SLACK_STATE_SECRET not set. Generated temporary secret (NOT suitable for production)');
-      console.warn('⚠️  Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-      return generated;
-    })(),
+    stateSecret: process.env.SLACK_STATE_SECRET, // Required for OAuth (validated in validateEnvironment)
     useOAuth: !!(process.env.SLACK_CLIENT_ID && process.env.SLACK_CLIENT_SECRET)
   },
   jira: {

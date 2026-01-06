@@ -3,6 +3,13 @@ const { validateQueryParams, validateDecisionId } = require('../middleware/valid
 const config = require('../config/environment');
 
 /**
+ * Security: Escapes regex special characters to prevent ReDoS attacks
+ */
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Parses URL query parameters
  */
 function parseQueryParams(url) {
@@ -51,12 +58,15 @@ async function getDecisions(req, res) {
       filter.category = validated.category;
     }
     if (validated.epic) {
-      filter.epic_key = { $regex: validated.epic, $options: 'i' };
+      // Security: Escape regex to prevent ReDoS attacks
+      filter.epic_key = { $regex: escapeRegex(validated.epic), $options: 'i' };
     }
     if (validated.search) {
+      // Security: Escape regex to prevent ReDoS attacks
+      const escapedSearch = escapeRegex(validated.search);
       filter.$or = [
-        { text: { $regex: validated.search, $options: 'i' } },
-        { tags: { $regex: validated.search, $options: 'i' } }
+        { text: { $regex: escapedSearch, $options: 'i' } },
+        { tags: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
 
@@ -175,15 +185,18 @@ async function updateDecision(req, res) {
 
         const decisionsCollection = getDecisionsCollection();
 
-        // Build filter with optional workspace_id for security
-        const updateFilter = { id: id };
-        if (req.url.includes('workspace_id=')) {
-          const urlParams = new URL(req.url, 'http://localhost').searchParams;
-          const workspaceId = urlParams.get('workspace_id');
-          if (workspaceId) {
-            updateFilter.workspace_id = workspaceId;
-          }
+        // Security: REQUIRE workspace_id to prevent cross-workspace updates
+        // Use authenticated workspace from middleware, not URL parameter
+        if (!req.authenticatedWorkspaceId) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Workspace authentication required' }));
+          return;
         }
+
+        const updateFilter = {
+          id: id,
+          workspace_id: req.authenticatedWorkspaceId // Always filter by authenticated workspace
+        };
 
         const result = await decisionsCollection.updateOne(
           updateFilter,

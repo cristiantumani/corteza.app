@@ -215,15 +215,24 @@ npm run dev
 See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for detailed setup instructions.
 
 Required variables:
-- `SLACK_BOT_TOKEN` - Bot User OAuth Token
+- `SLACK_BOT_TOKEN` - Bot User OAuth Token (not needed if using OAuth)
 - `SLACK_SIGNING_SECRET` - Signing secret from Slack app
+- `SESSION_SECRET` - Session cookie encryption key
+  - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+  - Must be persistent across restarts
 - `MONGODB_URI` - MongoDB Atlas connection string
 - `ANTHROPIC_API_KEY` - Claude API key
 - `OPENAI_API_KEY` - OpenAI API key
 
+OAuth (multi-workspace) variables:
+- `SLACK_CLIENT_ID` - OAuth client ID from Slack app
+- `SLACK_CLIENT_SECRET` - OAuth client secret from Slack app
+- `SLACK_STATE_SECRET` - **Required** for OAuth CSRF protection
+  - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+  - Must be persistent across restarts
+
 Optional:
 - `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` - For Jira integration
-- `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` - For OAuth
 
 ---
 

@@ -4,7 +4,7 @@ const config = require('./config/environment');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
-const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders } = require('./middleware/auth');
+const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
@@ -114,15 +114,18 @@ async function startApp() {
     res.send('Route registration works!');
   });
 
-  // Authentication routes (public)
-  expressApp.get('/auth/login', handleLoginPage); // Shows instructions to use /login in Slack
-  expressApp.get('/auth/token', handleTokenLogin); // Validates token and creates session
-  expressApp.get('/auth/me', handleMe);
-  expressApp.get('/auth/logout', handleLogout);
+  // Authentication routes (public, with rate limiting)
+  expressApp.get('/auth/login', authRateLimiter, handleLoginPage); // Shows instructions to use /login in Slack
+  expressApp.get('/auth/token', authRateLimiter, handleTokenLogin); // Validates token and creates session
+  expressApp.get('/auth/me', apiRateLimiter, handleMe);
+  expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 
   // Install page (public) - redirects to Slack OAuth
   expressApp.get('/get-started', (req, res) => {
-    const slackOAuthUrl = 'https://slack.com/oauth/v2/authorize?client_id=30663056564.10060673235955&scope=channels:history,channels:read,chat:write,chat:write.public,commands,files:read,groups:history,im:history,mpim:history,users:read,users:read.email&user_scope=';
+    // Security: Use environment variable instead of hardcoded client ID
+    const clientId = config.slack.clientId || 'NOT_CONFIGURED';
+    const scopes = 'channels:history,channels:read,chat:write,chat:write.public,commands,files:read,groups:history,im:history,mpim:history,users:read,users:read.email';
+    const slackOAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&user_scope=`;
 
     res.send(`
 <!DOCTYPE html>
@@ -194,25 +197,25 @@ async function startApp() {
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
 
-  // Feedback route (early registration to avoid conflicts)
-  expressApp.post('/api/feedback', require('express').json(), requireAuth, submitFeedback);
+  // Feedback route (early registration to avoid conflicts, with rate limiting)
+  expressApp.post('/api/feedback', apiRateLimiter, require('express').json(), requireAuth, submitFeedback);
 
-  // AI extraction route (for n8n automation)
-  expressApp.post('/api/extract-decisions', require('express').json(), requireAuth, extractDecisionsFromText);
+  // AI extraction route (for n8n automation, with stricter rate limiting)
+  expressApp.post('/api/extract-decisions', aiRateLimiter, require('express').json(), requireAuth, extractDecisionsFromText);
 
-  // Protected routes - API (requires authentication + workspace access)
-  expressApp.get('/api/decisions', requireAuth, requireWorkspaceAccess, getDecisions);
-  expressApp.put('/api/decisions/:id', requireAuth, requireWorkspaceAccess, updateDecision);
-  expressApp.delete('/api/decisions/:id', requireAuth, requireWorkspaceAccess, deleteDecision);
-  expressApp.get('/api/stats', requireAuth, requireWorkspaceAccess, getStats);
-  expressApp.get('/api/ai-analytics', requireAuth, requireWorkspaceAccess, getAIAnalytics);
-  expressApp.post('/api/semantic-search', requireAuth, requireWorkspaceAccess, handleSemanticSearch);
-  expressApp.get('/api/search-suggestions', requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
+  // Protected routes - API (requires authentication + workspace access + rate limiting)
+  expressApp.get('/api/decisions', apiRateLimiter, requireAuth, requireWorkspaceAccess, getDecisions);
+  expressApp.put('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, updateDecision);
+  expressApp.delete('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteDecision);
+  expressApp.get('/api/stats', apiRateLimiter, requireAuth, requireWorkspaceAccess, getStats);
+  expressApp.get('/api/ai-analytics', apiRateLimiter, requireAuth, requireWorkspaceAccess, getAIAnalytics);
+  expressApp.post('/api/semantic-search', aiRateLimiter, requireAuth, requireWorkspaceAccess, handleSemanticSearch);
+  expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
 
-  // Protected routes - GDPR (requires authentication + workspace access)
-  expressApp.get('/api/gdpr/info', requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
-  expressApp.get('/api/gdpr/export', requireAuth, requireWorkspaceAccess, exportWorkspaceData);
-  expressApp.delete('/api/gdpr/delete-all', requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
+  // Protected routes - GDPR (requires authentication + workspace access + rate limiting)
+  expressApp.get('/api/gdpr/info', apiRateLimiter, requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
+  expressApp.get('/api/gdpr/export', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportWorkspaceData);
+  expressApp.delete('/api/gdpr/delete-all', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
 
   // Create Slack App with the custom receiver
   const appConfig = {
