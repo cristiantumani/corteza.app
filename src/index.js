@@ -95,8 +95,10 @@ async function startApp() {
   // Get Express app from receiver
   const expressApp = receiver.app;
 
-  // Trust Railway proxy (required for OAuth redirect_uri generation)
-  expressApp.set('trust proxy', true);
+  // Trust Railway proxy (required for OAuth redirect_uri generation and rate limiting)
+  // Use '1' to trust only the first proxy (Railway edge), not all proxies
+  // This prevents IP spoofing attacks on rate limiters
+  expressApp.set('trust proxy', 1);
 
   // Add session middleware to all routes
   const sessionMiddleware = createSessionMiddleware();
