@@ -87,7 +87,7 @@ function addSecurityHeaders(req, res, next) {
   // Content-Security-Policy to prevent XSS and injection attacks
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' https://cdn.jsdelivr.net",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net", // unsafe-inline needed for inline scripts in dashboard
     "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for inline styles
     "img-src 'self' data: https:",
     "font-src 'self' data:",
