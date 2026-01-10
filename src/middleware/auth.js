@@ -29,6 +29,13 @@ function requireAuth(req, res, next) {
 function requireAuthBrowser(req, res, next) {
   // Check if user is authenticated (session exists)
   if (!req.session || !req.session.user) {
+    // Log session failure for debugging
+    console.log(`⚠️ Session invalid for ${req.originalUrl}:`, {
+      hasSession: !!req.session,
+      sessionID: req.sessionID,
+      hasUser: !!(req.session && req.session.user),
+      cookies: req.headers.cookie ? 'present' : 'missing'
+    });
     // Redirect to login with return URL
     const returnUrl = encodeURIComponent(req.originalUrl);
     return res.redirect(`/auth/login?return=${returnUrl}`);
