@@ -21,7 +21,7 @@ function createSessionMiddleware() {
       collectionName: 'sessions',
       ttl: 7 * 24 * 60 * 60, // Session expires after 7 days
       autoRemove: 'native', // Use MongoDB's built-in TTL for cleanup
-      touchAfter: 24 * 3600 // Update session only once per 24 hours (unless modified)
+      touchAfter: 60 // Update session every minute to keep it alive
     }),
 
     // Cookie settings
