@@ -152,7 +152,21 @@ async function semanticSearch(query, options = {}) {
 }
 
 /**
+ * CREDIT OPTIMIZATION: In-memory cache for conversational responses
+ * Key: hash of query + results, Value: { response, timestamp }
+ * Entries expire after 5 minutes to balance freshness vs cost savings
+ */
+const responseCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
  * Generate conversational response for search results using Claude
+ *
+ * CREDIT OPTIMIZATION: Multiple optimizations applied
+ * - Reduced prompt from ~400 to ~150 tokens (~60% reduction)
+ * - Added response caching (5 min TTL) to avoid duplicate API calls
+ * - Reduced max_tokens from 800 to 500
+ * - Compact result format saves tokens in context
  *
  * @param {string} query - User's original query
  * @param {Array} results - Search results with scores
@@ -161,42 +175,35 @@ async function semanticSearch(query, options = {}) {
  */
 async function generateConversationalResponse(query, results, metadata = {}) {
   if (!config.claude.isConfigured) {
-    // Fallback to simple formatting if Claude not available
     return formatResultsSimple(query, results);
+  }
+
+  // CREDIT OPTIMIZATION: Check cache first
+  const cacheKey = `${query}_${results.all.map(r => r.id).join(',')}`;
+  const cached = responseCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+    console.log('♻️  CREDIT SAVED: Using cached conversational response');
+    return cached.response;
   }
 
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
 
-  // Build context from search results
-  const resultsContext = results.all.map((r, idx) => {
-    return `Decision #${r.id} (${(r.score * 100).toFixed(0)}% match):
-- Text: "${r.text}"
-- Type: ${r.type}
-- Creator: ${r.creator}
-- Date: ${new Date(r.timestamp).toLocaleDateString()}
-${r.tags && r.tags.length > 0 ? `- Tags: ${r.tags.join(', ')}` : ''}
-${r.epic_key ? `- Epic: ${r.epic_key}` : ''}`;
-  }).join('\n\n');
+  // CREDIT OPTIMIZATION: Compact result format (saves ~50% tokens vs verbose format)
+  const resultsContext = results.all.map(r =>
+    `#${r.id} [${(r.score * 100).toFixed(0)}%] ${r.type}: "${r.text}" (${r.creator})`
+  ).join('\n');
 
-  const prompt = `You are a helpful assistant for a decision tracking system. A user asked: "${query}"
-
-I found ${results.all.length} relevant decisions:
-
+  // CREDIT OPTIMIZATION: Shortened prompt (~60% reduction)
+  const prompt = `Query: "${query}"
+Results (${results.all.length}):
 ${resultsContext}
 
-Generate a friendly, conversational response that:
-1. Summarizes what was found
-2. Groups results by relevance (highly relevant 85%+, relevant 70-84%, somewhat relevant 60-69%)
-3. Highlights the most relevant decisions first
-4. Keeps it concise but informative
-5. Ends with offering to show more details if needed
-
-Format using markdown for readability. Keep it under 400 words.`;
+Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Be concise (<200 words).`;
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022', // Use Haiku 3.5 for speed and cost
-      max_tokens: 800,
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 500,  // CREDIT OPTIMIZATION: Reduced from 800
       temperature: 0.3,
       messages: [{
         role: 'user',
@@ -204,11 +211,25 @@ Format using markdown for readability. Keep it under 400 words.`;
       }]
     });
 
-    return response.content[0].text;
+    const responseText = response.content[0].text;
+
+    // Cache the response
+    responseCache.set(cacheKey, { response: responseText, timestamp: Date.now() });
+
+    // CREDIT OPTIMIZATION: Cleanup old cache entries periodically
+    if (responseCache.size > 100) {
+      const now = Date.now();
+      for (const [key, value] of responseCache.entries()) {
+        if (now - value.timestamp > CACHE_TTL_MS) {
+          responseCache.delete(key);
+        }
+      }
+    }
+
+    return responseText;
 
   } catch (error) {
     console.error('❌ Error generating conversational response:', error.message);
-    // Fallback to simple formatting
     return formatResultsSimple(query, results);
   }
 }

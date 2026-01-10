@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { getDecisionsCollection } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
@@ -1035,8 +1036,20 @@ async function submitFeedback(req, res) {
 }
 
 /**
+ * CREDIT OPTIMIZATION: In-memory cache for API extraction results
+ * Uses content hash as key, caches for 10 minutes
+ * Prevents duplicate API calls when same text is submitted multiple times
+ */
+const extractionCache = new Map();
+const EXTRACTION_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
  * POST /api/extract-decisions - Extract decisions from transcript text
  * Used by n8n automation (Google Drive → AI Extract)
+ *
+ * CREDIT OPTIMIZATION: Added caching to prevent duplicate Claude API calls
+ * - Caches extraction results by content hash
+ * - Passes workspace_id for few-shot learning (reduces tokens via targeted examples)
  */
 async function extractDecisionsFromText(req, res) {
   console.log('🤖 AI extraction endpoint called');
@@ -1066,12 +1079,34 @@ async function extractDecisionsFromText(req, res) {
       return;
     }
 
+    // CREDIT OPTIMIZATION: Check cache before calling Claude
+    const contentHash = crypto.createHash('sha256').update(text + workspace_id).digest('hex');
+    const cached = extractionCache.get(contentHash);
+    if (cached && (Date.now() - cached.timestamp) < EXTRACTION_CACHE_TTL_MS) {
+      console.log('♻️  CREDIT SAVED: Returning cached extraction results');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        decisions: cached.decisions,
+        count: cached.decisions.length,
+        fileName: fileName || 'transcript.txt',
+        workspace_id,
+        user_id,
+        user_name,
+        cached: true
+      }));
+      return;
+    }
+
     console.log('🤖 Extracting decisions from:', fileName || 'text', `(${text.length} chars)`);
 
-    // Extract decisions using Claude
-    const extractedDecisions = await extractDecisionsFromTranscript(text);
+    // CREDIT OPTIMIZATION: Pass workspace_id for few-shot learning
+    const result = await extractDecisionsFromTranscript(text, workspace_id);
+    const extractedDecisions = result.decisions;
 
     if (!extractedDecisions || extractedDecisions.length === 0) {
+      // CREDIT OPTIMIZATION: Cache empty results too
+      extractionCache.set(contentHash, { decisions: [], timestamp: Date.now() });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
@@ -1082,6 +1117,19 @@ async function extractDecisionsFromText(req, res) {
     }
 
     console.log(`✅ Extracted ${extractedDecisions.length} decisions`);
+
+    // CREDIT OPTIMIZATION: Cache successful results
+    extractionCache.set(contentHash, { decisions: extractedDecisions, timestamp: Date.now() });
+
+    // Cleanup old cache entries if cache is getting large
+    if (extractionCache.size > 50) {
+      const now = Date.now();
+      for (const [key, value] of extractionCache.entries()) {
+        if (now - value.timestamp > EXTRACTION_CACHE_TTL_MS) {
+          extractionCache.delete(key);
+        }
+      }
+    }
 
     // Return extracted decisions
     res.writeHead(200, { 'Content-Type': 'application/json' });

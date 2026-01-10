@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const {
   getAISuggestionsCollection,
   getMeetingTranscriptsCollection,
@@ -13,6 +14,16 @@ const {
 } = require('../middleware/ai-validation');
 const { createDecisionInNotion } = require('../services/notion');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
+
+/**
+ * CREDIT OPTIMIZATION: Generate hash for transcript content
+ * Used to detect duplicate transcripts and skip redundant Claude API calls.
+ * @param {string} content - Transcript content
+ * @returns {string} SHA-256 hash of content
+ */
+function hashTranscriptContent(content) {
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
 
 /**
  * Helper: Generate and save embedding for a decision (non-blocking)
@@ -264,14 +275,51 @@ async function fetchSlackFileContent(fileId, client) {
 
 /**
  * Processes transcript: saves to DB, calls Claude, saves suggestions
+ *
+ * CREDIT OPTIMIZATION: Added duplicate detection using content hash
+ * - If same content was already processed for this workspace, reuses existing suggestions
+ * - Prevents redundant Claude API calls when same file is uploaded multiple times
+ * - Can save 100% of Claude costs for duplicate uploads
+ *
  * @param {string} transcriptContent - The extracted text
  * @param {Object} metadata - File and user metadata
- * @returns {Promise<Object>} { success: boolean, suggestions: Array, error: string }
+ * @returns {Promise<Object>} { success: boolean, suggestions: Array, error: string, cached: boolean }
  */
 async function processTranscript(transcriptContent, metadata) {
   try {
     const transcriptsCollection = getMeetingTranscriptsCollection();
     const suggestionsCollection = getAISuggestionsCollection();
+
+    // CREDIT OPTIMIZATION: Check for duplicate transcript by content hash
+    const contentHash = hashTranscriptContent(transcriptContent);
+    const existingTranscript = await transcriptsCollection.findOne({
+      workspace_id: metadata.workspace_id,
+      content_hash: contentHash,
+      processed_at: { $ne: null }  // Only match fully processed transcripts
+    });
+
+    if (existingTranscript) {
+      console.log(`♻️  CREDIT SAVED: Duplicate transcript detected (hash: ${contentHash.substring(0, 8)}...)`);
+
+      // Return existing suggestions instead of calling Claude again
+      const existingSuggestions = await suggestionsCollection.find({
+        workspace_id: metadata.workspace_id,
+        meeting_transcript_id: existingTranscript.transcript_id,
+        status: 'pending'
+      }).toArray();
+
+      if (existingSuggestions.length > 0) {
+        console.log(`♻️  Reusing ${existingSuggestions.length} existing suggestions from previous processing`);
+        return {
+          success: true,
+          suggestions: existingSuggestions,
+          error: null,
+          cached: true
+        };
+      }
+      // If no pending suggestions, fall through to reprocess
+      console.log(`⚠️  No pending suggestions found for cached transcript, reprocessing...`);
+    }
 
     // Save transcript to database
     const transcriptId = `transcript_${Date.now()}`;
@@ -285,6 +333,7 @@ async function processTranscript(transcriptContent, metadata) {
       file_size: metadata.file_size,
       slack_file_id: metadata.slack_file_id,
       content: transcriptContent,
+      content_hash: contentHash,  // CREDIT OPTIMIZATION: Store hash for duplicate detection
       content_preview: transcriptContent.substring(0, 500),
       word_count: wordCount,
       uploaded_by: metadata.user_id,
