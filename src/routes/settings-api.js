@@ -1,5 +1,7 @@
 const { getWorkspaceSettings, updateJiraSettings } = require('../services/workspace-settings');
 const { testJiraConnection } = require('../services/jira');
+const { isAdmin } = require('../services/permissions');
+const { getSlackClient } = require('../config/slack-client');
 
 /**
  * API endpoints for workspace settings (dashboard access)
@@ -39,6 +41,21 @@ async function getSettings(req, res) {
  */
 async function testJiraSettings(req, res) {
   try {
+    // Check admin status
+    const client = await getSlackClient(req.session.user.workspace_id);
+    const userIsAdmin = await isAdmin(
+      client,
+      req.session.user.workspace_id,
+      req.session.user.user_id
+    );
+
+    if (!userIsAdmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can configure settings'
+      });
+    }
+
     const { url, email, apiToken } = req.body;
 
     if (!url || !email || !apiToken) {
@@ -74,6 +91,17 @@ async function saveJiraSettings(req, res) {
     const workspaceId = req.session.user.workspace_id;
     const userId = req.session.user.user_id;
     const userName = req.session.user.user_name;
+
+    // Check admin status
+    const client = await getSlackClient(workspaceId);
+    const userIsAdmin = await isAdmin(client, workspaceId, userId);
+
+    if (!userIsAdmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can configure settings'
+      });
+    }
 
     // Validate inputs
     if (!url || !email || !apiToken) {

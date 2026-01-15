@@ -7,6 +7,7 @@ let aiSuggestionsCollection = null;
 let meetingTranscriptsCollection = null;
 let aiFeedbackCollection = null;
 let workspaceSettingsCollection = null;
+let workspaceAdminsCollection = null;
 
 /**
  * Connects to MongoDB and sets up indexes
@@ -41,6 +42,7 @@ async function connectToMongoDB() {
     meetingTranscriptsCollection = db.collection('meeting_transcripts');
     aiFeedbackCollection = db.collection('ai_feedback');
     workspaceSettingsCollection = db.collection('workspace_settings');
+    workspaceAdminsCollection = db.collection('workspace_admins');
 
     // Create indexes for decisions collection
     await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
@@ -86,6 +88,11 @@ async function connectToMongoDB() {
     // Create indexes for workspace settings collection
     await workspaceSettingsCollection.createIndex({ workspace_id: 1 }, { unique: true });
     await workspaceSettingsCollection.createIndex({ 'jira.enabled': 1 });
+
+    // Create indexes for workspace admins collection (role-based permissions)
+    await workspaceAdminsCollection.createIndex({ workspace_id: 1, user_id: 1 }, { unique: true });
+    await workspaceAdminsCollection.createIndex({ workspace_id: 1, role: 1 });
+    await workspaceAdminsCollection.createIndex({ workspace_id: 1, deactivated_at: 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -159,6 +166,16 @@ function getWorkspaceSettingsCollection() {
   return workspaceSettingsCollection;
 }
 
+/**
+ * Returns the workspace admins collection
+ */
+function getWorkspaceAdminsCollection() {
+  if (!workspaceAdminsCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return workspaceAdminsCollection;
+}
+
 module.exports = {
   connectToMongoDB,
   getDecisionsCollection,
@@ -166,5 +183,6 @@ module.exports = {
   getAISuggestionsCollection,
   getMeetingTranscriptsCollection,
   getAIFeedbackCollection,
-  getWorkspaceSettingsCollection
+  getWorkspaceSettingsCollection,
+  getWorkspaceAdminsCollection
 };

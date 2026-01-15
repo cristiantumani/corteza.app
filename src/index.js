@@ -5,7 +5,7 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
-const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText } = require('./routes/api');
+const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
@@ -31,6 +31,7 @@ const {
 } = require('./routes/ai-decisions');
 const { handleSettingsCommand, handleSettingsModalSubmit } = require('./routes/settings');
 const { getSettings, testJiraSettings, saveJiraSettings } = require('./routes/settings-api');
+const { handlePermissionsCommand } = require('./routes/permissions');
 const { requireWorkspaceAdmin } = require('./middleware/admin-check');
 const { initializeNotion } = require('./services/notion');
 const { initializeEmbeddings } = require('./services/embeddings');
@@ -227,6 +228,9 @@ async function startApp() {
   expressApp.post('/api/settings/jira/test', apiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAdmin, testJiraSettings);
   expressApp.post('/api/settings/jira', apiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAdmin, saveJiraSettings);
 
+  // Protected routes - Permissions (requires authentication)
+  expressApp.get('/api/permissions/check', apiRateLimiter, requireAuth, requireWorkspaceAccess, checkAdminStatus);
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
@@ -261,6 +265,7 @@ async function startApp() {
   app.command('/decisions', handleDecisionsCommand);
   app.command('/login', handleLoginCommand);
   app.command('/settings', handleSettingsCommand);
+  app.command('/permissions', handlePermissionsCommand);
   app.view('decision_modal', handleDecisionModalSubmit);
   app.view('settings_jira_modal', handleSettingsModalSubmit);
 
