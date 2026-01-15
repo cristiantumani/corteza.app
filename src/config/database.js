@@ -6,6 +6,7 @@ let decisionsCollection = null;
 let aiSuggestionsCollection = null;
 let meetingTranscriptsCollection = null;
 let aiFeedbackCollection = null;
+let workspaceSettingsCollection = null;
 
 /**
  * Connects to MongoDB and sets up indexes
@@ -39,6 +40,7 @@ async function connectToMongoDB() {
     aiSuggestionsCollection = db.collection('ai_suggestions');
     meetingTranscriptsCollection = db.collection('meeting_transcripts');
     aiFeedbackCollection = db.collection('ai_feedback');
+    workspaceSettingsCollection = db.collection('workspace_settings');
 
     // Create indexes for decisions collection
     await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
@@ -80,6 +82,10 @@ async function connectToMongoDB() {
     await meetingTranscriptsCollection.createIndex({ workspace_id: 1, uploaded_at: -1 });
 
     await aiFeedbackCollection.createIndex({ workspace_id: 1, feedback_id: 1 }, { unique: true });
+
+    // Create indexes for workspace settings collection
+    await workspaceSettingsCollection.createIndex({ workspace_id: 1 }, { unique: true });
+    await workspaceSettingsCollection.createIndex({ 'jira.enabled': 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -143,11 +149,22 @@ function getAIFeedbackCollection() {
   return aiFeedbackCollection;
 }
 
+/**
+ * Returns the workspace settings collection
+ */
+function getWorkspaceSettingsCollection() {
+  if (!workspaceSettingsCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return workspaceSettingsCollection;
+}
+
 module.exports = {
   connectToMongoDB,
   getDecisionsCollection,
   getDatabase,
   getAISuggestionsCollection,
   getMeetingTranscriptsCollection,
-  getAIFeedbackCollection
+  getAIFeedbackCollection,
+  getWorkspaceSettingsCollection
 };

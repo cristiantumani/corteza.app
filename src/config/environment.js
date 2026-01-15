@@ -5,11 +5,20 @@ require('dotenv').config();
  * @throws {Error} if required variables are missing
  */
 function validateEnvironment() {
-  const required = ['SLACK_SIGNING_SECRET', 'MONGODB_URI', 'SESSION_SECRET'];
+  const required = ['SLACK_SIGNING_SECRET', 'MONGODB_URI', 'SESSION_SECRET', 'ENCRYPTION_KEY'];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Validate ENCRYPTION_KEY format (must be 64 hex characters = 32 bytes)
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+  if (encryptionKey.length !== 64 || !/^[0-9a-f]{64}$/i.test(encryptionKey)) {
+    throw new Error(
+      'ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes). ' +
+      'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
   }
 
   // Check if using OAuth or single-workspace mode

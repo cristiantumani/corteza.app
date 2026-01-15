@@ -8,16 +8,18 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #ffffff;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       color: #1a1a1a;
       min-height: 100vh;
     }
 
     header {
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: none;
       padding: 24px 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -27,6 +29,110 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    /* Hero Section Styles */
+    .hero-banner {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      overflow: hidden;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .hero-icon {
+      font-size: 60px;
+      margin-bottom: 16px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .hero-title {
+      font-size: 42px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.95);
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
+
+    .hero-stats-mini {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hero-stat {
+      font-weight: 500;
+    }
+
+    .hero-stat .stat-number {
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+    }
+
+    .hero-stat-separator {
+      opacity: 0.6;
+      font-size: 20px;
+    }
+
+    .hero-decoration {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .hero-decoration::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+      top: -100px;
+      right: -50px;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .hero-decoration::after {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      bottom: -50px;
+      left: -30px;
+      animation: float 8s ease-in-out infinite reverse;
     }
 
     .nav-links a {
@@ -60,30 +166,106 @@
 
     .stat-card {
       background: #ffffff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border: 1px solid #e2e8f0;
-      transition: box-shadow 0.3s;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+      border: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 0.6s ease backwards;
+    }
+
+    /* Stagger animation for stats cards */
+    .stat-card:nth-child(1) { animation-delay: 0s; }
+    .stat-card:nth-child(2) { animation-delay: 0.1s; }
+    .stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .stat-card:nth-child(4) { animation-delay: 0.3s; }
+    .stat-card:nth-child(5) { animation-delay: 0.4s; }
+    .stat-card:nth-child(6) { animation-delay: 0.5s; }
+    .stat-card:nth-child(7) { animation-delay: 0.6s; }
+    .stat-card:nth-child(8) { animation-delay: 0.7s; }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Gradient backgrounds for each stat card */
+    .stat-card:nth-child(1) {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-card:nth-child(2) {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stat-card:nth-child(3) {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .stat-card:nth-child(4) {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .stat-card:nth-child(5) {
+      background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+
+    .stat-card:nth-child(6) {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+
+    .stat-card:nth-child(7) {
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    }
+
+    .stat-card:nth-child(8) {
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
     }
 
     .stat-card:hover {
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.25);
     }
 
     .stat-card h3 {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      font-weight: 500;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
+    .stat-card h3::before {
+      font-size: 18px;
+    }
+
+    /* Icons for each card */
+    .stat-card:nth-child(1) h3::before { content: '📊'; }
+    .stat-card:nth-child(2) h3::before { content: '✅'; }
+    .stat-card:nth-child(3) h3::before { content: '💡'; }
+    .stat-card:nth-child(4) h3::before { content: '📌'; }
+    .stat-card:nth-child(5) h3::before { content: '🎯'; }
+    .stat-card:nth-child(6) h3::before { content: '🎨'; }
+    .stat-card:nth-child(7) h3::before { content: '⚙️'; }
+    .stat-card:nth-child(8) h3::before { content: '📈'; }
+
     .stat-card .number {
-      font-size: 30px;
-      font-weight: 600;
-      color: #0f172a;
+      font-size: 40px;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .filters {
@@ -154,57 +336,58 @@
     }
 
     tbody tr {
-      transition: background-color 0.15s;
+      transition: all 0.2s ease;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f8f9fa;
     }
 
     tbody tr:hover {
-      background: #f8fafc;
+      background: linear-gradient(90deg, #f8f9fa 0%, #e8eaf6 100%);
+      transform: scale(1.005);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 9999px;
+      padding: 6px 12px;
+      border-radius: 20px;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       text-transform: capitalize;
-      border: 1px solid;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     .badge-product {
       background: #ecfdf5;
       color: #047857;
-      border-color: #a7f3d0;
     }
 
     .badge-ux {
       background: #f5f3ff;
       color: #6d28d9;
-      border-color: #ddd6fe;
     }
 
     .badge-technical {
       background: #fffbeb;
       color: #b45309;
-      border-color: #fde68a;
     }
 
     .badge-decision {
       background: #dbeafe;
       color: #1e40af;
-      border-color: #93c5fd;
     }
 
     .badge-explanation {
       background: #fef3c7;
       color: #92400e;
-      border-color: #fcd34d;
     }
 
     .badge-context {
       background: #e0e7ff;
       color: #4338ca;
-      border-color: #a5b4fc;
     }
 
     .tag {
@@ -370,21 +553,22 @@
     }
 
     .view-btn {
-      background: #eef2ff;
-      color: #4f46e5;
-      border: 1px solid #c7d2fe;
-      padding: 6px 12px;
-      border-radius: 6px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       margin-right: 6px;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
     .view-btn:hover {
-      background: #e0e7ff;
-      border-color: #a5b4fc;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
 
     .decision-text {
@@ -765,6 +949,24 @@
       </div>
     </div>
   </header>
+
+  <!-- Hero Banner -->
+  <div class="hero-banner">
+    <div class="hero-content">
+      <div class="hero-icon">🧠</div>
+      <h1 class="hero-title">Team Memory Dashboard</h1>
+      <p class="hero-subtitle">Your searchable knowledge base powered by AI</p>
+      <div class="hero-stats-mini">
+        <span class="hero-stat">
+          <span class="stat-number" id="hero-total">-</span> memories
+        </span>
+        <span class="hero-stat-separator">•</span>
+        <span class="hero-stat" id="hero-workspace-name">Loading...</span>
+      </div>
+    </div>
+    <div class="hero-decoration"></div>
+  </div>
+
   <div class="container">
     <div class="stats">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
@@ -1076,6 +1278,12 @@
         chatWorkspaceInfo.textContent = `Workspace: ${currentUser.workspace_name} (${WORKSPACE_ID})`;
       }
 
+      // Update hero workspace name
+      const heroWorkspaceName = document.getElementById('hero-workspace-name');
+      if (heroWorkspaceName) {
+        heroWorkspaceName.textContent = currentUser.workspace_name;
+      }
+
       // Add user info next to title
       h1.innerHTML += `
         <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
@@ -1103,6 +1311,9 @@
         document.getElementById('ux-count').textContent = d.byCategory?.ux || 0;
         document.getElementById('technical-count').textContent = d.byCategory?.technical || 0;
         document.getElementById('week-count').textContent = d.lastWeek;
+
+        // Update hero section
+        document.getElementById('hero-total').textContent = d.total;
       } catch (e) {}
     }
 
@@ -1743,6 +1954,12 @@
 
       <div id="chat-messages" class="chat-messages"></div>
 
+      <div class="chat-suggestions">
+        <button class="suggestion-chip" onclick="useSuggestion('Show recent decisions')">Show recent decisions</button>
+        <button class="suggestion-chip" onclick="useSuggestion('Search by product tag')">Search by tag</button>
+        <button class="suggestion-chip" onclick="useSuggestion('What decisions were made this week?')">What's new this week?</button>
+      </div>
+
       <div class="chat-input-container">
         <input
           type="text"
@@ -1822,53 +2039,92 @@
     }
 
     .chat-toggle {
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
       transition: transform 0.2s, box-shadow 0.2s;
       color: white;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        box-shadow: 0 8px 48px rgba(102, 126, 234, 0.6);
+      }
     }
 
     .chat-toggle:hover {
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.6);
+      animation: none;
     }
 
     .chat-container {
       position: absolute;
-      bottom: 80px;
+      bottom: 90px;
       right: 0;
-      width: 420px;
+      width: 450px;
       max-width: calc(100vw - 48px);
-      height: 600px;
+      height: 650px;
       max-height: calc(100vh - 140px);
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .chat-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 20px;
+      padding: 24px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      border-radius: 20px 20px 0 0;
     }
 
     .chat-header h3 {
       margin: 0 0 4px 0;
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-header h3::before {
+      content: "✨";
+      animation: sparkle 2s infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.2); }
     }
 
     .chat-header p {
@@ -1932,14 +2188,17 @@
     .chat-message.user .chat-message-content {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border-bottom-right-radius: 4px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      border-radius: 20px 20px 4px 20px;
     }
 
     .chat-message.bot .chat-message-content {
       background: white;
       color: #1a1a1a;
-      border: 1px solid #e2e8f0;
-      border-bottom-left-radius: 4px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-radius: 20px 20px 20px 4px;
     }
 
     .chat-message.bot .chat-message-content p {
@@ -1992,13 +2251,16 @@
     .chat-typing {
       display: flex;
       gap: 4px;
-      padding: 16px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .chat-typing span {
       width: 8px;
       height: 8px;
-      background: #cbd5e1;
+      background: linear-gradient(135deg, #667eea, #764ba2);
       border-radius: 50%;
       animation: typing 1.4s infinite;
     }
@@ -2011,6 +2273,33 @@
       30% { transform: translateY(-10px); }
     }
 
+    .chat-suggestions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px 0 16px;
+      background: white;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-chip {
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      background: #667eea;
+      color: white;
+      transform: scale(1.05);
+      border-color: #667eea;
+    }
+
     .chat-input-container {
       display: flex;
       gap: 8px;
@@ -2021,35 +2310,39 @@
 
     .chat-input {
       flex: 1;
-      padding: 12px 16px;
-      border: 1px solid #e2e8f0;
+      padding: 14px 16px;
+      border: 2px solid transparent;
+      background: linear-gradient(white, white) padding-box,
+                  linear-gradient(135deg, #667eea, #764ba2) border-box;
       border-radius: 12px;
-      font-size: 14px;
+      font-size: 15px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.3s ease;
     }
 
     .chat-input:focus {
-      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      transform: scale(1.01);
     }
 
     .chat-send-btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .chat-send-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
     .chat-send-btn:disabled {
@@ -2077,6 +2370,13 @@
   </style>
 
   <script>
+    // Suggestion chip handler (global scope)
+    function useSuggestion(text) {
+      const chatInput = document.getElementById('chat-input');
+      chatInput.value = text;
+      chatInput.focus();
+    }
+
     // Chat Widget Functionality
     (function() {
       const chatToggle = document.getElementById('chat-toggle');

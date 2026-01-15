@@ -29,6 +29,9 @@ const {
   handleConnectJiraAction,
   handleConnectJiraModalSubmit
 } = require('./routes/ai-decisions');
+const { handleSettingsCommand, handleSettingsModalSubmit } = require('./routes/settings');
+const { getSettings, testJiraSettings, saveJiraSettings } = require('./routes/settings-api');
+const { requireWorkspaceAdmin } = require('./middleware/admin-check');
 const { initializeNotion } = require('./services/notion');
 const { initializeEmbeddings } = require('./services/embeddings');
 
@@ -219,6 +222,11 @@ async function startApp() {
   expressApp.get('/api/gdpr/export', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportWorkspaceData);
   expressApp.delete('/api/gdpr/delete-all', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
 
+  // Protected routes - Settings (requires authentication + workspace admin)
+  expressApp.get('/api/settings', apiRateLimiter, requireAuth, getSettings);
+  expressApp.post('/api/settings/jira/test', apiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAdmin, testJiraSettings);
+  expressApp.post('/api/settings/jira', apiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAdmin, saveJiraSettings);
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
@@ -252,7 +260,9 @@ async function startApp() {
   app.command('/memory', handleDecisionCommand); // New Team Memory command (alias)
   app.command('/decisions', handleDecisionsCommand);
   app.command('/login', handleLoginCommand);
+  app.command('/settings', handleSettingsCommand);
   app.view('decision_modal', handleDecisionModalSubmit);
+  app.view('settings_jira_modal', handleSettingsModalSubmit);
 
   // Register AI decision extraction handlers
   app.event('file_shared', handleFileUpload);
