@@ -1232,6 +1232,7 @@
     // Authentication check - must be logged in to access dashboard
     let currentUser = null;
     let WORKSPACE_ID = null;
+    let isCurrentUserAdmin = false;
 
     // Check authentication status on page load
     async function checkAuth() {
@@ -1249,6 +1250,9 @@
         currentUser = data.user;
         WORKSPACE_ID = data.user.workspace_id;
 
+        // Check if user is admin
+        await checkIfAdmin();
+
         // Update header with user info
         updateHeader();
 
@@ -1258,6 +1262,19 @@
         // Redirect to login on error
         window.location.href = '/auth/login';
         return false;
+      }
+    }
+
+    // Check if current user is admin
+    async function checkIfAdmin() {
+      try {
+        const response = await fetch(`/api/permissions/check?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+        isCurrentUserAdmin = data.is_admin === true;
+        console.log('Admin status:', isCurrentUserAdmin);
+      } catch (error) {
+        console.error('Failed to check admin status:', error);
+        isCurrentUserAdmin = false;
       }
     }
 
@@ -1375,6 +1392,24 @@
         const typeBadge = actualType ? `<span class="badge badge-${actualType}">${actualType}</span>` : '-';
         const categoryBadge = actualCategory ? `<span class="badge badge-${actualCategory}">${actualCategory}</span>` : '-';
 
+        // Check if user can edit/delete this decision
+        const isOwnDecision = d.user_id === currentUser.user_id;
+        const canModify = isCurrentUserAdmin || isOwnDecision;
+
+        // Build action buttons based on permissions
+        let actionsHtml;
+        if (canModify) {
+          actionsHtml = `
+            <button class="view-btn" onclick="openDetailModal(${index})">👁️ View</button>
+            <button class="delete-btn" onclick="openDeleteModal(${d.id})">🗑️</button>
+          `;
+        } else {
+          actionsHtml = `
+            <button class="view-btn" onclick="openDetailModal(${index})">👁️ View</button>
+            <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">Read-only</span>
+          `;
+        }
+
         return `<tr>
           <td><strong>#${d.id}</strong></td>
           <td class="decision-text" title="${d.text}">${truncatedText}</td>
@@ -1383,10 +1418,7 @@
           <td>${epicCell}</td>
           <td>${d.creator}</td>
           <td>${new Date(d.timestamp).toLocaleDateString()}</td>
-          <td>
-            <button class="view-btn" onclick="openDetailModal(${index})">👁️ View</button>
-            <button class="delete-btn" onclick="openDeleteModal(${d.id})">🗑️</button>
-          </td>
+          <td>${actionsHtml}</td>
         </tr>`;
       }).join('');
     }
@@ -1418,6 +1450,16 @@
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;
       document.getElementById('detail-date').textContent = new Date(decision.timestamp).toLocaleString();
+
+      // Check if user can edit this decision
+      const isOwnDecision = decision.user_id === currentUser.user_id;
+      const canModify = isCurrentUserAdmin || isOwnDecision;
+
+      // Show/hide edit button based on permissions
+      const editBtn = document.querySelector('#detail-modal .edit-btn');
+      if (editBtn) {
+        editBtn.style.display = canModify ? 'inline-block' : 'none';
+      }
 
       // Handle meeting context / alternatives
       if (decision.alternatives) {

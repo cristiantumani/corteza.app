@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { getDecisionsCollection } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
+const { canModifyDecision, isAdmin } = require('../services/permissions');
+const { getSlackClient } = require('../config/slack-client');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -199,6 +201,33 @@ async function updateDecision(req, res) {
           workspace_id: req.authenticatedWorkspaceId // Always filter by authenticated workspace
         };
 
+        // Get decision to check creator for permission validation
+        const decision = await decisionsCollection.findOne(updateFilter);
+
+        if (!decision) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Decision not found' }));
+          return;
+        }
+
+        // CHECK PERMISSION: Can this user modify this decision?
+        const client = await getSlackClient(req.authenticatedWorkspaceId);
+        const canModify = await canModifyDecision(
+          client,
+          req.authenticatedWorkspaceId,
+          req.session.user.user_id,
+          decision.user_id
+        );
+
+        if (!canModify) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'Forbidden',
+            message: 'You can only edit your own decisions. Admins can edit any decision.'
+          }));
+          return;
+        }
+
         const result = await decisionsCollection.updateOne(
           updateFilter,
           { $set: sanitizedUpdates }
@@ -242,14 +271,44 @@ async function deleteDecision(req, res) {
 
     const decisionsCollection = getDecisionsCollection();
 
-    // Build filter with optional workspace_id for security
-    const deleteFilter = { id: id };
-    if (req.url.includes('workspace_id=')) {
-      const urlParams = new URL(req.url, 'http://localhost').searchParams;
-      const workspaceId = urlParams.get('workspace_id');
-      if (workspaceId) {
-        deleteFilter.workspace_id = workspaceId;
-      }
+    // Security: Use authenticated workspace from middleware
+    if (!req.authenticatedWorkspaceId) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Workspace authentication required' }));
+      return;
+    }
+
+    // Build filter with workspace_id for security
+    const deleteFilter = {
+      id: id,
+      workspace_id: req.authenticatedWorkspaceId
+    };
+
+    // Get decision to check creator for permission validation
+    const decision = await decisionsCollection.findOne(deleteFilter);
+
+    if (!decision) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Decision not found' }));
+      return;
+    }
+
+    // CHECK PERMISSION: Can this user delete this decision?
+    const client = await getSlackClient(req.authenticatedWorkspaceId);
+    const canModify = await canModifyDecision(
+      client,
+      req.authenticatedWorkspaceId,
+      req.session.user.user_id,
+      decision.user_id
+    );
+
+    if (!canModify) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'Forbidden',
+        message: 'You can only delete your own decisions. Admins can delete any decision.'
+      }));
+      return;
     }
 
     const result = await decisionsCollection.deleteOne(deleteFilter);
@@ -1154,6 +1213,37 @@ async function extractDecisionsFromText(req, res) {
   }
 }
 
+/**
+ * GET /api/permissions/check - Check if current user is admin
+ * Used by dashboard to determine UI permissions
+ */
+async function checkAdminStatus(req, res) {
+  try {
+    if (!req.session || !req.session.user) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    const { workspace_id, user_id } = req.session.user;
+
+    const client = await getSlackClient(workspace_id);
+    const userIsAdmin = await isAdmin(client, workspace_id, user_id);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      is_admin: userIsAdmin,
+      user_id: user_id,
+      workspace_id: workspace_id
+    }));
+
+  } catch (error) {
+    console.error('❌ Error checking admin status:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to check admin status' }));
+  }
+}
+
 module.exports = {
   getDecisions,
   updateDecision,
@@ -1162,5 +1252,6 @@ module.exports = {
   getAIAnalytics,
   healthCheck,
   submitFeedback,
-  extractDecisionsFromText
+  extractDecisionsFromText,
+  checkAdminStatus
 };
