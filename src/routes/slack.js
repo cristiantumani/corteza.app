@@ -167,7 +167,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
     let jiraData = null;
     if (epicKey) {
       console.log(`Fetching Jira: ${epicKey}`);
-      jiraData = await fetchJiraIssue(epicKey);
+      jiraData = await fetchJiraIssue(epicKey, workspace_id);
       if (jiraData) {
         console.log(`✅ Jira: ${jiraData.summary}`);
       }
@@ -217,7 +217,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
     if (addComment && epicKey && jiraData) {
       console.log('>>> Adding Jira comment...');
       const comment = `🧠 Memory #${decision.id} logged by ${userName}\n\nType: ${decisionType}\nContent: ${decision.text}\n\n${alternatives ? `Additional Comments: ${alternatives}\n\n` : ''}Logged via corteza.app`;
-      if (await addJiraComment(epicKey, comment)) {
+      if (await addJiraComment(epicKey, comment, workspace_id)) {
         console.log(`✅ Jira comment added to ${epicKey}`);
       }
     }

@@ -590,7 +590,7 @@ async function handleApproveAction({ ack, body, client }) {
     // Fetch Jira data if epic_key present
     let jiraData = null;
     if (suggestion.epic_key) {
-      jiraData = await fetchJiraIssue(suggestion.epic_key);
+      jiraData = await fetchJiraIssue(suggestion.epic_key, workspace_id);
     }
 
     // Create decision in decisions collection (scoped by workspace)
@@ -1041,7 +1041,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     let jiraData = null;
     if (editedData.epic_key) {
       console.log('>>> Fetching Jira data for:', editedData.epic_key);
-      jiraData = await fetchJiraIssue(editedData.epic_key);
+      jiraData = await fetchJiraIssue(editedData.epic_key, workspace_id);
       console.log('>>> Jira data fetched:', !!jiraData);
     }
 
@@ -1094,7 +1094,7 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     if (addComment && editedData.epic_key && jiraData) {
       console.log('>>> Adding Jira comment...');
       const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${editedData.decision_type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via corteza.app`;
-      if (await addJiraComment(editedData.epic_key, comment)) {
+      if (await addJiraComment(editedData.epic_key, comment, workspace_id)) {
         console.log(`✅ Jira comment added to ${editedData.epic_key}`);
       }
     }
@@ -1447,7 +1447,7 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
 
     // Fetch Jira data
     console.log('>>> Fetching Jira data for:', epicKey);
-    const jiraData = await fetchJiraIssue(epicKey);
+    const jiraData = await fetchJiraIssue(epicKey, workspace_id);
     console.log('>>> Jira data fetched:', !!jiraData);
 
     // Create decision
@@ -1490,7 +1490,7 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     if (jiraData) {
       console.log('>>> Adding Jira comment...');
       const comment = `📝 Decision #${decision.id} logged by ${userName}\n\nType: ${decision.type}\nDecision: ${decision.text}\n\n${decision.alternatives}\n\nLogged via corteza.app`;
-      jiraCommentSuccess = await addJiraComment(epicKey, comment);
+      jiraCommentSuccess = await addJiraComment(epicKey, comment, workspace_id);
 
       if (jiraCommentSuccess) {
         console.log(`✅ Jira comment added to ${epicKey}`);
