@@ -32,27 +32,42 @@
 - **GDPR Compliance:** Export and delete workspace data
 
 ### 🔗 Integrations
-- **Jira:** Link decisions to epics, auto-create tickets
+- **Per-Workspace Jira:** Each workspace configures its own Jira instance via `/settings`
 - **Slack OAuth:** Secure workspace authentication
 - **Multi-Tenancy:** Complete workspace isolation
+
+### 🔐 Permissions & Security
+- **Role-Based Access:** Admin/Non-Admin permission system
+- **Auto-Promotion:** Slack Admins automatically become app Admins
+- **Permission Management:** `/permissions` command for granting/revoking access
+- **Workspace Isolation:** Admins can only edit their own decisions, Non-admins can only modify their own
+- **Encrypted Storage:** Jira tokens encrypted at rest with AES-256
 
 ---
 
 ## 🚀 Quick Start for Beta Testers
 
-### **[📘 Complete Installation Guide](INSTALLATION_GUIDE.md)** ← Start here!
+### **[📘 Beta Setup Guide](BETA_SETUP_GUIDE.md)** ← Start here! (Updated Jan 2026)
 
 **What you'll need:**
 - Slack workspace admin access
-- ~45 minutes
+- ~45-60 minutes
 - Credit card for API verification (free tiers available)
 
+**What you'll get:**
+1. AI-powered decision logging in Slack
+2. Searchable knowledge base with semantic search
+3. Role-based permissions (Admin/Non-Admin)
+4. Per-workspace Jira configuration (optional)
+5. Dashboard with analytics
+6. Automatic extraction from meeting transcripts
+
 **Quick Overview:**
-1. Create Slack App (10 min)
-2. Set up MongoDB Atlas (10 min)
-3. Get API keys (OpenAI, Anthropic, Jira) (10 min)
-4. Deploy to Railway (10 min)
-5. Test & configure (5 min)
+1. Create Slack App with 6 slash commands (15 min)
+2. Set up MongoDB Atlas with vector search (10 min)
+3. Get API keys (Anthropic, OpenAI) (10 min)
+4. Deploy to Railway with all configs (10 min)
+5. Test everything (5 min)
 
 ---
 
@@ -70,9 +85,30 @@ or
 Fill in the modal with:
 - Content text
 - Type (decision/explanation/context)
+- Category (product/ux/technical)
 - Additional comments
 - Tags
 - Related Jira epic (optional)
+
+### Manage Permissions (Admins Only)
+```
+/permissions list                    # View all admins
+/permissions grant @teammate         # Promote user to admin
+/permissions revoke @teammate        # Remove admin access
+```
+
+### Configure Jira (Admins Only)
+```
+/settings                            # Opens Jira configuration modal
+```
+- Each workspace configures its own Jira instance
+- Settings are encrypted and stored per-workspace
+- No global Jira configuration needed
+
+### Access Dashboard
+```
+/login                               # Get personalized dashboard link
+```
 
 ### Search Team Memory
 ```
@@ -212,7 +248,7 @@ npm run dev
 
 ### Environment Variables
 
-See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for detailed setup instructions.
+See [BETA_SETUP_GUIDE.md](BETA_SETUP_GUIDE.md) for detailed setup instructions.
 
 Required variables:
 - `SLACK_BOT_TOKEN` - Bot User OAuth Token (not needed if using OAuth)
@@ -220,9 +256,12 @@ Required variables:
 - `SESSION_SECRET` - Session cookie encryption key
   - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
   - Must be persistent across restarts
+- `ENCRYPTION_KEY` - For encrypting per-workspace Jira tokens (**NEW**)
+  - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+  - Must be persistent across restarts
 - `MONGODB_URI` - MongoDB Atlas connection string
 - `ANTHROPIC_API_KEY` - Claude API key
-- `OPENAI_API_KEY` - OpenAI API key
+- `OPENAI_API_KEY` - OpenAI API key (optional, disables semantic search if not set)
 
 OAuth (multi-workspace) variables:
 - `SLACK_CLIENT_ID` - OAuth client ID from Slack app
@@ -232,7 +271,8 @@ OAuth (multi-workspace) variables:
   - Must be persistent across restarts
 
 Optional:
-- `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` - For Jira integration
+- `APP_BASE_URL` - Custom domain for dashboard (e.g., `app.yourcompany.com`)
+- **Note:** Jira is now configured per-workspace via `/settings` command (no global config needed)
 
 ---
 
@@ -295,6 +335,38 @@ Optional:
 }
 ```
 
+**workspace_admins:** *(NEW - Role-based permissions)*
+```javascript
+{
+  workspace_id: "T0WKH1NGL",
+  user_id: "U123ABC",
+  user_name: "john.doe",
+  email: "john@company.com",
+  role: "admin",
+  source: "slack_admin",     // slack_admin | assigned
+  assigned_by: null,          // User ID who granted access
+  is_slack_admin: true,       // From Slack API
+  created_at: "2024-12-21T10:00:00Z",
+  deactivated_at: null        // Soft delete
+}
+```
+
+**workspace_settings:** *(NEW - Per-workspace Jira config)*
+```javascript
+{
+  workspace_id: "T0WKH1NGL",
+  jira: {
+    enabled: true,
+    url: "https://company.atlassian.net",
+    email: "bot@company.com",
+    api_token_encrypted: "...",  // AES-256 encrypted
+    last_tested_at: "2024-12-21T10:00:00Z",
+    configured_by: "U123ABC"
+  },
+  updated_at: "2024-12-21T10:00:00Z"
+}
+```
+
 ---
 
 ## 🤝 Contributing
@@ -319,13 +391,16 @@ We're currently in **beta testing phase**. Contributions, feedback, and bug repo
 ## 📝 Roadmap
 
 ### Current Features ✅
-- [x] Decision logging via Slack slash commands
-- [x] AI-powered transcript analysis
+- [x] Decision logging via Slack slash commands (`/decision`, `/memory`)
+- [x] AI-powered transcript analysis with Claude
 - [x] Semantic search with vector embeddings
 - [x] Web dashboard with chat interface
-- [x] Jira integration
-- [x] Multi-workspace support
-- [x] GDPR compliance tools
+- [x] Per-workspace Jira configuration (`/settings`)
+- [x] Multi-workspace support with OAuth
+- [x] Role-based permissions (Admin/Non-Admin)
+- [x] Permission management (`/permissions`)
+- [x] Encrypted Jira token storage
+- [x] GDPR compliance tools (export/delete)
 
 ### Under Consideration (Based on User Feedback) 🤔
 - [ ] Passive decision detection (bot monitors channels)
