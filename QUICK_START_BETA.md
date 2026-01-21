@@ -1,8 +1,10 @@
-# Corteza - Quick Start for Beta Testers
+# Corteza - Quick Start for Self-Hosting
 
-**TL;DR Setup Guide** - Get Corteza running in ~30 minutes
+**TL;DR Deployment Guide** - Deploy your own Corteza instance in ~30 minutes
 
-Full guide: **[BETA_SETUP_GUIDE.md](BETA_SETUP_GUIDE.md)**
+**Note:** If you just want to USE Corteza, see **[BETA_TESTER_GUIDE.md](BETA_TESTER_GUIDE.md)** instead!
+
+Full deployment guide: **[SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md)**
 
 ---
 
@@ -245,7 +247,8 @@ Small team (~10 people, ~100 decisions/month):
 
 ## 📚 Full Documentation
 
-- **Complete Setup:** [BETA_SETUP_GUIDE.md](BETA_SETUP_GUIDE.md)
+- **Beta Tester Guide (Use Corteza):** [BETA_TESTER_GUIDE.md](BETA_TESTER_GUIDE.md)
+- **Complete Deployment Guide:** [SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md)
 - **Features:** [README.md](README.md)
 - **Recent Changes:** [CHANGELOG.md](CHANGELOG.md)
 - **Troubleshooting:** See full guide

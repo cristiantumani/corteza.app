@@ -65,7 +65,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### 📚 Improved
 
 **Documentation:**
-- New comprehensive **[BETA_SETUP_GUIDE.md](BETA_SETUP_GUIDE.md)** for beta testers
+- New **[BETA_TESTER_GUIDE.md](BETA_TESTER_GUIDE.md)** for users (install & use in 10 min)
+- New **[SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md)** for self-hosting (deploy in 45-60 min)
+- New **[CHANGELOG.md](CHANGELOG.md)** for version history
 - Updated README with latest features
 - Clearer step-by-step instructions
 - Troubleshooting section expanded

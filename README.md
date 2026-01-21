@@ -45,29 +45,36 @@
 
 ---
 
-## 🚀 Quick Start for Beta Testers
+## 🚀 Quick Start
 
-### **[📘 Beta Setup Guide](BETA_SETUP_GUIDE.md)** ← Start here! (Updated Jan 2026)
+### For Beta Testers (Use Corteza)
+
+**[📘 Beta Tester Guide](BETA_TESTER_GUIDE.md)** ← Install & use Corteza in 10 minutes!
+
+1. Click install link → Add to your Slack workspace
+2. Use `/decision` to log your first team memory
+3. Type `/login` to access the dashboard
+4. Upload meeting transcripts for AI extraction
+5. Start building your team's knowledge base
+
+**Free during beta period** | **10 minutes to get started**
+
+---
+
+### For Self-Hosting (Deploy Your Own)
+
+**[📘 Self-Hosting Guide](SELF_HOSTING_GUIDE.md)** ← Deploy Corteza to your infrastructure
 
 **What you'll need:**
 - Slack workspace admin access
 - ~45-60 minutes
 - Credit card for API verification (free tiers available)
 
-**What you'll get:**
-1. AI-powered decision logging in Slack
-2. Searchable knowledge base with semantic search
-3. Role-based permissions (Admin/Non-Admin)
-4. Per-workspace Jira configuration (optional)
-5. Dashboard with analytics
-6. Automatic extraction from meeting transcripts
-
-**Quick Overview:**
-1. Create Slack App with 6 slash commands (15 min)
-2. Set up MongoDB Atlas with vector search (10 min)
-3. Get API keys (Anthropic, OpenAI) (10 min)
-4. Deploy to Railway with all configs (10 min)
-5. Test everything (5 min)
+**What you'll deploy:**
+1. Backend server on Railway (~$5/month)
+2. MongoDB Atlas database (free tier)
+3. AI services (Anthropic, OpenAI)
+4. Full control over data and configuration
 
 ---
 
@@ -248,7 +255,7 @@ npm run dev
 
 ### Environment Variables
 
-See [BETA_SETUP_GUIDE.md](BETA_SETUP_GUIDE.md) for detailed setup instructions.
+See [SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md) for detailed setup instructions.
 
 Required variables:
 - `SLACK_BOT_TOKEN` - Bot User OAuth Token (not needed if using OAuth)
