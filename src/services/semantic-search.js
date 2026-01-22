@@ -362,16 +362,17 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
  * - Higher temperature (0.7) for varied, warm responses
  * - Includes context (alternatives, reasoning) for richer answers
  * - Response caching (5 min TTL) to reduce duplicate API calls
+ * - Supports conversation history for context-aware follow-ups
  *
  * Cost: ~$0.003 per query (Sonnet input + output)
  * Trade-off: Higher cost but MUCH better user experience
  *
  * @param {string} query - User's original query
  * @param {Array} results - Search results with scores
- * @param {Object} metadata - Additional context
+ * @param {Array} conversationHistory - Previous conversation turns [{query, response}]
  * @returns {Promise<string>} - Conversational response
  */
-async function generateConversationalResponse(query, results, metadata = {}) {
+async function generateConversationalResponse(query, results, conversationHistory = []) {
   if (!config.claude.isConfigured) {
     return formatResultsSimple(query, results);
   }
@@ -387,6 +388,7 @@ async function generateConversationalResponse(query, results, metadata = {}) {
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
 
   // Format results in a natural, conversational way
+  // IMPORTANT: Always include decision IDs so users can reference them
   const resultsContext = results.all.map(r => {
     const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
     const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' :
@@ -403,14 +405,23 @@ async function generateConversationalResponse(query, results, metadata = {}) {
       ? ` Tags: ${r.tags.join(', ')}.`
       : '';
 
-    return `[${timeContext}] ${r.creator} logged: "${r.text}"${alternatives}${tags}`;
+    return `[Decision #${r.id}, ${timeContext}] ${r.creator} logged: "${r.text}"${alternatives}${tags}`;
   }).join('\n\n');
 
-  const prompt = `You are a knowledgeable team member who remembers every decision, explanation, and context that your team has logged. Someone just asked you: "${query}"
+  // Check if conversation history is provided
+  const conversationContext = conversationHistory && conversationHistory.length > 0
+    ? `\n\nPrevious conversation:\n${conversationHistory.slice(-2).map(turn =>
+        `User: ${turn.query}\nYou: ${turn.response}`
+      ).join('\n\n')}\n\n`
+    : '';
+
+  const prompt = `You are a knowledgeable team member who remembers every decision, explanation, and context that your team has logged.${conversationContext}Someone just asked you: "${query}"
 
 Here's what you remember (most relevant first):
 
 ${resultsContext}
+
+IMPORTANT: Always mention the decision number (e.g., "Decision #123") so users can reference it later. For example: "We decided to simplify onboarding (Decision #123)" or "That's logged in Decision #45".
 
 Respond naturally like a helpful teammate would. Talk in first person plural ("we decided", "we chose"). Explain the reasoning and context when available. Be conversational and warm, not robotic. Keep it under 150 words. If there are multiple related items, connect them together naturally.
 
@@ -466,26 +477,74 @@ function formatResultsSimple(query, results) {
     ? `I found one decision about "${query}":\n\n`
     : `I found ${count} things about "${query}":\n\n`;
 
-  // Show most relevant results naturally
+  // Show most relevant results naturally with decision IDs
   results.all.slice(0, 3).forEach(r => {
     const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
     const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
 
-    response += `**${when.charAt(0).toUpperCase() + when.slice(1)}** (${r.creator}): ${r.text}\n\n`;
+    response += `**Decision #${r.id}** (${when}, ${r.creator}): ${r.text}\n\n`;
   });
 
   if (results.all.length > 3) {
-    response += `_...and ${results.all.length - 3} more related items._\n\n`;
+    response += `_...and ${results.all.length - 3} more. Ask me about specific decision numbers for details!_\n\n`;
+  } else {
+    response += `Want to know more? Ask me about a specific decision number!\n\n`;
   }
-
-  response += `Need more details? Just ask!`;
 
   return response;
 }
 
 /**
+ * Detect if query is asking for a specific decision by ID
+ * Examples: "decision 123", "decision #45", "show me #12", "tell me about decision 5"
+ */
+function extractDecisionId(query) {
+  const patterns = [
+    /decision\s*#?(\d+)/i,
+    /#(\d+)/,
+    /\bid\s*#?(\d+)/i,
+    /number\s*#?(\d+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = query.match(pattern);
+    if (match) {
+      return parseInt(match[1]);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fetch a specific decision by ID
+ */
+async function fetchDecisionById(decisionId, workspaceId) {
+  const decisionsCollection = getDecisionsCollection();
+
+  const decision = await decisionsCollection.findOne({
+    id: decisionId,
+    workspace_id: workspaceId
+  });
+
+  if (!decision) {
+    return null;
+  }
+
+  // Format as categorized results for consistency
+  return {
+    highlyRelevant: [{ ...decision, score: 1.0, hasKeywordMatch: true }],
+    relevant: [],
+    somewhatRelevant: [],
+    all: [{ ...decision, score: 1.0, hasKeywordMatch: true }],
+    searchMethod: 'id_lookup'
+  };
+}
+
+/**
  * Hybrid search: Combines semantic search with traditional keyword search
  * Falls back to keyword if semantic search fails or returns no results
+ * Also supports direct ID lookup (e.g., "show me decision #123")
  *
  * @param {string} query - Search query
  * @param {Object} options - Search options
@@ -496,6 +555,25 @@ async function hybridSearch(query, options = {}) {
   let results = null;
 
   console.log(`🔍 Hybrid search starting...`);
+
+  // Check if user is asking for a specific decision by ID
+  const decisionId = extractDecisionId(query);
+  if (decisionId) {
+    console.log(`   🎯 Decision ID detected: #${decisionId}`);
+    const idResult = await fetchDecisionById(decisionId, options.workspace_id);
+
+    if (idResult) {
+      return {
+        results: idResult,
+        searchMethod: 'id_lookup',
+        query,
+        options
+      };
+    } else {
+      console.log(`   ⚠️  Decision #${decisionId} not found, falling back to semantic search`);
+    }
+  }
+
   console.log(`   - Embeddings enabled: ${isEmbeddingsEnabled()}`);
 
   // Try semantic search first
