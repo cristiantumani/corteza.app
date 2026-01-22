@@ -17,6 +17,77 @@ function hasTemporalContext(query) {
 }
 
 /**
+ * Extract meaningful keywords from query (removes stop words, temporal keywords)
+ */
+function extractKeywords(query) {
+  const stopWords = new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
+    'could', 'can', 'may', 'might', 'must', 'about', 'of', 'for', 'with',
+    'what', 'show', 'me', 'find', 'search', 'look', 'get', 'all', 'any',
+    'decisions', 'decision', 'we', 'made', 'have', 'latest', 'recent'
+  ]);
+
+  const words = query.toLowerCase()
+    .replace(/[^\w\s]/g, ' ') // Remove punctuation
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word));
+
+  return [...new Set(words)]; // Remove duplicates
+}
+
+/**
+ * Apply keyword boost to scores when query terms appear in decision text
+ * Boosts score when exact keyword matches found
+ */
+function applyKeywordBoost(results, query) {
+  const keywords = extractKeywords(query);
+
+  if (keywords.length === 0) {
+    console.log('   ⚠️  No meaningful keywords extracted, skipping keyword boost');
+    return results;
+  }
+
+  console.log(`   🔑 Extracted keywords for boosting: [${keywords.join(', ')}]`);
+
+  return results.map(result => {
+    const decisionText = (result.text || '').toLowerCase();
+    const tags = (result.tags || []).map(t => t.toLowerCase()).join(' ');
+    const searchableText = `${decisionText} ${tags}`;
+
+    let keywordMatchCount = 0;
+    let exactMatchBoost = 0;
+
+    keywords.forEach(keyword => {
+      // Count how many times keyword appears
+      const regex = new RegExp(keyword, 'gi');
+      const matches = searchableText.match(regex);
+      if (matches) {
+        keywordMatchCount += matches.length;
+        // Each keyword match adds 0.05, max 0.15 total
+        exactMatchBoost += Math.min(0.15, matches.length * 0.05);
+      }
+    });
+
+    if (keywordMatchCount > 0) {
+      const originalScore = result.score;
+      const boostedScore = Math.min(1.0, result.score + exactMatchBoost);
+
+      console.log(`   🔑 Decision #${result.id}: ${originalScore.toFixed(3)} → ${boostedScore.toFixed(3)} (+${exactMatchBoost.toFixed(2)} keyword boost, ${keywordMatchCount} matches)`);
+
+      return {
+        ...result,
+        score: boostedScore,
+        keywordBoost: exactMatchBoost,
+        keywordMatches: keywordMatchCount
+      };
+    }
+
+    return result;
+  });
+}
+
+/**
  * Apply recency boost to scores based on how recent the decision is
  * Recent decisions get higher boost (max 0.15 for decisions < 7 days old)
  */
@@ -183,13 +254,17 @@ async function semanticSearch(query, options = {}) {
       console.log(`   - Lowest score: ${(results[results.length - 1].score * 100).toFixed(1)}%`);
     }
 
+    // Apply keyword boost (always - boosts exact keyword matches)
+    results = applyKeywordBoost(results, query);
+
     // Apply recency boost if temporal context detected
     results = applyRecencyBoost(results, queryHasTemporalContext);
 
     // Re-sort by boosted scores
-    if (queryHasTemporalContext) {
-      results.sort((a, b) => b.score - a.score);
-      console.log(`   ✅ After recency boost - Top score: ${(results[0].score * 100).toFixed(1)}%`);
+    results.sort((a, b) => b.score - a.score);
+
+    if (results.length > 0) {
+      console.log(`   ✅ After all boosts - Top score: ${(results[0].score * 100).toFixed(1)}%`);
     }
 
     // Categorize results by relevance (using boosted scores)
@@ -198,7 +273,8 @@ async function semanticSearch(query, options = {}) {
       relevant: results.filter(r => r.score >= 0.70 && r.score < 0.85),
       somewhatRelevant: results.filter(r => r.score >= 0.60 && r.score < 0.70),
       all: results,
-      temporalBoostApplied: queryHasTemporalContext
+      temporalBoostApplied: queryHasTemporalContext,
+      keywordBoostApplied: results.some(r => r.keywordBoost > 0)
     };
 
     console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant, ${categorized.somewhatRelevant.length} somewhat relevant`);
@@ -259,23 +335,34 @@ async function generateConversationalResponse(query, results, metadata = {}) {
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
 
   // CREDIT OPTIMIZATION: Compact result format (saves ~50% tokens vs verbose format)
-  // Include timestamp for better context
+  // Include timestamp and boost indicators for better context
   const resultsContext = results.all.map(r => {
     const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
     const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
-    const boostIndicator = r.recencyBoost ? ` (🔥 recent)` : '';
+
+    const boosts = [];
+    if (r.keywordBoost) boosts.push('🎯 exact match');
+    if (r.recencyBoost) boosts.push('🔥 recent');
+    const boostIndicator = boosts.length > 0 ? ` (${boosts.join(', ')})` : '';
+
     return `#${r.id} [${(r.score * 100).toFixed(0)}%]${boostIndicator} ${r.type}: "${r.text}" (${r.creator}, ${timeContext})`;
   }).join('\n');
 
   // CREDIT OPTIMIZATION: Shortened prompt (~60% reduction)
-  const temporalNote = results.temporalBoostApplied ?
-    '\nNote: Recent decisions boosted due to "latest/recent" query context.' : '';
+  const notes = [];
+  if (results.temporalBoostApplied) {
+    notes.push('Recent decisions boosted due to temporal query context.');
+  }
+  if (results.all.some(r => r.keywordBoost)) {
+    notes.push('Exact keyword matches boosted for relevance.');
+  }
+  const notesText = notes.length > 0 ? `\nNote: ${notes.join(' ')}` : '';
 
   const prompt = `Query: "${query}"
 Results (${results.all.length}):
-${resultsContext}${temporalNote}
+${resultsContext}${notesText}
 
-Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Highlight most recent decisions. Be concise (<200 words).`;
+Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Highlight exact matches and recent decisions. Be concise (<200 words).`;
 
   try {
     const response = await anthropic.messages.create({

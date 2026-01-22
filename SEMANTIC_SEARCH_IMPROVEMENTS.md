@@ -1,27 +1,45 @@
-# Semantic Search Improvements - Recency Boosting
+# Semantic Search Improvements - Hybrid Search with Keyword + Recency Boosting
 
 ## Problem Statement
 
-When users asked for "latest decisions about X", the semantic search would:
-1. Find decisions semantically similar to X
-2. Rank them purely by text similarity (vector distance)
-3. Ignore recency completely
+Pure semantic/vector search has two critical weaknesses:
 
-**Result:** A decision logged yesterday with 75% similarity would rank lower than a 6-month-old decision with 80% similarity, even when the user explicitly asked for "latest."
+### Issue 1: Exact Keyword Matches Rank Too Low
+When users search for "decisions about **onboarding**" and there's a decision with "**Onboarding** flow..." in the text, it should be 90%+ match. But vector search was returning only ~75% similarity.
 
-## Solution: Temporal Context Detection + Recency Boosting
+**Why?** Long detailed text gets diluted across 1536 dimensions. Exact keyword matches aren't automatically weighted higher.
 
-### 1. Temporal Context Detection
+### Issue 2: Ignores Recency
+When users asked for "**latest** decisions about X", the semantic search would rank purely by text similarity, ignoring how recent decisions were.
 
-Detects when queries mention time-related keywords:
-- `latest`, `recent`, `newest`, `last`, `current`
-- `today`, `yesterday`, `this week`, `this month`
-- `new`, `just`, `recently made`
+**Result:** Both exact matches and recent decisions were being under-ranked.
 
-### 2. Recency Boost Algorithm
+## Solution: Hybrid Search (Vector + Keyword + Recency)
 
-When temporal context is detected, apply score boosts based on age:
+We now apply **three layers** of intelligence:
 
+### Layer 1: Semantic Search (Base)
+- Vector similarity using OpenAI embeddings
+- Finds conceptually related decisions
+- Base score: 0.0 - 1.0
+
+### Layer 2: Keyword Boost (Always Applied)
+Extract meaningful keywords from query and boost scores when exact matches found:
+
+**Algorithm:**
+1. Extract keywords (remove stop words like "the", "a", "show", "decisions")
+2. Count keyword occurrences in decision text + tags
+3. Boost: +0.05 per match (max +0.15 total)
+
+**Example:**
+- Query: "decisions about **onboarding**"
+- Decision text: "**Onboarding** flow reduced from 4 to 3 steps"
+- Base score: 75% + Keyword boost: 15% = **90%** ✅
+
+### Layer 3: Recency Boost (When Temporal Keywords Detected)
+Detects temporal keywords: `latest`, `recent`, `newest`, `last`, `current`, `today`, etc.
+
+**Boost by age:**
 | Age | Boost | Example |
 |-----|-------|---------|
 | < 7 days | +0.15 (15%) | 75% → 90% |
@@ -29,29 +47,27 @@ When temporal context is detected, apply score boosts based on age:
 | < 90 days | +0.05 (5%) | 75% → 80% |
 | > 90 days | +0.00 (0%) | No boost |
 
-**Example:**
-- Query: "What are the latest decisions about onboarding?"
-- Decision A: Logged yesterday, semantic score 75% → **90% after boost**
-- Decision B: Logged 6 months ago, semantic score 80% → **80% (no boost)**
-- **Result:** Decision A now ranks higher (correct!)
+### Combined Example
 
-### 3. Improved AI Prompt
+**Query:** "What are the **latest** decisions about **onboarding**?"
 
-The conversational response now:
-- Includes decision timestamps ("2 days ago", "yesterday", "today")
-- Marks boosted decisions with 🔥 emoji
-- Tells Claude that recency boost was applied
-- Instructs Claude to highlight recent decisions
+**Decision:** "Onboarding flow reduced..." (logged 2 days ago)
 
-**Before:**
+| Layer | Score | Calculation |
+|-------|-------|-------------|
+| Semantic (base) | 75% | Vector similarity |
+| + Keyword boost | +15% | "onboarding" appears in text |
+| + Recency boost | +15% | < 7 days old |
+| **Final Score** | **100%** | Capped at 100% max |
+
+**Result:** High Relevance (85%+) ✅
+
+### 4. Improved AI Prompt
+
+Claude now sees:
 ```
-#123 [75%] decision: "Onboarding flow simplified" (John)
-```
-
-**After:**
-```
-#123 [90%] (🔥 recent) decision: "Onboarding flow simplified" (John, 2d ago)
-Note: Recent decisions boosted due to "latest/recent" query context.
+#123 [95%] (🎯 exact match, 🔥 recent) decision: "Onboarding flow simplified" (John, 2d ago)
+Note: Exact keyword matches boosted. Recent decisions boosted due to temporal query.
 ```
 
 ## Code Changes
@@ -68,15 +84,41 @@ Note: Recent decisions boosted due to "latest/recent" query context.
 
 ## Impact
 
-### Before:
-Query: "What are the latest decisions about onboarding?"
-- Decision #123 (2 days old, 75% similarity) → **Medium Relevance (70-84%)**
-- Decision #456 (6 months old, 80% similarity) → **Medium Relevance (70-84%)**
+### Test Case 1: Query with Temporal Context
+**Query:** "What are the **latest** decisions about **onboarding**?"
 
-### After:
-Query: "What are the latest decisions about onboarding?"
-- Decision #123 (2 days old, 75% → **90%**) → **High Relevance (85%+)** ✅
-- Decision #456 (6 months old, 80% → 80%) → **Medium Relevance (70-84%)**
+**Before:**
+- Decision #123 (2 days old, contains "onboarding", 75% base) → **Medium Relevance (70-84%)** ❌
+
+**After:**
+- Decision #123 (2 days old, contains "onboarding", 75% base)
+  - +15% keyword boost ("onboarding" match)
+  - +15% recency boost (< 7 days)
+  - **Final: 100%** (capped) → **High Relevance (85%+)** ✅
+
+### Test Case 2: Query WITHOUT Temporal Context
+**Query:** "What decisions have we made about **onboarding**?"
+
+**Before:**
+- Decision #123 (contains "onboarding", 75% base) → **Medium Relevance (70-84%)** ❌
+
+**After:**
+- Decision #123 (contains "onboarding", 75% base)
+  - +15% keyword boost ("onboarding" match)
+  - No recency boost (no temporal keywords)
+  - **Final: 90%** → **High Relevance (85%+)** ✅
+
+### Test Case 3: Old Decision with Exact Match
+**Query:** "Show me decisions about **authentication**"
+
+**Before:**
+- Decision #456 (6 months old, contains "authentication", 75% base) → **Medium Relevance** ❌
+
+**After:**
+- Decision #456 (6 months old, contains "authentication", 75% base)
+  - +15% keyword boost ("authentication" match)
+  - No recency boost (no temporal keywords, old decision)
+  - **Final: 90%** → **High Relevance (85%+)** ✅
 
 ## Testing
 
@@ -116,12 +158,24 @@ To test the improvement:
 
 ## Monitoring
 
-Look for these log messages:
+Look for these log messages in Railway:
+
+```bash
+🔍 Semantic search: "What are the latest decisions about onboarding?"
+   🔑 Extracted keywords for boosting: [onboarding]
+   🔑 Decision #123: 0.750 → 0.900 (+0.15 keyword boost, 2 matches)
+   ⏰ Temporal context detected - will boost recent decisions
+   📅 Decision #123: 0.900 → 1.000 (+0.15 recency boost, 2 days old)
+   ✅ After all boosts - Top score: 100.0%
+   ✅ Categorized: 1 highly relevant, 0 relevant, 0 somewhat relevant
 ```
-⏰ Temporal context detected - will boost recent decisions
-📅 Decision #123: 0.750 → 0.900 (+0.15 recency boost, 2 days old)
-✅ After recency boost - Top score: 90.0%
-```
+
+**What each line means:**
+- `🔑 Extracted keywords` - Meaningful words after removing stop words
+- `🔑 Decision #X: ... (+0.15 keyword boost, 2 matches)` - Found "onboarding" 2 times
+- `⏰ Temporal context detected` - Query contains "latest" or similar
+- `📅 Decision #X: ... (+0.15 recency boost, 2 days old)` - Recent decision boosted
+- `✅ After all boosts` - Final scores after both boosts applied
 
 ---
 
