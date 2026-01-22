@@ -4,6 +4,60 @@ const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 
 /**
+ * Detect if query has temporal context (looking for recent/latest decisions)
+ */
+function hasTemporalContext(query) {
+  const temporalKeywords = [
+    'latest', 'recent', 'newest', 'last', 'current',
+    'today', 'yesterday', 'this week', 'this month',
+    'new', 'just', 'recently made'
+  ];
+  const lowerQuery = query.toLowerCase();
+  return temporalKeywords.some(keyword => lowerQuery.includes(keyword));
+}
+
+/**
+ * Apply recency boost to scores based on how recent the decision is
+ * Recent decisions get higher boost (max 0.15 for decisions < 7 days old)
+ */
+function applyRecencyBoost(results, applyBoost = false) {
+  if (!applyBoost) return results;
+
+  const now = Date.now();
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  const ONE_WEEK = 7 * ONE_DAY;
+  const ONE_MONTH = 30 * ONE_DAY;
+
+  return results.map(result => {
+    const age = now - new Date(result.timestamp).getTime();
+    let recencyBoost = 0;
+
+    if (age < ONE_WEEK) {
+      // Very recent: boost by 0.15 (15%)
+      recencyBoost = 0.15;
+    } else if (age < ONE_MONTH) {
+      // Recent: boost by 0.10 (10%)
+      recencyBoost = 0.10;
+    } else if (age < 3 * ONE_MONTH) {
+      // Somewhat recent: boost by 0.05 (5%)
+      recencyBoost = 0.05;
+    }
+
+    const originalScore = result.score;
+    const boostedScore = Math.min(1.0, result.score + recencyBoost);
+
+    console.log(`   📅 Decision #${result.id}: ${originalScore.toFixed(3)} → ${boostedScore.toFixed(3)} (+${recencyBoost.toFixed(2)} recency boost, ${Math.floor(age / ONE_DAY)} days old)`);
+
+    return {
+      ...result,
+      score: boostedScore,
+      originalScore,
+      recencyBoost
+    };
+  });
+}
+
+/**
  * Perform semantic search on decisions using vector similarity
  *
  * @param {string} query - Natural language search query
@@ -40,6 +94,12 @@ async function semanticSearch(query, options = {}) {
     // Generate embedding for the search query
     console.log(`🔍 Semantic search: "${query}"`);
     const queryEmbedding = await generateQueryEmbedding(query);
+
+    // Detect if query is looking for recent decisions
+    const queryHasTemporalContext = hasTemporalContext(query);
+    if (queryHasTemporalContext) {
+      console.log(`   ⏰ Temporal context detected - will boost recent decisions`);
+    }
 
     // Build filter for pre-filtering before vector search
     const preFilter = { workspace_id };
@@ -110,7 +170,7 @@ async function semanticSearch(query, options = {}) {
       }
     ];
 
-    const results = await decisionsCollection.aggregate(pipeline).toArray();
+    let results = await decisionsCollection.aggregate(pipeline).toArray();
 
     console.log(`🔍 Vector search completed:`);
     console.log(`   - Query: "${query}"`);
@@ -123,12 +183,22 @@ async function semanticSearch(query, options = {}) {
       console.log(`   - Lowest score: ${(results[results.length - 1].score * 100).toFixed(1)}%`);
     }
 
-    // Categorize results by relevance
+    // Apply recency boost if temporal context detected
+    results = applyRecencyBoost(results, queryHasTemporalContext);
+
+    // Re-sort by boosted scores
+    if (queryHasTemporalContext) {
+      results.sort((a, b) => b.score - a.score);
+      console.log(`   ✅ After recency boost - Top score: ${(results[0].score * 100).toFixed(1)}%`);
+    }
+
+    // Categorize results by relevance (using boosted scores)
     const categorized = {
       highlyRelevant: results.filter(r => r.score >= 0.85),
       relevant: results.filter(r => r.score >= 0.70 && r.score < 0.85),
       somewhatRelevant: results.filter(r => r.score >= 0.60 && r.score < 0.70),
-      all: results
+      all: results,
+      temporalBoostApplied: queryHasTemporalContext
     };
 
     console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant, ${categorized.somewhatRelevant.length} somewhat relevant`);
@@ -189,16 +259,23 @@ async function generateConversationalResponse(query, results, metadata = {}) {
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
 
   // CREDIT OPTIMIZATION: Compact result format (saves ~50% tokens vs verbose format)
-  const resultsContext = results.all.map(r =>
-    `#${r.id} [${(r.score * 100).toFixed(0)}%] ${r.type}: "${r.text}" (${r.creator})`
-  ).join('\n');
+  // Include timestamp for better context
+  const resultsContext = results.all.map(r => {
+    const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
+    const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
+    const boostIndicator = r.recencyBoost ? ` (🔥 recent)` : '';
+    return `#${r.id} [${(r.score * 100).toFixed(0)}%]${boostIndicator} ${r.type}: "${r.text}" (${r.creator}, ${timeContext})`;
+  }).join('\n');
 
   // CREDIT OPTIMIZATION: Shortened prompt (~60% reduction)
+  const temporalNote = results.temporalBoostApplied ?
+    '\nNote: Recent decisions boosted due to "latest/recent" query context.' : '';
+
   const prompt = `Query: "${query}"
 Results (${results.all.length}):
-${resultsContext}
+${resultsContext}${temporalNote}
 
-Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Be concise (<200 words).`;
+Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Highlight most recent decisions. Be concise (<200 words).`;
 
   try {
     const response = await anthropic.messages.create({

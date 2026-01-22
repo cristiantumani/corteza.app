@@ -1,0 +1,33 @@
+Product Team Meeting - User Onboarding Review
+Date: January 21, 2026
+Attendees: Sarah (Product), Mike (Engineering), Lisa (UX)
+
+---
+
+Sarah: Alright team, let's discuss our onboarding funnel. We're seeing a 45% drop-off at step 3. Mike, what did the data show?
+
+Mike: The analytics show users spend an average of 8 minutes on step 2, then 60% abandon at step 3. Step 3 is where we ask for team invitations, and step 2 is workspace configuration.
+
+Lisa: I think the problem is we're asking too much too soon. Users want to see value first before inviting their team.
+
+Sarah: Agreed. So here's what I'm proposing - we merge step 2 and step 3 into a single step. Configuration and team invites together. That reduces our onboarding from 4 steps to 3 steps total.
+
+Mike: That makes sense. So the new flow would be: Step 1 - Account creation, Step 2 - Workspace setup + team invites, Step 3 - Tutorial walkthrough. Right?
+
+Sarah: Exactly. We're doing this because the data clearly shows users are dropping off when we separate these actions. Let's make it one cohesive step.
+
+Lisa: I like it. One thing to note - we need to make team invites optional in that combined step. Some users want to explore alone first.
+
+Sarah: Good point. Mike, can you implement this by end of sprint?
+
+Mike: Yes, I'll need about 3 days. The backend already supports bulk invites, so it's mainly frontend work. I'll update the onboarding controller to skip step 3 and merge that logic into step 2.
+
+Sarah: Perfect. One more thing - we're launching this change on February 1st, regardless of whether we hit our other sprint goals. This is priority #1 because we're losing 45% of signups.
+
+Lisa: Should we A/B test this first?
+
+Sarah: No, we don't have enough traffic for statistical significance. We'll monitor the metrics closely for 2 weeks after launch and can roll back if needed.
+
+Mike: Got it. I'll also add tracking events for the new combined step so we can see exactly where users are getting stuck.
+
+Sarah: Excellent. Let's reconvene on Friday to review the implementation. Meeting adjourned.
