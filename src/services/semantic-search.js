@@ -357,11 +357,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * Generate conversational response for search results using Claude
  *
- * CREDIT OPTIMIZATION: Multiple optimizations applied
- * - Reduced prompt from ~400 to ~150 tokens (~60% reduction)
- * - Added response caching (5 min TTL) to avoid duplicate API calls
- * - Reduced max_tokens from 800 to 500
- * - Compact result format saves tokens in context
+ * CONVERSATIONAL QUALITY: Using Sonnet for natural, human-like responses
+ * - Natural language prompt (feels like talking to a teammate)
+ * - Higher temperature (0.7) for varied, warm responses
+ * - Includes context (alternatives, reasoning) for richer answers
+ * - Response caching (5 min TTL) to reduce duplicate API calls
+ *
+ * Cost: ~$0.003 per query (Sonnet input + output)
+ * Trade-off: Higher cost but MUCH better user experience
  *
  * @param {string} query - User's original query
  * @param {Array} results - Search results with scores
@@ -383,45 +386,44 @@ async function generateConversationalResponse(query, results, metadata = {}) {
 
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
 
-  // CREDIT OPTIMIZATION: Compact result format (saves ~50% tokens vs verbose format)
-  // Include timestamp and boost indicators for better context
+  // Format results in a natural, conversational way
   const resultsContext = results.all.map(r => {
     const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
-    const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
+    const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' :
+                        daysAgo < 7 ? `${daysAgo} days ago` :
+                        daysAgo < 30 ? `${Math.floor(daysAgo / 7)} weeks ago` :
+                        `${Math.floor(daysAgo / 30)} months ago`;
 
-    const boosts = [];
-    if (r.keywordBoost) boosts.push('🎯 exact match');
-    if (r.recencyBoost) boosts.push('🔥 recent');
-    const boostIndicator = boosts.length > 0 ? ` (${boosts.join(', ')})` : '';
+    // Include alternatives and additional context for richer responses
+    const alternatives = r.alternatives && r.alternatives.length > 0
+      ? ` Alternatives considered: ${r.alternatives.join(', ')}.`
+      : '';
 
-    return `#${r.id} [${(r.score * 100).toFixed(0)}%]${boostIndicator} ${r.type}: "${r.text}" (${r.creator}, ${timeContext})`;
-  }).join('\n');
+    const tags = r.tags && r.tags.length > 0
+      ? ` Tags: ${r.tags.join(', ')}.`
+      : '';
 
-  // CREDIT OPTIMIZATION: Shortened prompt (~60% reduction)
-  const notes = [];
-  if (results.temporalBoostApplied) {
-    notes.push('Recent decisions boosted due to temporal query context.');
-  }
-  if (results.all.some(r => r.keywordBoost)) {
-    notes.push('Exact keyword matches boosted for relevance.');
-  }
-  const notesText = notes.length > 0 ? `\nNote: ${notes.join(' ')}` : '';
+    return `[${timeContext}] ${r.creator} logged: "${r.text}"${alternatives}${tags}`;
+  }).join('\n\n');
 
-  const prompt = `Query: "${query}"
-Results (${results.all.length}):
-${resultsContext}${notesText}
+  const prompt = `You are a knowledgeable team member who remembers every decision, explanation, and context that your team has logged. Someone just asked you: "${query}"
 
-Summarize findings in markdown. ONLY show results with 70%+ relevance. Group as:
-- High Relevance (85%+): Most relevant matches
-- Medium Relevance (70-84%): Somewhat relevant
+Here's what you remember (most relevant first):
 
-DO NOT include "Low Relevance" section. Highlight exact keyword matches. Be concise (<200 words).`;
+${resultsContext}
+
+Respond naturally like a helpful teammate would. Talk in first person plural ("we decided", "we chose"). Explain the reasoning and context when available. Be conversational and warm, not robotic. Keep it under 150 words. If there are multiple related items, connect them together naturally.
+
+Don't use structured sections like "High Relevance" or bullet points unless listing specific steps. Just talk like a human who's recalling information from memory.`;
+
+  // Use Sonnet instead of Haiku for better conversational quality
+  // The cost difference is worth it for natural responses
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 500,  // CREDIT OPTIMIZATION: Reduced from 800
-      temperature: 0.3,
+      model: 'claude-3-5-sonnet-20241022',  // Using Sonnet for natural conversation (worth the cost)
+      max_tokens: 400,  // Enough for conversational response
+      temperature: 0.7,  // Higher temp for more natural, human-like responses
       messages: [{
         role: 'user',
         content: prompt
@@ -452,39 +454,31 @@ DO NOT include "Low Relevance" section. Highlight exact keyword matches. Be conc
 }
 
 /**
- * Simple fallback formatting (no Claude required)
+ * Simple fallback formatting (no Claude required) - still conversational
  */
 function formatResultsSimple(query, results) {
   if (results.all.length === 0) {
-    return `I couldn't find any decisions matching "${query}". Try different keywords or check the decision type filter.`;
+    return `Hmm, I don't see anything in our team memory about "${query}". Try rephrasing or using different keywords - I might have it logged under a different term!`;
   }
 
-  let response = `🔍 Found **${results.all.length} decision${results.all.length === 1 ? '' : 's'}** matching "${query}":\n\n`;
+  const count = results.all.length;
+  let response = count === 1
+    ? `I found one decision about "${query}":\n\n`
+    : `I found ${count} things about "${query}":\n\n`;
 
-  if (results.highlyRelevant.length > 0) {
-    response += `**📌 Highly Relevant** (85%+ match):\n\n`;
-    results.highlyRelevant.forEach(r => {
-      response += `- **Decision #${r.id}**: ${r.text}\n`;
-      response += `  _${r.type} • ${r.creator} • ${new Date(r.timestamp).toLocaleDateString()}_\n\n`;
-    });
+  // Show most relevant results naturally
+  results.all.slice(0, 3).forEach(r => {
+    const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
+    const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+
+    response += `**${when.charAt(0).toUpperCase() + when.slice(1)}** (${r.creator}): ${r.text}\n\n`;
+  });
+
+  if (results.all.length > 3) {
+    response += `_...and ${results.all.length - 3} more related items._\n\n`;
   }
 
-  if (results.relevant.length > 0) {
-    response += `**📍 Relevant** (70-84% match):\n\n`;
-    results.relevant.forEach(r => {
-      response += `- **Decision #${r.id}**: ${r.text}\n`;
-      response += `  _${r.type} • ${r.creator}_\n\n`;
-    });
-  }
-
-  if (results.somewhatRelevant.length > 0) {
-    response += `**💡 Related Decisions** (60-69% match):\n\n`;
-    results.somewhatRelevant.forEach(r => {
-      response += `- **Decision #${r.id}**: ${r.text.substring(0, 80)}${r.text.length > 80 ? '...' : ''}\n`;
-    });
-  }
-
-  response += `\nWould you like more details about any of these decisions?`;
+  response += `Need more details? Just ask!`;
 
   return response;
 }
