@@ -394,12 +394,12 @@ async function generateConversationalResponse(query, results, metadata = {}) {
                         daysAgo < 30 ? `${Math.floor(daysAgo / 7)} weeks ago` :
                         `${Math.floor(daysAgo / 30)} months ago`;
 
-    // Include alternatives and additional context for richer responses
-    const alternatives = r.alternatives && r.alternatives.length > 0
+    // Include alternatives and additional context for richer responses (with safe null checks)
+    const alternatives = (Array.isArray(r.alternatives) && r.alternatives.length > 0)
       ? ` Alternatives considered: ${r.alternatives.join(', ')}.`
       : '';
 
-    const tags = r.tags && r.tags.length > 0
+    const tags = (Array.isArray(r.tags) && r.tags.length > 0)
       ? ` Tags: ${r.tags.join(', ')}.`
       : '';
 
