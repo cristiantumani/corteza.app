@@ -23,8 +23,9 @@ async function runSearchEval(testCases, workspaceId) {
     }
   }));
 
-  return await Eval('search-quality', {
+  return await Eval('Corteza', {
     data: braintrustData,
+    experimentName: 'search-quality',
     task: async (input) => {
       const result = await hybridSearch(input.query, {
         workspace_id: workspaceId,

@@ -26,8 +26,9 @@ async function runConversationalEval(testCases) {
     }
   }));
 
-  return await Eval('conversational-quality', {
+  return await Eval('Corteza', {
     data: braintrustData,
+    experimentName: 'conversational-quality',
     task: async (input) => {
       const response = await generateConversationalResponse(
         input.query,
