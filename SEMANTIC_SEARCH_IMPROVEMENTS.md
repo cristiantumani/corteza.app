@@ -14,9 +14,9 @@ When users asked for "**latest** decisions about X", the semantic search would r
 
 **Result:** Both exact matches and recent decisions were being under-ranked.
 
-## Solution: Hybrid Search (Vector + Keyword + Recency)
+## Solution: Hybrid Search with False Positive Filtering
 
-We now apply **three layers** of intelligence:
+We now apply **four layers** of intelligence to ensure high-quality, relevant results:
 
 ### Layer 1: Semantic Search (Base)
 - Vector similarity using OpenAI embeddings
@@ -36,7 +36,26 @@ Extract meaningful keywords from query and boost scores when exact matches found
 - Decision text: "**Onboarding** flow reduced from 4 to 3 steps"
 - Base score: 75% + Keyword boost: 15% = **90%** ✅
 
-### Layer 3: Recency Boost (When Temporal Keywords Detected)
+### Layer 3: False Positive Filtering (**NEW - Critical for Quality**)
+Filters out results that are semantically similar but topically irrelevant.
+
+**Problem Example:**
+- Query: "onboarding"
+- False positive: "platform migration" (60% similarity - both are "processes")
+- These should NEVER appear together!
+
+**Filtering Rules:**
+```
+Keep result if:
+  - Score >= 80% (trust high semantic similarity), OR
+  - Has keyword match (exact word found in text)
+
+Otherwise: FILTER IT OUT (it's a false positive)
+```
+
+**Impact:** Eliminates irrelevant results like "platform migration" when searching for "onboarding"
+
+### Layer 4: Recency Boost (When Temporal Keywords Detected)
 Detects temporal keywords: `latest`, `recent`, `newest`, `last`, `current`, `today`, etc.
 
 **Boost by age:**
@@ -46,6 +65,12 @@ Detects temporal keywords: `latest`, `recent`, `newest`, `last`, `current`, `tod
 | < 30 days | +0.10 (10%) | 75% → 85% |
 | < 90 days | +0.05 (5%) | 75% → 80% |
 | > 90 days | +0.00 (0%) | No boost |
+
+### Layer 5: Relevance Threshold (Only Show 70%+)
+**We only show results with 70%+ final score:**
+- High Relevance (85%+)
+- Medium Relevance (70-84%)
+- ~~Low Relevance (60-69%)~~ → **EXCLUDED** (not shown to users)
 
 ### Combined Example
 
@@ -120,6 +145,31 @@ Note: Exact keyword matches boosted. Recent decisions boosted due to temporal qu
   - No recency boost (no temporal keywords, old decision)
   - **Final: 90%** → **High Relevance (85%+)** ✅
 
+### Test Case 4: False Positive Filtering (**CRITICAL**)
+**Query:** "decisions about **onboarding**"
+
+**Before:**
+```
+High Relevance: (none)
+Medium Relevance:
+  - Onboarding flow decision (75% base)
+Low Relevance:
+  - Platform migration decision (65% base) ❌ IRRELEVANT!
+  - Kubernetes deployment decision (62% base) ❌ IRRELEVANT!
+```
+
+**After:**
+```
+High Relevance:
+  - Onboarding flow decision (90% - has "onboarding" keyword) ✅
+
+Medium/Low Relevance:
+  - Platform migration (65%, NO keyword match) → FILTERED OUT ✅
+  - Kubernetes deployment (62%, NO keyword match) → FILTERED OUT ✅
+```
+
+**Result:** Users only see relevant results. Trust in AI preserved! 🎯
+
 ## Testing
 
 To test the improvement:
@@ -160,22 +210,41 @@ To test the improvement:
 
 Look for these log messages in Railway:
 
+### Example 1: Perfect Match (All Layers Applied)
 ```bash
 🔍 Semantic search: "What are the latest decisions about onboarding?"
    🔑 Extracted keywords for boosting: [onboarding]
    🔑 Decision #123: 0.750 → 0.900 (+0.15 keyword boost, 2 matches)
+   🚫 Filtering out Decision #456 (score: 65.0%, no keyword match)
+   🚫 Filtering out Decision #789 (score: 62.0%, no keyword match)
+   ✂️  Filtered out 2 false positives (no keyword match + score < 80%)
    ⏰ Temporal context detected - will boost recent decisions
    📅 Decision #123: 0.900 → 1.000 (+0.15 recency boost, 2 days old)
    ✅ After all boosts - Top score: 100.0%
-   ✅ Categorized: 1 highly relevant, 0 relevant, 0 somewhat relevant
+   ✅ Categorized: 1 highly relevant, 0 relevant
+   ℹ️  Excluded 0 low-relevance results (< 70%)
+```
+
+### Example 2: False Positives Filtered
+```bash
+🔍 Semantic search: "decisions about onboarding"
+   - Raw results: 5
+   🔑 Extracted keywords: [onboarding]
+   🔑 Decision #123: 0.750 → 0.900 (+0.15 keyword boost, 2 matches)
+   🚫 Filtering out Decision #456 (score: 65.0%, no keyword match)  ← "platform migration"
+   🚫 Filtering out Decision #789 (score: 62.0%, no keyword match)  ← "kubernetes setup"
+   ✂️  Filtered out 2 false positives
+   ✅ Categorized: 1 highly relevant, 0 relevant
 ```
 
 **What each line means:**
 - `🔑 Extracted keywords` - Meaningful words after removing stop words
-- `🔑 Decision #X: ... (+0.15 keyword boost, 2 matches)` - Found "onboarding" 2 times
+- `🔑 Decision #X: ... (+0.15 keyword boost)` - Found keyword match
+- `🚫 Filtering out Decision #X` - **NEW**: Removing false positives
+- `✂️  Filtered out N false positives` - **NEW**: Summary of removed results
 - `⏰ Temporal context detected` - Query contains "latest" or similar
-- `📅 Decision #X: ... (+0.15 recency boost, 2 days old)` - Recent decision boosted
-- `✅ After all boosts` - Final scores after both boosts applied
+- `📅 Decision #X: ... (+0.15 recency boost)` - Recent decision boosted
+- `ℹ️  Excluded N low-relevance` - **NEW**: Results < 70% not shown
 
 ---
 

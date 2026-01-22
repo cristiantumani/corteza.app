@@ -39,13 +39,14 @@ function extractKeywords(query) {
 /**
  * Apply keyword boost to scores when query terms appear in decision text
  * Boosts score when exact keyword matches found
+ * Returns object with boosted results AND hasKeywordMatch flag for filtering
  */
 function applyKeywordBoost(results, query) {
   const keywords = extractKeywords(query);
 
   if (keywords.length === 0) {
     console.log('   ⚠️  No meaningful keywords extracted, skipping keyword boost');
-    return results;
+    return results.map(r => ({ ...r, keywordMatches: 0, keywordBoost: 0 }));
   }
 
   console.log(`   🔑 Extracted keywords for boosting: [${keywords.join(', ')}]`);
@@ -53,7 +54,8 @@ function applyKeywordBoost(results, query) {
   return results.map(result => {
     const decisionText = (result.text || '').toLowerCase();
     const tags = (result.tags || []).map(t => t.toLowerCase()).join(' ');
-    const searchableText = `${decisionText} ${tags}`;
+    const epicKey = (result.epic_key || '').toLowerCase();
+    const searchableText = `${decisionText} ${tags} ${epicKey}`;
 
     let keywordMatchCount = 0;
     let exactMatchBoost = 0;
@@ -79,12 +81,51 @@ function applyKeywordBoost(results, query) {
         ...result,
         score: boostedScore,
         keywordBoost: exactMatchBoost,
-        keywordMatches: keywordMatchCount
+        keywordMatches: keywordMatchCount,
+        hasKeywordMatch: true
       };
     }
 
-    return result;
+    return {
+      ...result,
+      keywordMatches: 0,
+      keywordBoost: 0,
+      hasKeywordMatch: false
+    };
   });
+}
+
+/**
+ * Filter out false positives - results that don't contain query keywords
+ * AND have low semantic scores (likely irrelevant despite vector similarity)
+ */
+function filterFalsePositives(results, query) {
+  const keywords = extractKeywords(query);
+
+  if (keywords.length === 0) {
+    // No keywords to filter by, keep all results
+    return results;
+  }
+
+  const filtered = results.filter(result => {
+    // Keep if:
+    // 1. High score (>= 0.80) - trust the vector search
+    if (result.score >= 0.80) return true;
+
+    // 2. Has keyword match (regardless of score)
+    if (result.hasKeywordMatch) return true;
+
+    // 3. Otherwise, it's a false positive - filter it out
+    console.log(`   🚫 Filtering out Decision #${result.id} (score: ${(result.score * 100).toFixed(1)}%, no keyword match)`);
+    return false;
+  });
+
+  const filteredCount = results.length - filtered.length;
+  if (filteredCount > 0) {
+    console.log(`   ✂️  Filtered out ${filteredCount} false positives (no keyword match + score < 80%)`);
+  }
+
+  return filtered;
 }
 
 /**
@@ -257,6 +298,10 @@ async function semanticSearch(query, options = {}) {
     // Apply keyword boost (always - boosts exact keyword matches)
     results = applyKeywordBoost(results, query);
 
+    // Filter false positives (no keyword match + low score = likely irrelevant)
+    const beforeFilterCount = results.length;
+    results = filterFalsePositives(results, query);
+
     // Apply recency boost if temporal context detected
     results = applyRecencyBoost(results, queryHasTemporalContext);
 
@@ -268,16 +313,20 @@ async function semanticSearch(query, options = {}) {
     }
 
     // Categorize results by relevance (using boosted scores)
+    // NOTE: We only return High (85%+) and Medium (70-84%) relevance
+    // Low relevance (60-69%) is excluded to avoid showing irrelevant results
     const categorized = {
       highlyRelevant: results.filter(r => r.score >= 0.85),
       relevant: results.filter(r => r.score >= 0.70 && r.score < 0.85),
-      somewhatRelevant: results.filter(r => r.score >= 0.60 && r.score < 0.70),
-      all: results,
+      somewhatRelevant: [], // Intentionally empty - we don't show low relevance results
+      all: results.filter(r => r.score >= 0.70), // Only include 70%+ results
       temporalBoostApplied: queryHasTemporalContext,
-      keywordBoostApplied: results.some(r => r.keywordBoost > 0)
+      keywordBoostApplied: results.some(r => r.keywordBoost > 0),
+      falsePositivesFiltered: beforeFilterCount - results.length
     };
 
-    console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant, ${categorized.somewhatRelevant.length} somewhat relevant`);
+    console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant`);
+    console.log(`   ℹ️  Excluded ${results.filter(r => r.score < 0.70).length} low-relevance results (< 70%)`);
 
     return categorized;
 
@@ -362,7 +411,11 @@ async function generateConversationalResponse(query, results, metadata = {}) {
 Results (${results.all.length}):
 ${resultsContext}${notesText}
 
-Summarize findings in markdown. Group by relevance (85%+ high, 70-84% medium, 60-69% low). Highlight exact matches and recent decisions. Be concise (<200 words).`;
+Summarize findings in markdown. ONLY show results with 70%+ relevance. Group as:
+- High Relevance (85%+): Most relevant matches
+- Medium Relevance (70-84%): Somewhat relevant
+
+DO NOT include "Low Relevance" section. Highlight exact keyword matches. Be concise (<200 words).`;
 
   try {
     const response = await anthropic.messages.create({
