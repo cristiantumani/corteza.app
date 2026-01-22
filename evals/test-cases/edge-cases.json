@@ -1,0 +1,140 @@
+{
+  "name": "Edge Case Tests",
+  "description": "Tests handling of edge cases, malformed input, and boundary conditions",
+  "test_cases": [
+    {
+      "id": "id_lookup_hash",
+      "query": "show me decision #123",
+      "expected": {
+        "decision_ids": [123],
+        "search_method": "id_lookup",
+        "top_result_id": 123
+      },
+      "rationale": "Should detect decision ID and perform direct lookup"
+    },
+    {
+      "id": "id_lookup_without_hash",
+      "query": "decision 456",
+      "expected": {
+        "decision_ids": [456],
+        "search_method": "id_lookup",
+        "top_result_id": 456
+      },
+      "rationale": "Should detect decision ID without # symbol"
+    },
+    {
+      "id": "id_lookup_with_text",
+      "query": "can you show me more details about decision #789?",
+      "expected": {
+        "decision_ids": [789],
+        "search_method": "id_lookup",
+        "top_result_id": 789
+      },
+      "rationale": "Should extract ID from natural language"
+    },
+    {
+      "id": "empty_query",
+      "query": "",
+      "expected": {
+        "decision_ids": []
+      },
+      "rationale": "Should handle empty query gracefully"
+    },
+    {
+      "id": "whitespace_only",
+      "query": "   ",
+      "expected": {
+        "decision_ids": []
+      },
+      "rationale": "Should handle whitespace-only query"
+    },
+    {
+      "id": "very_long_query",
+      "query": "I am looking for information about decisions that were made regarding the implementation of the new authentication system that we discussed last month during the architecture review meeting where we evaluated multiple options including OAuth2, JWT tokens, and session-based authentication, and we ultimately decided to go with JWT because of its stateless nature and scalability benefits, but I want to understand if there were any other considerations or trade-offs that we discussed during that meeting that I might have missed or forgotten about, and also whether there have been any updates or changes to that decision since then that I should be aware of before we proceed with the implementation phase of this project",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.60
+      },
+      "rationale": "Should handle very long, rambling queries"
+    },
+    {
+      "id": "special_chars_sql_injection",
+      "query": "'; DROP TABLE decisions; --",
+      "expected": {
+        "decision_ids": []
+      },
+      "rationale": "Should safely handle SQL injection attempts"
+    },
+    {
+      "id": "special_chars_quotes",
+      "query": "\"what's\" the 'decision' about?",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.60
+      },
+      "rationale": "Should handle mixed quotes"
+    },
+    {
+      "id": "unicode_characters",
+      "query": "décisions about cañón 🚀",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.60
+      },
+      "rationale": "Should handle unicode and emoji"
+    },
+    {
+      "id": "case_insensitive",
+      "query": "ONBOARDING DECISIONS",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should be case-insensitive"
+    },
+    {
+      "id": "stopwords_only",
+      "query": "the a an and or but",
+      "expected": {
+        "decision_ids": []
+      },
+      "rationale": "Query with only stop words should return minimal results"
+    },
+    {
+      "id": "numeric_query",
+      "query": "123 456",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.50
+      },
+      "rationale": "Should handle numeric queries"
+    },
+    {
+      "id": "mixed_language",
+      "query": "decisiones about authentication",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.60
+      },
+      "rationale": "Should handle mixed language queries (Spanish + English)"
+    },
+    {
+      "id": "repeated_words",
+      "query": "onboarding onboarding onboarding onboarding",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should handle repeated keywords gracefully"
+    },
+    {
+      "id": "newlines_and_tabs",
+      "query": "decisions\nabout\tonboarding",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should handle newlines and tabs in query"
+    }
+  ]
+}

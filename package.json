@@ -7,7 +7,11 @@
     "start": "node src/index.js",
     "dev": "node src/index.js",
     "fix-oauth": "node fix-oauth-db.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "eval": "node evals/run-evals.js",
+    "eval:search": "node evals/run-search-evals.js",
+    "eval:conversational": "node evals/run-conversational-evals.js",
+    "eval:watch": "nodemon evals/run-evals.js"
   },
   "keywords": [],
   "author": "",
@@ -25,5 +29,9 @@
     "mongodb": "^7.0.0",
     "openai": "^4.77.3",
     "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.2.0",
+    "braintrust": "^2.0.2"
   }
 }

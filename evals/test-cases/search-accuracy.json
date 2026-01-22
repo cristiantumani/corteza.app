@@ -1,0 +1,97 @@
+{
+  "name": "Search Accuracy Tests",
+  "description": "Tests that search finds the right decisions and filters false positives",
+  "test_cases": [
+    {
+      "id": "exact_keyword_match_onboarding",
+      "query": "decisions about onboarding",
+      "expected": {
+        "decision_ids": [],
+        "exclude_ids": [],
+        "min_score": 0.85
+      },
+      "rationale": "Should find onboarding decisions with keyword boost"
+    },
+    {
+      "id": "semantic_similarity_authentication",
+      "query": "how does authentication work?",
+      "expected": {
+        "decision_ids": [],
+        "type": "explanation"
+      },
+      "rationale": "Should find authentication explanations via semantic similarity"
+    },
+    {
+      "id": "temporal_query_latest",
+      "query": "what are the latest decisions?",
+      "expected": {
+        "decision_ids": [],
+        "recency_boost_applied": true,
+        "min_score": 0.70
+      },
+      "rationale": "Should boost recent decisions when 'latest' is mentioned"
+    },
+    {
+      "id": "temporal_query_recent",
+      "query": "show me recent decisions about features",
+      "expected": {
+        "decision_ids": [],
+        "recency_boost_applied": true
+      },
+      "rationale": "Should apply recency boost for 'recent' keyword"
+    },
+    {
+      "id": "false_positive_filtering",
+      "query": "onboarding flow",
+      "expected": {
+        "decision_ids": [],
+        "exclude_ids": []
+      },
+      "rationale": "Should NOT return unrelated decisions like 'platform migration'"
+    },
+    {
+      "id": "multi_keyword_boost",
+      "query": "onboarding user experience improvements",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.85
+      },
+      "rationale": "Multiple keyword matches should result in higher scores"
+    },
+    {
+      "id": "empty_results_nonsense",
+      "query": "zzzxxxqqq asdfghjkl",
+      "expected": {
+        "decision_ids": []
+      },
+      "rationale": "Nonsense query should return no results"
+    },
+    {
+      "id": "special_characters",
+      "query": "decisions about API & authentication?",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should handle special characters gracefully"
+    },
+    {
+      "id": "short_query",
+      "query": "API",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should handle very short queries"
+    },
+    {
+      "id": "long_query",
+      "query": "I'm looking for any decisions or explanations related to how we implemented the onboarding flow, including the reasoning behind reducing the number of steps and making team invitations optional, as well as any alternatives that were considered during the decision-making process",
+      "expected": {
+        "decision_ids": [],
+        "min_score": 0.70
+      },
+      "rationale": "Should handle long, detailed queries"
+    }
+  ]
+}

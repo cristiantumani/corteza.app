@@ -1,0 +1,199 @@
+{
+  "name": "Conversational Quality Tests",
+  "description": "Tests that AI responses are natural, warm, and include key information",
+  "test_cases": [
+    {
+      "id": "natural_teammate_response",
+      "query": "What are the latest decisions about onboarding?",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 123,
+            "type": "decision",
+            "decision": "Onboarding flow reduced from 4 to 3 steps",
+            "context": "We were seeing 45% drop-off at step 3",
+            "alternatives": ["Keep 4 steps", "Add onboarding wizard"],
+            "tags": ["onboarding", "ux", "conversion"],
+            "author_name": "John",
+            "timestamp": "2026-01-19T10:00:00Z",
+            "score": 0.95
+          }
+        ],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "What are the latest decisions about onboarding?",
+        "decision_ids": [123],
+        "should_use_first_person": true,
+        "should_mention_reasoning": true
+      },
+      "rationale": "Should respond like a teammate, use 'we', mention decision ID"
+    },
+    {
+      "id": "includes_decision_numbers",
+      "query": "Show me decisions about API design",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 456,
+            "type": "decision",
+            "decision": "Chose REST over GraphQL for API",
+            "context": "Team familiarity and simplicity",
+            "author_name": "Sarah",
+            "timestamp": "2026-01-15T14:30:00Z",
+            "score": 0.92
+          }
+        ],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "Show me decisions about API design",
+        "decision_ids": [456],
+        "should_include_alternatives": false
+      },
+      "rationale": "Should always mention decision ID for reference"
+    },
+    {
+      "id": "explains_reasoning",
+      "query": "Why did we choose PostgreSQL?",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 789,
+            "type": "decision",
+            "decision": "Selected PostgreSQL for transaction database",
+            "context": "Need ACID compliance for financial transactions",
+            "alternatives": ["MongoDB", "MySQL"],
+            "author_name": "Mike",
+            "timestamp": "2026-01-10T09:00:00Z",
+            "score": 0.98
+          }
+        ],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "Why did we choose PostgreSQL?",
+        "decision_ids": [789],
+        "should_mention_reasoning": true,
+        "should_mention_alternatives": true
+      },
+      "rationale": "Should explain reasoning and mention alternatives considered"
+    },
+    {
+      "id": "no_structured_sections",
+      "query": "What decisions have we made this week?",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 111,
+            "type": "decision",
+            "decision": "Implemented permission system",
+            "author_name": "Cristian",
+            "timestamp": "2026-01-20T16:00:00Z",
+            "score": 0.88
+          }
+        ],
+        "relevant": [
+          {
+            "id": 222,
+            "type": "decision",
+            "decision": "Added per-workspace Jira config",
+            "author_name": "Cristian",
+            "timestamp": "2026-01-21T11:00:00Z",
+            "score": 0.75
+          }
+        ],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "What decisions have we made this week?",
+        "decision_ids": [111, 222],
+        "should_not_have_sections": true
+      },
+      "rationale": "Should NOT use 'High Relevance' or 'Medium Relevance' headers"
+    },
+    {
+      "id": "warm_and_conversational",
+      "query": "Tell me about recent improvements",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 333,
+            "type": "decision",
+            "decision": "Improved bot conversational quality",
+            "context": "Upgraded to Sonnet, increased temperature to 0.7",
+            "tags": ["ai", "ux", "conversational"],
+            "author_name": "Claude",
+            "timestamp": "2026-01-21T15:00:00Z",
+            "score": 0.94
+          }
+        ],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "Tell me about recent improvements",
+        "decision_ids": [333],
+        "should_be_warm": true
+      },
+      "rationale": "Should use warm language, not robotic"
+    },
+    {
+      "id": "empty_results",
+      "query": "Show me decisions about quantum computing",
+      "results": {
+        "highlyRelevant": [],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "Show me decisions about quantum computing",
+        "decision_ids": [],
+        "should_be_helpful": true
+      },
+      "rationale": "Should handle empty results gracefully and helpfully"
+    },
+    {
+      "id": "multiple_decisions_flow",
+      "query": "What are all the platform decisions?",
+      "results": {
+        "highlyRelevant": [
+          {
+            "id": 444,
+            "type": "decision",
+            "decision": "Migrating to microservices with Kubernetes",
+            "author_name": "Mike",
+            "timestamp": "2026-01-18T10:00:00Z",
+            "score": 0.91
+          },
+          {
+            "id": 555,
+            "type": "decision",
+            "decision": "Using Docker for containerization",
+            "author_name": "Sarah",
+            "timestamp": "2026-01-17T14:00:00Z",
+            "score": 0.89
+          }
+        ],
+        "relevant": [],
+        "somewhatRelevant": [],
+        "all": []
+      },
+      "expected": {
+        "query": "What are all the platform decisions?",
+        "decision_ids": [444, 555],
+        "should_connect_related": true
+      },
+      "rationale": "Should connect related decisions naturally in narrative"
+    }
+  ]
+}
