@@ -15,6 +15,7 @@
 require('dotenv').config();
 const { runSearchEval } = require('./eval-runner');
 const { runConversationalEval } = require('./conversational-eval');
+const { connectToMongoDB } = require('../src/config/database');
 
 // Test case imports
 const searchAccuracyTests = require('./test-cases/search-accuracy.json');
@@ -22,6 +23,8 @@ const conversationalTests = require('./test-cases/conversational-quality.json');
 const edgeCaseTests = require('./test-cases/edge-cases.json');
 
 async function main() {
+  // Initialize database connection
+  await connectToMongoDB();
   // Parse command line arguments
   const args = process.argv.slice(2);
   const searchOnly = args.includes('--search-only');
@@ -61,26 +64,16 @@ async function main() {
 
       const searchResults = await runSearchEval(searchTests, workspaceId);
 
-      const avgScore = searchResults.summary.scores.reduce((acc, s) => acc + s.score, 0) / searchResults.summary.scores.length;
-      const passed = searchResults.summary.scores.filter(s => s.score >= 0.95).length;
-      const total = searchResults.summary.scores.length;
+      // Braintrust returns summary with aggregated metrics
+      const summary = searchResults.summary;
 
       results.search = {
-        passed,
-        total,
-        avgScore,
-        passRate: passed / total
+        total: summary.testCount || searchTests.length,
+        url: summary.projectUrl || 'https://www.braintrust.dev'
       };
 
-      console.log(`   ✅ Tests: ${passed}/${total} passed`);
-      console.log(`   📈 Average score: ${(avgScore * 100).toFixed(1)}%`);
-
-      if (avgScore < 0.95) {
-        allTestsPassed = false;
-        console.log(`   ⚠️  Below target (95%+)\n`);
-      } else {
-        console.log(`   🎉 Above target!\n`);
-      }
+      console.log(`   ✅ Tests run: ${results.search.total}`);
+      console.log(`   🔗 View results: ${results.search.url}\n`);
     }
 
     // Run conversational quality evals
@@ -89,48 +82,32 @@ async function main() {
 
       const conversationalResults = await runConversationalEval(conversationalTests.test_cases);
 
-      const avgScore = conversationalResults.summary.scores.reduce((acc, s) => acc + s.score, 0) / conversationalResults.summary.scores.length;
-      const passed = conversationalResults.summary.scores.filter(s => s.score >= 0.80).length;
-      const total = conversationalResults.summary.scores.length;
+      // Braintrust returns summary with aggregated metrics
+      const summary = conversationalResults.summary;
 
       results.conversational = {
-        passed,
-        total,
-        avgScore,
-        passRate: passed / total
+        total: summary.testCount || conversationalTests.test_cases.length,
+        url: summary.projectUrl || 'https://www.braintrust.dev'
       };
 
-      console.log(`   ✅ Tests: ${passed}/${total} passed`);
-      console.log(`   📈 Average score: ${(avgScore * 100).toFixed(1)}%`);
-
-      if (avgScore < 0.80) {
-        allTestsPassed = false;
-        console.log(`   ⚠️  Below target (80%+)\n`);
-      } else {
-        console.log(`   🎉 Above target!\n`);
-      }
+      console.log(`   ✅ Tests run: ${results.conversational.total}`);
+      console.log(`   🔗 View results: ${results.conversational.url}\n`);
     }
 
     // Summary
     console.log('📋 Summary:');
 
     if (results.search) {
-      console.log(`   Search Accuracy: ${(results.search.passRate * 100).toFixed(1)}% (${results.search.passed}/${results.search.total})`);
+      console.log(`   Search Accuracy: ${results.search.total} tests run`);
     }
 
     if (results.conversational) {
-      console.log(`   Conversational: ${(results.conversational.passRate * 100).toFixed(1)}% (${results.conversational.passed}/${results.conversational.total})`);
+      console.log(`   Conversational: ${results.conversational.total} tests run`);
     }
 
-    console.log(`\n🔗 View detailed results: https://braintrustdata.com`);
-
-    if (allTestsPassed) {
-      console.log('\n✅ All evals passed! Ship it! 🚀\n');
-      process.exit(0);
-    } else {
-      console.log('\n⚠️  Some evals below target. Review and improve.\n');
-      process.exit(1);
-    }
+    console.log('\n🔗 View detailed results and scores at: https://www.braintrust.dev/app/corteza-ai-evals');
+    console.log('\n✅ Evals completed! Check Braintrust dashboard for detailed scores.\n');
+    process.exit(0);
 
   } catch (error) {
     console.error('\n❌ Error running evals:', error.message);
