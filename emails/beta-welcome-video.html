@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+      color: #1D1D1F;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #4A154B 0%, #6B2D5C 100%);
+      color: white;
+      padding: 48px 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0 0 12px 0;
+      font-size: 30px;
+      font-weight: 700;
+    }
+    .header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    /* Content */
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 16px;
+      color: #1D1D1F;
+      margin-bottom: 24px;
+    }
+    .greeting strong {
+      color: #4A154B;
+    }
+
+    /* Video Section */
+    .video-section {
+      background: #F8F9FA;
+      border: 1px solid #E1E4E8;
+      border-radius: 10px;
+      padding: 28px 24px;
+      text-align: center;
+      margin: 28px 0;
+    }
+    .video-label {
+      display: inline-block;
+      background: #4A154B;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .video-section h2 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      color: #1D1D1F;
+    }
+    .video-section > p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #616061;
+    }
+    .video-embed {
+      width: 100%;
+      height: 280px;
+      border-radius: 8px;
+      border: none;
+      background: #1D1D1F;
+    }
+    .video-fallback {
+      display: none;
+    }
+    .video-btn {
+      display: inline-block;
+      background: #4A154B;
+      color: white;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      margin-top: 16px;
+    }
+
+    /* What's covered */
+    .covered-section {
+      margin: 28px 0;
+    }
+    .covered-section h3 {
+      font-size: 16px;
+      color: #1D1D1F;
+      margin: 0 0 16px 0;
+      font-weight: 600;
+    }
+    .covered-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #E1E4E8;
+    }
+    .covered-item:last-child {
+      border-bottom: none;
+    }
+    .covered-icon {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: #F8F7FF;
+      border: 1px solid #4A154B;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .covered-text strong {
+      display: block;
+      font-size: 14px;
+      color: #1D1D1F;
+      margin-bottom: 2px;
+    }
+    .covered-text span {
+      font-size: 13px;
+      color: #616061;
+    }
+
+    /* CTA */
+    .cta-section {
+      background: #F8F7FF;
+      border: 2px solid #4A154B;
+      border-radius: 10px;
+      padding: 28px 24px;
+      text-align: center;
+      margin: 28px 0;
+    }
+    .cta-section h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #4A154B;
+    }
+    .cta-section p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #616061;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: #4A154B;
+      color: white;
+      padding: 14px 36px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      margin: 4px;
+    }
+    .btn-secondary {
+      display: inline-block;
+      background: white;
+      color: #4A154B;
+      border: 2px solid #4A154B;
+      padding: 12px 34px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      margin: 4px;
+    }
+
+    /* Help banner */
+    .help-banner {
+      background: #FFF9E6;
+      border-left: 4px solid #ECB22E;
+      border-radius: 0 8px 8px 0;
+      padding: 18px 20px;
+      margin: 28px 0;
+    }
+    .help-banner h4 {
+      margin: 0 0 6px 0;
+      font-size: 15px;
+      color: #92400E;
+    }
+    .help-banner p {
+      margin: 0;
+      font-size: 14px;
+      color: #92400E;
+    }
+    .help-banner a {
+      color: #4A154B;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* Sign-off */
+    .signoff {
+      margin-top: 28px;
+      font-size: 15px;
+      color: #616061;
+    }
+    .signoff strong {
+      color: #1D1D1F;
+    }
+    .signoff a {
+      color: #4A154B;
+      text-decoration: none;
+    }
+
+    /* Footer */
+    .footer {
+      background: #F8F9FA;
+      border-top: 1px solid #E1E4E8;
+      padding: 24px 30px;
+      text-align: center;
+    }
+    .footer p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: #616061;
+    }
+    .footer a {
+      color: #4A154B;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .footer .legal {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .header { padding: 32px 20px; }
+      .header h1 { font-size: 24px; }
+      .content { padding: 28px 20px; }
+      .video-embed { height: 200px; }
+      .btn-primary, .btn-secondary {
+        display: block;
+        margin: 8px 0;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Welcome to Corteza Beta</h1>
+      <p>Thanks for signing up — we're glad you're here</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <div class="greeting">
+        <p>Hi <strong>{{ $json.body.firstName }}</strong>,</p>
+        <p>Thank you for signing up to beta test Corteza. We're building an AI-powered decision logger for Slack and you're one of our first testers — that means a lot.</p>
+        <p>Below is a short video where I walk you through <strong>everything you need to get started</strong> — from installing Corteza to logging your first decision and using AI search.</p>
+      </div>
+
+      <!-- Video Section -->
+      <div class="video-section">
+        <div class="video-label">Setup Guide</div>
+        <h2>Watch: How to Get Started</h2>
+        <p>3-minute walkthrough of installing and using Corteza</p>
+
+        <iframe
+          class="video-embed"
+          src="https://www.youtube.com/embed/p2Rn6F3036o"
+          title="Corteza Setup Guide"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+
+        <a href="https://youtu.be/p2Rn6F3036o" class="video-btn">▶ Watch on YouTube</a>
+      </div>
+
+      <!-- What's covered -->
+      <div class="covered-section">
+        <h3>What's covered in the video:</h3>
+
+        <div class="covered-item">
+          <div class="covered-icon">⚡</div>
+          <div class="covered-text">
+            <strong>Install Corteza to your Slack workspace</strong>
+            <span>One click, 15 seconds — no configuration needed</span>
+          </div>
+        </div>
+
+        <div class="covered-item">
+          <div class="covered-icon">📌</div>
+          <div class="covered-text">
+            <strong>Log your first decision using /decision</strong>
+            <span>Type the command, fill in the form, and it's saved forever</span>
+          </div>
+        </div>
+
+        <div class="covered-item">
+          <div class="covered-icon">🔍</div>
+          <div class="covered-text">
+            <strong>Search decisions with AI in the dashboard</strong>
+            <span>Ask questions in plain English and find anything instantly</span>
+          </div>
+        </div>
+
+        <div class="covered-item">
+          <div class="covered-icon">📄</div>
+          <div class="covered-text">
+            <strong>Upload meeting notes for automatic extraction</strong>
+            <span>Drop a transcript in Slack and AI pulls out the decisions</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-section">
+        <h3>Ready to try it?</h3>
+        <p>Install Corteza and follow along with the video</p>
+        <a href="https://app.corteza.app/slack/install" class="btn-primary">Install to Slack</a>
+        <a href="https://corteza.app/docs" class="btn-secondary">Read the Docs</a>
+      </div>
+
+      <!-- Help -->
+      <div class="help-banner">
+        <h4>💡 Stuck or have questions?</h4>
+        <p>Reply directly to this email — I read every message personally. Or check the <a href="https://corteza.app/docs">full setup guide</a> at corteza.app/docs</p>
+      </div>
+
+      <!-- Sign-off -->
+      <div class="signoff">
+        <p>Looking forward to hearing what you think!</p>
+        <p><strong>Cristian</strong><br>
+        Founder, Corteza<br>
+        <a href="mailto:cristiantumani@gmail.com">cristiantumani@gmail.com</a></p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>Corteza</strong> — AI-Powered Decision Logger for Slack</p>
+      <p>
+        <a href="https://corteza.app">Website</a> &nbsp;•&nbsp;
+        <a href="https://corteza.app/docs">Documentation</a> &nbsp;•&nbsp;
+        <a href="mailto:cristiantumani@gmail.com">Support</a>
+      </p>
+      <p class="legal">
+        You're receiving this because you signed up for Corteza beta access.<br>
+        © 2026 Corteza. All rights reserved.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
