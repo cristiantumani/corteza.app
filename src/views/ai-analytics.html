@@ -75,8 +75,8 @@
     }
 
     .tab.active {
-      color: #6366f1;
-      border-bottom-color: #6366f1;
+      color: #000000;
+      border-bottom-color: #000000;
     }
 
     /* View Management */
@@ -196,7 +196,7 @@
 
     .bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+      background: linear-gradient(90deg, #000000 0%, #2D2D2D 100%);
       border-radius: 6px;
       transition: width 0.5s ease;
       display: flex;
@@ -320,7 +320,7 @@
     }
 
     .nav-links a {
-      color: #6366f1;
+      color: #000000;
       text-decoration: none;
       margin-right: 20px;
       font-size: 14px;
@@ -661,7 +661,7 @@
                 {
                   label: 'Explanations',
                   data: data.weeklyTimeline.map(w => w.explanations || 0),
-                  borderColor: '#6366f1',
+                  borderColor: '#000000',
                   backgroundColor: 'rgba(99, 102, 241, 0.1)',
                   fill: true,
                   tension: 0.4
@@ -714,7 +714,7 @@
                 data.byType.explanation || 0,
                 data.byType.context || 0
               ],
-              backgroundColor: ['#10b981', '#6366f1', '#f59e0b']
+              backgroundColor: ['#10b981', '#000000', '#f59e0b']
             }]
           },
           options: {
@@ -743,7 +743,7 @@
                 data.byCategory.ux || 0,
                 data.byCategory.technical || 0
               ],
-              backgroundColor: ['#10b981', '#6366f1', '#f59e0b']
+              backgroundColor: ['#10b981', '#000000', '#f59e0b']
             }]
           },
           options: {
@@ -837,7 +837,7 @@
               datasets: [{
                 label: 'Decisions',
                 data: data.channelActivity.map(c => c.count),
-                backgroundColor: '#6366f1'
+                backgroundColor: '#000000'
               }]
             },
             options: {
@@ -901,7 +901,7 @@
                     ${c.manualEntries} manual • ${c.aiReviews} reviews
                   </div>
                 </div>
-                <div style="font-size: 20px; font-weight: bold; color: #6366f1;">
+                <div style="font-size: 20px; font-weight: bold; color: #000000;">
                   ${c.totalContributions}
                 </div>
               </div>
@@ -924,7 +924,7 @@
               labels: ['Manual Entries', 'AI-Extracted'],
               datasets: [{
                 data: [data.botUsage.manual, data.botUsage.aiExtracted],
-                backgroundColor: ['#10b981', '#6366f1']
+                backgroundColor: ['#10b981', '#000000']
               }]
             },
             options: {
@@ -955,7 +955,7 @@
                 <span style="
                   font-size: ${fontSize}px;
                   font-weight: ${tag.count > maxCount / 2 ? 'bold' : 'normal'};
-                  color: #6366f1;
+                  color: #000000;
                   padding: 8px 12px;
                   background: #f0f1ff;
                   border-radius: 6px;
