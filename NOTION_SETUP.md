@@ -1,6 +1,6 @@
 # Notion Integration Setup Guide
 
-This guide will help you set up the one-way sync from Decision Logger to Notion.
+This guide will help you set up the one-way sync from Corteza to Notion.
 
 ## Overview
 

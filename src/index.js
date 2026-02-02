@@ -111,6 +111,9 @@ async function startApp() {
   // Add security headers to all responses
   expressApp.use(addSecurityHeaders);
 
+  // Serve static files (favicon, logo, etc.)
+  expressApp.use(require('express').static('public'));
+
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
   expressApp.get('/health', healthCheck);
