@@ -940,6 +940,26 @@
       <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
     </div>
 
+    <!-- API Keys Section -->
+    <div class="gdpr-section">
+      <h2>🔑 API Keys</h2>
+      <p>Generate API keys to integrate Corteza with external tools like Coda, Zapier, or custom applications.</p>
+
+      <div class="gdpr-actions">
+        <button class="gdpr-btn gdpr-btn-export" onclick="generateApiKey()">
+          ➕ Generate New API Key
+        </button>
+        <button class="gdpr-btn gdpr-btn-info" onclick="loadApiKeys()">
+          📋 View My API Keys
+        </button>
+      </div>
+
+      <div id="api-keys-list" style="display: none; margin-top: 20px;">
+        <h3>Your API Keys</h3>
+        <div id="api-keys-container"></div>
+      </div>
+    </div>
+
     <!-- GDPR / Data Management Section -->
     <div class="gdpr-section">
       <h2>🔒 Data Privacy & Export</h2>
@@ -1762,6 +1782,107 @@
         feedbackModal.addEventListener('click', function(e) {
           if (e.target === this) closeFeedbackModal();
         });
+      }
+    }
+
+    // API Key Functions
+    async function generateApiKey() {
+      const name = prompt('Enter a name for this API key (e.g., "Coda Integration"):');
+      if (!name) return;
+
+      const expiresInput = prompt('Days until expiration (leave empty for never expires):');
+      const expiresInDays = expiresInput ? parseInt(expiresInput) : null;
+
+      try {
+        const response = await fetch('/api/keys/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, expiresInDays })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`🎉 API Key Generated!\n\n` +
+            `Key: ${data.apiKey}\n\n` +
+            `⚠️ IMPORTANT: Copy this key now!\n` +
+            `You won't be able to see it again.\n\n` +
+            `Expires: ${data.expiresInDays}\n\n` +
+            `Use this key in Coda, Zapier, or any other integration.`);
+          loadApiKeys();
+        } else {
+          alert(`❌ Failed to generate API key: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error generating API key:', error);
+        alert('❌ Failed to generate API key');
+      }
+    }
+
+    async function loadApiKeys() {
+      try {
+        const response = await fetch('/api/keys');
+        const data = await response.json();
+
+        if (data.success) {
+          const container = document.getElementById('api-keys-container');
+          const listDiv = document.getElementById('api-keys-list');
+
+          if (data.keys.length === 0) {
+            container.innerHTML = '<p>No API keys yet. Generate one to get started!</p>';
+          } else {
+            container.innerHTML = data.keys.map(key => `
+              <div style="background: #F8F9FA; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #E1E4E8;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${key.name || 'Unnamed Key'}</strong>
+                    <div style="font-size: 12px; color: #616061; margin-top: 4px;">
+                      Key: <code>${key.key_preview}</code>
+                    </div>
+                    <div style="font-size: 12px; color: #616061; margin-top: 2px;">
+                      Created: ${new Date(key.created_at).toLocaleDateString()}
+                      ${key.last_used_at ? ` • Last used: ${new Date(key.last_used_at).toLocaleDateString()}` : ' • Never used'}
+                    </div>
+                    ${key.expires_at ? `<div style="font-size: 12px; color: #DC2626; margin-top: 2px;">Expires: ${new Date(key.expires_at).toLocaleDateString()}</div>` : ''}
+                    ${!key.active ? '<div style="font-size: 12px; color: #DC2626; margin-top: 2px;">❌ Revoked</div>' : ''}
+                  </div>
+                  <div>
+                    ${key.active ? `<button onclick="revokeApiKey('${key.key_preview}')" style="background: #DC2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Revoke</button>` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          }
+
+          listDiv.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+        alert('❌ Failed to load API keys');
+      }
+    }
+
+    async function revokeApiKey(keyPreview) {
+      if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/keys/${keyPreview}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ API key revoked successfully');
+          loadApiKeys();
+        } else {
+          alert(`❌ Failed to revoke API key: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error revoking API key:', error);
+        alert('❌ Failed to revoke API key');
       }
     }
 
