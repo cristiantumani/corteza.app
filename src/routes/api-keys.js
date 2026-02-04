@@ -6,9 +6,9 @@ const { generateApiKey, revokeApiKey, listApiKeys } = require('../middleware/api
  */
 async function handleGenerateApiKey(req, res) {
   try {
-    const userId = req.session?.user_id;
-    const userName = req.session?.user_name;
-    const workspaceId = req.session?.workspace_id;
+    const userId = req.session?.user?.user_id;
+    const userName = req.session?.user?.user_name;
+    const workspaceId = req.session?.user?.workspace_id;
 
     if (!userId || !workspaceId) {
       return res.status(401).json({
@@ -46,7 +46,7 @@ async function handleGenerateApiKey(req, res) {
  */
 async function handleListApiKeys(req, res) {
   try {
-    const userId = req.session?.user_id;
+    const userId = req.session?.user?.user_id;
 
     if (!userId) {
       return res.status(401).json({
@@ -76,7 +76,7 @@ async function handleListApiKeys(req, res) {
  */
 async function handleRevokeApiKey(req, res) {
   try {
-    const userId = req.session?.user_id;
+    const userId = req.session?.user?.user_id;
     const { keyPreview } = req.params;
 
     if (!userId) {
