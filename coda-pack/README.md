@@ -13,14 +13,7 @@ This is the official Coda Pack integration for Corteza, allowing you to sync dec
 ### Prerequisites
 
 1. Install Node.js (v18 or later)
-2. Install Coda Pack CLI globally:
-   ```bash
-   npm install -g @codahq/packs-sdk
-   ```
-3. Authenticate with Coda:
-   ```bash
-   coda register
-   ```
+2. That's it! The Coda Pack SDK will be installed locally with npm install
 
 ### Installation
 
@@ -86,17 +79,23 @@ Fetch a specific decision:
 
 ## Deployment
 
-1. Register the pack (first time only):
+1. Authenticate with Coda (first time only):
+   ```bash
+   npx @codahq/packs-sdk register
+   ```
+   This will open a browser window to authenticate with your Coda account.
+
+2. Register the pack (first time only):
    ```bash
    npm run register
    ```
 
-2. Create a new release:
+3. Create a new release:
    ```bash
    npm run release
    ```
 
-3. Submit for review in Coda Pack Studio
+4. Submit for review in Coda Pack Studio
 
 ## API Endpoints Used
 
