@@ -1,0 +1,28 @@
+{
+  "name": "corteza-coda-pack",
+  "version": "1.0.0",
+  "description": "Coda Pack integration for Corteza decision logger",
+  "main": "pack.ts",
+  "scripts": {
+    "validate": "coda validate pack.ts",
+    "build": "coda execute pack.ts",
+    "register": "coda register pack.ts",
+    "release": "coda release pack.ts"
+  },
+  "keywords": [
+    "coda",
+    "pack",
+    "corteza",
+    "decision",
+    "logging"
+  ],
+  "author": "Cristian Tumani",
+  "license": "MIT",
+  "dependencies": {
+    "@codahq/packs-sdk": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
