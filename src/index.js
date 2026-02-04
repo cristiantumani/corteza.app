@@ -5,8 +5,10 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
-const { getDecisions, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus } = require('./routes/api');
+const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
+const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
+const { requireApiKey } = require('./middleware/api-key-auth');
 const { serveDashboard, serveAIAnalytics, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -152,6 +154,14 @@ async function startApp() {
   expressApp.get('/api/ai-analytics', apiRateLimiter, requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', aiRateLimiter, requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
+
+  // API Key management routes (requires session authentication)
+  expressApp.post('/api/keys/generate', apiRateLimiter, require('express').json(), requireAuth, handleGenerateApiKey);
+  expressApp.get('/api/keys', apiRateLimiter, requireAuth, handleListApiKeys);
+  expressApp.delete('/api/keys/:keyPreview', apiRateLimiter, requireAuth, handleRevokeApiKey);
+
+  // Integration API routes (requires API key authentication)
+  expressApp.get('/api/v1/decisions/:id', apiRateLimiter, requireApiKey, getDecisionById);
 
   // Protected routes - GDPR (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/gdpr/info', apiRateLimiter, requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
