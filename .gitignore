@@ -1,3 +1,4 @@
 node_modules/
 .env
 .DS_Store
+.CODA_API_KEY = 8cef5300-0608-41da-9fd9-cf98df3dc296

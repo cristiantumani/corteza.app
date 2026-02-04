@@ -13,6 +13,12 @@ const aiAnalyticsHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load settings HTML once at startup
+const settingsHTML = fs.readFileSync(
+  path.join(__dirname, '../views/settings.html'),
+  'utf8'
+);
+
 /**
  * GET /dashboard - Serves the dashboard HTML
  */
@@ -30,6 +36,14 @@ function serveAIAnalytics(req, res) {
 }
 
 /**
+ * GET /settings - Serves the settings page HTML
+ */
+function serveSettings(req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(settingsHTML);
+}
+
+/**
  * GET / - Redirect to dashboard
  */
 function redirectToDashboard(req, res) {
@@ -40,5 +54,6 @@ function redirectToDashboard(req, res) {
 module.exports = {
   serveDashboard,
   serveAIAnalytics,
+  serveSettings,
   redirectToDashboard
 };

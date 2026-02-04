@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Settings - Corteza</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #FFFFFF;
+      color: #1D1C1D;
+      min-height: 100vh;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #E1E4E8;
+      padding: 24px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 30px;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000000;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: #616061;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #000000;
+    }
+
+    .settings-content {
+      padding: 40px 0;
+    }
+
+    .settings-section {
+      background: white;
+      border: 1px solid #E1E4E8;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .settings-section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #000000;
+    }
+
+    .settings-section p {
+      color: #616061;
+      margin-bottom: 25px;
+      line-height: 1.6;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #000000;
+      color: white;
+      border-color: #000000;
+    }
+
+    .btn-primary:hover {
+      background: #2D2D2D;
+      border-color: #2D2D2D;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #000000;
+      border-color: #E1E4E8;
+    }
+
+    .btn-secondary:hover {
+      border-color: #000000;
+    }
+
+    .btn-danger {
+      background: #DC2626;
+      color: white;
+      border-color: #DC2626;
+    }
+
+    .btn-danger:hover {
+      background: #B91C1C;
+      border-color: #B91C1C;
+    }
+
+    #api-keys-list {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid #E1E4E8;
+    }
+
+    #api-keys-list h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #000000;
+    }
+
+    .api-key-item {
+      background: #F8F9FA;
+      padding: 20px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #E1E4E8;
+    }
+
+    .api-key-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .api-key-info strong {
+      font-size: 15px;
+      color: #000000;
+    }
+
+    .api-key-meta {
+      font-size: 12px;
+      color: #616061;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .api-key-meta code {
+      background: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .api-key-status {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .status-revoked {
+      color: #DC2626;
+      font-weight: 600;
+    }
+
+    .status-expired {
+      color: #DC2626;
+      font-weight: 600;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid #E1E4E8;
+    }
+
+    .modal-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000000;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #616061;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .close-btn:hover {
+      background: #F8F9FA;
+      color: #000000;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #E1E4E8;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .warning-box {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #DC2626;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .key-display {
+      background: #F8F9FA;
+      padding: 15px;
+      border-radius: 8px;
+      border: 2px solid #000000;
+      margin-bottom: 20px;
+    }
+
+    .key-display label {
+      display: block;
+      font-size: 11px;
+      color: #616061;
+      margin-bottom: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .key-input-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .key-input-group input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #E1E4E8;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      background: white;
+    }
+
+    .key-input-group button {
+      padding: 12px 20px;
+      background: #000000;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .key-input-group button:hover {
+      background: #2D2D2D;
+    }
+
+    .key-input-group button.copied {
+      background: #059669;
+    }
+
+    .info-box {
+      background: #FFF9E6;
+      border-left: 4px solid #ECB22E;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .info-box h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #92400E;
+      font-weight: 600;
+    }
+
+    .info-box-content {
+      font-size: 13px;
+      color: #92400E;
+      line-height: 1.6;
+    }
+
+    .usage-instructions {
+      font-size: 13px;
+      color: #616061;
+      line-height: 1.8;
+    }
+
+    .usage-instructions strong {
+      color: #000000;
+    }
+
+    .usage-instructions ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .usage-instructions code {
+      background: #F8F9FA;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+
+      .nav-links {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      .api-key-header {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <h1>⚙️ Settings</h1>
+        <div class="nav-links">
+          <a href="/dashboard">📊 Dashboard</a>
+          <a href="/ai-analytics?workspace_id=<WORKSPACE_ID>">🤖 AI Analytics</a>
+          <a href="/auth/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container settings-content">
+
+    <!-- API Keys Section -->
+    <div class="settings-section">
+      <h2>🔑 API Keys</h2>
+      <p>Generate API keys to integrate Corteza with external tools like Coda, Zapier, or custom applications.</p>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="generateApiKey()">
+          ➕ Generate New API Key
+        </button>
+        <button class="btn btn-secondary" onclick="loadApiKeys()">
+          📋 View My API Keys
+        </button>
+      </div>
+
+      <div id="api-keys-list" style="display: none;">
+        <h3>Your API Keys</h3>
+        <div id="api-keys-container"></div>
+      </div>
+    </div>
+
+    <!-- Data Privacy Section -->
+    <div class="settings-section">
+      <h2>🔒 Data Privacy & Export</h2>
+      <p>Manage your workspace data in compliance with GDPR and other privacy regulations.</p>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="viewDataInfo()">
+          📊 View Data Summary
+        </button>
+        <button class="btn btn-secondary" onclick="exportData('json')">
+          📥 Export as JSON
+        </button>
+        <button class="btn btn-secondary" onclick="exportData('csv')">
+          📥 Export as CSV
+        </button>
+        <button class="btn btn-danger" onclick="openDeleteAllModal()">
+          🗑️ Delete All Workspace Data
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- API Key Modal -->
+  <div class="modal-overlay" id="api-key-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🎉 API Key Generated!</h2>
+        <button class="close-btn" onclick="closeApiKeyModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="warning-box">
+          ⚠️ Copy this key now! You won't be able to see it again.
+        </div>
+
+        <div class="key-display">
+          <label>Your API Key</label>
+          <div class="key-input-group">
+            <input type="text" id="generated-api-key" readonly />
+            <button id="copy-key-btn" onclick="copyApiKey()">📋 Copy</button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h4>Key Details</h4>
+          <div class="info-box-content">
+            <strong>Name:</strong> <span id="api-key-name"></span><br>
+            <strong>Expires:</strong> <span id="api-key-expires"></span>
+          </div>
+        </div>
+
+        <div class="usage-instructions">
+          <strong>How to use:</strong>
+          <ul>
+            <li>In Coda: Install the Corteza Pack and paste this key</li>
+            <li>In API calls: Add header <code>Authorization: Bearer YOUR_KEY</code></li>
+            <li>Keep it secure: Treat this like a password</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeApiKeyModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete All Data Confirmation Modal -->
+  <div class="modal-overlay" id="delete-all-modal">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>🗑️ Delete All Workspace Data</h2>
+        <button class="close-btn" onclick="closeDeleteAllModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="warning-box">
+          ⚠️ This action cannot be undone!
+        </div>
+        <p style="color: #616061; line-height: 1.6;">
+          This will permanently delete all decisions, memories, and data for this workspace.
+          Are you absolutely sure?
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDeleteAllModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDeleteAll()">Delete Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WORKSPACE_ID = '<WORKSPACE_ID>';
+
+    // API Key Functions
+    async function generateApiKey() {
+      const name = prompt('Enter a name for this API key (e.g., "Coda Integration"):');
+      if (!name) return;
+
+      const expiresInput = prompt('Days until expiration (leave empty for never expires):');
+      const expiresInDays = expiresInput ? parseInt(expiresInput) : null;
+
+      try {
+        const response = await fetch('/api/keys/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, expiresInDays })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showApiKeyModal(data.apiKey, name, data.expiresInDays);
+          loadApiKeys();
+        } else {
+          alert(`❌ Failed to generate API key: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error generating API key:', error);
+        alert('❌ Failed to generate API key');
+      }
+    }
+
+    function showApiKeyModal(apiKey, name, expiresInDays) {
+      document.getElementById('generated-api-key').value = apiKey;
+      document.getElementById('api-key-name').textContent = name;
+      document.getElementById('api-key-expires').textContent = expiresInDays === 'Never' ? 'Never' : `${expiresInDays} days`;
+
+      const copyBtn = document.getElementById('copy-key-btn');
+      copyBtn.textContent = '📋 Copy';
+      copyBtn.classList.remove('copied');
+
+      document.getElementById('api-key-modal').style.display = 'flex';
+    }
+
+    function closeApiKeyModal() {
+      document.getElementById('api-key-modal').style.display = 'none';
+    }
+
+    async function copyApiKey() {
+      const keyInput = document.getElementById('generated-api-key');
+      const copyBtn = document.getElementById('copy-key-btn');
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(keyInput.value);
+        } else {
+          keyInput.select();
+          keyInput.setSelectionRange(0, 99999);
+          document.execCommand('copy');
+        }
+
+        copyBtn.textContent = '✅ Copied!';
+        copyBtn.classList.add('copied');
+
+        setTimeout(() => {
+          copyBtn.textContent = '📋 Copy';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to copy:', error);
+        alert('Failed to copy. Please select and copy manually.');
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('api-key-modal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeApiKeyModal();
+    });
+
+    async function loadApiKeys() {
+      try {
+        const response = await fetch('/api/keys');
+        const data = await response.json();
+
+        if (data.success) {
+          const container = document.getElementById('api-keys-container');
+          const listDiv = document.getElementById('api-keys-list');
+
+          if (data.keys.length === 0) {
+            container.innerHTML = '<p style="color: #616061;">No API keys yet. Generate one to get started!</p>';
+          } else {
+            container.innerHTML = data.keys.map(key => `
+              <div class="api-key-item">
+                <div class="api-key-header">
+                  <div class="api-key-info">
+                    <strong>${key.name || 'Unnamed Key'}</strong>
+                    <div class="api-key-meta">
+                      Key: <code>${key.key_preview}</code><br>
+                      Created: ${new Date(key.created_at).toLocaleDateString()}
+                      ${key.last_used_at ? ` • Last used: ${new Date(key.last_used_at).toLocaleDateString()}` : ' • Never used'}
+                    </div>
+                    ${key.expires_at ? `<div class="api-key-status status-expired">Expires: ${new Date(key.expires_at).toLocaleDateString()}</div>` : ''}
+                    ${!key.active ? '<div class="api-key-status status-revoked">❌ Revoked</div>' : ''}
+                  </div>
+                  <div>
+                    ${key.active ? `<button class="btn btn-danger" onclick="revokeApiKey('${key.key_preview}')">Revoke</button>` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          }
+
+          listDiv.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+        alert('❌ Failed to load API keys');
+      }
+    }
+
+    async function revokeApiKey(keyPreview) {
+      if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/keys/${keyPreview}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ API key revoked successfully');
+          loadApiKeys();
+        } else {
+          alert(`❌ Failed to revoke API key: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error revoking API key:', error);
+        alert('❌ Failed to revoke API key');
+      }
+    }
+
+    // GDPR Functions
+    async function viewDataInfo() {
+      try {
+        const response = await fetch(`/api/gdpr/info?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        alert(`📊 Workspace Data Summary\n\n` +
+              `Total Decisions: ${data.info.total_decisions}\n` +
+              `Workspace ID: ${data.info.workspace_id}\n` +
+              `Data Size: ~${(JSON.stringify(data.info).length / 1024).toFixed(2)} KB`);
+      } catch (error) {
+        console.error('Error fetching data info:', error);
+        alert('Failed to fetch data info');
+      }
+    }
+
+    function exportData(format) {
+      window.location.href = `/api/gdpr/export?workspace_id=${WORKSPACE_ID}&format=${format}`;
+    }
+
+    function openDeleteAllModal() {
+      document.getElementById('delete-all-modal').style.display = 'flex';
+    }
+
+    function closeDeleteAllModal() {
+      document.getElementById('delete-all-modal').style.display = 'none';
+    }
+
+    document.getElementById('delete-all-modal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteAllModal();
+    });
+
+    async function confirmDeleteAll() {
+      const confirmation = prompt('Type "DELETE ALL" to confirm:');
+      if (confirmation !== 'DELETE ALL') {
+        alert('Deletion cancelled');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/gdpr/delete-all?workspace_id=${WORKSPACE_ID}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Successfully deleted ${data.deleted_count} decisions`);
+          closeDeleteAllModal();
+        } else {
+          alert(`❌ Failed to delete data: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error deleting data:', error);
+        alert('Failed to delete data');
+      }
+    }
+
+    // Replace <WORKSPACE_ID> in header link
+    const workspaceId = WORKSPACE_ID;
+    document.querySelectorAll('a[href*="<WORKSPACE_ID>"]').forEach(link => {
+      link.href = link.href.replace('<WORKSPACE_ID>', workspaceId);
+    });
+  </script>
+
+</body>
+</html>
