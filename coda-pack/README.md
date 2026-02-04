@@ -79,23 +79,49 @@ Fetch a specific decision:
 
 ## Deployment
 
-1. Authenticate with Coda (first time only):
+The pack is now live at: https://coda.io/p/47981
+
+### First Time Setup (Already Complete)
+
+1. ✅ Authenticate with Coda:
    ```bash
    npx @codahq/packs-sdk register
    ```
-   This will open a browser window to authenticate with your Coda account.
 
-2. Register the pack (first time only):
+2. ✅ Create the pack:
    ```bash
-   npm run register
+   npx @codahq/packs-sdk create pack.ts
    ```
 
-3. Create a new release:
+3. ✅ Upload initial version:
    ```bash
-   npm run release
+   npm run upload
    ```
 
-4. Submit for review in Coda Pack Studio
+4. ✅ Release version 1:
+   ```bash
+   npx @codahq/packs-sdk release pack.ts 1 -n "Initial release notes"
+   ```
+
+### Updating the Pack
+
+When you make changes:
+
+1. Validate changes:
+   ```bash
+   npm run validate
+   ```
+
+2. Upload new version:
+   ```bash
+   npm run upload
+   ```
+
+3. Release the new version:
+   ```bash
+   npm run release <version> -n "Release notes describing changes"
+   ```
+   Example: `npm run release 2 -n "Added support for tags filtering"`
 
 ## API Endpoints Used
 

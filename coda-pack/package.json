@@ -5,8 +5,8 @@
   "main": "pack.ts",
   "scripts": {
     "validate": "npx @codahq/packs-sdk validate pack.ts",
-    "build": "npx @codahq/packs-sdk execute pack.ts",
-    "register": "npx @codahq/packs-sdk register pack.ts",
+    "build": "npx @codahq/packs-sdk build pack.ts",
+    "upload": "npx @codahq/packs-sdk upload pack.ts",
     "release": "npx @codahq/packs-sdk release pack.ts"
   },
   "keywords": [
