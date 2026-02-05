@@ -133,16 +133,18 @@ async function listApiKeys(userId) {
     { user_id: userId }
   ).toArray();
 
-  return keys.map(key => ({
-    name: key.name,
-    created_at: key.created_at,
-    expires_at: key.expires_at,
-    last_used_at: key.last_used_at,
-    active: key.active,
-    // Show last 8 characters of key for identification
-    key_preview: '...' + key.key.slice(-8)
-    // Note: The full key is NOT returned, only the preview
-  }));
+  return keys
+    .filter(key => key.key) // Only include keys that have the key field
+    .map(key => ({
+      name: key.name,
+      created_at: key.created_at,
+      expires_at: key.expires_at,
+      last_used_at: key.last_used_at,
+      active: key.active,
+      // Show last 8 characters of key for identification
+      key_preview: '...' + key.key.slice(-8)
+      // Note: The full key is NOT returned, only the preview
+    }));
 }
 
 module.exports = {
