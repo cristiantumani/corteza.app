@@ -130,13 +130,7 @@ async function listApiKeys(userId) {
   const apiKeysCollection = db.collection('api_keys');
 
   const keys = await apiKeysCollection.find(
-    { user_id: userId },
-    {
-      projection: {
-        key: 0,  // Don't return the actual key
-        _id: 0
-      }
-    }
+    { user_id: userId }
   ).toArray();
 
   return keys.map(key => ({
@@ -147,6 +141,7 @@ async function listApiKeys(userId) {
     active: key.active,
     // Show last 8 characters of key for identification
     key_preview: '...' + key.key.slice(-8)
+    // Note: The full key is NOT returned, only the preview
   }));
 }
 

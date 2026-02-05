@@ -619,12 +619,18 @@
 
     async function loadApiKeys() {
       try {
+        console.log('Fetching API keys...');
         const response = await fetch('/api/keys');
+        console.log('Response status:', response.status);
+
         const data = await response.json();
+        console.log('API keys data:', data);
 
         if (data.success) {
           const container = document.getElementById('api-keys-container');
           const listDiv = document.getElementById('api-keys-list');
+
+          console.log('Number of keys:', data.keys.length);
 
           if (data.keys.length === 0) {
             container.innerHTML = '<p style="color: #616061;">No API keys yet. Generate one to get started!</p>';
@@ -651,10 +657,14 @@
           }
 
           listDiv.style.display = 'block';
+          console.log('API keys list displayed');
+        } else {
+          console.error('API returned success: false', data);
+          alert(`❌ Failed to load API keys: ${data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error loading API keys:', error);
-        alert('❌ Failed to load API keys');
+        alert(`❌ Failed to load API keys: ${error.message}`);
       }
     }
 
