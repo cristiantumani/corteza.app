@@ -1290,6 +1290,86 @@ async function checkAdminStatus(req, res) {
   }
 }
 
+/**
+ * POST /api/memory/create - Create a new memory entry from dashboard
+ * Body: { text, type, category, tags, epic_key, alternatives, workspace_id, source }
+ */
+async function createMemory(req, res) {
+  try {
+    // Get user info from session
+    const userId = req.session?.user?.user_id;
+    const userName = req.session?.user?.user_name;
+    const workspaceId = req.session?.user?.workspace_id;
+
+    if (!userId || !workspaceId) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized', message: 'You must be logged in' }));
+      return;
+    }
+
+    // Validate input
+    const { text, type, category, tags, epic_key, alternatives, source } = req.body;
+
+    if (!text || !text.trim()) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Validation error', message: 'Text is required' }));
+      return;
+    }
+
+    if (!type || !['decision', 'explanation', 'context', 'learning', 'risk', 'assumption'].includes(type)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Validation error', message: 'Valid type is required' }));
+      return;
+    }
+
+    // Get next ID
+    const decisionsCollection = getDecisionsCollection();
+    const lastDecision = await decisionsCollection
+      .find({ workspace_id: workspaceId })
+      .sort({ id: -1 })
+      .limit(1)
+      .toArray();
+
+    const nextId = lastDecision.length > 0 ? lastDecision[0].id + 1 : 1;
+
+    // Create memory document
+    const memory = {
+      id: nextId,
+      text: text.trim(),
+      type: type,
+      category: category || null,
+      tags: tags || null,
+      epic_key: epic_key || null,
+      alternatives: alternatives || null,
+      user_id: userId,
+      user_name: userName,
+      workspace_id: workspaceId,
+      source: source || 'dashboard', // Track where it came from
+      timestamp: new Date().toISOString(),
+      created_at: new Date(),
+      notion_page_url: null,
+      jira_url: null
+    };
+
+    // Insert into database
+    await decisionsCollection.insertOne(memory);
+
+    console.log(`✅ Memory #${nextId} created from ${source} by ${userName} in workspace ${workspaceId}`);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      memory: memory,
+      message: 'Memory saved successfully'
+    }));
+
+  } catch (error) {
+    console.error('❌ Error creating memory:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to create memory', message: error.message }));
+  }
+}
+
 module.exports = {
   getDecisions,
   getDecisionById,
@@ -1300,5 +1380,6 @@ module.exports = {
   healthCheck,
   submitFeedback,
   extractDecisionsFromText,
-  checkAdminStatus
+  checkAdminStatus,
+  createMemory
 };

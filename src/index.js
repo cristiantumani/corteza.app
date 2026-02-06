@@ -5,7 +5,7 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
-const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus } = require('./routes/api');
+const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
@@ -155,6 +155,7 @@ async function startApp() {
   expressApp.get('/api/ai-analytics', apiRateLimiter, requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', aiRateLimiter, requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
+  expressApp.post('/api/memory/create', apiRateLimiter, require('express').json(), requireAuth, createMemory);
 
   // API Key management routes (requires session authentication)
   expressApp.post('/api/keys/generate', apiRateLimiter, require('express').json(), requireAuth, handleGenerateApiKey);

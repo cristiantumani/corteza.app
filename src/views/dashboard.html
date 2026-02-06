@@ -107,6 +107,30 @@
       font-size: 20px;
     }
 
+    .hero-cta-btn {
+      margin-top: 20px;
+      padding: 14px 28px;
+      background: #000000;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .hero-cta-btn:hover {
+      background: #2D2D2D;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-cta-btn:active {
+      transform: translateY(0);
+    }
+
     .hero-decoration {
       display: none;
     }
@@ -925,6 +949,9 @@
         <span class="hero-stat-separator">•</span>
         <span class="hero-stat" id="hero-workspace-name">Loading...</span>
       </div>
+      <button class="hero-cta-btn" onclick="openLogMemoryModal()">
+        ➕ Log Team Memory
+      </button>
     </div>
     <div class="hero-decoration"></div>
   </div>
@@ -1029,6 +1056,88 @@
       <div class="modal-buttons">
         <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
         <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Memory Modal -->
+  <div class="modal-overlay" id="log-memory-modal">
+    <div class="modal detail-modal">
+      <div class="detail-header">
+        <h2>➕ Log Team Memory</h2>
+        <button class="close-btn" onclick="closeLogMemoryModal()">✕ Close</button>
+      </div>
+
+      <div class="detail-section">
+        <h3>What happened?</h3>
+        <textarea
+          id="log-memory-text"
+          placeholder="Describe the decision, context, or explanation..."
+          rows="5"
+          style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Type *</label>
+          <select
+            id="log-memory-type"
+            style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+          >
+            <option value="decision">Decision</option>
+            <option value="explanation">Explanation</option>
+            <option value="context">Context</option>
+            <option value="learning">Learning</option>
+            <option value="risk">Risk</option>
+            <option value="assumption">Assumption</option>
+          </select>
+        </div>
+
+        <div class="detail-item">
+          <label>Category</label>
+          <input
+            type="text"
+            id="log-memory-category"
+            placeholder="e.g., Frontend, Backend, UX"
+            style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+          />
+        </div>
+
+        <div class="detail-item">
+          <label>Tags</label>
+          <input
+            type="text"
+            id="log-memory-tags"
+            placeholder="Comma-separated tags"
+            style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+          />
+        </div>
+
+        <div class="detail-item">
+          <label>Epic Key / Jira</label>
+          <input
+            type="text"
+            id="log-memory-epic"
+            placeholder="e.g., PROJ-123"
+            style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+          />
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Additional Context (Optional)</h3>
+        <textarea
+          id="log-memory-alternatives"
+          placeholder="Any alternatives considered, additional details, or related information..."
+          rows="3"
+          style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">Cancel</button>
+        <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save Memory</button>
       </div>
     </div>
   </div>
@@ -1425,6 +1534,75 @@
 
     function closeDetailModal() {
       document.getElementById('detail-modal').classList.remove('active');
+    }
+
+    // Log Memory Modal Functions
+    function openLogMemoryModal() {
+      // Clear form
+      document.getElementById('log-memory-text').value = '';
+      document.getElementById('log-memory-type').value = 'decision';
+      document.getElementById('log-memory-category').value = '';
+      document.getElementById('log-memory-tags').value = '';
+      document.getElementById('log-memory-epic').value = '';
+      document.getElementById('log-memory-alternatives').value = '';
+
+      // Show modal
+      document.getElementById('log-memory-modal').classList.add('active');
+    }
+
+    function closeLogMemoryModal() {
+      document.getElementById('log-memory-modal').classList.remove('active');
+    }
+
+    async function submitLogMemory() {
+      const text = document.getElementById('log-memory-text').value.trim();
+      const type = document.getElementById('log-memory-type').value;
+      const category = document.getElementById('log-memory-category').value.trim();
+      const tags = document.getElementById('log-memory-tags').value.trim();
+      const epicKey = document.getElementById('log-memory-epic').value.trim();
+      const alternatives = document.getElementById('log-memory-alternatives').value.trim();
+
+      // Validation
+      if (!text) {
+        alert('Please enter a description');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/memory/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            type,
+            category: category || null,
+            tags: tags || null,
+            epic_key: epicKey || null,
+            alternatives: alternatives || null,
+            workspace_id: WORKSPACE_ID,
+            source: 'dashboard'
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Close modal
+          closeLogMemoryModal();
+
+          // Show success message
+          alert('✅ Memory saved successfully!');
+
+          // Refresh the dashboard
+          fetchStats();
+          fetchDecisions();
+        } else {
+          alert(`❌ Failed to save memory: ${data.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error saving memory:', error);
+        alert('❌ Failed to save memory. Please try again.');
+      }
     }
 
     function openEditModal() {
