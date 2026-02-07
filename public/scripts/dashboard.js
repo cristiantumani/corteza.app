@@ -85,10 +85,18 @@
     let deleteTargetId = null;
     let currentDecisionIndex = null;
 
+    // View state management
+    let currentView = 'classic'; // 'chat' or 'classic'
+    const VIEW_STORAGE_KEY = 'corteza_dashboard_view_preference';
+    let chatMessagesHistory = [];
+    let isChatLoading = false;
+
     async function fetchStats() {
       try {
         const r = await fetch(`/api/stats?workspace_id=${WORKSPACE_ID}`);
         const d = await r.json();
+
+        // Update Classic View stats (8 cards)
         document.getElementById('total-count').textContent = d.total;
         document.getElementById('decision-count').textContent = d.byType.decision || 0;
         document.getElementById('explanation-count').textContent = d.byType.explanation || 0;
@@ -98,9 +106,294 @@
         document.getElementById('technical-count').textContent = d.byCategory?.technical || 0;
         document.getElementById('week-count').textContent = d.lastWeek;
 
+        // Update Chat View condensed stats (3 chips)
+        document.getElementById('total-count-chat').textContent = d.total;
+        document.getElementById('decision-count-chat').textContent = d.byType.decision || 0;
+        document.getElementById('week-count-chat').textContent = d.lastWeek;
+
         // Update hero section
         document.getElementById('hero-total').textContent = d.total;
       } catch (e) {}
+    }
+
+    // ========================================
+    // View Management Functions
+    // ========================================
+
+    function toggleView(targetView) {
+      // If no target specified, toggle between views
+      if (!targetView) {
+        targetView = currentView === 'chat' ? 'classic' : 'chat';
+      }
+
+      // Update current view
+      currentView = targetView;
+
+      // Get containers
+      const chatContainer = document.getElementById('chat-view-container');
+      const classicContainer = document.getElementById('classic-view-container');
+      const toggleBtn = document.getElementById('view-toggle-btn');
+      const toggleText = document.getElementById('toggle-text');
+      const toggleIconChat = document.getElementById('toggle-icon-chat');
+      const toggleIconClassic = document.getElementById('toggle-icon-classic');
+
+      // Get stats containers
+      const statsClassic = document.getElementById('stats-classic');
+      const statsChat = document.getElementById('stats-chat');
+
+      // Get chat widget
+      const chatWidget = document.getElementById('chat-widget');
+
+      if (currentView === 'chat') {
+        // Show Chat View
+        chatContainer.style.display = 'block';
+        classicContainer.style.display = 'none';
+        statsClassic.style.display = 'none';
+        statsChat.style.display = 'flex';
+
+        // Hide chat widget in Chat View
+        if (chatWidget) chatWidget.style.display = 'none';
+
+        // Update toggle button
+        toggleBtn.classList.add('chat-active');
+        toggleText.textContent = 'Chat View';
+        toggleIconChat.style.display = 'inline';
+        toggleIconClassic.style.display = 'none';
+
+        // Focus chat input
+        setTimeout(() => {
+          const chatInput = document.getElementById('chat-input-main');
+          if (chatInput) chatInput.focus();
+        }, 100);
+
+      } else {
+        // Show Classic View
+        chatContainer.style.display = 'none';
+        classicContainer.style.display = 'block';
+        statsClassic.style.display = 'grid';
+        statsChat.style.display = 'none';
+
+        // Show chat widget in Classic View
+        if (chatWidget) chatWidget.style.display = 'block';
+
+        // Update toggle button
+        toggleBtn.classList.remove('chat-active');
+        toggleText.textContent = 'Classic View';
+        toggleIconChat.style.display = 'none';
+        toggleIconClassic.style.display = 'inline';
+      }
+
+      // Save preference to localStorage
+      localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+
+      console.log('Switched to:', currentView, 'view');
+    }
+
+    function loadViewPreference() {
+      // Load saved view preference or default to 'chat'
+      const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+      const initialView = savedView || 'chat';
+
+      console.log('Loading view preference:', initialView);
+
+      // Apply view after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        toggleView(initialView);
+      }, 100);
+    }
+
+    // ========================================
+    // Chat Interface Functions (Main Chat View)
+    // ========================================
+
+    async function sendChatMessage() {
+      const chatInput = document.getElementById('chat-input-main');
+      const query = chatInput.value.trim();
+
+      if (!query || isChatLoading) return;
+
+      // Set loading state
+      isChatLoading = true;
+      chatInput.value = '';
+
+      // Hide welcome state if visible
+      const emptyState = document.getElementById('chat-empty-state');
+      if (emptyState && emptyState.style.display !== 'none') {
+        emptyState.style.display = 'none';
+      }
+
+      // Add user message to UI
+      addChatMessageMain(query, 'user');
+
+      // Show typing indicator
+      showChatTypingMain();
+
+      try {
+        // Call semantic search API
+        const response = await fetch('/api/semantic-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            workspace_id: WORKSPACE_ID,
+            conversational: true,
+            conversationHistory: chatMessagesHistory,
+            limit: 10
+          })
+        });
+
+        removeChatTypingMain();
+
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Add bot response with decision cards
+          addChatMessageMain(data.response, 'bot', data.decisions);
+
+          // Store in conversation history
+          chatMessagesHistory.push({
+            role: 'user',
+            content: query
+          });
+          chatMessagesHistory.push({
+            role: 'assistant',
+            content: data.response
+          });
+
+          // Limit history to last 10 messages (5 turns)
+          if (chatMessagesHistory.length > 10) {
+            chatMessagesHistory = chatMessagesHistory.slice(-10);
+          }
+        } else {
+          addChatErrorMain(data.error || 'Search failed');
+        }
+
+      } catch (error) {
+        removeChatTypingMain();
+        console.error('Chat error:', error);
+        addChatErrorMain(error.message || 'Failed to search. Please try again.');
+      } finally {
+        isChatLoading = false;
+      }
+    }
+
+    function addChatMessageMain(text, type, decisions) {
+      const messagesArea = document.getElementById('chat-messages-main');
+
+      // Create message container
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message-main ${type}`;
+
+      // Create message bubble
+      const bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'chat-message-bubble';
+
+      // Format markdown (simple: bold, italic, code)
+      let formattedText = text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+
+      bubbleDiv.innerHTML = formattedText;
+      messageDiv.appendChild(bubbleDiv);
+
+      // Add decision cards if present
+      if (decisions && decisions.length > 0) {
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'chat-decision-cards-main';
+
+        decisions.forEach(decision => {
+          const card = document.createElement('div');
+          card.className = 'chat-decision-card-main';
+          card.onclick = () => openDetailModalFromChat(decision.id);
+
+          card.innerHTML = `
+            <div class="card-header">
+              <span class="card-id">#${decision.id}</span>
+              <span class="card-badge">${decision.type || 'decision'}</span>
+            </div>
+            <div class="card-text">${decision.text.substring(0, 150)}${decision.text.length > 150 ? '...' : ''}</div>
+            <div class="card-meta">${decision.user_name || 'Unknown'} • ${new Date(decision.timestamp).toLocaleDateString()}</div>
+          `;
+
+          cardsContainer.appendChild(card);
+        });
+
+        messageDiv.appendChild(cardsContainer);
+      }
+
+      messagesArea.appendChild(messageDiv);
+      scrollChatToBottom();
+    }
+
+    function showChatTypingMain() {
+      const messagesArea = document.getElementById('chat-messages-main');
+
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'chat-typing-indicator-main';
+      typingDiv.className = 'chat-message-main bot';
+
+      const typingBubble = document.createElement('div');
+      typingBubble.className = 'chat-typing-main';
+      typingBubble.innerHTML = '<span></span><span></span><span></span>';
+
+      typingDiv.appendChild(typingBubble);
+      messagesArea.appendChild(typingDiv);
+
+      scrollChatToBottom();
+    }
+
+    function removeChatTypingMain() {
+      const typingIndicator = document.getElementById('chat-typing-indicator-main');
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
+
+    function scrollChatToBottom() {
+      const messagesArea = document.getElementById('chat-messages-main');
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function addChatErrorMain(errorMessage) {
+      const messagesArea = document.getElementById('chat-messages-main');
+
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'chat-error-main';
+      errorDiv.textContent = errorMessage;
+
+      messagesArea.appendChild(errorDiv);
+      scrollChatToBottom();
+    }
+
+    function useSuggestionMain(text) {
+      const chatInput = document.getElementById('chat-input-main');
+      chatInput.value = text;
+      sendChatMessage();
+    }
+
+    function openDetailModalFromChat(decisionId) {
+      // Find decision in allDecisions array
+      const index = allDecisions.findIndex(d => d.id === decisionId);
+
+      if (index >= 0) {
+        // Use existing modal function
+        openDetailModal(index);
+      } else {
+        // Decision not in current table, fetch it
+        fetchAndOpenDecision(decisionId);
+      }
+    }
+
+    async function fetchAndOpenDecision(decisionId) {
+      // Decision not found in current table view
+      // User needs to search or adjust filters to see it
+      alert(`Decision #${decisionId} is not currently loaded in your view. Please use the search or filters in Classic View to find this decision, or ask about it in the chat.`);
     }
 
     async function fetchDecisions() {
@@ -649,6 +942,32 @@
         fetchStats();
         fetchDecisions();
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
+
+        // Initialize view toggle button
+        const viewToggleBtn = document.getElementById('view-toggle-btn');
+        if (viewToggleBtn) {
+          viewToggleBtn.addEventListener('click', () => toggleView());
+        }
+
+        // Initialize chat interface (main Chat View)
+        const chatSendMain = document.getElementById('chat-send-main');
+        const chatInputMain = document.getElementById('chat-input-main');
+
+        if (chatSendMain) {
+          chatSendMain.addEventListener('click', sendChatMessage);
+        }
+
+        if (chatInputMain) {
+          chatInputMain.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendChatMessage();
+            }
+          });
+        }
+
+        // Load saved view preference (default to Chat View)
+        loadViewPreference();
       }
       // Initialize feedback widget
       initFeedbackWidget();

@@ -14,10 +14,17 @@
     <div class="container">
       <div class="header-content">
         <h1>Dashboard</h1>
-        <div class="nav-links">
-          <a href="/ai-analytics?workspace_id=<WORKSPACE_ID>">🤖 AI Analytics</a>
-          <a href="/settings">⚙️ Settings</a>
-          <a href="/auth/logout">Logout</a>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <button id="view-toggle-btn" class="view-toggle-btn chat-active">
+            <span id="toggle-icon-chat">💬</span>
+            <span id="toggle-text">Chat View</span>
+            <span id="toggle-icon-classic" style="display: none;">📊</span>
+          </button>
+          <div class="nav-links">
+            <a href="/ai-analytics?workspace_id=<WORKSPACE_ID>">🤖 AI Analytics</a>
+            <a href="/settings">⚙️ Settings</a>
+            <a href="/auth/logout">Logout</a>
+          </div>
         </div>
       </div>
     </div>
@@ -44,7 +51,8 @@
   </div>
 
   <div class="container">
-    <div class="stats">
+    <!-- Stats for Classic View (8 cards) -->
+    <div class="stats" id="stats-classic">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
       <div class="stat-card"><h3>Decisions</h3><div class="number" id="decision-count">-</div></div>
       <div class="stat-card"><h3>Explanations</h3><div class="number" id="explanation-count">-</div></div>
@@ -55,68 +63,134 @@
       <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
     </div>
 
-    <div class="filters">
-      <div class="filter-group">
-        <label>Search</label>
-        <input type="text" id="search" placeholder="Search...">
+    <!-- Condensed Stats for Chat View (3 chips) -->
+    <div class="stats-condensed" id="stats-chat" style="display: none;">
+      <div class="stat-chip">
+        <span class="stat-label">Total:</span>
+        <span class="stat-value" id="total-count-chat">-</span>
       </div>
-      <div class="filter-group">
-        <label>Type</label>
-        <select id="type-filter">
-          <option value="">All Types</option>
-          <option value="decision">Decision</option>
-          <option value="explanation">Explanation</option>
-          <option value="context">Context</option>
-        </select>
+      <div class="stat-chip">
+        <span class="stat-label">Decisions:</span>
+        <span class="stat-value" id="decision-count-chat">-</span>
       </div>
-      <div class="filter-group">
-        <label>Category</label>
-        <select id="category-filter">
-          <option value="">All Categories</option>
-          <option value="product">Product</option>
-          <option value="ux">UX</option>
-          <option value="technical">Technical</option>
-        </select>
+      <div class="stat-chip">
+        <span class="stat-label">This Week:</span>
+        <span class="stat-value" id="week-count-chat">-</span>
       </div>
-      <div class="filter-group">
-        <label>Epic</label>
-        <input type="text" id="epic-filter" placeholder="LOK-123">
-      </div>
-      <div class="filter-group" style="flex: 2; min-width: 400px;">
-        <label>Date Range</label>
-        <div class="date-presets">
-          <button class="preset-btn" onclick="setDatePreset('today')">Today</button>
-          <button class="preset-btn" onclick="setDatePreset('last7')">Last 7 days</button>
-          <button class="preset-btn" onclick="setDatePreset('last30')">Last 30 days</button>
-          <button class="preset-btn" onclick="setDatePreset('thisMonth')">This month</button>
-          <button class="preset-btn" onclick="setDatePreset('lastMonth')">Last month</button>
-          <button class="clear-dates-btn" onclick="clearDateFilter()">Clear</button>
+    </div>
+
+    <!-- Chat View Container (New Primary Interface) -->
+    <div id="chat-view-container" class="view-container" style="display: none;">
+      <div class="chat-view-wrapper">
+        <!-- Welcome Section -->
+        <div class="chat-welcome">
+          <div class="chat-welcome-icon">💬</div>
+          <h2 class="chat-welcome-title">Ask About Your Team's Decisions</h2>
+          <p class="chat-welcome-subtitle">Search your team memory using natural language</p>
         </div>
-        <div class="date-inputs">
-          <input type="date" id="date-from" placeholder="From">
-          <input type="date" id="date-to" placeholder="To">
+
+        <!-- Messages Area (Scrollable) -->
+        <div class="chat-messages-area" id="chat-messages-main">
+          <!-- Empty State -->
+          <div class="chat-empty-state" id="chat-empty-state">
+            <p class="empty-state-label">Try asking:</p>
+            <div class="example-queries">
+              <button class="example-query-btn" onclick="useSuggestionMain('Show me recent AEM decisions')">
+                💡 "Show me recent AEM decisions"
+              </button>
+              <button class="example-query-btn" onclick="useSuggestionMain('What did we decide about performance?')">
+                🚀 "What did we decide about performance?"
+              </button>
+              <button class="example-query-btn" onclick="useSuggestionMain('Show technical decisions from this week')">
+                🔧 "Show technical decisions from this week"
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area (Fixed at Bottom) -->
+        <div class="chat-input-area-main">
+          <input
+            type="text"
+            id="chat-input-main"
+            class="chat-input-main"
+            placeholder='Ask anything... e.g., "What decisions were made about authentication?"'
+          />
+          <button id="chat-send-main" class="chat-send-btn-main">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
-    <button class="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
-    <div class="decisions-table">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Memory</th>
-            <th>Type</th>
-            <th>Category</th>
-            <th>Epic</th>
-            <th>Creator</th>
-            <th>Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="decisions-body">
-          <tr><td colspan="8" class="loading">Loading...</td></tr>
-        </tbody>
-      </table>
+
+    <!-- Classic View Container (Existing Table Interface) -->
+    <div id="classic-view-container" class="view-container">
+      <div class="filters">
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" id="search" placeholder="Search...">
+        </div>
+        <div class="filter-group">
+          <label>Type</label>
+          <select id="type-filter">
+            <option value="">All Types</option>
+            <option value="decision">Decision</option>
+            <option value="explanation">Explanation</option>
+            <option value="context">Context</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Category</label>
+          <select id="category-filter">
+            <option value="">All Categories</option>
+            <option value="product">Product</option>
+            <option value="ux">UX</option>
+            <option value="technical">Technical</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Epic</label>
+          <input type="text" id="epic-filter" placeholder="LOK-123">
+        </div>
+        <div class="filter-group" style="flex: 2; min-width: 400px;">
+          <label>Date Range</label>
+          <div class="date-presets">
+            <button class="preset-btn" onclick="setDatePreset('today')">Today</button>
+            <button class="preset-btn" onclick="setDatePreset('last7')">Last 7 days</button>
+            <button class="preset-btn" onclick="setDatePreset('last30')">Last 30 days</button>
+            <button class="preset-btn" onclick="setDatePreset('thisMonth')">This month</button>
+            <button class="preset-btn" onclick="setDatePreset('lastMonth')">Last month</button>
+            <button class="clear-dates-btn" onclick="clearDateFilter()">Clear</button>
+          </div>
+          <div class="date-inputs">
+            <input type="date" id="date-from" placeholder="From">
+            <input type="date" id="date-to" placeholder="To">
+          </div>
+        </div>
+      </div>
+      <button class="export-btn" onclick="exportToCSV()">📥 Export CSV</button>
+      <div class="decisions-table">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Memory</th>
+              <th>Type</th>
+              <th>Category</th>
+              <th>Epic</th>
+              <th>Creator</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="decisions-body">
+            <tr><td colspan="8" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
