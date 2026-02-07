@@ -8,9 +8,19 @@ const LOCAL_API_URL = 'http://localhost:3000';
 // Determine which API to use (try production first, fallback to Railway, then local)
 let currentApiUrl = API_BASE_URL;
 
+// Cache for auth status with timestamp
+let authCache = {
+  data: null,
+  timestamp: 0
+};
+
+const AUTH_CACHE_DURATION = 30 * 1000; // 30 seconds
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkAuth') {
+    // Always check fresh auth, ignore cache for popup requests
+    // This ensures users see updated status immediately after logging in
     checkAuthentication().then(sendResponse);
     return true; // Keep channel open for async response
   }
@@ -155,7 +165,13 @@ chrome.runtime.onInstalled.addListener(() => {
   checkAuthentication();
 });
 
-// Periodically check auth (every 5 minutes)
+// Check auth when browser starts
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Browser started, checking auth');
+  checkAuthentication();
+});
+
+// Periodically check auth (every 2 minutes for more responsive updates)
 setInterval(() => {
   checkAuthentication();
-}, 5 * 60 * 1000);
+}, 2 * 60 * 1000);

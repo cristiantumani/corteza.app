@@ -123,12 +123,29 @@ browser-extension/
 
 3. **Make Changes**
    - Edit files in `browser-extension/`
-   - Reload extension in `chrome://extensions/` (click reload icon)
+   - **IMPORTANT:** After code changes, go to `chrome://extensions/` and click the **reload icon** (circular arrow) next to the extension
    - Hard refresh popup if needed (Ctrl+Shift+R while popup is open)
+   - **Note:** Chrome does NOT auto-reload unpacked extensions - you MUST manually reload after every code change
 
 4. **View Logs**
    - Right-click extension icon → "Inspect popup" (for popup.js logs)
    - Go to `chrome://extensions/` → "Service worker" link (for background.js logs)
+
+### Common Development Issues
+
+**Issue: Extension still shows old behavior after code changes**
+- **Solution:** Reload the extension in `chrome://extensions/` (don't just refresh the popup)
+- The extension files are loaded into memory and won't update until you click the reload button
+- If reload doesn't work, try removing and re-adding the extension
+
+**Issue: Extension shows "Not logged in" even after logging into dashboard**
+- **Solution 1:** Wait up to 2 minutes (extension checks auth every 2 minutes)
+- **Solution 2:** Close and reopen the popup (triggers fresh auth check)
+- **Solution 3:** Reload the extension in `chrome://extensions/`
+
+**Issue: Changes to manifest.json not taking effect**
+- **Solution:** You MUST reload the extension after changing manifest.json
+- Some manifest changes may require removing and re-adding the extension
 
 ### Testing Checklist
 
