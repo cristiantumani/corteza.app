@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Log Team Memory</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>🧠 Log Team Memory</h1>
+    <div id="auth-status" class="auth-status"></div>
+  </div>
+
+  <!-- Login required message (hidden by default) -->
+  <div id="login-required" class="login-message" style="display: none;">
+    <p>⚠️ Please log in to Corteza first</p>
+    <a href="#" id="login-link" class="btn-secondary">Open Dashboard</a>
+  </div>
+
+  <!-- Form (shown when authenticated) -->
+  <form id="memory-form" style="display: none;">
+    <div class="form-group">
+      <label for="text">Memory *</label>
+      <textarea
+        id="text"
+        placeholder="What decision, context, or learning should the team remember?"
+        rows="4"
+        required
+      ></textarea>
+      <small class="char-count">0 / 5000</small>
+    </div>
+
+    <div class="form-group">
+      <label for="type">Type *</label>
+      <select id="type" required>
+        <option value="decision">✅ Decision</option>
+        <option value="explanation">💡 Explanation</option>
+        <option value="context">📌 Context</option>
+        <option value="learning">🎓 Learning</option>
+        <option value="risk">⚠️ Risk</option>
+        <option value="assumption">🤔 Assumption</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="category">Category</label>
+      <select id="category">
+        <option value="">None</option>
+        <option value="product">Product</option>
+        <option value="ux">UX</option>
+        <option value="technical">Technical</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="tags">Tags</label>
+      <input
+        type="text"
+        id="tags"
+        placeholder="database, architecture, security"
+      />
+      <small>Comma-separated</small>
+    </div>
+
+    <!-- Collapsible advanced options -->
+    <details class="advanced-options">
+      <summary>Advanced Options</summary>
+      <div class="form-group">
+        <label for="epic_key">Jira Epic</label>
+        <input type="text" id="epic_key" placeholder="PROJ-123" />
+      </div>
+
+      <div class="form-group">
+        <label for="alternatives">Alternatives Considered</label>
+        <input
+          type="text"
+          id="alternatives"
+          placeholder="Option A, Option B"
+        />
+      </div>
+    </details>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" id="submit-btn">
+        Save Memory
+      </button>
+    </div>
+
+    <!-- Status messages -->
+    <div id="success-message" class="message success" style="display: none;"></div>
+    <div id="error-message" class="message error" style="display: none;"></div>
+  </form>
+
+  <!-- Footer -->
+  <div class="footer">
+    <small>Corteza Team Memory v1.0.0</small>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

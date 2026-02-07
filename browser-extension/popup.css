@@ -1,0 +1,230 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 350px;
+  max-height: 600px;
+  background: #FFFFFF;
+  color: #1D1D1F;
+  overflow-y: auto;
+}
+
+/* Header */
+.header {
+  background: #000000;
+  color: #FFFFFF;
+  padding: 16px;
+  border-bottom: 1px solid #E1E4E8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.auth-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #28a745;
+  color: white;
+}
+
+.auth-status.logged-out {
+  background: #dc3545;
+}
+
+/* Login message */
+.login-message {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.login-message p {
+  margin-bottom: 12px;
+  color: #dc3545;
+}
+
+/* Form */
+#memory-form {
+  padding: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #1D1D1F;
+}
+
+textarea,
+input[type="text"],
+select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #E1E4E8;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #FFFFFF;
+  color: #1D1D1F;
+  transition: border-color 0.2s;
+}
+
+textarea:focus,
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+small {
+  display: block;
+  font-size: 11px;
+  color: #616061;
+  margin-top: 4px;
+}
+
+.char-count {
+  text-align: right;
+}
+
+/* Advanced options */
+.advanced-options {
+  margin-bottom: 16px;
+  border: 1px solid #E1E4E8;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.advanced-options summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  user-select: none;
+  list-style-position: inside;
+}
+
+.advanced-options summary:hover {
+  color: #000000;
+}
+
+.advanced-options[open] summary {
+  margin-bottom: 12px;
+}
+
+/* Buttons */
+.form-actions {
+  margin-top: 16px;
+}
+
+.btn-primary,
+.btn-secondary {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2D2D2D;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background: #E1E4E8;
+  color: #616061;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: #000000;
+  border: 1px solid #E1E4E8;
+}
+
+.btn-secondary:hover {
+  background: #F6F8FA;
+}
+
+/* Messages */
+.message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: none;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Footer */
+.footer {
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #E1E4E8;
+  background: #F6F8FA;
+}
+
+.footer small {
+  color: #616061;
+  font-size: 11px;
+}
+
+/* Scrollbar styling */
+body::-webkit-scrollbar {
+  width: 8px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #F6F8FA;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #E1E4E8;
+  border-radius: 4px;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: #C8CCD0;
+}

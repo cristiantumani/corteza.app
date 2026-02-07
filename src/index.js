@@ -13,6 +13,7 @@ const { serveDashboard, serveAIAnalytics, serveSettings, redirectToDashboard } =
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { handleMe, handleLogout } = require('./routes/auth');
 const { handleLoginPage, handleTokenLogin } = require('./routes/dashboard-auth');
+const { handleSendMagicLink } = require('./routes/email-auth');
 const {
   handleDecisionCommand,
   handleDecisionModalSubmit,
@@ -126,7 +127,8 @@ async function startApp() {
   });
 
   // Authentication routes (public, with rate limiting)
-  expressApp.get('/auth/login', authRateLimiter, handleLoginPage); // Shows instructions to use /login in Slack
+  expressApp.get('/auth/login', authRateLimiter, handleLoginPage); // Shows hybrid login page (email + Slack)
+  expressApp.post('/auth/send-magic-link', authRateLimiter, require('express').json(), handleSendMagicLink); // Sends email magic link
   expressApp.get('/auth/token', authRateLimiter, handleTokenLogin); // Validates token and creates session
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
