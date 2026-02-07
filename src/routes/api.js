@@ -46,13 +46,17 @@ async function getDecisions(req, res) {
     const { page, limit } = validated;
     const skip = (page - 1) * limit;
 
-    // Build MongoDB filter
-    const filter = {};
-
-    // Workspace filter (required for multi-tenancy)
-    if (validated.workspace_id) {
-      filter.workspace_id = validated.workspace_id;
+    // SECURITY: Workspace filter is REQUIRED for multi-tenancy
+    if (!validated.workspace_id) {
+      return res.status(400).json({
+        error: 'workspace_id is required'
+      });
     }
+
+    // Build MongoDB filter
+    const filter = {
+      workspace_id: validated.workspace_id
+    };
 
     if (validated.type) {
       filter.type = validated.type;

@@ -66,10 +66,10 @@ function validateQueryParams(query) {
     }
   }
 
-  // Workspace ID (alphanumeric, typically starts with T)
+  // Workspace ID (alphanumeric, starts with T for Slack or W for email)
   if (query.workspace_id) {
     const workspaceId = query.workspace_id.trim();
-    if (/^T[A-Z0-9]+$/i.test(workspaceId)) {
+    if (/^[TW][A-Z0-9-]+$/i.test(workspaceId)) {
       validated.workspace_id = workspaceId.toUpperCase();
     }
   }
