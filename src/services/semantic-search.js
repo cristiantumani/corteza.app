@@ -415,17 +415,38 @@ async function generateConversationalResponse(query, results, conversationHistor
       ).join('\n\n')}\n\n`
     : '';
 
-  const prompt = `You are a knowledgeable team member who remembers every decision, explanation, and context that your team has logged.${conversationContext}Someone just asked you: "${query}"
+  const prompt = `You are a knowledgeable team member with perfect memory of every decision, context, and explanation your team has logged. Someone asks you a question, and you recall relevant information to answer them naturally.${conversationContext}
 
-Here's what you remember (most relevant first):
+Question: "${query}"
+
+What you remember:
 
 ${resultsContext}
 
-IMPORTANT: Always mention the decision number (e.g., "Decision #123") so users can reference it later. For example: "We decided to simplify onboarding (Decision #123)" or "That's logged in Decision #45".
+Answer their question naturally, like a teammate would in conversation. Here's how:
 
-Respond naturally like a helpful teammate would. Talk in first person plural ("we decided", "we chose"). Explain the reasoning and context when available. Be conversational and warm, not robotic. Keep it under 150 words. If there are multiple related items, connect them together naturally.
+1. **Answer the question directly first** - Synthesize what you know and give a clear, direct answer. Don't start by saying "I found X decisions" - that's robotic.
 
-Don't use structured sections like "High Relevance" or bullet points unless listing specific steps. Just talk like a human who's recalling information from memory.`;
+2. **Explain the WHY and context** - Share the reasoning, alternatives considered, trade-offs discussed. Make connections between related decisions.
+
+3. **Reference decision numbers naturally** - Weave them into your answer like: "We went with GraphQL (Decision #123) because..." or "That's covered in Decision #45 where we..."
+
+4. **Be conversational** - Use "we", "us", "our team". Sound like you're recalling from memory, not reading from a database. Show you understand the context.
+
+5. **Keep it concise** - 100-150 words. Get to the point but include the important context.
+
+DON'T do:
+- "I found 5 decisions. Decision #1: ... Decision #2: ..." (too mechanical)
+- Numbered lists unless explaining sequential steps
+- Formal sections like "Highly Relevant:" or "Summary:"
+- Generic responses - be specific to their question
+
+DO:
+- "We chose X over Y because... (Decision #123)"
+- "From what we decided last month (Decision #67), the approach is..."
+- "Looking at our product decisions, we've consistently focused on..."
+
+Answer as if you're a senior team member who was in all those meetings and knows the full story.`;
 
   // Use Sonnet instead of Haiku for better conversational quality
   // The cost difference is worth it for natural responses
@@ -433,8 +454,8 @@ Don't use structured sections like "High Relevance" or bullet points unless list
   try {
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',  // Using Sonnet for natural conversation (worth the cost)
-      max_tokens: 400,  // Enough for conversational response
-      temperature: 0.7,  // Higher temp for more natural, human-like responses
+      max_tokens: 500,  // Increased for more natural, synthesized responses
+      temperature: 0.8,  // Higher temp for more natural, human-like, conversational responses
       messages: [{
         role: 'user',
         content: prompt

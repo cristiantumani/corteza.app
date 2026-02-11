@@ -1,12 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Corteza Team Memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Log team decisions, context, and learnings from anywhere on the web",
-  "permissions": [
-    "storage",
-    "cookies"
-  ],
+  "permissions": [],
   "host_permissions": [
     "https://app.corteza.app/*",
     "https://*.railway.app/*",
