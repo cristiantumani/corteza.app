@@ -144,12 +144,18 @@
       // Get chat widget
       const chatWidget = document.getElementById('chat-widget');
 
+      // Get hero banner
+      const heroBanner = document.querySelector('.hero-banner');
+
       if (currentView === 'chat') {
         // Show Chat View
         chatContainer.style.display = 'block';
         classicContainer.style.display = 'none';
         statsClassic.style.display = 'none';
         statsChat.style.display = 'flex';
+
+        // Hide hero banner in Chat View (makes chat input more prominent)
+        if (heroBanner) heroBanner.style.display = 'none';
 
         // Hide chat widget in Chat View
         if (chatWidget) chatWidget.style.display = 'none';
@@ -172,6 +178,9 @@
         classicContainer.style.display = 'block';
         statsClassic.style.display = 'grid';
         statsChat.style.display = 'none';
+
+        // Show hero banner in Classic View
+        if (heroBanner) heroBanner.style.display = 'block';
 
         // Show chat widget in Classic View
         if (chatWidget) chatWidget.style.display = 'block';
