@@ -991,22 +991,21 @@
     .chat-view-wrapper {
       max-width: 900px;
       margin: 0 auto;
-      padding: 24px;
-      min-height: calc(100vh - 200px); /* Header + stats + padding */
+      padding: 120px 24px 24px; /* Large top padding to position input in upper-middle */
+      min-height: calc(100vh - 200px); /* Header + stats */
       display: flex;
       flex-direction: column;
-      justify-content: center; /* Center content vertically when empty */
-      transition: justify-content 0.3s ease;
+      transition: all 0.3s ease;
     }
 
     .chat-view-wrapper.has-messages {
-      justify-content: flex-start; /* Normal layout when messages exist */
+      padding-top: 24px; /* Reset to normal padding when messages exist */
     }
 
     .chat-welcome {
       text-align: center;
-      padding: 20px;
-      margin-bottom: 40px;
+      padding: 0;
+      margin-bottom: 24px;
       animation: fadeIn 0.6s ease;
     }
 
@@ -1016,13 +1015,13 @@
     }
 
     .chat-welcome-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
+      font-size: 40px;
+      margin-bottom: 8px;
     }
 
     .chat-welcome-title {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: 24px;
+      font-weight: 600;
       color: #1D1D1F;
     }
 
@@ -1720,19 +1719,24 @@
 
       /* Chat view adjustments */
       .chat-view-wrapper {
-        padding: 16px;
+        padding: 80px 16px 16px; /* Less top padding on tablet, but still centered */
+      }
+
+      .chat-view-wrapper.has-messages {
+        padding-top: 16px;
       }
 
       .chat-welcome {
-        padding: 20px 10px;
+        padding: 0;
+        margin-bottom: 20px;
       }
 
       .chat-welcome-icon {
-        font-size: 48px;
+        font-size: 36px;
       }
 
       .chat-welcome-title {
-        font-size: 24px;
+        font-size: 22px;
       }
 
       .chat-messages-area {
@@ -1775,6 +1779,10 @@
 
       .chat-welcome-title {
         font-size: 20px;
+      }
+
+      .chat-welcome-icon {
+        font-size: 32px;
       }
 
       .chat-message-bubble {
