@@ -1285,6 +1285,42 @@
       text-align: center;
     }
 
+    /* Success Toast Notification */
+    .success-toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
     @keyframes fadeIn {
       from {
         opacity: 0;

@@ -494,6 +494,13 @@
     function closeDeleteModal() {
       deleteTargetId = null;
       document.getElementById('delete-modal').classList.remove('active');
+
+      // Reset delete button state in case modal was closed during deletion
+      const deleteBtn = document.querySelector('.modal-btn-delete');
+      if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Delete';
+      }
     }
 
     function openDetailModal(index) {
@@ -718,19 +725,55 @@
 
     async function confirmDelete() {
       if (!deleteTargetId) return;
+
+      // Disable delete button to prevent double-clicks
+      const deleteBtn = document.querySelector('.modal-btn-delete');
+      const originalText = deleteBtn.textContent;
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = 'Deleting...';
+
       try {
         const response = await fetch(`/api/decisions/${deleteTargetId}?workspace_id=${WORKSPACE_ID}`, {
           method: 'DELETE'
         });
+
+        const data = await response.json();
+
         if (response.ok) {
+          console.log(`✅ Deleted decision #${deleteTargetId}`);
+
+          // Show success message
+          const successMsg = document.createElement('div');
+          successMsg.className = 'success-toast';
+          successMsg.textContent = `✅ Memory #${deleteTargetId} deleted successfully`;
+          document.body.appendChild(successMsg);
+
+          // Remove success message after 3 seconds
+          setTimeout(() => {
+            successMsg.remove();
+          }, 3000);
+
+          // Close modal and refresh data
           closeDeleteModal();
           fetchStats();
           fetchDecisions();
         } else {
-          alert('Failed to delete decision');
+          // Show specific error from backend
+          const errorMessage = data.message || data.error || 'Failed to delete memory';
+          console.error('Delete failed:', errorMessage);
+          alert(`❌ ${errorMessage}`);
+
+          // Re-enable button
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = originalText;
         }
       } catch (err) {
-        alert('Error deleting decision');
+        console.error('Delete error:', err);
+        alert('❌ Network error. Please check your connection and try again.');
+
+        // Re-enable button
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = originalText;
       }
     }
 
