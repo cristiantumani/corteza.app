@@ -348,11 +348,14 @@ async function semanticSearch(query, options = {}) {
 
 /**
  * CREDIT OPTIMIZATION: In-memory cache for conversational responses
- * Key: hash of query + results, Value: { response, timestamp }
+ * Key: hash of query + results + version, Value: { response, timestamp }
  * Entries expire after 5 minutes to balance freshness vs cost savings
+ *
+ * CACHE_VERSION: Increment this when you change the prompt to bust old cached responses
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_VERSION = 2; // v2: Conversational improvements (Feb 12, 2026)
 
 /**
  * Generate conversational response for search results using Claude
@@ -378,10 +381,11 @@ async function generateConversationalResponse(query, results, conversationHistor
   }
 
   // CREDIT OPTIMIZATION: Check cache first
-  const cacheKey = `${query}_${results.all.map(r => r.id).join(',')}`;
+  // Include CACHE_VERSION in key to bust cache when prompt changes
+  const cacheKey = `v${CACHE_VERSION}_${query}_${results.all.map(r => r.id).join(',')}`;
   const cached = responseCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
-    console.log('♻️  CREDIT SAVED: Using cached conversational response');
+    console.log('♻️  CREDIT SAVED: Using cached conversational response (v' + CACHE_VERSION + ')');
     return cached.response;
   }
 
@@ -486,30 +490,44 @@ Answer as if you're a senior team member who was in all those meetings and knows
 }
 
 /**
- * Simple fallback formatting (no Claude required) - still conversational
+ * Simple fallback formatting (no Claude required) - CONVERSATIONAL, not robotic
+ * This is used when Claude API fails, so it should still sound human
  */
 function formatResultsSimple(query, results) {
   if (results.all.length === 0) {
     return `Hmm, I don't see anything in our team memory about "${query}". Try rephrasing or using different keywords - I might have it logged under a different term!`;
   }
 
-  const count = results.all.length;
-  let response = count === 1
-    ? `I found one decision about "${query}":\n\n`
-    : `I found ${count} things about "${query}":\n\n`;
+  // Be conversational, not robotic - don't say "I found X things"
+  const topResults = results.all.slice(0, 3);
 
-  // Show most relevant results naturally with decision IDs
-  results.all.slice(0, 3).forEach(r => {
+  // Build a natural response based on the results
+  let response = '';
+
+  if (results.all.length === 1) {
+    const r = results.all[0];
     const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
-    const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+    const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? `${daysAgo} days ago` : `${Math.floor(daysAgo / 7)} weeks ago`;
 
-    response += `**Decision #${r.id}** (${when}, ${r.creator}): ${r.text}\n\n`;
-  });
-
-  if (results.all.length > 3) {
-    response += `_...and ${results.all.length - 3} more. Ask me about specific decision numbers for details!_\n\n`;
+    response = `We logged this about "${query}" ${when} (Decision #${r.id}): ${r.text}`;
   } else {
-    response += `Want to know more? Ask me about a specific decision number!\n\n`;
+    // Multiple results - synthesize naturally
+    const recent = topResults[0];
+    const daysAgo = Math.floor((Date.now() - new Date(recent.timestamp).getTime()) / (24 * 60 * 60 * 1000));
+    const when = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? `${daysAgo} days ago` : `a couple weeks ago`;
+
+    response = `Looking at our decisions about "${query}", the most recent was ${when} (Decision #${recent.id}): "${recent.text}"\n\n`;
+
+    if (topResults.length > 1) {
+      response += `We also decided:\n`;
+      topResults.slice(1).forEach(r => {
+        response += `• Decision #${r.id}: ${r.text.substring(0, 100)}${r.text.length > 100 ? '...' : ''}\n`;
+      });
+    }
+
+    if (results.all.length > 3) {
+      response += `\n...plus ${results.all.length - 3} more related decisions. Want details on any specific one?`;
+    }
   }
 
   return response;
