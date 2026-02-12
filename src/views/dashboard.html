@@ -81,31 +81,15 @@
 
     <!-- Chat View Container (New Primary Interface) -->
     <div id="chat-view-container" class="view-container" style="display: none;">
-      <div class="chat-view-wrapper">
+      <div id="chat-view-wrapper" class="chat-view-wrapper">
         <!-- Welcome Section -->
-        <div class="chat-welcome">
-          <div class="chat-welcome-icon">💬</div>
-          <h2 class="chat-welcome-title">Ask About Your Team's Decisions</h2>
-          <p class="chat-welcome-subtitle">Search your team memory using natural language</p>
+        <div class="chat-welcome" id="chat-welcome-main">
+          <div class="chat-welcome-icon">🧠</div>
+          <h2 class="chat-welcome-title">Corteza</h2>
         </div>
 
         <!-- Messages Area (Scrollable) -->
         <div class="chat-messages-area" id="chat-messages-main">
-          <!-- Empty State -->
-          <div class="chat-empty-state" id="chat-empty-state">
-            <p class="empty-state-label">Try asking:</p>
-            <div class="example-queries">
-              <button class="example-query-btn" onclick="useSuggestionMain('Show me recent AEM decisions')">
-                💡 "Show me recent AEM decisions"
-              </button>
-              <button class="example-query-btn" onclick="useSuggestionMain('What did we decide about performance?')">
-                🚀 "What did we decide about performance?"
-              </button>
-              <button class="example-query-btn" onclick="useSuggestionMain('Show technical decisions from this week')">
-                🔧 "Show technical decisions from this week"
-              </button>
-            </div>
-          </div>
         </div>
 
         <!-- Input Area (Fixed at Bottom) -->

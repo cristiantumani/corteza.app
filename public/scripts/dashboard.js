@@ -208,6 +208,17 @@
       // Apply view after a short delay to ensure DOM is ready
       setTimeout(() => {
         toggleView(initialView);
+
+        // Check if messages exist and apply has-messages class
+        if (initialView === 'chat') {
+          const messagesArea = document.getElementById('chat-messages-main');
+          const wrapper = document.getElementById('chat-view-wrapper');
+          const hasMessages = messagesArea && messagesArea.children.length > 0;
+
+          if (hasMessages && wrapper) {
+            wrapper.classList.add('has-messages');
+          }
+        }
       }, 100);
     }
 
@@ -225,10 +236,10 @@
       isChatLoading = true;
       chatInput.value = '';
 
-      // Hide welcome state if visible
-      const emptyState = document.getElementById('chat-empty-state');
-      if (emptyState && emptyState.style.display !== 'none') {
-        emptyState.style.display = 'none';
+      // Switch to messages layout
+      const wrapper = document.getElementById('chat-view-wrapper');
+      if (wrapper) {
+        wrapper.classList.add('has-messages');
       }
 
       // Add user message to UI
@@ -381,12 +392,6 @@
 
       messagesArea.appendChild(errorDiv);
       scrollChatToBottom();
-    }
-
-    function useSuggestionMain(text) {
-      const chatInput = document.getElementById('chat-input-main');
-      chatInput.value = text;
-      sendChatMessage();
     }
 
     function openDetailModalFromChat(decisionId) {
