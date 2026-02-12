@@ -325,10 +325,20 @@
       bubbleDiv.innerHTML = formattedText;
       messageDiv.appendChild(bubbleDiv);
 
-      // Add decision cards if present
+      // Add decision cards if present (collapsed by default)
       if (decisions && decisions.length > 0) {
+        // Create toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'chat-decisions-toggle';
+        toggleBtn.innerHTML = `
+          <span class="toggle-icon">📚</span>
+          <span class="toggle-text">See all decisions (${decisions.length})</span>
+          <span class="toggle-arrow">▼</span>
+        `;
+
+        // Create cards container (hidden by default)
         const cardsContainer = document.createElement('div');
-        cardsContainer.className = 'chat-decision-cards-main';
+        cardsContainer.className = 'chat-decision-cards-main collapsed';
 
         decisions.forEach(decision => {
           const card = document.createElement('div');
@@ -347,6 +357,21 @@
           cardsContainer.appendChild(card);
         });
 
+        // Toggle collapse/expand
+        toggleBtn.onclick = () => {
+          const isCollapsed = cardsContainer.classList.contains('collapsed');
+          if (isCollapsed) {
+            cardsContainer.classList.remove('collapsed');
+            toggleBtn.querySelector('.toggle-text').textContent = `Hide decisions (${decisions.length})`;
+            toggleBtn.querySelector('.toggle-arrow').textContent = '▲';
+          } else {
+            cardsContainer.classList.add('collapsed');
+            toggleBtn.querySelector('.toggle-text').textContent = `See all decisions (${decisions.length})`;
+            toggleBtn.querySelector('.toggle-arrow').textContent = '▼';
+          }
+        };
+
+        messageDiv.appendChild(toggleBtn);
         messageDiv.appendChild(cardsContainer);
       }
 

@@ -1089,12 +1089,55 @@
       font-size: 13px;
     }
 
+    /* Toggle button for showing/hiding decisions */
+    .chat-decisions-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #F8F9FA;
+      border: 2px solid #E1E4E8;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1D1D1F;
+      max-width: fit-content;
+    }
+
+    .chat-decisions-toggle:hover {
+      background: #000000;
+      color: #FFFFFF;
+      border-color: #000000;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .chat-decisions-toggle .toggle-icon {
+      font-size: 16px;
+    }
+
+    .chat-decisions-toggle .toggle-arrow {
+      font-size: 10px;
+      margin-left: 4px;
+      transition: transform 0.2s ease;
+    }
+
     .chat-decision-cards-main {
       display: flex;
       flex-direction: column;
       gap: 10px;
       margin-top: 12px;
       max-width: 75%;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+    }
+
+    /* Hide decision cards by default */
+    .chat-decision-cards-main.collapsed {
+      display: none;
     }
 
     .chat-decision-card-main {
@@ -1747,6 +1790,11 @@
       .chat-message-bubble {
         max-width: 90%;
         font-size: 14px;
+      }
+
+      .chat-decisions-toggle {
+        font-size: 13px;
+        padding: 8px 14px;
       }
 
       .chat-decision-cards-main {
