@@ -486,7 +486,7 @@ Answer as if you're a senior team member who was in all those meetings and knows
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',  // Using Sonnet for natural conversation (worth the cost)
+      model: config.claude.model,  // Use configured model (default: claude-sonnet-4-5-20250929)
       max_tokens: 500,  // Increased for more natural, synthesized responses
       temperature: 0.8,  // Higher temp for more natural, human-like, conversational responses
       messages: [{
@@ -676,6 +676,7 @@ async function hybridSearch(query, options = {}) {
 
 /**
  * Traditional keyword-based search (fallback)
+ * Extracts meaningful keywords from query and searches for them
  */
 async function keywordSearch(query, options = {}) {
   const {
@@ -692,13 +693,23 @@ async function keywordSearch(query, options = {}) {
 
   const decisionsCollection = getDecisionsCollection();
 
+  // Extract keywords from query instead of searching for entire query string
+  const keywords = extractKeywords(query);
+  console.log(`🔍 Keyword search: extracted keywords: [${keywords.join(', ')}]`);
+
+  // If no keywords extracted, search for the original query
+  const searchTerms = keywords.length > 0 ? keywords : [query];
+
+  // Build OR conditions for each keyword
+  const orConditions = searchTerms.flatMap(keyword => [
+    { text: { $regex: keyword, $options: 'i' } },
+    { tags: { $regex: keyword, $options: 'i' } },
+    { epic_key: { $regex: keyword, $options: 'i' } }
+  ]);
+
   const filter = {
     workspace_id,
-    $or: [
-      { text: { $regex: query, $options: 'i' } },
-      { tags: { $regex: query, $options: 'i' } },
-      { epic_key: { $regex: query, $options: 'i' } }
-    ]
+    $or: orConditions
   };
 
   if (type) {
