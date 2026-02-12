@@ -205,6 +205,23 @@ async function semanticSearch(query, options = {}) {
   try {
     // Generate embedding for the search query
     console.log(`🔍 Semantic search: "${query}"`);
+    console.log(`   🏢 Workspace ID: ${workspace_id}`);
+
+    // MongoDB connection for debugging
+    const db = getDatabase();
+    const decisionsCollection = db.collection('decisions');
+
+    // DEBUG: Check how many decisions exist in this workspace
+    const totalInWorkspace = await decisionsCollection.countDocuments({ workspace_id });
+    console.log(`   📊 Total decisions in workspace: ${totalInWorkspace}`);
+
+    // DEBUG: Check if any contain "onboard"
+    const onboardingCount = await decisionsCollection.countDocuments({
+      workspace_id,
+      text: { $regex: 'onboard', $options: 'i' }
+    });
+    console.log(`   📊 Decisions containing "onboard": ${onboardingCount}`);
+
     const queryEmbedding = await generateQueryEmbedding(query);
 
     // Detect if query is looking for recent decisions
@@ -235,9 +252,6 @@ async function semanticSearch(query, options = {}) {
     }
 
     // MongoDB Atlas Vector Search aggregation pipeline
-    const db = getDatabase();
-    const decisionsCollection = db.collection('decisions');
-
     const pipeline = [
       {
         $vectorSearch: {
