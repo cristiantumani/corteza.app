@@ -229,6 +229,9 @@
       showChatTypingMain();
 
       try {
+        console.log(`🔍 Sending search query: "${query}"`);
+        console.log(`   Workspace ID: ${WORKSPACE_ID}`);
+
         // Call semantic search API
         const response = await fetch('/api/semantic-search', {
           method: 'POST',
