@@ -351,7 +351,12 @@
       }
 
       messagesArea.appendChild(messageDiv);
-      scrollChatToBottom();
+
+      // Scroll to show the message bubble (text answer), not the decision cards
+      // Use smooth scroll and align to start of viewport
+      setTimeout(() => {
+        bubbleDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     }
 
     function showChatTypingMain() {
