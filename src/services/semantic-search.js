@@ -293,6 +293,10 @@ async function semanticSearch(query, options = {}) {
     if (results.length > 0) {
       console.log(`   - Top score: ${(results[0].score * 100).toFixed(1)}%`);
       console.log(`   - Lowest score: ${(results[results.length - 1].score * 100).toFixed(1)}%`);
+      console.log(`   - Sample results:`);
+      results.slice(0, 3).forEach(r => {
+        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}% - "${r.text.substring(0, 60)}..."`);
+      });
     }
 
     // Apply keyword boost (always - boosts exact keyword matches)
@@ -301,6 +305,7 @@ async function semanticSearch(query, options = {}) {
     // Filter false positives (no keyword match + low score = likely irrelevant)
     const beforeFilterCount = results.length;
     results = filterFalsePositives(results, query);
+    console.log(`   📊 After false positive filter: ${results.length} results (removed ${beforeFilterCount - results.length})`);
 
     // Apply recency boost if temporal context detected
     results = applyRecencyBoost(results, queryHasTemporalContext);
@@ -315,6 +320,16 @@ async function semanticSearch(query, options = {}) {
     // Categorize results by relevance (using boosted scores)
     // NOTE: We only return High (85%+) and Medium (70-84%) relevance
     // Low relevance (60-69%) is excluded to avoid showing irrelevant results
+    const lowRelevanceCount = results.filter(r => r.score < 0.70).length;
+    const lowRelevanceSample = results.filter(r => r.score < 0.70).slice(0, 2);
+
+    if (lowRelevanceCount > 0) {
+      console.log(`   ⚠️  FILTERING OUT ${lowRelevanceCount} results below 70% threshold:`);
+      lowRelevanceSample.forEach(r => {
+        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}% - "${r.text.substring(0, 60)}..." (has keyword: ${r.hasKeywordMatch})`);
+      });
+    }
+
     const categorized = {
       highlyRelevant: results.filter(r => r.score >= 0.85),
       relevant: results.filter(r => r.score >= 0.70 && r.score < 0.85),
@@ -326,7 +341,7 @@ async function semanticSearch(query, options = {}) {
     };
 
     console.log(`   ✅ Categorized: ${categorized.highlyRelevant.length} highly relevant, ${categorized.relevant.length} relevant`);
-    console.log(`   ℹ️  Excluded ${results.filter(r => r.score < 0.70).length} low-relevance results (< 70%)`);
+    console.log(`   ℹ️  Excluded ${lowRelevanceCount} low-relevance results (< 70%)`);
 
     return categorized;
 
