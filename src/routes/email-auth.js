@@ -2,13 +2,14 @@ const crypto = require('crypto');
 const { sendMagicLinkEmail } = require('../utils/n8n-client');
 const rateLimiter = require('../utils/rate-limiter');
 const { generateLoginToken } = require('./dashboard-auth');
+const { getExtensionInstallsCollection } = require('../config/database');
 
 /**
  * Handles email magic link request
  * POST /auth/send-magic-link
  */
 async function handleSendMagicLink(req, res) {
-  const { email, workspace_name, user_name } = req.body;
+  const { email, workspace_name, user_name, install_id } = req.body;
 
   // Validate email
   if (!email || !isValidEmail(email)) {
@@ -69,6 +70,20 @@ async function handleSendMagicLink(req, res) {
     });
 
     console.log(`✅ Magic link sent to ${normalizedEmail} for workspace ${normalizedWorkspace}`);
+
+    // If request came from Chrome extension, link email to install record
+    if (install_id && typeof install_id === 'string' && install_id.length <= 100) {
+      try {
+        const extensionInstalls = getExtensionInstallsCollection();
+        await extensionInstalls.updateOne(
+          { install_id },
+          { $set: { email: normalizedEmail, workspace_name: normalizedWorkspace } }
+        );
+      } catch (dbError) {
+        // Non-fatal: don't fail the magic link request if install linking fails
+        console.error('⚠️  Failed to link install_id to email:', dbError.message);
+      }
+    }
 
     res.json({
       success: true,

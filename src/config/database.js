@@ -8,6 +8,7 @@ let meetingTranscriptsCollection = null;
 let aiFeedbackCollection = null;
 let workspaceSettingsCollection = null;
 let workspaceAdminsCollection = null;
+let extensionInstallsCollection = null;
 
 /**
  * Connects to MongoDB and sets up indexes
@@ -43,6 +44,7 @@ async function connectToMongoDB() {
     aiFeedbackCollection = db.collection('ai_feedback');
     workspaceSettingsCollection = db.collection('workspace_settings');
     workspaceAdminsCollection = db.collection('workspace_admins');
+    extensionInstallsCollection = db.collection('extension_installs');
 
     // Create indexes for decisions collection
     await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
@@ -93,6 +95,11 @@ async function connectToMongoDB() {
     await workspaceAdminsCollection.createIndex({ workspace_id: 1, user_id: 1 }, { unique: true });
     await workspaceAdminsCollection.createIndex({ workspace_id: 1, role: 1 });
     await workspaceAdminsCollection.createIndex({ workspace_id: 1, deactivated_at: 1 });
+
+    // Create indexes for extension installs collection
+    await extensionInstallsCollection.createIndex({ install_id: 1 }, { unique: true });
+    await extensionInstallsCollection.createIndex({ status: 1, email: 1, installed_at: -1 });
+    await extensionInstallsCollection.createIndex({ reminder_sent_at: 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -176,6 +183,13 @@ function getWorkspaceAdminsCollection() {
   return workspaceAdminsCollection;
 }
 
+function getExtensionInstallsCollection() {
+  if (!extensionInstallsCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return extensionInstallsCollection;
+}
+
 module.exports = {
   connectToMongoDB,
   getDecisionsCollection,
@@ -184,5 +198,6 @@ module.exports = {
   getMeetingTranscriptsCollection,
   getAIFeedbackCollection,
   getWorkspaceSettingsCollection,
-  getWorkspaceAdminsCollection
+  getWorkspaceAdminsCollection,
+  getExtensionInstallsCollection
 };

@@ -16,6 +16,53 @@ let authCache = {
 
 const AUTH_CACHE_DURATION = 30 * 1000; // 30 seconds
 
+// Get or create a persistent install_id for this extension installation
+async function getOrCreateInstallId() {
+  const stored = await chrome.storage.local.get('install_id');
+  if (stored.install_id) return stored.install_id;
+
+  const install_id = crypto.randomUUID();
+  await chrome.storage.local.set({ install_id });
+  return install_id;
+}
+
+// Record install event in backend (fire and forget)
+async function recordInstall() {
+  try {
+    const install_id = await getOrCreateInstallId();
+    const manifest = chrome.runtime.getManifest();
+
+    await fetch(`${API_BASE_URL}/api/extension/install`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ install_id, version: manifest.version })
+    });
+  } catch (e) {
+    // Non-fatal
+  }
+}
+
+// Record activation when user is authenticated (called once per install)
+async function recordActivationIfNeeded() {
+  try {
+    const stored = await chrome.storage.local.get(['install_id', 'activation_recorded']);
+    if (!stored.install_id || stored.activation_recorded) return;
+
+    const response = await fetch(`${currentApiUrl}/api/extension/activate`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ install_id: stored.install_id })
+    });
+
+    if (response.ok) {
+      await chrome.storage.local.set({ activation_recorded: true });
+    }
+  } catch (e) {
+    // Non-fatal
+  }
+}
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkAuth') {
@@ -34,6 +81,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     openDashboard();
     sendResponse({ success: true });
     return false;
+  }
+
+  if (request.action === 'getInstallId') {
+    getOrCreateInstallId().then(install_id => sendResponse({ install_id }));
+    return true; // Keep channel open for async response
   }
 });
 
@@ -83,6 +135,9 @@ async function checkAuthentication() {
       if (data.authenticated && data.user) {
         // User is authenticated
         updateBadge(true);
+
+        // Link this install to the authenticated user (fires only once per install)
+        recordActivationIfNeeded();
 
         return {
           authenticated: true,
@@ -162,6 +217,7 @@ function openDashboard() {
 // Check auth on extension install/startup
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Corteza Team Memory extension installed');
+  recordInstall();
   checkAuthentication();
 });
 

@@ -31,7 +31,7 @@
   </header>
 
   <!-- Hero Banner -->
-  <div class="hero-banner">
+  <div class="hero-banner" style="display: none;">
     <div class="hero-content">
       <div class="hero-icon">🧠</div>
       <h1 class="hero-title">Team Memory Dashboard</h1>
@@ -52,7 +52,7 @@
 
   <div class="container">
     <!-- Stats for Classic View (8 cards) -->
-    <div class="stats" id="stats-classic">
+    <div class="stats" id="stats-classic" style="display: none;">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
       <div class="stat-card"><h3>Decisions</h3><div class="number" id="decision-count">-</div></div>
       <div class="stat-card"><h3>Explanations</h3><div class="number" id="explanation-count">-</div></div>
@@ -64,7 +64,7 @@
     </div>
 
     <!-- Condensed Stats for Chat View (3 chips) -->
-    <div class="stats-condensed" id="stats-chat" style="display: none;">
+    <div class="stats-condensed" id="stats-chat" style="display: flex;">
       <div class="stat-chip">
         <span class="stat-label">Total:</span>
         <span class="stat-value" id="total-count-chat">-</span>
@@ -80,7 +80,7 @@
     </div>
 
     <!-- Chat View Container (New Primary Interface) -->
-    <div id="chat-view-container" class="view-container" style="display: none;">
+    <div id="chat-view-container" class="view-container">
       <div id="chat-view-wrapper" class="chat-view-wrapper">
         <!-- Welcome Section -->
         <div class="chat-welcome" id="chat-welcome-main">
@@ -111,7 +111,7 @@
     </div>
 
     <!-- Classic View Container (Existing Table Interface) -->
-    <div id="classic-view-container" class="view-container">
+    <div id="classic-view-container" class="view-container" style="display: none;">
       <div class="filters">
         <div class="filter-group">
           <label>Search</label>

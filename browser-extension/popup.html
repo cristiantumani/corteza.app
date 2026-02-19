@@ -12,10 +12,37 @@
     <div id="auth-status" class="auth-status"></div>
   </div>
 
-  <!-- Login required message (hidden by default) -->
+  <!-- Login required: email capture form (hidden by default) -->
   <div id="login-required" class="login-message" style="display: none;">
-    <p>⚠️ Please log in to Corteza first</p>
-    <a href="#" id="login-link" class="btn-secondary">Open Dashboard</a>
+    <p class="login-intro">Log team decisions from anywhere in Chrome.</p>
+    <form id="email-capture-form">
+      <div class="form-group">
+        <label for="email-input">Email</label>
+        <input
+          type="email"
+          id="email-input"
+          placeholder="your@email.com"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="workspace-input">Team name</label>
+        <input
+          type="text"
+          id="workspace-input"
+          placeholder="e.g. acme"
+          required
+        />
+      </div>
+      <button type="submit" class="btn-primary" id="email-submit-btn">
+        Send me a login link →
+      </button>
+      <div id="email-sent-msg" class="message success" style="display: none;">
+        ✓ Check your email for a login link!
+      </div>
+      <div id="email-error-msg" class="message error" style="display: none;"></div>
+    </form>
+    <p class="login-alt">Already have an account? <a href="#" id="login-link">Open dashboard</a></p>
   </div>
 
   <!-- Form (shown when authenticated) -->

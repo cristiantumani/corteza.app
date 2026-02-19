@@ -180,6 +180,9 @@ async function startApp() {
   // Protected routes - Permissions (requires authentication)
   expressApp.get('/api/permissions/check', apiRateLimiter, requireAuth, requireWorkspaceAccess, checkAdminStatus);
 
+  // Chrome extension install tracking routes (partially public - install endpoint requires no auth)
+  expressApp.use('/api/extension', require('./routes/extension'));
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
@@ -262,6 +265,9 @@ async function startApp() {
 
   // Initialize semantic search (optional)
   initializeEmbeddings();
+
+  // Start re-engagement job for inactive extension installs
+  require('./jobs/reengagement').startReengagementJob();
 }
 
 // Start the application

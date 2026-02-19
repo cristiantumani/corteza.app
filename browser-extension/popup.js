@@ -50,7 +50,7 @@ function showUnauthenticatedUI() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Form submission
+  // Memory form submission
   const form = document.getElementById('memory-form');
   form.addEventListener('submit', handleSubmit);
 
@@ -58,12 +58,61 @@ function setupEventListeners() {
   const textarea = document.getElementById('text');
   textarea.addEventListener('input', updateCharCount);
 
-  // Login link
+  // Email capture form submission
+  const emailForm = document.getElementById('email-capture-form');
+  emailForm.addEventListener('submit', handleEmailCapture);
+
+  // Dashboard link (for users who already have an account)
   const loginLink = document.getElementById('login-link');
   loginLink.addEventListener('click', (e) => {
     e.preventDefault();
     chrome.runtime.sendMessage({ action: 'openDashboard' });
   });
+}
+
+// Handle email capture form submission
+async function handleEmailCapture(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('email-input').value.trim();
+  const workspace_name = document.getElementById('workspace-input').value.trim();
+  const submitBtn = document.getElementById('email-submit-btn');
+  const sentMsg = document.getElementById('email-sent-msg');
+  const errorMsg = document.getElementById('email-error-msg');
+
+  errorMsg.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+
+  try {
+    // Get install_id from background script
+    const { install_id } = await chrome.runtime.sendMessage({ action: 'getInstallId' });
+
+    // Determine which API base to use (same fallback pattern as background.js)
+    const apiBase = 'https://app.corteza.app';
+
+    const response = await fetch(`${apiBase}/auth/send-magic-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, workspace_name, install_id })
+    });
+
+    if (response.ok) {
+      e.target.style.display = 'none';
+      sentMsg.style.display = 'block';
+    } else {
+      const data = await response.json().catch(() => ({}));
+      errorMsg.textContent = data.error || 'Failed to send link. Please try again.';
+      errorMsg.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send me a login link →';
+    }
+  } catch (error) {
+    errorMsg.textContent = 'Network error. Please try again.';
+    errorMsg.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send me a login link →';
+  }
 }
 
 // Update character count
