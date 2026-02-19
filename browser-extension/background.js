@@ -91,71 +91,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Check authentication status
 async function checkAuthentication() {
-  try {
-    // Try app.corteza.app first
-    let response = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+  // Only fall back to the next endpoint on network errors (server unreachable).
+  // A 401 means the server is healthy but the user isn't logged in — stop there.
+  const endpoints = [API_BASE_URL, RAILWAY_API_URL, LOCAL_API_URL];
 
-    // If app.corteza.app fails, try Railway
-    if (!response.ok) {
-      console.log('app.corteza.app failed, trying Railway...');
-      currentApiUrl = RAILWAY_API_URL;
-      response = await fetch(`${RAILWAY_API_URL}/auth/me`, {
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${endpoint}/auth/me`, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      // If Railway fails, try local
-      if (!response.ok) {
-        console.log('Railway API failed, trying local...');
-        currentApiUrl = LOCAL_API_URL;
-        response = await fetch(`${LOCAL_API_URL}/auth/me`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+      // Server responded — this is the right endpoint to use
+      currentApiUrl = endpoint;
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.authenticated && data.user) {
+          updateBadge(true);
+          // Link this install to the authenticated user (fires only once per install)
+          recordActivationIfNeeded();
+          return {
+            authenticated: true,
+            user: data.user,
+            workspace_id: data.user.workspace_id
+          };
+        }
       }
-    } else {
-      currentApiUrl = API_BASE_URL;
+
+      // Server responded but user is not authenticated — stop trying fallbacks
+      updateBadge(false);
+      return { authenticated: false };
+
+    } catch (error) {
+      // Network error — server unreachable, try next endpoint
+      console.log(`${endpoint} unreachable, trying next...`);
     }
-
-    if (response.ok) {
-      const data = await response.json();
-
-      if (data.authenticated && data.user) {
-        // User is authenticated
-        updateBadge(true);
-
-        // Link this install to the authenticated user (fires only once per install)
-        recordActivationIfNeeded();
-
-        return {
-          authenticated: true,
-          user: data.user,
-          workspace_id: data.user.workspace_id
-        };
-      }
-    }
-
-    // Not authenticated
-    updateBadge(false);
-    return { authenticated: false };
-
-  } catch (error) {
-    console.error('Authentication check failed:', error);
-    updateBadge(false);
-    return { authenticated: false, error: error.message };
   }
+
+  // All endpoints unreachable
+  updateBadge(false);
+  return { authenticated: false, error: 'All API endpoints unreachable' };
 }
 
 // Create memory via API
@@ -208,10 +186,9 @@ function updateBadge(isAuthenticated) {
   }
 }
 
-// Open dashboard for login
+// Open dashboard for login — always use production URL
 function openDashboard() {
-  const dashboardUrl = `${currentApiUrl}/dashboard`;
-  chrome.tabs.create({ url: dashboardUrl });
+  chrome.tabs.create({ url: `${API_BASE_URL}/dashboard` });
 }
 
 // Check auth on extension install/startup
