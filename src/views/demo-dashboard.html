@@ -430,13 +430,13 @@
   <div class="container">
     <!-- Tab navigation -->
     <div class="demo-tab-nav">
-      <button class="demo-tab active" id="tab-chat" onclick="switchTab('chat')">💬 Team Memory Chat</button>
+      <button class="demo-tab" id="tab-chat" onclick="switchTab('chat')">💬 Team Memory Chat</button>
       <button class="demo-tab" id="tab-classic" onclick="switchTab('classic')">📊 All Decisions</button>
-      <button class="demo-tab demo-tab-hiw" id="tab-hiw" onclick="switchTab('hiw')">✨ How It Works</button>
+      <button class="demo-tab demo-tab-hiw active" id="tab-hiw" onclick="switchTab('hiw')">✨ How It Works</button>
     </div>
 
     <!-- Condensed Stats for Chat View (3 chips) -->
-    <div class="stats-condensed" id="stats-chat" style="display: flex;">
+    <div class="stats-condensed" id="stats-chat" style="display: none;">
       <div class="stat-chip">
         <span class="stat-label">Total:</span>
         <span class="stat-value" id="total-count-chat">-</span>
@@ -464,7 +464,7 @@
     </div>
 
     <!-- ── CHAT VIEW ─────────────────────────────────────────────────── -->
-    <div id="chat-view-container" class="view-container">
+    <div id="chat-view-container" class="view-container" style="display: none;">
       <div id="chat-view-wrapper" class="chat-view-wrapper">
 
         <!-- Welcome -->
@@ -538,7 +538,7 @@
     </div>
 
     <!-- ── HOW IT WORKS VIEW ──────────────────────────────────────────── -->
-    <div id="hiw-view-container" class="view-container" style="display: none;">
+    <div id="hiw-view-container" class="view-container">
       <div class="hiw-wrapper">
 
         <div class="hiw-header">
@@ -1281,6 +1281,9 @@ function runAiScene() {
   document.getElementById('chat-input-main')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
   });
+
+  // Start on the How It Works tab — auto-plays the animation immediately
+  switchTab('hiw');
 })();
 </script>
 </body>
