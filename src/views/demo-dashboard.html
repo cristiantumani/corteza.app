@@ -57,6 +57,355 @@
       margin-left: 8px;
       cursor: default;
     }
+
+    /* ── Tab navigation strip ────────────────────────────────────── */
+    .demo-tab-nav {
+      display: flex;
+      gap: 4px;
+      padding: 12px 0 0;
+      border-bottom: 2px solid #e1e4e8;
+      margin: 0 0 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .demo-tab {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      border-radius: 6px 6px 0 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .demo-tab:hover { color: #1d1d1f; background: #f8f9fa; }
+    .demo-tab.active { color: #1d1d1f; border-bottom-color: #1d1d1f; }
+    .demo-tab-hiw { color: #6366f1 !important; }
+    .demo-tab-hiw:hover { color: #4f46e5 !important; background: #f5f3ff; }
+    .demo-tab-hiw.active { border-bottom-color: #6366f1 !important; }
+
+    /* ── How It Works layout ─────────────────────────────────────── */
+    .hiw-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 0 48px;
+    }
+    .hiw-header {
+      text-align: center;
+      margin-bottom: 28px;
+      animation: fadeIn 0.5s ease;
+    }
+    .hiw-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1d1d1f;
+      margin: 0 0 8px;
+    }
+    .hiw-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .hiw-scene-pills {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .hiw-pill {
+      background: #f3f4f6;
+      border: 2px solid #e1e4e8;
+      border-radius: 24px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .hiw-pill:hover { background: #e5e7eb; color: #374151; }
+    .hiw-pill.active { background: #ede9fe; border-color: #8b5cf6; color: #6366f1; }
+    .hiw-stage {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .hiw-stage { grid-template-columns: 1fr; }
+      .hiw-annotations { display: none; }
+    }
+
+    /* ── Browser chrome shell ────────────────────────────────────── */
+    .hiw-screen-wrap {
+      border: 1px solid #e1e4e8;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .hiw-screen-chrome {
+      background: #f3f4f6;
+      border-bottom: 1px solid #e1e4e8;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hiw-chrome-dots { display: flex; gap: 5px; }
+    .hiw-chrome-dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .hiw-chrome-dots span:nth-child(1) { background: #f87171; }
+    .hiw-chrome-dots span:nth-child(2) { background: #fbbf24; }
+    .hiw-chrome-dots span:nth-child(3) { background: #34d399; }
+    .hiw-chrome-title { font-size: 12px; color: #6b7280; font-weight: 500; }
+    .hiw-screen-body {
+      background: #ffffff;
+      min-height: 380px;
+      padding: 20px;
+      font-size: 14px;
+      position: relative;
+    }
+
+    /* ── Annotation sidebar ──────────────────────────────────────── */
+    .hiw-annotations { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+    .hiw-annotation {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-left: 3px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .hiw-annotation.visible { opacity: 1; transform: translateX(0); }
+    .hiw-annotation.active { border-left-color: #6366f1; background: #ede9fe; color: #3730a3; }
+    .hiw-annotation .ann-step {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      color: #8b5cf6;
+    }
+
+    /* ── Slack simulation atoms ──────────────────────────────────── */
+    .slack-msg { display: flex; gap: 10px; margin-bottom: 14px; animation: fadeIn 0.4s ease; }
+    .slack-avatar {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .slack-content { flex: 1; }
+    .slack-sender { font-weight: 700; font-size: 13px; color: #1d1d1f; margin-bottom: 2px; }
+    .slack-sender .slack-time { font-weight: 400; font-size: 11px; color: #9ca3af; margin-left: 6px; }
+    .slack-text { font-size: 13px; color: #374151; line-height: 1.5; }
+    .slack-command {
+      display: inline-block;
+      background: #ede9fe;
+      color: #6366f1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .slack-divider {
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: center;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slack-divider::before, .slack-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    /* ── Slack modal form ────────────────────────────────────────── */
+    .slack-modal-overlay {
+      background: rgba(0,0,0,0.45);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 8px;
+      animation: fadeIn 0.3s ease;
+    }
+    .slack-modal-box {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .slack-modal-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #1d1d1f;
+      margin: 0 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .slack-form-row { margin-bottom: 10px; }
+    .slack-form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .slack-form-value {
+      font-size: 13px;
+      color: #1d1d1f;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 6px 10px;
+      line-height: 1.4;
+      min-height: 28px;
+    }
+    .slack-form-value.typing-active::after {
+      content: '|';
+      animation: typing-cursor 0.8s step-end infinite;
+    }
+    .slack-form-value.filled { border-color: #6366f1; background: #fafafe; }
+    @keyframes typing-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .slack-tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .slack-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .slack-btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 1px solid transparent; cursor: default; }
+    .slack-btn-primary { background: #6366f1; color: white; }
+    .slack-btn-primary.pulse { animation: btn-pulse 0.2s ease; }
+    @keyframes btn-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(0.93); } }
+    .slack-btn-cancel { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+    .hiw-success-bar {
+      background: #d1fae5;
+      border: 1px solid #6ee7b7;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #065f46;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideUp 0.4s ease;
+      margin-top: 12px;
+    }
+
+    /* ── AI extraction scene atoms ───────────────────────────────── */
+    .ai-upload-zone {
+      border: 2px dashed #c4b5fd;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      color: #7c3aed;
+      font-size: 13px;
+      margin-bottom: 14px;
+      transition: all 0.3s ease;
+    }
+    .ai-upload-zone .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .ai-upload-zone.uploaded { border-color: #34d399; border-style: solid; color: #065f46; background: #f0fdf4; }
+    .ai-processing {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #6b7280;
+      padding: 8px 0;
+      animation: fadeIn 0.3s ease;
+    }
+    .ai-results-header { font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 12px; animation: fadeIn 0.4s ease; }
+    .ai-suggestion-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fafafa;
+      animation: fadeInUp 0.4s ease;
+    }
+    .ai-suggestion-card.approved { border-color: #6ee7b7; background: #ecfdf5; }
+    .ai-suggestion-card.rejected { opacity: 0.35; transition: opacity 0.4s; }
+    .ai-suggestion-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .ai-confidence {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+    }
+    .ai-confidence.high { background: #d1fae5; color: #065f46; }
+    .ai-confidence.mid { background: #fef3c7; color: #92400e; }
+    .ai-suggestion-text { font-size: 13px; color: #374151; line-height: 1.4; }
+    .ai-suggestion-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .ai-action-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 500;
+      cursor: default;
+    }
+    .ai-action-approve { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    .ai-action-edit { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    .ai-action-reject { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .ai-action-btn.active-glow { box-shadow: 0 0 0 2px currentColor; }
+
+    /* ── Bridge CTA ──────────────────────────────────────────────── */
+    .hiw-bridge { margin-top: 28px; animation: fadeInUp 0.5s ease; }
+    .hiw-bridge-inner {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 12px;
+      padding: 28px 32px;
+      text-align: center;
+      color: white;
+    }
+    .hiw-bridge-icon { font-size: 32px; margin-bottom: 8px; }
+    .hiw-bridge-text { font-size: 16px; font-weight: 600; margin: 0 0 16px; opacity: 0.95; }
+    .hiw-bridge-btn {
+      background: white;
+      color: #6366f1;
+      border: none;
+      border-radius: 24px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .hiw-bridge-btn:hover { opacity: 0.9; }
+
+    /* ── Replay control ──────────────────────────────────────────── */
+    .hiw-controls { display: flex; justify-content: center; margin-top: 20px; }
+    .hiw-replay-btn {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .hiw-replay-btn:hover { background: #e5e7eb; }
   </style>
 </head>
 <body>
@@ -71,21 +420,21 @@
     <div class="container">
       <div class="header-content">
         <h1>Dashboard <span style="font-size:13px;color:#8b5cf6;font-weight:500;margin-left:8px;">Demo</span></h1>
-        <div style="display: flex; align-items: center; gap: 20px;">
-          <button id="view-toggle-btn" class="view-toggle-btn chat-active">
-            <span id="toggle-icon-chat">💬</span>
-            <span id="toggle-text">Chat View</span>
-            <span id="toggle-icon-classic" style="display: none;">📊</span>
-          </button>
-          <div class="nav-links">
-            <a href="https://corteza.app" target="_blank">← Back to Corteza.app</a>
-          </div>
+        <div class="nav-links">
+          <a href="https://corteza.app" target="_blank">← Back to Corteza.app</a>
         </div>
       </div>
     </div>
   </header>
 
   <div class="container">
+    <!-- Tab navigation -->
+    <div class="demo-tab-nav">
+      <button class="demo-tab active" id="tab-chat" onclick="switchTab('chat')">💬 Team Memory Chat</button>
+      <button class="demo-tab" id="tab-classic" onclick="switchTab('classic')">📊 All Decisions</button>
+      <button class="demo-tab demo-tab-hiw" id="tab-hiw" onclick="switchTab('hiw')">✨ How It Works</button>
+    </div>
+
     <!-- Condensed Stats for Chat View (3 chips) -->
     <div class="stats-condensed" id="stats-chat" style="display: flex;">
       <div class="stat-chip">
@@ -186,6 +535,53 @@
 
       <div id="decisions-list"></div>
       <div id="pagination" class="pagination" style="display:none;"></div>
+    </div>
+
+    <!-- ── HOW IT WORKS VIEW ──────────────────────────────────────────── -->
+    <div id="hiw-view-container" class="view-container" style="display: none;">
+      <div class="hiw-wrapper">
+
+        <div class="hiw-header">
+          <h2 class="hiw-title">From conversation to searchable memory — automatically</h2>
+          <p class="hiw-subtitle">
+            Corteza captures decisions two ways: a simple Slack command for deliberate logging,
+            and AI extraction for decisions buried in meeting notes and documents.
+          </p>
+        </div>
+
+        <div class="hiw-scene-pills">
+          <button class="hiw-pill active" id="pill-manual" onclick="runScene('manual')">📝 Manual Logging via Slack</button>
+          <button class="hiw-pill" id="pill-ai" onclick="runScene('ai')">🤖 AI Auto-Extraction</button>
+        </div>
+
+        <div class="hiw-stage">
+          <!-- Left: simulated product screen -->
+          <div class="hiw-screen-wrap">
+            <div class="hiw-screen-chrome">
+              <div class="hiw-chrome-dots"><span></span><span></span><span></span></div>
+              <div class="hiw-chrome-title" id="hiw-chrome-title">Slack — #product-decisions</div>
+            </div>
+            <div class="hiw-screen-body" id="hiw-screen-body"></div>
+          </div>
+
+          <!-- Right: annotation sidebar -->
+          <div class="hiw-annotations" id="hiw-annotations"></div>
+        </div>
+
+        <!-- Bridge to search (shown at end of each scene) -->
+        <div class="hiw-bridge" id="hiw-bridge" style="display:none;">
+          <div class="hiw-bridge-inner">
+            <div class="hiw-bridge-icon">🔍</div>
+            <p class="hiw-bridge-text">Now it's in Corteza's team memory — searchable instantly by your whole team.</p>
+            <button class="hiw-bridge-btn" onclick="switchTab('chat')">Try the AI search →</button>
+          </div>
+        </div>
+
+        <div class="hiw-controls">
+          <button class="hiw-replay-btn" onclick="replayCurrentScene()">↺ Replay</button>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -469,40 +865,422 @@ function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// ── View Toggle ──────────────────────────────────────────────────────
-let isChatView = true;
+// ── Tab Navigation ───────────────────────────────────────────────────
+let currentTab = 'chat';
 
-function setupViewToggle() {
-  const btn = document.getElementById('view-toggle-btn');
-  if (!btn) return;
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('chat-view-container').style.display    = (tab === 'chat')    ? '' : 'none';
+  document.getElementById('classic-view-container').style.display = (tab === 'classic') ? '' : 'none';
+  document.getElementById('hiw-view-container').style.display     = (tab === 'hiw')     ? '' : 'none';
 
-  btn.addEventListener('click', () => {
-    isChatView = !isChatView;
+  document.getElementById('stats-chat').style.display    = (tab === 'chat')    ? 'flex' : 'none';
+  document.getElementById('stats-classic').style.display = (tab === 'classic') ? '' : 'none';
 
-    document.getElementById('chat-view-container').style.display = isChatView ? '' : 'none';
-    document.getElementById('classic-view-container').style.display = isChatView ? 'none' : '';
-    document.getElementById('stats-chat').style.display = isChatView ? 'flex' : 'none';
-    document.getElementById('stats-classic').style.display = isChatView ? 'none' : '';
-
-    document.getElementById('toggle-icon-chat').style.display = isChatView ? '' : 'none';
-    document.getElementById('toggle-icon-classic').style.display = isChatView ? 'none' : '';
-    document.getElementById('toggle-text').textContent = isChatView ? 'Chat View' : 'Classic View';
-
-    if (!isChatView) loadDecisions(1);
+  ['chat', 'classic', 'hiw'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
   });
 
-  document.getElementById('apply-filters')?.addEventListener('click', () => loadDecisions(1));
+  if (tab === 'classic') loadDecisions(1);
+  if (tab === 'hiw') startHowItWorksTab();
+}
 
-  document.getElementById('chat-send-main')?.addEventListener('click', sendChatMessage);
-  document.getElementById('chat-input-main')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-  });
+// ── How It Works Animation Engine ────────────────────────────────────
+let hiwScene = 'manual';
+let hiwTimers = [];
+let typingInterval = null;
+let hiwHasStarted = false;
+
+function startHowItWorksTab() {
+  if (!hiwHasStarted) {
+    hiwHasStarted = true;
+    runScene('manual');
+  }
+}
+
+function runScene(scene) {
+  hiwScene = scene;
+  clearInterval(typingInterval);
+  typingInterval = null;
+  hiwTimers.forEach(t => clearTimeout(t));
+  hiwTimers = [];
+
+  document.getElementById('pill-manual').classList.toggle('active', scene === 'manual');
+  document.getElementById('pill-ai').classList.toggle('active', scene === 'ai');
+  document.getElementById('hiw-bridge').style.display = 'none';
+  document.getElementById('hiw-annotations').innerHTML = '';
+  document.getElementById('hiw-screen-body').innerHTML = '';
+
+  if (scene === 'manual') {
+    document.getElementById('hiw-chrome-title').textContent = 'Slack — #product-decisions';
+    runManualScene();
+  } else {
+    document.getElementById('hiw-chrome-title').textContent = 'Slack — DM with Corteza Bot';
+    runAiScene();
+  }
+}
+
+function replayCurrentScene() { runScene(hiwScene); }
+
+function hiwDelay(fn, ms) {
+  const t = setTimeout(fn, ms);
+  hiwTimers.push(t);
+}
+
+function addAnnotation(stepLabel, text, isActive) {
+  const el = document.createElement('div');
+  el.className = 'hiw-annotation' + (isActive ? ' active' : '');
+  el.innerHTML = `<div class="ann-step">${stepLabel}</div>${text}`;
+  document.getElementById('hiw-annotations').appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+  return el;
+}
+
+function activateAnnotation(el) {
+  document.querySelectorAll('.hiw-annotation').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Scene A: Manual Logging via /decision ─────────────────────────────
+function runManualScene() {
+  const screen = document.getElementById('hiw-screen-body');
+
+  // t=0: Slack channel context + first annotation
+  screen.innerHTML = `
+    <div class="slack-divider">Today</div>
+    <div class="slack-msg" id="hiw-msg-1">
+      <div class="slack-avatar" style="background:#10b981;">MR</div>
+      <div class="slack-content">
+        <div class="slack-sender">Marcus Rivera <span class="slack-time">9:41 AM</span></div>
+        <div class="slack-text">Just shipped OB-11 — onboarding redesign is live in staging 🎉</div>
+      </div>
+    </div>
+    <div class="slack-msg" id="hiw-msg-2">
+      <div class="slack-avatar" style="background:#f59e0b;">JL</div>
+      <div class="slack-content">
+        <div class="slack-sender">Jamie Lin <span class="slack-time">9:44 AM</span></div>
+        <div class="slack-text">Nice! Sarah's design review notes are in the doc. Should we log the final call on the checklist vs video debate?</div>
+      </div>
+    </div>`;
+  const ann1 = addAnnotation('Step 1', 'Sarah just wrapped a design review. The team made a key call on onboarding — time to log it before it gets lost.', true);
+
+  // t=1200: Sarah types /decision
+  hiwDelay(() => {
+    const msg = document.createElement('div');
+    msg.className = 'slack-msg';
+    msg.innerHTML = `
+      <div class="slack-avatar" style="background:#6366f1;">SC</div>
+      <div class="slack-content">
+        <div class="slack-sender">Sarah Chen <span class="slack-time">9:46 AM</span></div>
+        <div class="slack-text"><span class="slack-command">/decision</span></div>
+      </div>`;
+    screen.appendChild(msg);
+    const ann2 = addAnnotation('Step 2', 'Typing <code>/decision</code> in any Slack channel opens the logging form — no context-switching, no separate tool.');
+    activateAnnotation(ann2);
+  }, 1200);
+
+  // t=2400: Modal slides up
+  hiwDelay(() => {
+    const overlay = document.createElement('div');
+    overlay.className = 'slack-modal-overlay';
+    overlay.id = 'hiw-modal';
+    overlay.innerHTML = `
+      <div class="slack-modal-box">
+        <div class="slack-modal-title">📝 Log a memory</div>
+        <div class="slack-form-row">
+          <span class="slack-form-label">Decision / context</span>
+          <div class="slack-form-value typing-active" id="hiw-decision-field"></div>
+        </div>
+        <div class="slack-form-row">
+          <span class="slack-form-label">Type</span>
+          <div class="slack-form-value" id="hiw-type-field" style="color:#9ca3af;">Select type…</div>
+        </div>
+        <div class="slack-form-row">
+          <span class="slack-form-label">Category</span>
+          <div class="slack-form-value" id="hiw-category-field" style="color:#9ca3af;">Select category…</div>
+        </div>
+        <div class="slack-btn-row">
+          <div class="slack-btn slack-btn-primary" id="hiw-log-btn">Log it</div>
+          <div class="slack-btn slack-btn-cancel">Cancel</div>
+        </div>
+      </div>`;
+    screen.appendChild(overlay);
+    const ann3 = addAnnotation('Step 3', 'A structured form opens right in Slack. Fields guide the team to capture what was decided, why, and any alternatives considered.');
+    activateAnnotation(ann3);
+  }, 2400);
+
+  // t=3600: Character-by-character typing
+  hiwDelay(() => {
+    const fieldEl = document.getElementById('hiw-decision-field');
+    if (!fieldEl) return;
+    const text = "We'll build onboarding as a 3-step checklist — users were skipping the video tour entirely.";
+    let i = 0;
+    typingInterval = setInterval(() => {
+      if (i < text.length) {
+        fieldEl.textContent = text.slice(0, ++i);
+      } else {
+        clearInterval(typingInterval);
+        typingInterval = null;
+        fieldEl.classList.remove('typing-active');
+        fieldEl.classList.add('filled');
+        onTypingDone();
+      }
+    }, 38);
+  }, 3600);
+
+  function onTypingDone() {
+    // t=0 after typing: Type + Category fill in
+    const typeEl = document.getElementById('hiw-type-field');
+    const catEl = document.getElementById('hiw-category-field');
+    if (typeEl) { typeEl.textContent = '✅ Decision'; typeEl.classList.add('filled'); typeEl.style.color = ''; }
+    if (catEl) { catEl.textContent = '📦 Product'; catEl.classList.add('filled'); catEl.style.color = ''; }
+
+    // Alternatives row appears
+    hiwDelay(() => {
+      const modal = document.querySelector('.slack-modal-box');
+      if (!modal) return;
+      const altRow = document.createElement('div');
+      altRow.className = 'slack-form-row';
+      altRow.style.animation = 'fadeIn 0.4s ease';
+      altRow.innerHTML = `
+        <span class="slack-form-label">Alternatives considered</span>
+        <div class="slack-form-value filled" style="font-size:12px;color:#6b7280;">Considered keeping the video tour as-is, or a chatbot-style walkthrough.</div>`;
+      const btnRow = modal.querySelector('.slack-btn-row');
+      modal.insertBefore(altRow, btnRow);
+
+      const ann4 = addAnnotation('Step 4', 'Alternatives and context are stored alongside the decision — giving future teammates the full picture, not just the outcome.');
+      activateAnnotation(ann4);
+    }, 400);
+
+    // Tags appear
+    hiwDelay(() => {
+      const modal = document.querySelector('.slack-modal-box');
+      if (!modal) return;
+      const tagRow = document.createElement('div');
+      tagRow.className = 'slack-form-row';
+      tagRow.style.animation = 'fadeIn 0.4s ease';
+      tagRow.innerHTML = `
+        <span class="slack-form-label">Tags</span>
+        <div class="slack-tags-row">
+          <span class="tag">onboarding</span>
+          <span class="tag">activation</span>
+          <span class="tag">checklist</span>
+        </div>`;
+      const btnRow = modal.querySelector('.slack-btn-row');
+      modal.insertBefore(tagRow, btnRow);
+    }, 1200);
+
+    // Button pulse + modal close
+    hiwDelay(() => {
+      const btn = document.getElementById('hiw-log-btn');
+      if (btn) btn.classList.add('pulse');
+    }, 2000);
+
+    hiwDelay(() => {
+      const overlay = document.getElementById('hiw-modal');
+      if (overlay) {
+        overlay.style.transition = 'opacity 0.3s';
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 300);
+      }
+
+      // Success bar
+      hiwDelay(() => {
+        const bar = document.createElement('div');
+        bar.className = 'hiw-success-bar';
+        bar.innerHTML = `✅ Decision logged by <strong>Sarah Chen</strong> — now searchable by the whole team.`;
+        screen.appendChild(bar);
+
+        const ann5 = addAnnotation('Step 5', 'Corteza posts a confirmation back to the channel so everyone sees what was captured — and can search for it immediately.', true);
+        activateAnnotation(ann5);
+      }, 400);
+
+      // Bridge CTA
+      hiwDelay(() => {
+        document.getElementById('hiw-bridge').style.display = '';
+      }, 1600);
+    }, 2300);
+  }
+}
+
+// ── Scene B: AI Auto-Extraction ───────────────────────────────────────
+function runAiScene() {
+  const screen = document.getElementById('hiw-screen-body');
+
+  // t=0: DM context + upload zone
+  screen.innerHTML = `
+    <div class="slack-msg">
+      <div class="slack-avatar" style="background:#6366f1;font-size:16px;">🧠</div>
+      <div class="slack-content">
+        <div class="slack-sender">Corteza Bot <span class="slack-time">10:02 AM</span></div>
+        <div class="slack-text">Hi Marcus! Drop a meeting transcript, doc, or paste notes — I'll extract decisions and context for you to review.</div>
+      </div>
+    </div>
+    <div class="ai-upload-zone" id="hiw-upload-zone">
+      <div class="upload-icon">📄</div>
+      <div>Drop a transcript, Notion export, or paste text</div>
+    </div>`;
+  addAnnotation('Step 1', 'No special format needed. Upload a meeting transcript, doc, or paste notes directly into Slack — Corteza reads it for you.', true);
+
+  // t=1500: File "dropped"
+  hiwDelay(() => {
+    const zone = document.getElementById('hiw-upload-zone');
+    if (!zone) return;
+    zone.classList.add('uploaded');
+    zone.innerHTML = `<div style="font-size:20px;margin-bottom:4px;">📎</div><strong>Q3 Planning transcript.txt</strong> (12 KB) — uploaded ✓`;
+  }, 1500);
+
+  // t=2600: Processing spinner
+  hiwDelay(() => {
+    const zone = document.getElementById('hiw-upload-zone');
+    if (zone) zone.style.display = 'none';
+
+    const proc = document.createElement('div');
+    proc.className = 'ai-processing';
+    proc.id = 'hiw-processing';
+    proc.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div> <span>Corteza AI is reading your transcript…</span>`;
+    screen.appendChild(proc);
+
+    const ann2 = addAnnotation('Step 2', "Corteza's AI reads the full document and identifies every decision, explanation, and piece of context — even if it's buried in paragraphs.");
+    activateAnnotation(ann2);
+  }, 2600);
+
+  // t=4600: Results header
+  hiwDelay(() => {
+    const proc = document.getElementById('hiw-processing');
+    if (proc) proc.remove();
+
+    const header = document.createElement('div');
+    header.className = 'ai-results-header';
+    header.textContent = '🤖 Found 3 potential decisions — review and approve:';
+    screen.appendChild(header);
+
+    const ann3 = addAnnotation('Step 3', 'Each extracted item shows a confidence score. 🟢 High = AI is very confident. 🟡 Medium = worth a quick review before saving.');
+    activateAnnotation(ann3);
+  }, 4600);
+
+  // t=5400: Card 1
+  hiwDelay(() => {
+    const card = document.createElement('div');
+    card.className = 'ai-suggestion-card';
+    card.id = 'hiw-card-1';
+    card.innerHTML = `
+      <div class="ai-suggestion-header">
+        <span class="ai-confidence high">🟢 92%</span>
+        <span class="type-badge type-decision">✅ Decision</span>
+        <span class="category-badge">⚙️ Technical</span>
+      </div>
+      <div class="ai-suggestion-text">We're implementing Elasticsearch for fuzzy search — debated Algolia, custom vector search, and PostgreSQL full-text.</div>
+      <div class="ai-suggestion-actions">
+        <button class="ai-action-btn ai-action-approve">✅ Approve</button>
+        <button class="ai-action-btn ai-action-edit">✏️ Edit</button>
+        <button class="ai-action-btn ai-action-reject">❌ Reject</button>
+      </div>`;
+    screen.appendChild(card);
+  }, 5400);
+
+  // t=6400: Card 2
+  hiwDelay(() => {
+    const card = document.createElement('div');
+    card.className = 'ai-suggestion-card';
+    card.id = 'hiw-card-2';
+    card.innerHTML = `
+      <div class="ai-suggestion-header">
+        <span class="ai-confidence high">🟢 87%</span>
+        <span class="type-badge type-decision">✅ Decision</span>
+        <span class="category-badge">📦 Product</span>
+      </div>
+      <div class="ai-suggestion-text">Going with "Team Memory" as our primary brand term — considered "Decision Log", "Knowledge Base", and "Source of Truth".</div>
+      <div class="ai-suggestion-actions">
+        <button class="ai-action-btn ai-action-approve">✅ Approve</button>
+        <button class="ai-action-btn ai-action-edit">✏️ Edit</button>
+        <button class="ai-action-btn ai-action-reject">❌ Reject</button>
+      </div>`;
+    screen.appendChild(card);
+  }, 6400);
+
+  // t=7400: Card 3
+  hiwDelay(() => {
+    const card = document.createElement('div');
+    card.className = 'ai-suggestion-card';
+    card.id = 'hiw-card-3';
+    card.innerHTML = `
+      <div class="ai-suggestion-header">
+        <span class="ai-confidence mid">🟡 61%</span>
+        <span class="type-badge type-context">📌 Context</span>
+      </div>
+      <div class="ai-suggestion-text">Sprint velocity target set to 24 points — tentative based on Q2 averages.</div>
+      <div class="ai-suggestion-actions">
+        <button class="ai-action-btn ai-action-approve">✅ Approve</button>
+        <button class="ai-action-btn ai-action-edit">✏️ Edit</button>
+        <button class="ai-action-btn ai-action-reject">❌ Reject</button>
+      </div>`;
+    screen.appendChild(card);
+
+    const ann4 = addAnnotation('Step 4', 'You review each suggestion. The AI does the first pass — your team makes the final call on what gets saved to team memory.');
+    activateAnnotation(ann4);
+  }, 7400);
+
+  // t=9000: Approve card 1
+  hiwDelay(() => {
+    const card = document.getElementById('hiw-card-1');
+    if (card) {
+      card.classList.add('approved');
+      const approveBtn = card.querySelector('.ai-action-approve');
+      if (approveBtn) approveBtn.classList.add('active-glow');
+    }
+    const ann5 = addAnnotation('Step 5', 'One click to approve — the decision is saved with its full alternatives and context intact, ready to search.');
+    activateAnnotation(ann5);
+  }, 9000);
+
+  // t=10400: Approve card 2
+  hiwDelay(() => {
+    const card = document.getElementById('hiw-card-2');
+    if (card) {
+      card.classList.add('approved');
+      const approveBtn = card.querySelector('.ai-action-approve');
+      if (approveBtn) approveBtn.classList.add('active-glow');
+    }
+  }, 10400);
+
+  // t=11800: Reject card 3
+  hiwDelay(() => {
+    const card = document.getElementById('hiw-card-3');
+    if (card) {
+      card.classList.add('rejected');
+      const rejectBtn = card.querySelector('.ai-action-reject');
+      if (rejectBtn) rejectBtn.classList.add('active-glow');
+    }
+    const ann6 = addAnnotation('Step 6', 'Low-confidence items can be rejected with one click. Only what matters gets into team memory.');
+    activateAnnotation(ann6);
+  }, 11800);
+
+  // t=13200: Success toast
+  hiwDelay(() => {
+    const toast = document.createElement('div');
+    toast.className = 'success-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;animation:slideInRight 0.4s ease;';
+    toast.innerHTML = '✅ 2 decisions saved to Clearpath team memory';
+    document.body.appendChild(toast);
+    hiwTimers.push(setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500));
+  }, 13200);
+
+  // t=14600: Bridge CTA
+  hiwDelay(() => {
+    document.getElementById('hiw-bridge').style.display = '';
+  }, 14600);
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────
 (async () => {
   await Promise.all([loadStats(), loadAllDecisions()]);
-  setupViewToggle();
+
+  // Wire up event listeners (previously in setupViewToggle)
+  document.getElementById('apply-filters')?.addEventListener('click', () => loadDecisions(1));
+  document.getElementById('chat-send-main')?.addEventListener('click', sendChatMessage);
+  document.getElementById('chat-input-main')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+  });
 })();
 </script>
 </body>
