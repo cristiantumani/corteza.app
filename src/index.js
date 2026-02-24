@@ -38,6 +38,13 @@ const { handlePermissionsCommand } = require('./routes/permissions');
 const { requireWorkspaceAdmin } = require('./middleware/admin-check');
 const { initializeNotion } = require('./services/notion');
 const { initializeEmbeddings } = require('./services/embeddings');
+const {
+  handleDemoEntry,
+  handleDemoDashboard,
+  handleDemoDecisions,
+  handleDemoStats,
+  handleDemoSearch
+} = require('./routes/demo');
 
 // fixOAuthDatabase() function removed - was a one-time fix that's no longer needed
 // Running it on every startup was causing installation store issues
@@ -137,6 +144,13 @@ async function startApp() {
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/slack/install');
   });
+
+  // Demo routes (public — no auth required)
+  expressApp.get('/demo', apiRateLimiter, handleDemoEntry);
+  expressApp.get('/demo/dashboard', apiRateLimiter, handleDemoDashboard);
+  expressApp.get('/demo/api/decisions', apiRateLimiter, handleDemoDecisions);
+  expressApp.get('/demo/api/stats', apiRateLimiter, handleDemoStats);
+  expressApp.post('/demo/api/search', aiRateLimiter, handleDemoSearch);
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);

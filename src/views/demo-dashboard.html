@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Corteza — Try the Demo</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/styles/dashboard.css">
+  <style>
+    /* ── Demo banner ─────────────────────────────────────────────── */
+    .demo-banner {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff;
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .demo-banner strong { font-weight: 700; }
+    .demo-banner-cta {
+      background: #fff;
+      color: #6366f1;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .demo-banner-cta:hover { opacity: 0.85; }
+
+    /* ── Demo badge on cards ─────────────────────────────────────── */
+    .demo-search-note {
+      font-size: 12px;
+      color: #8b5cf6;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ── Read-only overlay on classic view actions ───────────────── */
+    .demo-readonly-msg {
+      display: inline-block;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 4px 10px;
+      margin-left: 8px;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demo Banner -->
+  <div class="demo-banner">
+    <span>✨ <strong>You're viewing a live demo</strong> — this is a sample product team's memory (fictional company: Clearpath). No login required.</span>
+    <a class="demo-banner-cta" href="https://corteza.app" target="_blank">Get Corteza for your team →</a>
+  </div>
+
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <h1>Dashboard <span style="font-size:13px;color:#8b5cf6;font-weight:500;margin-left:8px;">Demo</span></h1>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <button id="view-toggle-btn" class="view-toggle-btn chat-active">
+            <span id="toggle-icon-chat">💬</span>
+            <span id="toggle-text">Chat View</span>
+            <span id="toggle-icon-classic" style="display: none;">📊</span>
+          </button>
+          <div class="nav-links">
+            <a href="https://corteza.app" target="_blank">← Back to Corteza.app</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Condensed Stats for Chat View (3 chips) -->
+    <div class="stats-condensed" id="stats-chat" style="display: flex;">
+      <div class="stat-chip">
+        <span class="stat-label">Total:</span>
+        <span class="stat-value" id="total-count-chat">-</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-label">Decisions:</span>
+        <span class="stat-value" id="decision-count-chat">-</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-label">Context &amp; Explanations:</span>
+        <span class="stat-value" id="context-count-chat">-</span>
+      </div>
+    </div>
+
+    <!-- Stats for Classic View (8 cards) -->
+    <div class="stats" id="stats-classic" style="display: none;">
+      <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
+      <div class="stat-card"><h3>Decisions</h3><div class="number" id="decision-count">-</div></div>
+      <div class="stat-card"><h3>Explanations</h3><div class="number" id="explanation-count">-</div></div>
+      <div class="stat-card"><h3>Context</h3><div class="number" id="context-count">-</div></div>
+      <div class="stat-card"><h3>Product</h3><div class="number" id="product-count">-</div></div>
+      <div class="stat-card"><h3>UX</h3><div class="number" id="ux-count">-</div></div>
+      <div class="stat-card"><h3>Technical</h3><div class="number" id="technical-count">-</div></div>
+      <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
+    </div>
+
+    <!-- ── CHAT VIEW ─────────────────────────────────────────────────── -->
+    <div id="chat-view-container" class="view-container">
+      <div id="chat-view-wrapper" class="chat-view-wrapper">
+
+        <!-- Welcome -->
+        <div class="chat-welcome" id="chat-welcome-main">
+          <div class="chat-welcome-icon">🧠</div>
+          <h2 class="chat-welcome-title">Clearpath Team Memory</h2>
+          <p style="color:#6b7280;font-size:14px;margin-top:4px;">
+            25 decisions, explanations &amp; context entries — try searching for anything.
+          </p>
+          <!-- Suggested searches -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px;">
+            <button class="suggestion-chip" onclick="sendDemoQuery('onboarding checklist')">onboarding checklist</button>
+            <button class="suggestion-chip" onclick="sendDemoQuery('checkout conversion')">checkout conversion</button>
+            <button class="suggestion-chip" onclick="sendDemoQuery('why no mobile app')">why no mobile app?</button>
+            <button class="suggestion-chip" onclick="sendDemoQuery('pricing decisions')">pricing decisions</button>
+            <button class="suggestion-chip" onclick="sendDemoQuery('guest users')">guest users</button>
+          </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="chat-messages-area" id="chat-messages-main"></div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area-main">
+          <input
+            type="text"
+            id="chat-input-main"
+            class="chat-input-main"
+            placeholder='Try: "Why did we remove the invite step?" or "checkout decisions"'
+          />
+          <button id="chat-send-main" class="chat-send-btn-main">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CLASSIC VIEW ──────────────────────────────────────────────── -->
+    <div id="classic-view-container" class="view-container" style="display: none;">
+      <div class="filters">
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" id="search" placeholder="Search...">
+        </div>
+        <div class="filter-group">
+          <label>Type</label>
+          <select id="type-filter">
+            <option value="">All Types</option>
+            <option value="decision">Decision</option>
+            <option value="explanation">Explanation</option>
+            <option value="context">Context</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Category</label>
+          <select id="category-filter">
+            <option value="">All Categories</option>
+            <option value="product">Product</option>
+            <option value="ux">UX</option>
+            <option value="technical">Technical</option>
+          </select>
+        </div>
+        <button id="apply-filters" class="btn-primary">Apply</button>
+      </div>
+
+      <div id="decisions-list"></div>
+      <div id="pagination" class="pagination" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Decision detail modal (read-only in demo) -->
+  <div id="decision-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Memory Details</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modal-body"></div>
+      <div style="margin-top:20px;padding:12px;background:#f5f3ff;border-radius:8px;text-align:center;">
+        <p style="color:#6366f1;font-size:14px;margin:0;">
+          In the real app your team can edit, tag, and link memories to Jira.
+          <a href="https://corteza.app" target="_blank" style="color:#6366f1;font-weight:600;">Get started free →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="closeModal()"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DEMO DASHBOARD — all API calls go to /demo/api/*
+// ═══════════════════════════════════════════════════════════════════
+
+const DEMO_API = '/demo/api';
+
+// ── Utilities ────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function typeLabel(t) {
+  return { decision: '✅ Decision', explanation: '💡 Explanation', context: '📌 Context' }[t] || t;
+}
+function typeClass(t) {
+  return { decision: 'type-decision', explanation: 'type-explanation', context: 'type-context' }[t] || '';
+}
+function categoryLabel(c) {
+  return { product: '📦 Product', ux: '🎨 UX', technical: '⚙️ Technical' }[c] || (c || '');
+}
+function relativeTime(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
+  if (days < 365) return `${Math.floor(days / 30)} month${Math.floor(days / 30) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(days / 365)} year${Math.floor(days / 365) > 1 ? 's' : ''} ago`;
+}
+
+// ── Stats ────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`${DEMO_API}/stats`);
+    const data = await res.json();
+
+    // Chat view chips
+    document.getElementById('total-count-chat').textContent = data.total || 0;
+    document.getElementById('decision-count-chat').textContent = data.byType?.decision || 0;
+    document.getElementById('context-count-chat').textContent =
+      (data.byType?.explanation || 0) + (data.byType?.context || 0);
+
+    // Classic view cards
+    document.getElementById('total-count').textContent = data.total || 0;
+    document.getElementById('decision-count').textContent = data.byType?.decision || 0;
+    document.getElementById('explanation-count').textContent = data.byType?.explanation || 0;
+    document.getElementById('context-count').textContent = data.byType?.context || 0;
+    document.getElementById('product-count').textContent = data.byCategory?.product || 0;
+    document.getElementById('ux-count').textContent = data.byCategory?.ux || 0;
+    document.getElementById('technical-count').textContent = data.byCategory?.technical || 0;
+    document.getElementById('week-count').textContent = data.lastWeek || 0;
+  } catch (e) {
+    console.error('Stats load failed', e);
+  }
+}
+
+// ── Classic View ─────────────────────────────────────────────────────
+let classicPage = 1;
+
+async function loadDecisions(page = 1) {
+  classicPage = page;
+  const search = document.getElementById('search')?.value || '';
+  const type = document.getElementById('type-filter')?.value || '';
+  const category = document.getElementById('category-filter')?.value || '';
+
+  const params = new URLSearchParams({ page, limit: 15 });
+  if (search) params.set('search', search);
+  if (type) params.set('type', type);
+  if (category) params.set('category', category);
+
+  const res = await fetch(`${DEMO_API}/decisions?${params}`);
+  const data = await res.json();
+
+  const list = document.getElementById('decisions-list');
+  if (!data.decisions?.length) {
+    list.innerHTML = '<div class="empty-state"><p>No results found. Try a different filter.</p></div>';
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = data.decisions.map(d => `
+    <div class="decision-card ${typeClass(d.type)}" onclick="openModal(${d.id})">
+      <div class="decision-header">
+        <div class="decision-meta">
+          <span class="type-badge ${typeClass(d.type)}">${typeLabel(d.type)}</span>
+          ${d.category ? `<span class="category-badge">${categoryLabel(d.category)}</span>` : ''}
+          ${d.epic_key ? `<span class="epic-badge">${escapeHtml(d.epic_key)}</span>` : ''}
+        </div>
+        <span class="decision-time">${relativeTime(d.timestamp)}</span>
+      </div>
+      <p class="decision-text">${escapeHtml(d.text)}</p>
+      <div class="decision-footer">
+        <span class="creator">by ${escapeHtml(d.creator)}</span>
+        ${(d.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Pagination
+  const pg = data.pagination;
+  const pgEl = document.getElementById('pagination');
+  if (pg.pages > 1) {
+    pgEl.style.display = 'flex';
+    pgEl.innerHTML = `
+      <button onclick="loadDecisions(${pg.page - 1})" ${pg.page <= 1 ? 'disabled' : ''}>← Prev</button>
+      <span>Page ${pg.page} of ${pg.pages}</span>
+      <button onclick="loadDecisions(${pg.page + 1})" ${pg.page >= pg.pages ? 'disabled' : ''}>Next →</button>
+    `;
+  } else {
+    pgEl.style.display = 'none';
+  }
+}
+
+// ── Chat View ────────────────────────────────────────────────────────
+let conversationHistory = [];
+
+function sendDemoQuery(query) {
+  document.getElementById('chat-input-main').value = query;
+  sendChatMessage();
+}
+
+function appendMessage(role, content, decisions) {
+  const area = document.getElementById('chat-messages-main');
+  const welcome = document.getElementById('chat-welcome-main');
+  if (welcome) welcome.style.display = 'none';
+
+  const div = document.createElement('div');
+  div.className = `chat-message ${role === 'user' ? 'chat-message-user' : 'chat-message-assistant'}`;
+
+  if (role === 'user') {
+    div.innerHTML = `<div class="chat-bubble-user">${escapeHtml(content)}</div>`;
+  } else {
+    let html = `<div class="chat-bubble-assistant">
+      <div class="chat-response-text">${escapeHtml(content)}</div>`;
+
+    if (decisions && decisions.length > 0) {
+      html += `<div class="chat-decisions-container">`;
+      decisions.forEach(d => {
+        html += `
+          <div class="chat-decision-card ${typeClass(d.type)}" onclick="openModal(${d.id})" style="cursor:pointer;">
+            <div class="chat-decision-header">
+              <span class="type-badge ${typeClass(d.type)}">${typeLabel(d.type)}</span>
+              ${d.category ? `<span class="category-badge">${categoryLabel(d.category)}</span>` : ''}
+              <span class="chat-decision-time">${relativeTime(d.timestamp)}</span>
+            </div>
+            <p class="chat-decision-text">${escapeHtml(d.text)}</p>
+            <div class="decision-footer">
+              <span class="creator">by ${escapeHtml(d.creator)}</span>
+              ${(d.tags || []).slice(0, 4).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+            </div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `<p class="demo-search-note">🔍 Demo uses keyword search. The real Corteza uses AI-powered semantic search — so "why did we drop the invite requirement?" finds relevant results even without exact keyword matches.</p>`;
+    html += `</div>`;
+    div.innerHTML = html;
+  }
+
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function appendThinking() {
+  const area = document.getElementById('chat-messages-main');
+  const div = document.createElement('div');
+  div.className = 'chat-message chat-message-assistant';
+  div.id = 'thinking-indicator';
+  div.innerHTML = `<div class="chat-bubble-assistant"><div class="thinking-dots"><span></span><span></span><span></span></div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-indicator');
+  if (el) el.remove();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input-main');
+  const query = input.value.trim();
+  if (!query) return;
+
+  input.value = '';
+  appendMessage('user', query);
+  appendThinking();
+
+  try {
+    const res = await fetch(`${DEMO_API}/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 8 })
+    });
+    const data = await res.json();
+    removeThinking();
+    appendMessage('assistant', data.response || 'No results found.', data.decisions || []);
+  } catch (e) {
+    removeThinking();
+    appendMessage('assistant', 'Search failed. Please try again.');
+  }
+}
+
+// ── Modal ────────────────────────────────────────────────────────────
+let allDecisions = [];
+
+async function loadAllDecisions() {
+  const res = await fetch(`${DEMO_API}/decisions?limit=50`);
+  const data = await res.json();
+  allDecisions = data.decisions || [];
+}
+
+function openModal(id) {
+  const d = allDecisions.find(x => x.id === id);
+  if (!d) return;
+
+  document.getElementById('modal-title').textContent = `#${d.id} — ${typeLabel(d.type)}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <span class="type-badge ${typeClass(d.type)}">${typeLabel(d.type)}</span>
+      ${d.category ? `<span class="category-badge">${categoryLabel(d.category)}</span>` : ''}
+      ${d.epic_key ? `<span class="epic-badge">${escapeHtml(d.epic_key)}</span>` : ''}
+    </div>
+    <p style="font-size:16px;line-height:1.6;color:#1d1d1f;">${escapeHtml(d.text)}</p>
+    ${d.alternatives ? `
+      <div style="margin-top:16px;padding:12px;background:#f9fafb;border-radius:8px;">
+        <strong style="font-size:13px;color:#6b7280;">Alternatives considered / context:</strong>
+        <p style="margin-top:6px;font-size:14px;color:#374151;line-height:1.5;">${escapeHtml(d.alternatives)}</p>
+      </div>` : ''}
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      ${(d.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:#9ca3af;">
+      Added by <strong>${escapeHtml(d.creator)}</strong> · ${relativeTime(d.timestamp)}
+      ${d.source ? ` · via ${d.source}` : ''}
+    </div>
+  `;
+
+  document.getElementById('decision-modal').style.display = 'block';
+  document.getElementById('modal-overlay').style.display = 'block';
+}
+
+function closeModal() {
+  document.getElementById('decision-modal').style.display = 'none';
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+// ── View Toggle ──────────────────────────────────────────────────────
+let isChatView = true;
+
+function setupViewToggle() {
+  const btn = document.getElementById('view-toggle-btn');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    isChatView = !isChatView;
+
+    document.getElementById('chat-view-container').style.display = isChatView ? '' : 'none';
+    document.getElementById('classic-view-container').style.display = isChatView ? 'none' : '';
+    document.getElementById('stats-chat').style.display = isChatView ? 'flex' : 'none';
+    document.getElementById('stats-classic').style.display = isChatView ? 'none' : '';
+
+    document.getElementById('toggle-icon-chat').style.display = isChatView ? '' : 'none';
+    document.getElementById('toggle-icon-classic').style.display = isChatView ? 'none' : '';
+    document.getElementById('toggle-text').textContent = isChatView ? 'Chat View' : 'Classic View';
+
+    if (!isChatView) loadDecisions(1);
+  });
+
+  document.getElementById('apply-filters')?.addEventListener('click', () => loadDecisions(1));
+
+  document.getElementById('chat-send-main')?.addEventListener('click', sendChatMessage);
+  document.getElementById('chat-input-main')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+  });
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────
+(async () => {
+  await Promise.all([loadStats(), loadAllDecisions()]);
+  setupViewToggle();
+})();
+</script>
+</body>
+</html>
