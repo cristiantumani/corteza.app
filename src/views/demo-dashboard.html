@@ -346,8 +346,13 @@ function appendMessage(role, content, decisions) {
   if (role === 'user') {
     div.innerHTML = `<div class="chat-bubble-user">${escapeHtml(content)}</div>`;
   } else {
+    // Render response text: preserve paragraphs and line breaks from Claude's response
+    const formattedContent = escapeHtml(content)
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
     let html = `<div class="chat-bubble-assistant">
-      <div class="chat-response-text">${escapeHtml(content)}</div>`;
+      <div class="chat-response-text"><p>${formattedContent}</p></div>`;
 
     if (decisions && decisions.length > 0) {
       html += `<div class="chat-decisions-container">`;
@@ -369,7 +374,6 @@ function appendMessage(role, content, decisions) {
       html += `</div>`;
     }
 
-    html += `<p class="demo-search-note">🔍 Demo uses keyword search. The real Corteza uses AI-powered semantic search — so "why did we drop the invite requirement?" finds relevant results even without exact keyword matches.</p>`;
     html += `</div>`;
     div.innerHTML = html;
   }
@@ -406,11 +410,15 @@ async function sendChatMessage() {
     const res = await fetch(`${DEMO_API}/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, limit: 8 })
+      body: JSON.stringify({ query, limit: 8, conversationHistory })
     });
     const data = await res.json();
     removeThinking();
-    appendMessage('assistant', data.response || 'No results found.', data.decisions || []);
+    const responseText = data.response || 'No results found.';
+    appendMessage('assistant', responseText, data.decisions || []);
+    // Keep last 4 turns so follow-up questions have context
+    conversationHistory.push({ query, response: responseText });
+    if (conversationHistory.length > 4) conversationHistory.shift();
   } catch (e) {
     removeThinking();
     appendMessage('assistant', 'Search failed. Please try again.');
