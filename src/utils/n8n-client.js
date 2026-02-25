@@ -20,11 +20,15 @@ async function sendMagicLinkEmail(emailData) {
     headers['X-Webhook-Secret'] = webhookSecret;
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify(emailData)
+      body: JSON.stringify(emailData),
+      signal: controller.signal
     });
 
     if (!response.ok) {
@@ -35,8 +39,14 @@ async function sendMagicLinkEmail(emailData) {
     console.log(`✅ Magic link email sent to ${emailData.email}`);
     return { success: true };
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('❌ n8n webhook timed out after 10s');
+      throw new Error('Email service timed out. Please try again.');
+    }
     console.error('❌ Failed to send magic link email:', error);
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
