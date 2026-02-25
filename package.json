@@ -28,7 +28,8 @@
     "mammoth": "^1.11.0",
     "mongodb": "^7.0.0",
     "openai": "^4.77.3",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "resend": "^6.9.2"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
