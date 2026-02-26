@@ -1,19 +1,58 @@
-const { Resend } = require('resend');
-
 /**
- * Sends magic link email via Resend
+ * Sends emails via Resend REST API directly (no SDK dependency)
  */
-async function sendMagicLinkEmail({ email, user_name, workspace_name, magic_link, expires_in_minutes }) {
+
+const RESEND_API_URL = 'https://api.resend.com/emails';
+
+async function sendEmail({ to, subject, html }) {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
     throw new Error('RESEND_API_KEY not configured');
   }
 
-  const resend = new Resend(apiKey);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
-  const { error } = await resend.emails.send({
-    from: 'Corteza <onboarding@resend.dev>',
+  try {
+    const response = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Corteza <onboarding@resend.dev>',
+        to: [to],
+        subject,
+        html
+      }),
+      signal: controller.signal
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Resend API error:', JSON.stringify(data));
+      throw new Error(`Resend error: ${data.message || response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Email service timed out. Please try again.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Sends magic link email via Resend
+ */
+async function sendMagicLinkEmail({ email, user_name, workspace_name, magic_link, expires_in_minutes }) {
+  const result = await sendEmail({
     to: email,
     subject: 'Your Corteza login link',
     html: `
@@ -34,12 +73,7 @@ async function sendMagicLinkEmail({ email, user_name, workspace_name, magic_link
     `
   });
 
-  if (error) {
-    console.error('❌ Resend error:', error);
-    throw new Error(`Failed to send email: ${error.message}`);
-  }
-
-  console.log(`✅ Magic link email sent to ${email}`);
+  console.log(`✅ Magic link email sent to ${email}`, result.id);
   return { success: true };
 }
 
@@ -47,18 +81,14 @@ async function sendMagicLinkEmail({ email, user_name, workspace_name, magic_link
  * Sends re-engagement email via Resend
  */
 async function sendReengagementEmail({ email, workspace_name, install_date }) {
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.RESEND_API_KEY) {
     console.warn('⚠️  RESEND_API_KEY not configured — skipping re-engagement email');
     return { success: false, reason: 'resend_not_configured' };
   }
 
-  const resend = new Resend(apiKey);
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
 
-  const { error } = await resend.emails.send({
-    from: 'Corteza <onboarding@resend.dev>',
+  const result = await sendEmail({
     to: email,
     subject: 'Still interested in Corteza?',
     html: `
@@ -79,12 +109,7 @@ async function sendReengagementEmail({ email, workspace_name, install_date }) {
     `
   });
 
-  if (error) {
-    console.error(`❌ Failed to send re-engagement email to ${email}:`, error.message);
-    throw error;
-  }
-
-  console.log(`✅ Re-engagement email sent to ${email}`);
+  console.log(`✅ Re-engagement email sent to ${email}`, result.id);
   return { success: true };
 }
 
