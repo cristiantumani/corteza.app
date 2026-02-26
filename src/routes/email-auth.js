@@ -94,7 +94,8 @@ async function handleSendMagicLink(req, res) {
   } catch (error) {
     console.error('❌ Error sending magic link:', error);
     res.status(500).json({
-      error: 'Failed to send magic link. Please try again.'
+      error: 'Failed to send magic link. Please try again.',
+      debug: error.message // temporary — remove after debugging
     });
   }
 }
