@@ -2,6 +2,9 @@
  * Sends emails via Resend REST API directly (no SDK dependency)
  */
 
+// Use native fetch (Node 18+) or fall back to node-fetch v2
+const fetch = globalThis.fetch || require('node-fetch');
+
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
 async function sendEmail({ to, subject, html }) {
