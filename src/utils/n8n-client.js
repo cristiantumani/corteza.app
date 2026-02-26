@@ -13,7 +13,7 @@ async function sendMagicLinkEmail({ email, user_name, workspace_name, magic_link
   const resend = new Resend(apiKey);
 
   const { error } = await resend.emails.send({
-    from: 'Corteza <noreply@corteza.app>',
+    from: 'Corteza <onboarding@resend.dev>',
     to: email,
     subject: 'Your Corteza login link',
     html: `
@@ -58,7 +58,7 @@ async function sendReengagementEmail({ email, workspace_name, install_date }) {
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
 
   const { error } = await resend.emails.send({
-    from: 'Corteza <noreply@corteza.app>',
+    from: 'Corteza <onboarding@resend.dev>',
     to: email,
     subject: 'Still interested in Corteza?',
     html: `
