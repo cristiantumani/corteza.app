@@ -77,7 +77,21 @@ async function handleSendMagicLink(req, res) {
         const extensionInstalls = getExtensionInstallsCollection();
         await extensionInstalls.updateOne(
           { install_id },
-          { $set: { email: normalizedEmail, workspace_name: normalizedWorkspace } }
+          {
+            $set: { email: normalizedEmail, workspace_name: normalizedWorkspace },
+            $setOnInsert: {
+              install_id,
+              version: 'unknown',
+              installed_at: new Date(),
+              status: 'installed',
+              user_id: null,
+              workspace_id: null,
+              activated_at: null,
+              reminder_sent_at: null,
+              reminder_count: 0
+            }
+          },
+          { upsert: true }
         );
       } catch (dbError) {
         // Non-fatal: don't fail the magic link request if install linking fails

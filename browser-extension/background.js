@@ -26,19 +26,36 @@ async function getOrCreateInstallId() {
   return install_id;
 }
 
-// Record install event in backend (fire and forget)
+// Record install event in backend (with pending flag for retry on failure)
 async function recordInstall() {
+  // Set pending flag BEFORE the fetch — if the service worker is killed mid-request,
+  // the flag remains and retryPendingInstall() will retry on next startup
+  await chrome.storage.local.set({ installPending: true });
+
   try {
     const install_id = await getOrCreateInstallId();
     const manifest = chrome.runtime.getManifest();
 
-    await fetch(`${API_BASE_URL}/api/extension/install`, {
+    const response = await fetch(`${API_BASE_URL}/api/extension/install`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ install_id, version: manifest.version })
     });
+
+    if (response.ok) {
+      // Success — clear the pending flag
+      await chrome.storage.local.remove('installPending');
+    }
   } catch (e) {
-    // Non-fatal
+    // Non-fatal — pending flag remains, will retry on next startup
+  }
+}
+
+// Retry recordInstall if a previous attempt was interrupted (e.g. service worker killed)
+async function retryPendingInstall() {
+  const stored = await chrome.storage.local.get('installPending');
+  if (stored.installPending) {
+    await recordInstall();
   }
 }
 
@@ -198,9 +215,10 @@ chrome.runtime.onInstalled.addListener(() => {
   checkAuthentication();
 });
 
-// Check auth when browser starts
+// Check auth when browser starts — also retry any failed install recording
 chrome.runtime.onStartup.addListener(() => {
   console.log('Browser started, checking auth');
+  retryPendingInstall();
   checkAuthentication();
 });
 
