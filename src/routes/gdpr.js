@@ -1,5 +1,6 @@
 const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { validateQueryParams } = require('../middleware/validation');
+const archiver = require('archiver');
 
 /**
  * Parses URL query parameters
@@ -262,8 +263,209 @@ async function getWorkspaceDataInfo(req, res) {
   }
 }
 
+/**
+ * Converts a decision to Obsidian-compatible markdown with YAML frontmatter
+ */
+function decisionToMarkdown(decision) {
+  const date = decision.timestamp ? new Date(decision.timestamp).toISOString().split('T')[0] : 'unknown';
+  const tags = (decision.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-'));
+
+  // Build YAML frontmatter
+  const frontmatter = [
+    '---',
+    `id: ${decision.id}`,
+    `type: ${decision.type || 'decision'}`,
+    decision.category ? `category: ${decision.category}` : null,
+    tags.length > 0 ? `tags: [${tags.join(', ')}]` : null,
+    decision.epic_key ? `epic: ${decision.epic_key}` : null,
+    `creator: ${decision.creator || 'Unknown'}`,
+    `date: ${date}`,
+    decision.source ? `source: ${decision.source}` : null,
+    '---'
+  ].filter(Boolean).join('\n');
+
+  // Build markdown body
+  const title = decision.text.split('\n')[0].substring(0, 100);
+  const body = decision.text;
+
+  // Build the full markdown content
+  let content = frontmatter + '\n\n';
+  content += `# ${title}\n\n`;
+  content += `${body}\n`;
+
+  if (decision.alternatives) {
+    content += `\n## Alternatives Considered\n\n${decision.alternatives}\n`;
+  }
+
+  // Add Obsidian-style links and tags at the bottom
+  const links = [];
+  if (decision.epic_key) {
+    links.push(`[[${decision.epic_key}]]`);
+  }
+  const tagLinks = tags.map(t => `#${t}`).join(' ');
+
+  if (links.length > 0 || tagLinks) {
+    content += '\n---\n';
+    if (links.length > 0) {
+      content += `Links: ${links.join(' ')}\n`;
+    }
+    if (tagLinks) {
+      content += `Tags: ${tagLinks}\n`;
+    }
+  }
+
+  return content;
+}
+
+/**
+ * Generates a safe filename from decision text
+ */
+function generateFilename(decision) {
+  const date = decision.timestamp ? new Date(decision.timestamp).toISOString().split('T')[0] : 'unknown';
+  const id = decision.id || 'unknown';
+
+  // Get first line and clean it up for filename
+  let title = decision.text.split('\n')[0]
+    .substring(0, 50)
+    .replace(/[^a-zA-Z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .toLowerCase();
+
+  if (!title) {
+    title = 'decision';
+  }
+
+  return `${date}-${id}-${title}.md`;
+}
+
+/**
+ * GET /api/export/obsidian - Export decisions as Obsidian-compatible markdown files
+ * Returns a zip file containing one markdown file per decision
+ */
+async function exportObsidian(req, res) {
+  try {
+    const query = parseQueryParams(req.url);
+    const validated = validateQueryParams(query);
+
+    if (!validated.workspace_id) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'workspace_id is required' }));
+      return;
+    }
+
+    const workspace_id = validated.workspace_id;
+
+    const db = getDatabase();
+    const decisionsCollection = db.collection('decisions');
+
+    // Fetch all decisions for this workspace, sorted by date
+    const decisions = await decisionsCollection
+      .find({ workspace_id })
+      .sort({ timestamp: -1 })
+      .toArray();
+
+    if (decisions.length === 0) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No decisions found to export' }));
+      return;
+    }
+
+    console.log(`📝 Obsidian export requested for workspace: ${workspace_id} (${decisions.length} decisions)`);
+
+    // Set up ZIP response
+    res.writeHead(200, {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="corteza-obsidian-${workspace_id}-${Date.now()}.zip"`
+    });
+
+    // Create archive
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+      console.error('❌ Archive error:', err);
+      throw err;
+    });
+
+    // Pipe archive to response
+    archive.pipe(res);
+
+    // Group decisions by type for folder organization
+    const decisionsByType = {};
+    for (const decision of decisions) {
+      const type = decision.type || 'decision';
+      if (!decisionsByType[type]) {
+        decisionsByType[type] = [];
+      }
+      decisionsByType[type].push(decision);
+    }
+
+    // Add each decision as a markdown file, organized by type
+    for (const [type, typeDecisions] of Object.entries(decisionsByType)) {
+      const folderName = type.charAt(0).toUpperCase() + type.slice(1) + 's'; // e.g., "Decisions", "Explanations"
+
+      for (const decision of typeDecisions) {
+        const markdown = decisionToMarkdown(decision);
+        const filename = generateFilename(decision);
+        archive.append(markdown, { name: `Corteza/${folderName}/${filename}` });
+      }
+    }
+
+    // Add a README file
+    const readme = `# Corteza Export for Obsidian
+
+This folder contains decisions exported from Corteza on ${new Date().toISOString().split('T')[0]}.
+
+## Structure
+
+- **Decisions/** - Explicit choices and commitments
+- **Explanations/** - Technical context and how-it-works documentation
+- **Contexts/** - Background information and constraints
+- **Learnings/** - Insights and lessons learned
+- **Risks/** - Identified risks and mitigations
+- **Assumptions/** - Working assumptions
+
+## Using in Obsidian
+
+1. Copy this \`Corteza\` folder into your Obsidian vault
+2. Decisions with epic keys will have wiki-links like \`[[LOK-123]]\`
+3. Tags are included as frontmatter and inline hashtags
+4. Use Obsidian's graph view to see connections between decisions
+
+## Frontmatter Fields
+
+Each file includes YAML frontmatter with:
+- \`id\`: Corteza decision ID
+- \`type\`: decision, explanation, context, learning, risk, assumption
+- \`category\`: product, ux, technical (if set)
+- \`tags\`: Array of tags
+- \`epic\`: Jira epic key (if linked)
+- \`creator\`: Who logged the decision
+- \`date\`: When it was logged
+- \`source\`: slack, dashboard, or api
+
+---
+Exported from [Corteza](https://corteza.app)
+`;
+
+    archive.append(readme, { name: 'Corteza/README.md' });
+
+    // Finalize archive
+    await archive.finalize();
+
+    console.log(`✅ Obsidian export completed for workspace: ${workspace_id}`);
+  } catch (error) {
+    console.error('❌ Error exporting to Obsidian:', error);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to export data' }));
+    }
+  }
+}
+
 module.exports = {
   exportWorkspaceData,
   deleteAllWorkspaceData,
-  getWorkspaceDataInfo
+  getWorkspaceDataInfo,
+  exportObsidian
 };

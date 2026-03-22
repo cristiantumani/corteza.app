@@ -10,7 +10,8 @@ const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/sema
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
 const { serveDashboard, serveAIAnalytics, serveSettings, redirectToDashboard } = require('./routes/dashboard');
-const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
+const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
+const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
 const { handleMe, handleLogout } = require('./routes/auth');
 const { handleLoginPage, handleTokenLogin } = require('./routes/dashboard-auth');
 const { handleSendMagicLink } = require('./routes/email-auth');
@@ -181,10 +182,17 @@ async function startApp() {
   // Integration API routes (requires API key authentication)
   expressApp.get('/api/v1/decisions/:id', apiRateLimiter, requireApiKey, getDecisionById);
 
+  // Obsidian integration (requires API key authentication)
+  expressApp.post('/api/v1/import/obsidian', aiRateLimiter, require('express').json(), requireApiKey, importFromObsidian);
+  expressApp.post('/api/v1/import/obsidian/direct', apiRateLimiter, require('express').json(), requireApiKey, saveDirectFromObsidian);
+
   // Protected routes - GDPR (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/gdpr/info', apiRateLimiter, requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
   expressApp.get('/api/gdpr/export', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportWorkspaceData);
   expressApp.delete('/api/gdpr/delete-all', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
+
+  // Obsidian export (requires authentication + workspace access)
+  expressApp.get('/api/export/obsidian', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportObsidian);
 
   // Protected routes - Settings (requires authentication + workspace admin)
   expressApp.get('/api/settings', apiRateLimiter, requireAuth, getSettings);

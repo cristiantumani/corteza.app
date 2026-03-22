@@ -1,0 +1,10 @@
+/* Corteza Plugin Styles */
+
+/* Style for the settings tab */
+.corteza-settings h2 {
+  margin-bottom: 1em;
+}
+
+.corteza-settings .setting-item-description {
+  color: var(--text-muted);
+}

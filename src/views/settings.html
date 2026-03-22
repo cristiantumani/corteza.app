@@ -460,6 +460,9 @@
         <button class="btn btn-secondary" onclick="exportData('csv')">
           📥 Export as CSV
         </button>
+        <button class="btn btn-primary" onclick="exportObsidian()">
+          💎 Export for Obsidian
+        </button>
         <button class="btn btn-danger" onclick="openDeleteAllModal()">
           🗑️ Delete All Workspace Data
         </button>
@@ -710,6 +713,10 @@
 
     function exportData(format) {
       window.location.href = `/api/gdpr/export?workspace_id=${WORKSPACE_ID}&format=${format}`;
+    }
+
+    function exportObsidian() {
+      window.location.href = `/api/export/obsidian?workspace_id=${WORKSPACE_ID}`;
     }
 
     function openDeleteAllModal() {

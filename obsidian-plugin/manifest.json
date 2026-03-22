@@ -1,0 +1,11 @@
+{
+  "id": "corteza",
+  "name": "Corteza",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "Send decisions and notes to Corteza for AI-powered knowledge management",
+  "author": "Corteza",
+  "authorUrl": "https://corteza.app",
+  "fundingUrl": "",
+  "isDesktopOnly": false
+}
