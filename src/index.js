@@ -141,9 +141,6 @@ async function startApp() {
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 
-  // Test authentication (development only)
-  expressApp.use(require('./routes/test-auth'));
-
   // Install page (public) - redirects to Bolt-managed OAuth which handles state/CSRF properly
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/slack/install');
