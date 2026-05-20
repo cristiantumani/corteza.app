@@ -21,7 +21,10 @@ async function migrateToSpaces() {
     await client.connect();
     console.log('✅ Connected to MongoDB\n');
 
-    const db = client.db('corteza');
+    // Use decision-logger database (production) or corteza (test)
+    const dbName = process.env.DB_NAME || 'decision-logger';
+    const db = client.db(dbName);
+    console.log(`📂 Using database: ${dbName}\n`);
     const decisionsCollection = db.collection('decisions');
     const spacesCollection = db.collection('workspace_spaces');
     const membersCollection = db.collection('space_members');
