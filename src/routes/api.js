@@ -1,8 +1,8 @@
 const crypto = require('crypto');
-const { getDecisionsCollection } = require('../config/database');
+const { getDecisionsCollection, getWorkspaceSpacesCollection } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
-const { canModifyDecision, isAdmin } = require('../services/permissions');
+const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
 
 /**
@@ -57,6 +57,35 @@ async function getDecisions(req, res) {
     const filter = {
       workspace_id: validated.workspace_id
     };
+
+    // SPACE FILTERING: Filter by accessible spaces
+    try {
+      const client = await getSlackClient(validated.workspace_id);
+      const userId = req.session?.user?.user_id || req.user?.user_id;
+
+      if (userId && validated.space_id) {
+        // Specific space requested
+        filter.space_id = validated.space_id;
+      } else if (userId) {
+        // Get all accessible spaces for user
+        const accessibleSpaces = await getUserAccessibleSpaces(client, validated.workspace_id, userId);
+
+        if (accessibleSpaces.length > 0) {
+          filter.space_id = { $in: accessibleSpaces };
+        } else {
+          // User has no accessible spaces - return empty result
+          return res.writeHead(200, { 'Content-Type': 'application/json' }),
+                 res.end(JSON.stringify({
+                   decisions: [],
+                   pagination: { page, limit, total: 0, pages: 0 }
+                 }));
+        }
+      }
+      // If no userId (unauthenticated), don't add space filter (for backwards compatibility)
+    } catch (spaceError) {
+      console.error('Error filtering by spaces:', spaceError);
+      // Continue without space filtering on error
+    }
 
     if (validated.type) {
       filter.type = validated.type;
@@ -1277,7 +1306,13 @@ async function checkAdminStatus(req, res) {
 
     const { workspace_id, user_id } = req.session.user;
 
-    const client = await getSlackClient(workspace_id);
+    // Get Slack client (may be null for test workspaces)
+    let client = null;
+    try {
+      client = await getSlackClient(workspace_id);
+    } catch (error) {
+      // Slack client unavailable - will use database-only admin check
+    }
     const userIsAdmin = await isAdmin(client, workspace_id, user_id);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1312,7 +1347,7 @@ async function createMemory(req, res) {
     }
 
     // Validate input
-    const { text, type, category, tags, epic_key, alternatives, source } = req.body;
+    const { text, type, category, tags, epic_key, alternatives, source, space_id } = req.body;
 
     if (!text || !text.trim()) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -1324,6 +1359,54 @@ async function createMemory(req, res) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Validation error', message: 'Valid type is required' }));
       return;
+    }
+
+    // Handle space assignment
+    let targetSpaceId = space_id;
+    let targetSpaceName = 'General';
+
+    const spacesCollection = getWorkspaceSpacesCollection();
+
+    if (!targetSpaceId) {
+      // No space specified - use default space
+      const defaultSpace = await spacesCollection.findOne({
+        workspace_id: workspaceId,
+        is_default: true,
+        archived: false
+      });
+
+      if (defaultSpace) {
+        targetSpaceId = defaultSpace.space_id;
+        targetSpaceName = defaultSpace.name;
+      }
+    } else {
+      // Specific space requested - verify access
+      const client = await getSlackClient(workspaceId);
+      const canCreate = await canCreateInSpace(client, workspaceId, targetSpaceId, userId);
+
+      if (!canCreate) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'Permission denied',
+          message: 'You do not have permission to create memories in this space'
+        }));
+        return;
+      }
+
+      // Get space name
+      const space = await spacesCollection.findOne({
+        workspace_id: workspaceId,
+        space_id: targetSpaceId,
+        archived: false
+      });
+
+      if (!space) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Space not found' }));
+        return;
+      }
+
+      targetSpaceName = space.name;
     }
 
     // Get next ID
@@ -1348,6 +1431,8 @@ async function createMemory(req, res) {
       user_id: userId,
       user_name: userName,
       workspace_id: workspaceId,
+      space_id: targetSpaceId,
+      space_name: targetSpaceName,
       source: source || 'dashboard', // Track where it came from
       timestamp: new Date().toISOString(),
       created_at: new Date(),

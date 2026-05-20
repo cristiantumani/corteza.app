@@ -43,6 +43,14 @@
         <span class="hero-stat-separator">•</span>
         <span class="hero-stat" id="hero-workspace-name">Loading...</span>
       </div>
+      <!-- Space Selector -->
+      <div class="space-selector-hero">
+        <label for="space-filter-hero">📁 Space:</label>
+        <select id="space-filter-hero" onchange="handleSpaceChange()">
+          <option value="">All Accessible Spaces</option>
+        </select>
+        <button class="space-manage-btn" onclick="openSpaceManager()">⚙️ Manage</button>
+      </div>
       <button class="hero-cta-btn" onclick="openLogMemoryModal()">
         ➕ Log Team Memory
       </button>
@@ -116,6 +124,12 @@
         <div class="filter-group">
           <label>Search</label>
           <input type="text" id="search" placeholder="Search...">
+        </div>
+        <div class="filter-group">
+          <label>📁 Space</label>
+          <select id="space-filter" onchange="handleSpaceChange()">
+            <option value="">All Spaces</option>
+          </select>
         </div>
         <div class="filter-group">
           <label>Type</label>
@@ -236,6 +250,16 @@
             <option value="learning">Learning</option>
             <option value="risk">Risk</option>
             <option value="assumption">Assumption</option>
+          </select>
+        </div>
+
+        <div class="detail-item">
+          <label>📁 Space *</label>
+          <select
+            id="log-memory-space"
+            style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+          >
+            <option value="">Loading spaces...</option>
           </select>
         </div>
 
@@ -365,6 +389,14 @@
         </div>
 
         <div class="form-group">
+          <label for="edit-decision-space">📁 Space *</label>
+          <select id="edit-decision-space" required>
+            <option value="">Loading spaces...</option>
+          </select>
+          <small>Move this memory to a different space</small>
+        </div>
+
+        <div class="form-group">
           <label for="edit-decision-category">Category (optional)</label>
           <select id="edit-decision-category">
             <option value="">None</option>
@@ -487,6 +519,155 @@
           </svg>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Space Management Modal -->
+  <div class="modal-overlay" id="space-manager-modal">
+    <div class="modal large-modal">
+      <div class="detail-header">
+        <h2>📁 Manage Spaces</h2>
+        <button class="close-btn" onclick="closeSpaceManager()">✕ Close</button>
+      </div>
+
+      <div class="space-manager-tabs">
+        <button class="space-tab active" onclick="showSpaceTab('my-spaces')">My Spaces</button>
+        <button class="space-tab" onclick="showSpaceTab('create-space')">➕ Create Space</button>
+      </div>
+
+      <!-- My Spaces Tab -->
+      <div id="my-spaces-tab" class="space-tab-content active">
+        <div id="spaces-list" class="spaces-list">
+          <div class="loading">Loading spaces...</div>
+        </div>
+      </div>
+
+      <!-- Create Space Tab -->
+      <div id="create-space-tab" class="space-tab-content">
+        <form id="create-space-form" onsubmit="createSpace(event)">
+          <div class="form-group">
+            <label for="space-name">Space Name *</label>
+            <input type="text" id="space-name" required maxlength="50" placeholder="e.g., Engineering Team">
+            <small>Max 50 characters</small>
+          </div>
+
+          <div class="form-group">
+            <label for="space-description">Description</label>
+            <textarea id="space-description" rows="3" placeholder="What is this space for?"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="space-visibility">Visibility *</label>
+            <select id="space-visibility" required>
+              <option value="private">🔒 Private (only me)</option>
+              <option value="shared">👥 Shared (invite members)</option>
+              <option value="public" selected>🌐 Public (all workspace members)</option>
+            </select>
+            <small>
+              Private: Only you can access<br>
+              Shared: You + invited members<br>
+              Public: Everyone in workspace
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="space-icon">Icon (emoji)</label>
+            <input type="text" id="space-icon" maxlength="2" placeholder="📁" value="📁">
+            <small>Single emoji character</small>
+          </div>
+
+          <div class="form-group">
+            <label for="space-color">Color</label>
+            <input type="color" id="space-color" value="#667eea">
+          </div>
+
+          <div class="modal-buttons">
+            <button type="button" class="modal-btn modal-btn-cancel" onclick="resetCreateSpaceForm()">Clear</button>
+            <button type="submit" class="modal-btn modal-btn-primary">Create Space</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Space Members Modal -->
+  <div class="modal-overlay" id="space-members-modal">
+    <div class="modal">
+      <div class="detail-header">
+        <h2>👥 Space Members: <span id="members-space-name"></span></h2>
+        <button class="close-btn" onclick="closeSpaceMembersModal()">✕ Close</button>
+      </div>
+
+      <div class="add-member-section">
+        <h3>Add Member</h3>
+        <form id="add-member-form" onsubmit="addSpaceMember(event)">
+          <div class="form-row">
+            <input type="text" id="member-user-id" placeholder="User ID or @username" required>
+            <input type="text" id="member-user-name" placeholder="Display name (optional)">
+            <select id="member-role">
+              <option value="viewer">👁️ Viewer (read only)</option>
+              <option value="member" selected>✏️ Member (can create)</option>
+              <option value="admin">⚙️ Admin (can manage)</option>
+            </select>
+            <button type="submit" class="modal-btn modal-btn-primary">Add</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="members-list-section">
+        <h3>Current Members</h3>
+        <div id="current-members" class="members-list">
+          <div class="loading">Loading members...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Space Modal -->
+  <div class="modal-overlay" id="edit-space-modal">
+    <div class="modal">
+      <div class="detail-header">
+        <h2>✏️ Edit Space</h2>
+        <button class="close-btn" onclick="closeEditSpaceModal()">✕ Close</button>
+      </div>
+
+      <form id="edit-space-form" onsubmit="saveSpaceEdit(event)">
+        <input type="hidden" id="edit-space-id">
+
+        <div class="form-group">
+          <label for="edit-space-name">Space Name *</label>
+          <input type="text" id="edit-space-name" required maxlength="50">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-space-description">Description</label>
+          <textarea id="edit-space-description" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-space-visibility">Visibility *</label>
+          <select id="edit-space-visibility" required>
+            <option value="private">🔒 Private</option>
+            <option value="shared">👥 Shared</option>
+            <option value="public">🌐 Public</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-space-icon">Icon</label>
+          <input type="text" id="edit-space-icon" maxlength="2">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-space-color">Color</label>
+          <input type="color" id="edit-space-color">
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="modal-btn modal-btn-cancel" onclick="closeEditSpaceModal()">Cancel</button>
+          <button type="submit" class="modal-btn modal-btn-primary">💾 Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 

@@ -3,6 +3,11 @@
     let WORKSPACE_ID = null;
     let isCurrentUserAdmin = false;
 
+    // Spaces state
+    let currentSpaceId = null;
+    let allSpaces = [];
+    let currentUserSpaces = [];
+
     // Check authentication status on page load
     async function checkAuth() {
       try {
@@ -454,6 +459,7 @@
 
         const p = new URLSearchParams();
         p.append('workspace_id', WORKSPACE_ID);  // ADD workspace_id
+        if (currentSpaceId) p.append('space_id', currentSpaceId);  // ADD space filter
         if (s) p.append('search', s);
         if (t) p.append('type', t);
         if (c) p.append('category', c);
@@ -490,6 +496,11 @@
         const maxLength = 80;
         const truncatedText = d.text.length > maxLength ? d.text.substring(0, maxLength) + '...' : d.text;
 
+        // Add space badge
+        const spaceBadge = d.space_name ?
+          `<span class="space-badge-small" style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #6b7280; margin-left: 8px;">📁 ${d.space_name}</span>` :
+          '';
+
         // Backward compatibility: if type has old values, treat as category
         let actualType = d.type;
         let actualCategory = d.category;
@@ -521,7 +532,7 @@
 
         return `<tr>
           <td><strong>#${d.id}</strong></td>
-          <td class="decision-text" title="${d.text}">${truncatedText}</td>
+          <td class="decision-text" title="${d.text}">${truncatedText}${spaceBadge}</td>
           <td>${typeBadge}</td>
           <td>${categoryBadge}</td>
           <td>${epicCell}</td>
@@ -646,6 +657,7 @@
     async function submitLogMemory() {
       const text = document.getElementById('log-memory-text').value.trim();
       const type = document.getElementById('log-memory-type').value;
+      const spaceId = document.getElementById('log-memory-space').value;
       const category = document.getElementById('log-memory-category').value.trim();
       const tags = document.getElementById('log-memory-tags').value.trim();
       const epicKey = document.getElementById('log-memory-epic').value.trim();
@@ -657,6 +669,11 @@
         return;
       }
 
+      if (!spaceId) {
+        alert('Please select a space');
+        return;
+      }
+
       try {
         const response = await fetch('/api/memory/create', {
           method: 'POST',
@@ -664,6 +681,7 @@
           body: JSON.stringify({
             text,
             type,
+            space_id: spaceId,
             category: category || null,
             tags: tags || null,
             epic_key: epicKey || null,
@@ -703,6 +721,7 @@
       document.getElementById('edit-decision-id').value = decision.id;
       document.getElementById('edit-decision-text').value = decision.text;
       document.getElementById('edit-decision-type').value = decision.type;
+      document.getElementById('edit-decision-space').value = decision.space_id || '';
       document.getElementById('edit-decision-category').value = decision.category || '';
       document.getElementById('edit-epic-key').value = decision.epic_key || '';
       document.getElementById('edit-tags').value = decision.tags ? decision.tags.join(', ') : '';
@@ -727,6 +746,7 @@
       const decisionId = document.getElementById('edit-decision-id').value;
       const text = document.getElementById('edit-decision-text').value.trim();
       const type = document.getElementById('edit-decision-type').value;
+      const spaceId = document.getElementById('edit-decision-space').value;
       const category = document.getElementById('edit-decision-category').value || null;
       const epicKey = document.getElementById('edit-epic-key').value.trim();
       const tagsString = document.getElementById('edit-tags').value.trim();
@@ -739,6 +759,7 @@
       const updates = {
         text,
         type,
+        space_id: spaceId,
         category,
         epic_key: epicKey || null,
         tags,
@@ -1025,10 +1046,535 @@
       }
     }
 
+    // ========== SPACES FUNCTIONALITY ==========
+
+    // Load all accessible spaces for the current user
+    async function loadSpaces() {
+      try {
+        const response = await fetch(`/api/spaces?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        if (response.ok && data.spaces) {
+          allSpaces = data.spaces;
+          currentUserSpaces = data.spaces;
+          populateSpaceSelectors();
+
+          // Restore last selected space from localStorage
+          const lastSpaceId = localStorage.getItem('corteza_last_space_id');
+          if (lastSpaceId && allSpaces.find(s => s.space_id === lastSpaceId)) {
+            currentSpaceId = lastSpaceId;
+            updateSpaceSelectors(lastSpaceId);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load spaces:', error);
+      }
+    }
+
+    // Populate all space selector dropdowns
+    function populateSpaceSelectors() {
+      // Populate hero space filter
+      const heroFilter = document.getElementById('space-filter-hero');
+      if (heroFilter) {
+        heroFilter.innerHTML = '<option value="">All Accessible Spaces</option>';
+        currentUserSpaces.forEach(space => {
+          const option = document.createElement('option');
+          option.value = space.space_id;
+          option.textContent = `${space.settings.icon} ${space.name}`;
+          if (space.visibility === 'private') {
+            option.textContent += ' 🔒';
+          }
+          heroFilter.appendChild(option);
+        });
+      }
+
+      // Populate classic view space filter
+      const classicFilter = document.getElementById('space-filter');
+      if (classicFilter) {
+        classicFilter.innerHTML = '<option value="">All Spaces</option>';
+        currentUserSpaces.forEach(space => {
+          const option = document.createElement('option');
+          option.value = space.space_id;
+          option.textContent = `${space.settings.icon} ${space.name}`;
+          if (space.visibility === 'private') {
+            option.textContent += ' 🔒';
+          }
+          classicFilter.appendChild(option);
+        });
+      }
+
+      // Populate Log Memory modal space selector
+      const logMemorySpace = document.getElementById('log-memory-space');
+      if (logMemorySpace) {
+        logMemorySpace.innerHTML = '';
+
+        // Only show spaces where user can create
+        const creatableSpaces = currentUserSpaces.filter(s =>
+          s.visibility === 'public' ||
+          s.is_owner ||
+          s.user_role === 'admin' ||
+          s.user_role === 'member'
+        );
+
+        creatableSpaces.forEach(space => {
+          const option = document.createElement('option');
+          option.value = space.space_id;
+          option.textContent = `${space.settings.icon} ${space.name}`;
+          if (space.is_default) {
+            option.selected = true;
+          }
+          logMemorySpace.appendChild(option);
+        });
+      }
+
+      // Populate Edit Decision modal space selector
+      const editSpace = document.getElementById('edit-decision-space');
+      if (editSpace) {
+        editSpace.innerHTML = '';
+
+        const creatableSpaces = currentUserSpaces.filter(s =>
+          s.visibility === 'public' ||
+          s.is_owner ||
+          s.user_role === 'admin' ||
+          s.user_role === 'member'
+        );
+
+        creatableSpaces.forEach(space => {
+          const option = document.createElement('option');
+          option.value = space.space_id;
+          option.textContent = `${space.settings.icon} ${space.name}`;
+          editSpace.appendChild(option);
+        });
+      }
+    }
+
+    // Update space selectors to show current selection
+    function updateSpaceSelectors(spaceId) {
+      const heroFilter = document.getElementById('space-filter-hero');
+      const classicFilter = document.getElementById('space-filter');
+
+      if (heroFilter) heroFilter.value = spaceId || '';
+      if (classicFilter) classicFilter.value = spaceId || '';
+    }
+
+    // Handle space filter change
+    async function handleSpaceChange() {
+      const heroFilter = document.getElementById('space-filter-hero');
+      const classicFilter = document.getElementById('space-filter');
+
+      // Get value from whichever filter triggered the change
+      currentSpaceId = (heroFilter?.value || classicFilter?.value) || null;
+
+      // Sync both filters
+      updateSpaceSelectors(currentSpaceId);
+
+      // Save to localStorage
+      if (currentSpaceId) {
+        localStorage.setItem('corteza_last_space_id', currentSpaceId);
+      } else {
+        localStorage.removeItem('corteza_last_space_id');
+      }
+
+      // Reload decisions with new space filter
+      await fetchDecisions();
+    }
+
+    // Open space manager modal
+    function openSpaceManager() {
+      const modal = document.getElementById('space-manager-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        showSpaceTab('my-spaces');
+        loadSpacesList();
+      }
+    }
+
+    // Close space manager modal
+    function closeSpaceManager() {
+      const modal = document.getElementById('space-manager-modal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Show specific tab in space manager
+    function showSpaceTab(tabName) {
+      // Update tab buttons
+      const tabs = document.querySelectorAll('.space-tab');
+      tabs.forEach(tab => tab.classList.remove('active'));
+
+      const activeTabBtn = Array.from(tabs).find(tab =>
+        tab.textContent.toLowerCase().includes(tabName.replace('-', ' '))
+      );
+      if (activeTabBtn) {
+        activeTabBtn.classList.add('active');
+      }
+
+      // Update tab content
+      const tabContents = document.querySelectorAll('.space-tab-content');
+      tabContents.forEach(content => content.classList.remove('active'));
+
+      const activeContent = document.getElementById(`${tabName}-tab`);
+      if (activeContent) {
+        activeContent.classList.add('active');
+      }
+    }
+
+    // Load spaces list in manager
+    async function loadSpacesList() {
+      const container = document.getElementById('spaces-list');
+      if (!container) return;
+
+      container.innerHTML = '<div class="loading">Loading spaces...</div>';
+
+      try {
+        const response = await fetch(`/api/spaces?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        if (response.ok && data.spaces) {
+          container.innerHTML = '';
+
+          if (data.spaces.length === 0) {
+            container.innerHTML = '<div class="empty-state">No spaces yet. Create your first space!</div>';
+            return;
+          }
+
+          data.spaces.forEach(space => {
+            const spaceCard = createSpaceCard(space);
+            container.appendChild(spaceCard);
+          });
+        } else {
+          container.innerHTML = '<div class="error">Failed to load spaces</div>';
+        }
+      } catch (error) {
+        console.error('Failed to load spaces:', error);
+        container.innerHTML = '<div class="error">Failed to load spaces</div>';
+      }
+    }
+
+    // Create space card element
+    function createSpaceCard(space) {
+      const card = document.createElement('div');
+      card.className = 'space-card';
+      card.style.borderLeft = `4px solid ${space.settings.color}`;
+
+      const visibilityIcon = space.visibility === 'private' ? '🔒' :
+                           space.visibility === 'shared' ? '👥' : '🌐';
+
+      card.innerHTML = `
+        <div class="space-header">
+          <span class="space-icon-large">${space.settings.icon}</span>
+          <div class="space-info">
+            <h4>${space.name}</h4>
+            <p class="space-description">${space.description || 'No description'}</p>
+            <div class="space-meta">
+              <span class="space-visibility">${visibilityIcon} ${space.visibility}</span>
+              <span>${space.decision_count || 0} memories</span>
+              ${space.is_default ? '<span class="badge-default">Default</span>' : ''}
+            </div>
+          </div>
+        </div>
+        <div class="space-actions">
+          ${space.can_modify ? `
+            <button onclick="editSpace('${space.space_id}')" class="btn-icon" title="Edit">
+              ⚙️
+            </button>
+          ` : ''}
+          ${space.visibility === 'shared' && space.can_modify ? `
+            <button onclick="manageMembers('${space.space_id}', '${space.name}')" class="btn-icon" title="Members">
+              👥
+            </button>
+          ` : ''}
+          ${!space.is_default && space.is_owner ? `
+            <button onclick="deleteSpace('${space.space_id}', '${space.name}')" class="btn-icon danger" title="Delete">
+              🗑️
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      return card;
+    }
+
+    // Create new space
+    async function createSpace(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('space-name').value.trim();
+      const description = document.getElementById('space-description').value.trim();
+      const visibility = document.getElementById('space-visibility').value;
+      const icon = document.getElementById('space-icon').value || '📁';
+      const color = document.getElementById('space-color').value;
+
+      try {
+        const response = await fetch('/api/spaces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: WORKSPACE_ID,
+            name: name,
+            description: description,
+            visibility: visibility,
+            settings: {
+              icon: icon,
+              color: color
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('✅ Space created successfully!');
+          resetCreateSpaceForm();
+          await loadSpaces();
+          await loadSpacesList();
+          showSpaceTab('my-spaces');
+        } else {
+          alert('❌ Failed to create space: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Failed to create space:', error);
+        alert('❌ Failed to create space');
+      }
+    }
+
+    // Reset create space form
+    function resetCreateSpaceForm() {
+      document.getElementById('create-space-form').reset();
+      document.getElementById('space-icon').value = '📁';
+      document.getElementById('space-color').value = '#667eea';
+      document.getElementById('space-visibility').value = 'public';
+    }
+
+    // Edit space
+    function editSpace(spaceId) {
+      const space = allSpaces.find(s => s.space_id === spaceId);
+      if (!space) return;
+
+      document.getElementById('edit-space-id').value = space.space_id;
+      document.getElementById('edit-space-name').value = space.name;
+      document.getElementById('edit-space-description').value = space.description || '';
+      document.getElementById('edit-space-visibility').value = space.visibility;
+      document.getElementById('edit-space-icon').value = space.settings.icon;
+      document.getElementById('edit-space-color').value = space.settings.color;
+
+      const modal = document.getElementById('edit-space-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    }
+
+    // Close edit space modal
+    function closeEditSpaceModal() {
+      const modal = document.getElementById('edit-space-modal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Save space edits
+    async function saveSpaceEdit(event) {
+      event.preventDefault();
+
+      const spaceId = document.getElementById('edit-space-id').value;
+      const name = document.getElementById('edit-space-name').value.trim();
+      const description = document.getElementById('edit-space-description').value.trim();
+      const visibility = document.getElementById('edit-space-visibility').value;
+      const icon = document.getElementById('edit-space-icon').value;
+      const color = document.getElementById('edit-space-color').value;
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: WORKSPACE_ID,
+            name: name,
+            description: description,
+            visibility: visibility,
+            settings: {
+              icon: icon,
+              color: color
+            }
+          })
+        });
+
+        if (response.ok) {
+          alert('✅ Space updated successfully!');
+          closeEditSpaceModal();
+          await loadSpaces();
+          await loadSpacesList();
+        } else {
+          const data = await response.json();
+          alert('❌ Failed to update space: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Failed to update space:', error);
+        alert('❌ Failed to update space');
+      }
+    }
+
+    // Delete space
+    async function deleteSpace(spaceId, spaceName) {
+      if (!confirm(`Are you sure you want to delete the space "${spaceName}"? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}?workspace_id=${WORKSPACE_ID}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          alert('✅ Space deleted successfully!');
+          await loadSpaces();
+          await loadSpacesList();
+
+          // Clear space filter if deleted space was selected
+          if (currentSpaceId === spaceId) {
+            currentSpaceId = null;
+            localStorage.removeItem('corteza_last_space_id');
+            updateSpaceSelectors(null);
+            await fetchDecisions();
+          }
+        } else {
+          const data = await response.json();
+          alert('❌ Failed to delete space: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Failed to delete space:', error);
+        alert('❌ Failed to delete space');
+      }
+    }
+
+    // Manage space members
+    function manageMembers(spaceId, spaceName) {
+      document.getElementById('members-space-name').textContent = spaceName;
+      document.getElementById('add-member-form').dataset.spaceId = spaceId;
+
+      const modal = document.getElementById('space-members-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        loadSpaceMembers(spaceId);
+      }
+    }
+
+    // Close space members modal
+    function closeSpaceMembersModal() {
+      const modal = document.getElementById('space-members-modal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Load space members
+    async function loadSpaceMembers(spaceId) {
+      const container = document.getElementById('current-members');
+      if (!container) return;
+
+      container.innerHTML = '<div class="loading">Loading members...</div>';
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}/members?workspace_id=${WORKSPACE_ID}`);
+        const data = await response.json();
+
+        if (response.ok && data.members) {
+          container.innerHTML = '';
+
+          if (data.members.length === 0) {
+            container.innerHTML = '<div class="empty-state">No members yet. Add members below!</div>';
+            return;
+          }
+
+          data.members.forEach(member => {
+            const memberCard = document.createElement('div');
+            memberCard.className = 'member-card';
+            memberCard.innerHTML = `
+              <div class="member-info">
+                <strong>${member.user_name}</strong>
+                <span class="member-role">${member.role}</span>
+              </div>
+              <button onclick="removeSpaceMemberConfirm('${spaceId}', '${member.user_id}', '${member.user_name}')" class="btn-icon danger" title="Remove">
+                ✕
+              </button>
+            `;
+            container.appendChild(memberCard);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load members:', error);
+        container.innerHTML = '<div class="error">Failed to load members</div>';
+      }
+    }
+
+    // Add space member
+    async function addSpaceMember(event) {
+      event.preventDefault();
+
+      const form = event.target;
+      const spaceId = form.dataset.spaceId;
+      const userId = document.getElementById('member-user-id').value.trim();
+      const userName = document.getElementById('member-user-name').value.trim() || userId;
+      const role = document.getElementById('member-role').value;
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: WORKSPACE_ID,
+            user_id: userId,
+            user_name: userName,
+            role: role
+          })
+        });
+
+        if (response.ok) {
+          alert('✅ Member added successfully!');
+          form.reset();
+          await loadSpaceMembers(spaceId);
+        } else {
+          const data = await response.json();
+          alert('❌ Failed to add member: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Failed to add member:', error);
+        alert('❌ Failed to add member');
+      }
+    }
+
+    // Remove space member with confirmation
+    async function removeSpaceMemberConfirm(spaceId, userId, userName) {
+      if (!confirm(`Remove ${userName} from this space?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}/members/${userId}?workspace_id=${WORKSPACE_ID}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          alert('✅ Member removed successfully!');
+          await loadSpaceMembers(spaceId);
+        } else {
+          const data = await response.json();
+          alert('❌ Failed to remove member: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Failed to remove member:', error);
+        alert('❌ Failed to remove member');
+      }
+    }
+
+    // ========== END SPACES FUNCTIONALITY ==========
+
     // Initialize dashboard - check auth first, then load data
     (async function init() {
       const authenticated = await checkAuth();
       if (authenticated) {
+        await loadSpaces();  // Load spaces first
         fetchStats();
         fetchDecisions();
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);

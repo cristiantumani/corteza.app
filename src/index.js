@@ -141,6 +141,9 @@ async function startApp() {
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 
+  // Test authentication (development only)
+  expressApp.use(require('./routes/test-auth'));
+
   // Install page (public) - redirects to Bolt-managed OAuth which handles state/CSRF properly
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/slack/install');
@@ -204,6 +207,9 @@ async function startApp() {
 
   // Chrome extension install tracking routes (partially public - install endpoint requires no auth)
   expressApp.use('/api/extension', require('./routes/extension'));
+
+  // Spaces API routes (requires authentication)
+  expressApp.use(require('./routes/spaces-api'));
 
   // Create Slack App with the custom receiver
   const appConfig = {

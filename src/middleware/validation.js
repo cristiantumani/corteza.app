@@ -74,6 +74,14 @@ function validateQueryParams(query) {
     }
   }
 
+  // Space ID (sp_ prefix followed by 24 hex characters)
+  if (query.space_id) {
+    const spaceId = query.space_id.trim();
+    if (/^sp_[a-f0-9]{24}$/i.test(spaceId)) {
+      validated.space_id = spaceId.toLowerCase();
+    }
+  }
+
   return validated;
 }
 
@@ -113,9 +121,24 @@ function validateTags(tagsString) {
     .slice(0, 10); // Max 10 tags
 }
 
+/**
+ * Validates space ID format
+ * Space IDs are sp_ prefix followed by 24 hex characters
+ */
+function validateSpaceId(spaceId) {
+  if (!spaceId) return null;
+  const trimmed = spaceId.trim();
+  // Space IDs are sp_<24 hex chars>
+  if (/^sp_[a-f0-9]{24}$/i.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  return null;
+}
+
 module.exports = {
   validateQueryParams,
   validateDecisionId,
   validateEpicKey,
-  validateTags
+  validateTags,
+  validateSpaceId
 };

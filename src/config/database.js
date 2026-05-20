@@ -9,6 +9,8 @@ let aiFeedbackCollection = null;
 let workspaceSettingsCollection = null;
 let workspaceAdminsCollection = null;
 let extensionInstallsCollection = null;
+let workspaceSpacesCollection = null;
+let spaceMembersCollection = null;
 
 /**
  * Connects to MongoDB and sets up indexes
@@ -45,6 +47,8 @@ async function connectToMongoDB() {
     workspaceSettingsCollection = db.collection('workspace_settings');
     workspaceAdminsCollection = db.collection('workspace_admins');
     extensionInstallsCollection = db.collection('extension_installs');
+    workspaceSpacesCollection = db.collection('workspace_spaces');
+    spaceMembersCollection = db.collection('space_members');
 
     // Create indexes for decisions collection
     await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
@@ -100,6 +104,30 @@ async function connectToMongoDB() {
     await extensionInstallsCollection.createIndex({ install_id: 1 }, { unique: true });
     await extensionInstallsCollection.createIndex({ status: 1, email: 1, installed_at: -1 });
     await extensionInstallsCollection.createIndex({ reminder_sent_at: 1 });
+
+    // Create indexes for workspace spaces collection (Spaces feature)
+    await workspaceSpacesCollection.createIndex({ workspace_id: 1, space_id: 1 }, { unique: true });
+    await workspaceSpacesCollection.createIndex({ workspace_id: 1, archived: 1, name: 1 });
+    await workspaceSpacesCollection.createIndex({ workspace_id: 1, is_default: 1 });
+    await workspaceSpacesCollection.createIndex({ workspace_id: 1, visibility: 1 });
+
+    // Create indexes for space members collection (Spaces feature)
+    await spaceMembersCollection.createIndex(
+      { space_id: 1, user_id: 1, removed_at: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { removed_at: null }
+      }
+    );
+    await spaceMembersCollection.createIndex({ workspace_id: 1, user_id: 1, removed_at: 1 });
+    await spaceMembersCollection.createIndex({ space_id: 1, role: 1, removed_at: 1 });
+    await spaceMembersCollection.createIndex({ workspace_id: 1, space_id: 1 });
+
+    // Space-related indexes for decisions collection
+    await decisionsCollection.createIndex({ workspace_id: 1, space_id: 1, timestamp: -1 });
+    await decisionsCollection.createIndex({ workspace_id: 1, space_id: 1, type: 1 });
+    await decisionsCollection.createIndex({ workspace_id: 1, space_id: 1, id: 1 });
+    await decisionsCollection.createIndex({ space_id: 1, timestamp: -1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -190,6 +218,26 @@ function getExtensionInstallsCollection() {
   return extensionInstallsCollection;
 }
 
+/**
+ * Returns the workspace spaces collection
+ */
+function getWorkspaceSpacesCollection() {
+  if (!workspaceSpacesCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return workspaceSpacesCollection;
+}
+
+/**
+ * Returns the space members collection
+ */
+function getSpaceMembersCollection() {
+  if (!spaceMembersCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return spaceMembersCollection;
+}
+
 module.exports = {
   connectToMongoDB,
   getDecisionsCollection,
@@ -199,5 +247,7 @@ module.exports = {
   getAIFeedbackCollection,
   getWorkspaceSettingsCollection,
   getWorkspaceAdminsCollection,
-  getExtensionInstallsCollection
+  getExtensionInstallsCollection,
+  getWorkspaceSpacesCollection,
+  getSpaceMembersCollection
 };
