@@ -1103,6 +1103,21 @@
         });
       }
 
+      // Populate chat view space filter
+      const chatFilter = document.getElementById('space-filter-chat');
+      if (chatFilter) {
+        chatFilter.innerHTML = '<option value="">All Accessible Spaces</option>';
+        currentUserSpaces.forEach(space => {
+          const option = document.createElement('option');
+          option.value = space.space_id;
+          option.textContent = `${space.settings.icon} ${space.name}`;
+          if (space.visibility === 'private') {
+            option.textContent += ' 🔒';
+          }
+          chatFilter.appendChild(option);
+        });
+      }
+
       // Populate Log Memory modal space selector
       const logMemorySpace = document.getElementById('log-memory-space');
       if (logMemorySpace) {
@@ -1152,18 +1167,21 @@
     function updateSpaceSelectors(spaceId) {
       const heroFilter = document.getElementById('space-filter-hero');
       const classicFilter = document.getElementById('space-filter');
+      const chatFilter = document.getElementById('space-filter-chat');
 
       if (heroFilter) heroFilter.value = spaceId || '';
       if (classicFilter) classicFilter.value = spaceId || '';
+      if (chatFilter) chatFilter.value = spaceId || '';
     }
 
     // Handle space filter change
     async function handleSpaceChange() {
       const heroFilter = document.getElementById('space-filter-hero');
       const classicFilter = document.getElementById('space-filter');
+      const chatFilter = document.getElementById('space-filter-chat');
 
       // Get value from whichever filter triggered the change
-      currentSpaceId = (heroFilter?.value || classicFilter?.value) || null;
+      currentSpaceId = (heroFilter?.value || classicFilter?.value || chatFilter?.value) || null;
 
       // Sync both filters
       updateSpaceSelectors(currentSpaceId);
@@ -1179,26 +1197,17 @@
       await fetchDecisions();
     }
 
-    // Open space manager modal
-    function openSpaceManager() {
-      const modal = document.getElementById('space-manager-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        showSpaceTab('my-spaces');
-        loadSpacesList();
-      }
-    }
+    // ========== SPACE MANAGEMENT MOVED TO SETTINGS ==========
+    // Space management UI (create, edit, delete, members) is now in Settings page
+    // Dashboard only handles space selection/filtering
 
-    // Close space manager modal
-    function closeSpaceManager() {
-      const modal = document.getElementById('space-manager-modal');
-      if (modal) {
-        modal.style.display = 'none';
-      }
-    }
+    // Space management functions removed - now handled in Settings page
+    // Users should go to Settings > Spaces to manage spaces
 
-    // Show specific tab in space manager
-    function showSpaceTab(tabName) {
+    // ========== END SPACES FUNCTIONALITY ==========
+
+    // Initialize dashboard - check auth first, then load data
+    (async function init() {
       // Update tab buttons
       const tabs = document.querySelectorAll('.space-tab');
       tabs.forEach(tab => tab.classList.remove('active'));
