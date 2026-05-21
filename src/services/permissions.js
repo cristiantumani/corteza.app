@@ -60,17 +60,22 @@ async function promoteToAdmin(workspaceId, userId, source = 'assigned', assigned
   try {
     const collection = getWorkspaceAdminsCollection();
 
-    // Get user info from Slack
+    // Get user info from Slack (if available)
     const client = await getSlackClient(workspaceId);
-    const userInfo = await client.users.info({ user: userId });
-    const userName = userInfo.user.name;
-    const email = userInfo.user.profile?.email || null;
-
-    // Get assigner info if provided
+    let userName = userId;
+    let email = null;
     let assignedByName = null;
-    if (assignedBy) {
-      const assignerInfo = await client.users.info({ user: assignedBy });
-      assignedByName = assignerInfo.user.name;
+
+    if (client) {
+      const userInfo = await client.users.info({ user: userId });
+      userName = userInfo.user.name;
+      email = userInfo.user.profile?.email || null;
+
+      // Get assigner info if provided
+      if (assignedBy) {
+        const assignerInfo = await client.users.info({ user: assignedBy });
+        assignedByName = assignerInfo.user.name;
+      }
     }
 
     // Upsert admin record

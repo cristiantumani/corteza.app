@@ -7,13 +7,18 @@ const { getSlackClient } = require('../config/slack-client');
 
 /**
  * Check if a user is a Slack workspace admin
- * @param {WebClient} client - Authenticated Slack Web API client
+ * @param {WebClient|null} client - Authenticated Slack Web API client (or null for email-authenticated workspaces)
  * @param {string} userId - Slack user ID
  * @param {string} workspaceId - Slack workspace/team ID
  * @returns {Promise<boolean>} true if user is admin, owner, or primary owner
  */
 async function isWorkspaceAdmin(client, userId, workspaceId) {
   try {
+    // If no Slack client available (email-authenticated workspace), can't check Slack admin status
+    if (!client) {
+      return false;
+    }
+
     const userInfo = await client.users.info({ user: userId });
 
     if (!userInfo.ok || !userInfo.user) {
