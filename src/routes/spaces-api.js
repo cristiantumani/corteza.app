@@ -41,8 +41,6 @@ router.get('/api/spaces', async (req, res) => {
   try {
     const { workspace_id } = req.query;
 
-    console.log('📋 GET /api/spaces - workspace_id:', workspace_id);
-
     if (!workspace_id) {
       return res.status(400).json({ error: 'workspace_id is required' });
     }
@@ -53,17 +51,14 @@ router.get('/api/spaces', async (req, res) => {
     }
 
     const userId = req.session.user.user_id;
-    console.log('📋 User ID:', userId);
 
     // Get Slack client (optional for test workspaces - returns null if unavailable)
     const client = await getSlackClientSafe(workspace_id);
 
     // Get all accessible space IDs for user
     const accessibleSpaceIds = await getUserAccessibleSpaces(client, workspace_id, userId);
-    console.log('📋 Accessible space IDs:', accessibleSpaceIds);
 
     if (accessibleSpaceIds.length === 0) {
-      console.log('⚠️  No accessible spaces found for user');
       return res.json({ success: true, spaces: [] });
     }
 
@@ -114,7 +109,6 @@ router.get('/api/spaces', async (req, res) => {
       };
     }));
 
-    console.log('✅ Returning', spacesWithMetadata.length, 'spaces');
     res.json({ success: true, spaces: spacesWithMetadata });
   } catch (error) {
     console.error('Error listing spaces:', error);
@@ -130,8 +124,6 @@ router.get('/api/spaces', async (req, res) => {
 router.post('/api/spaces', async (req, res) => {
   try {
     const { workspace_id, name, description, visibility, settings } = req.body;
-
-    console.log('➕ POST /api/spaces - Creating space:', { workspace_id, name, visibility });
 
     // Validation
     if (!workspace_id || !name || !visibility) {

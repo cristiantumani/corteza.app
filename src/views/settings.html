@@ -1182,6 +1182,7 @@
 
       const spaceId = document.getElementById('edit-space-id').value;
       const updates = {
+        workspace_id: WORKSPACE_ID,
         name: document.getElementById('edit-space-name').value.trim(),
         description: document.getElementById('edit-space-description').value.trim() || null,
         visibility: document.getElementById('edit-space-visibility').value,
@@ -1219,7 +1220,7 @@
       }
 
       try {
-        const response = await fetch(`/api/spaces/${spaceId}`, {
+        const response = await fetch(`/api/spaces/${spaceId}?workspace_id=${WORKSPACE_ID}`, {
           method: 'DELETE'
         });
 
@@ -1254,7 +1255,7 @@
       container.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">Loading members...</div>';
 
       try {
-        const response = await fetch(`/api/spaces/${spaceId}/members`);
+        const response = await fetch(`/api/spaces/${spaceId}/members?workspace_id=${WORKSPACE_ID}`);
         const data = await response.json();
 
         if (data.success) {
@@ -1295,7 +1296,7 @@
         const response = await fetch(`/api/spaces/${currentSpaceId}/members`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, user_name: userName, role })
+          body: JSON.stringify({ workspace_id: WORKSPACE_ID, user_id: userId, user_name: userName, role })
         });
 
         const data = await response.json();
@@ -1319,7 +1320,7 @@
       }
 
       try {
-        const response = await fetch(`/api/spaces/${spaceId}/members/${userId}`, {
+        const response = await fetch(`/api/spaces/${spaceId}/members/${userId}?workspace_id=${WORKSPACE_ID}`, {
           method: 'DELETE'
         });
 

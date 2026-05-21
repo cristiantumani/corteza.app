@@ -262,8 +262,6 @@ async function canAccessSpace(client, workspaceId, spaceId, userId) {
  */
 async function getUserAccessibleSpaces(client, workspaceId, userId) {
   try {
-    console.log('🔍 getUserAccessibleSpaces called:', { workspaceId, userId });
-
     const { getWorkspaceSpacesCollection, getSpaceMembersCollection } = require('../config/database');
 
     const spacesCollection = getWorkspaceSpacesCollection();
@@ -271,7 +269,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
 
     // Workspace admins can access all spaces
     const userIsAdmin = await isAdmin(client, workspaceId, userId);
-    console.log('🔍 User is admin?', userIsAdmin);
 
     if (userIsAdmin) {
       // Return all non-archived spaces
@@ -279,7 +276,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
         workspace_id: workspaceId,
         archived: false
       }).toArray();
-      console.log('🔍 Admin sees all spaces:', allSpaces.length);
       return allSpaces.map(s => s.space_id);
     }
 
@@ -289,7 +285,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
       visibility: 'public',
       archived: false
     }).toArray();
-    console.log('🔍 Public spaces:', publicSpaces.length);
 
     // Get private spaces owned by user
     const privateSpaces = await spacesCollection.find({
@@ -298,7 +293,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
       created_by: userId,
       archived: false
     }).toArray();
-    console.log('🔍 Private spaces owned by user:', privateSpaces.length);
 
     // Get shared spaces where user is owner or member
     const sharedOwnedSpaces = await spacesCollection.find({
@@ -307,7 +301,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
       created_by: userId,
       archived: false
     }).toArray();
-    console.log('🔍 Shared spaces owned by user:', sharedOwnedSpaces.length);
 
     const memberships = await membersCollection.find({
       workspace_id: workspaceId,
@@ -333,8 +326,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
 
     // Deduplicate by space_id
     const uniqueSpaceIds = [...new Set(allAccessibleSpaces.map(s => s.space_id))];
-    console.log('🔍 Total unique accessible spaces:', uniqueSpaceIds.length);
-    console.log('🔍 Space IDs:', uniqueSpaceIds);
     return uniqueSpaceIds;
   } catch (error) {
     console.error('Error getting accessible spaces:', error);
