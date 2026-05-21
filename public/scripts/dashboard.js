@@ -1048,6 +1048,42 @@
 
     // ========== SPACES FUNCTIONALITY ==========
 
+    // Show message when user has no accessible spaces
+    function showNoSpacesMessage() {
+      const decisionsBody = document.getElementById('decisions-body');
+      const statsSection = document.querySelector('.dashboard-stats');
+      const heroSection = document.querySelector('.dashboard-hero');
+
+      // Hide stats if present
+      if (statsSection) {
+        statsSection.style.display = 'none';
+      }
+
+      // Replace hero content with message
+      if (heroSection) {
+        heroSection.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
+            <h2 style="color: #1d1c1d; margin-bottom: 12px;">No Spaces Available</h2>
+            <p style="color: #616061; margin-bottom: 24px; max-width: 500px; margin-left: auto; margin-right: auto;">
+              You haven't been added to any spaces yet. Spaces are where decisions are logged and organized.
+            </p>
+            <p style="color: #616061; margin-bottom: 24px;">
+              Please contact your workspace administrator to get access to a space.
+            </p>
+            <a href="/settings" class="btn" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+              Go to Settings
+            </a>
+          </div>
+        `;
+      }
+
+      // Clear decisions table
+      if (decisionsBody) {
+        decisionsBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">No spaces available</td></tr>';
+      }
+    }
+
     // Load all accessible spaces for the current user
     async function loadSpaces() {
       try {
@@ -1341,7 +1377,7 @@
       document.getElementById('create-space-form').reset();
       document.getElementById('space-icon').value = '📁';
       document.getElementById('space-color').value = '#667eea';
-      document.getElementById('space-visibility').value = 'public';
+      // Note: visibility defaults to 'private' in HTML
     }
 
     // Edit space
@@ -1572,6 +1608,13 @@
       const authenticated = await checkAuth();
       if (authenticated) {
         await loadSpaces();  // Load spaces first
+
+        // Check if user has no accessible spaces
+        if (currentUserSpaces.length === 0) {
+          showNoSpacesMessage();
+          return; // Don't load decisions/stats if no spaces
+        }
+
         fetchStats();
         fetchDecisions();
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);

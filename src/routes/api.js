@@ -1363,12 +1363,12 @@ async function createMemory(req, res) {
 
     // Handle space assignment
     let targetSpaceId = space_id;
-    let targetSpaceName = 'General';
+    let targetSpaceName = null;
 
     const spacesCollection = getWorkspaceSpacesCollection();
 
     if (!targetSpaceId) {
-      // No space specified - use default space
+      // No space specified - try to find default space
       const defaultSpace = await spacesCollection.findOne({
         workspace_id: workspaceId,
         is_default: true,
@@ -1378,6 +1378,14 @@ async function createMemory(req, res) {
       if (defaultSpace) {
         targetSpaceId = defaultSpace.space_id;
         targetSpaceName = defaultSpace.name;
+      } else {
+        // No default space and no space specified - user must create a space first
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'No space specified',
+          message: 'You must select a space or create one first. Spaces are where decisions are organized.'
+        }));
+        return;
       }
     } else {
       // Specific space requested - verify access
