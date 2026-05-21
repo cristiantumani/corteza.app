@@ -1051,10 +1051,14 @@
     // Load all accessible spaces for the current user
     async function loadSpaces() {
       try {
+        console.log('🔍 Loading spaces for workspace:', WORKSPACE_ID);
         const response = await fetch(`/api/spaces?workspace_id=${WORKSPACE_ID}`);
         const data = await response.json();
 
+        console.log('🔍 Spaces API response:', { status: response.status, ok: response.ok, data });
+
         if (response.ok && data.spaces) {
+          console.log('✅ Loaded', data.spaces.length, 'spaces');
           allSpaces = data.spaces;
           currentUserSpaces = data.spaces;
           populateSpaceSelectors();
@@ -1065,19 +1069,24 @@
             currentSpaceId = lastSpaceId;
             updateSpaceSelectors(lastSpaceId);
           }
+        } else {
+          console.warn('⚠️  Failed to load spaces:', data);
         }
       } catch (error) {
-        console.error('Failed to load spaces:', error);
+        console.error('❌ Failed to load spaces:', error);
       }
     }
 
     // Populate all space selector dropdowns
     function populateSpaceSelectors() {
+      console.log('🔍 Populating space selectors with', currentUserSpaces.length, 'spaces');
+
       // Populate hero space filter
       const heroFilter = document.getElementById('space-filter-hero');
       if (heroFilter) {
         heroFilter.innerHTML = '<option value="">All Accessible Spaces</option>';
         currentUserSpaces.forEach(space => {
+          console.log('  Adding space:', space.name, space.space_id);
           const option = document.createElement('option');
           option.value = space.space_id;
           option.textContent = `${space.settings.icon} ${space.name}`;
@@ -1086,6 +1095,8 @@
           }
           heroFilter.appendChild(option);
         });
+      } else {
+        console.warn('⚠️  space-filter-hero element not found');
       }
 
       // Populate classic view space filter
