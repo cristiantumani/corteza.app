@@ -651,9 +651,8 @@
       <div class="modal-body">
         <h3 style="margin: 0 0 15px 0; font-size: 16px;">Add Member</h3>
         <form id="add-member-form" onsubmit="addSpaceMember(event)" style="margin-bottom: 30px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr 120px auto; gap: 10px;">
-            <input type="text" id="member-user-id" placeholder="User ID or @username" required style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
-            <input type="text" id="member-user-name" placeholder="Display name (optional)" style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
+          <div style="display: grid; grid-template-columns: 1fr 120px auto; gap: 10px;">
+            <input type="email" id="member-email" placeholder="member@example.com" required style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
             <select id="member-role" style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
               <option value="viewer">👁️ Viewer</option>
               <option value="member" selected>✏️ Member</option>
@@ -661,6 +660,9 @@
             </select>
             <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">Add</button>
           </div>
+          <small style="color: #616061; display: block; margin-top: 8px;">
+            💡 The user must already be a member of the workspace (invited via Team Invitations)
+          </small>
         </form>
 
         <h3 style="margin: 0 0 15px 0; font-size: 16px;">Current Members</h3>
@@ -1296,15 +1298,14 @@
     async function addSpaceMember(event) {
       event.preventDefault();
 
-      const userId = document.getElementById('member-user-id').value.trim();
-      const userName = document.getElementById('member-user-name').value.trim() || userId;
+      const email = document.getElementById('member-email').value.trim().toLowerCase();
       const role = document.getElementById('member-role').value;
 
       try {
         const response = await fetch(`/api/spaces/${currentSpaceId}/members`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspace_id: WORKSPACE_ID, user_id: userId, user_name: userName, role })
+          body: JSON.stringify({ workspace_id: WORKSPACE_ID, email: email, role: role })
         });
 
         const data = await response.json();

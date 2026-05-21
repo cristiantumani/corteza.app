@@ -501,11 +501,12 @@ router.get('/api/spaces/:space_id/members', async (req, res) => {
 router.post('/api/spaces/:space_id/members', async (req, res) => {
   try {
     const { space_id } = req.params;
-    const { workspace_id, user_id, user_name, role } = req.body;
+    const { workspace_id, user_id, user_name, email, role } = req.body;
 
-    if (!workspace_id || !user_id || !role) {
+    // Accept either email or user_id (backwards compatibility)
+    if (!workspace_id || (!user_id && !email) || !role) {
       return res.status(400).json({
-        error: 'Missing required fields: workspace_id, user_id, role'
+        error: 'Missing required fields: workspace_id, (email or user_id), role'
       });
     }
 
@@ -513,6 +514,33 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
       return res.status(400).json({
         error: 'Invalid role. Must be: owner, admin, member, or viewer'
       });
+    }
+
+    // If email provided, look up user_id from workspace members
+    let finalUserId = user_id;
+    let finalUserName = user_name;
+
+    if (email && !user_id) {
+      const { getWorkspaceMembersCollection } = require('../config/database');
+      const membersCollection = getWorkspaceMembersCollection();
+
+      // Look up user by email in workspace_members
+      const workspaceMember = await membersCollection.findOne({
+        workspace_id: workspace_id,
+        email: email.toLowerCase().trim(),
+        removed_at: null
+      });
+
+      if (!workspaceMember) {
+        return res.status(404).json({
+          error: 'User not found in workspace',
+          message: 'This email is not a member of the workspace. Please invite them to the workspace first.'
+        });
+      }
+
+      finalUserId = workspaceMember.user_id;
+      finalUserName = workspaceMember.user_name || email;
+      console.log(`📧 Resolved email ${email} to user_id ${finalUserId}`);
     }
 
     // Verify user is authenticated
@@ -554,7 +582,7 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
     const membersCollection = getSpaceMembersCollection();
     const existingMember = await membersCollection.findOne({
       space_id: space_id,
-      user_id: user_id,
+      user_id: finalUserId,
       removed_at: null
     });
 
@@ -568,14 +596,14 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
     const membership = await addSpaceMember(
       workspace_id,
       space_id,
-      user_id,
-      user_name || user_id,
+      finalUserId,
+      finalUserName || finalUserId,
       role,
       currentUserId,
       currentUserName
     );
 
-    console.log(`✅ Added member ${user_id} to space ${space_id} with role ${role}`);
+    console.log(`✅ Added member ${finalUserId} (${email || 'no email'}) to space ${space_id} with role ${role}`);
 
     res.status(201).json({
       success: true,
