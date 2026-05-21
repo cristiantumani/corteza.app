@@ -23,24 +23,42 @@ const settingsHTML = fs.readFileSync(
  * GET /dashboard - Serves the dashboard HTML
  */
 function serveDashboard(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = dashboardHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(dashboardHTML);
+  res.end(html);
 }
 
 /**
  * GET /ai-analytics - Serves the AI analytics dashboard HTML
  */
 function serveAIAnalytics(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = aiAnalyticsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(aiAnalyticsHTML);
+  res.end(html);
 }
 
 /**
  * GET /settings - Serves the settings page HTML
  */
 function serveSettings(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = settingsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(settingsHTML);
+  res.end(html);
 }
 
 /**

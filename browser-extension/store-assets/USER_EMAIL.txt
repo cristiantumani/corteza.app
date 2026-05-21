@@ -1,0 +1,86 @@
+EMAIL TO EXISTING CORTEZA USERS
+==================================================
+
+Subject: 🚀 New: Corteza Browser Extension is Live!
+
+--------------------------------------------------
+
+Hi [Name],
+
+Big news: Corteza is now available as a Chrome extension!
+
+**What This Means for You**
+
+You can now log team decisions from ANY webpage—without switching to Slack or the dashboard.
+
+• Press Ctrl+Shift+M (or Cmd+Shift+M on Mac)
+• Fill out the quick form
+• Save instantly to your team's memory
+
+**How It Works**
+
+The extension uses your existing Corteza login—just install and go. No extra setup required.
+
+**Why You'll Love It**
+
+→ Reading technical docs? Log your decisions right there
+→ Reviewing designs? Capture context without leaving the page
+→ In a Google Doc? Document decisions in real-time
+
+Your workflow stays uninterrupted.
+
+**Install Now**
+
+Chrome Web Store: [CHROME_STORE_URL]
+
+Takes 30 seconds to install. Works immediately.
+
+**Still Have Questions?**
+
+→ Installation guide: https://corteza.app/docs
+→ Need help? Reply to this email
+
+Thanks for being part of Corteza's journey!
+
+Best,
+Cristian
+
+P.S. Works for both Slack and email-based workspaces. Everyone can use it.
+
+---
+
+Corteza Team Memory
+Your searchable knowledge base, powered by AI
+https://corteza.app
+
+
+==================================================
+EMAIL SENDING CHECKLIST:
+==================================================
+
+Preparation:
+- [ ] Get list of all Corteza user emails
+- [ ] Segment by: Active users, Trial users, Inactive users
+- [ ] Test email to yourself first
+- [ ] Check links work
+- [ ] Check on mobile
+
+When to Send:
+- Tuesday or Thursday
+- 10 AM in users' primary timezone
+- Avoid Mondays (busy) and Fridays (low engagement)
+
+After Sending:
+- Monitor open rates (expect 20-30%)
+- Monitor click rates (expect 5-10%)
+- Respond to all replies within 24 hours
+- Track installations from email traffic
+
+Follow-up (1 week later):
+Send to users who didn't install:
+
+Subject: Did you try the Corteza extension yet?
+
+Body: Quick follow-up! Last week we launched the Chrome extension.
+If you haven't tried it yet, here's why you should...
+[Brief benefits + link]

@@ -153,6 +153,11 @@ async function startApp() {
   expressApp.get('/demo/api/stats', apiRateLimiter, handleDemoStats);
   expressApp.post('/demo/api/search', aiRateLimiter, handleDemoSearch);
 
+  // Workspace invitation page (public - authentication checked by page itself)
+  expressApp.get('/invite/:invite_id', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'views', 'invite.html'));
+  });
+
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
@@ -207,6 +212,9 @@ async function startApp() {
 
   // Spaces API routes (requires authentication)
   expressApp.use(require('./routes/spaces-api'));
+
+  // Workspace invitations API routes (partially public - invite details endpoint is public)
+  expressApp.use(require('./routes/invites-api'));
 
   // Create Slack App with the custom receiver
   const appConfig = {

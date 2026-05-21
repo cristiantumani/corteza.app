@@ -1,0 +1,28 @@
+Create a 16-slide VC pitch deck for Corteza, an AI-powered team memory platform for product teams.
+
+SLIDES:
+1. Cover: "Corteza - Your Team's AI-Powered Memory"
+2. Problem: Teams waste hours re-explaining decisions, context gets lost
+3. Cost: Engineers spend 5-10hrs/week searching, 2-4 week onboarding, $15B problem
+4. Solution: Log decisions from anywhere (Slack/extension), AI-powered search
+5. How it Works: 3-step flow (Log → AI Process → Search)
+6. Product: Show dashboard screenshots, Slack integration, browser extension
+7. Market: $15B TAM, $3B SAM, 50M+ product team members
+8. Business Model: Free (30 AI searches), Team $29/mo, Business $99/mo, $9/seat overages
+9. Traction: 50+ beta workspaces, 1000+ memories, 4.8/5 rating, organic growth
+10. Competition: 2x2 matrix showing Corteza as only AI-powered decision-specific tool
+11. Why Now: Remote work, AI revolution, growing product teams
+12. GTM: PLG → Slack Directory → Enterprise sales → API platform
+13. Roadmap: Q1 Chrome launch, Q2 Mobile, Q3 API, Q4 Enterprise features
+14. Team: Founder background, seeking technical co-founder
+15. The Ask: Raising [amount] for engineering (40%), GTM (30%), product (20%), ops (10%). Target: 1K workspaces, $50K MRR
+16. Thank You: Contact info, app.corteza.app
+
+DESIGN:
+- Color palette: Black (#000000), White (#FFFFFF), Gray (#1D1D1F, #F8F9FA)
+- Font: Inter, bold headlines, clean and minimal
+- Style: Modern SaaS, Apple keynote vibe, lots of white space
+- Icons: Simple line icons (brain, lightning, target)
+- Professional but approachable, data-driven but human
+
+Make it compelling for VCs focused on market size, traction, and scalability.

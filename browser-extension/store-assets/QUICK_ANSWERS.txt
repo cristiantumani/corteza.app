@@ -1,0 +1,93 @@
+=================================================
+CHROME WEB STORE - QUICK COPY-PASTE ANSWERS
+=================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. SINGLE PURPOSE DESCRIPTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This extension allows users to quickly log team decisions, context, and learnings to Corteza Team Memory from any webpage. Users can capture important information without leaving their current workflow, then search and retrieve that information using AI-powered semantic search through the Corteza dashboard.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. HOST PERMISSIONS JUSTIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Host: https://app.corteza.app/*
+---
+This extension needs to communicate with app.corteza.app to authenticate users and save their team memories. The host permission allows the extension to: 1) Check if the user is logged in (GET /auth/me) 2) Submit new team memories (POST /api/memory/create). All communication uses HTTPS and session cookies for authentication.
+
+Host: https://decision-logger-bot-production.up.railway.app/*
+---
+Fallback host for API communication when the primary domain (app.corteza.app) is unavailable. Uses the same authentication and API endpoints as the primary host. This ensures service continuity during maintenance or deployments.
+
+Host: http://localhost:3000/*
+---
+Development and testing environment only. Allows developers to test the extension against a local development server. Not used in production. Users can safely ignore this permission.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. STORAGE PERMISSION JUSTIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Used to store user preferences locally in the browser, such as view preference (Chat View vs Classic View) and UI state (collapsed/expanded sections). No personal data or team memories are stored locally - all data is saved to the user's Corteza workspace on the server.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. COOKIES PERMISSION JUSTIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Required to access session cookies that authenticate the user with app.corteza.app. When users log in to the Corteza dashboard, a session cookie is created. This extension reads that cookie to verify the user is authenticated before allowing them to submit team memories. The extension does NOT create, modify, or delete cookies - it only reads existing session cookies created by the Corteza dashboard.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. REMOTE CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SELECT: NO (Do not check the box)
+
+Our extension does NOT use remotely hosted code. All JavaScript is bundled in the extension package.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. DATA USAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SELECT: "This extension does NOT collect user data"
+
+Explanation (if needed):
+This extension does not collect, store, or transmit personal user data. It only: 1) Reads session cookies to verify authentication (cookies created by corteza.app) 2) Submits user-entered team memories to the user's Corteza workspace 3) Stores non-sensitive UI preferences locally (view settings). All team memories are stored in the user's Corteza workspace, not by the extension.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. PRIVACY POLICY URL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CONTACT EMAIL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cristiantumani@gmail.com
+
+⚠️ IMPORTANT: You must verify this email before submitting!
+Go to Account Settings → Verify Email → Check inbox → Click link
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. DEVELOPER PROGRAM POLICIES CERTIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHECK THE BOX: ✅ Yes, I certify
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUBMISSION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Single purpose description filled
+[ ] All 3 host permissions justified
+[ ] Storage permission justified
+[ ] Cookies permission justified
+[ ] Remote code = NO
+[ ] Data usage = "Does not collect"
+[ ] Privacy policy URL added
+[ ] Support email verified ✅
+[ ] Policies certification checked
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ready to submit! 🚀

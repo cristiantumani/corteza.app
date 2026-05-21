@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Join Workspace - Corteza</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #1d1c1d;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+
+    .invite-card {
+      background: #f8f9fa;
+      border: 1px solid #e1e4e8;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .workspace-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1d1c1d;
+      margin-bottom: 8px;
+    }
+
+    .invite-details {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+
+    .invite-details strong {
+      color: #1d1c1d;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .status-valid {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-expired {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-revoked {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .error-box {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      color: #991b1b;
+    }
+
+    .success-box {
+      background: #d1fae5;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      color: #065f46;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-secondary:hover {
+      background: #f8f9ff;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading-state" class="loading">
+      <div class="spinner"></div>
+      <p>Loading invitation...</p>
+    </div>
+
+    <div id="content" style="display: none;">
+      <!-- Content will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const INVITE_ID = window.location.pathname.split('/invite/')[1];
+
+    async function loadInvite() {
+      try {
+        // Fetch invite details
+        const response = await fetch(`/api/invites/${INVITE_ID}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          showError('Invitation not found or invalid.');
+          return;
+        }
+
+        const invite = data.invite;
+
+        // Check if user is authenticated
+        let isAuthenticated = false;
+        try {
+          const authResponse = await fetch('/auth/me');
+          isAuthenticated = authResponse.ok;
+        } catch (e) {
+          isAuthenticated = false;
+        }
+
+        // Hide loading, show content
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+
+        // Render invite details
+        renderInvite(invite, isAuthenticated);
+
+      } catch (error) {
+        console.error('Error loading invite:', error);
+        showError('Failed to load invitation. Please try again.');
+      }
+    }
+
+    function renderInvite(invite, isAuthenticated) {
+      const content = document.getElementById('content');
+
+      let html = '<h1>🎉 You're invited!</h1>';
+      html += '<p class="subtitle">Join a workspace on Corteza</p>';
+
+      // Invite card
+      html += '<div class="invite-card">';
+      html += `<div class="workspace-name">${escapeHtml(invite.workspace_name)}</div>`;
+      html += '<div class="invite-details">';
+      html += `<strong>${escapeHtml(invite.invited_by_name)}</strong> has invited you to join as a <strong>${invite.role}</strong>`;
+      html += '</div>';
+
+      // Status badge
+      if (invite.is_valid) {
+        html += '<span class="status-badge status-valid">✓ Valid Invitation</span>';
+      } else if (invite.is_expired) {
+        html += '<span class="status-badge status-expired">⚠️ Expired</span>';
+      } else if (invite.is_revoked) {
+        html += '<span class="status-badge status-revoked">❌ Revoked</span>';
+      } else if (invite.max_uses_reached) {
+        html += '<span class="status-badge status-expired">⚠️ Max Uses Reached</span>';
+      }
+
+      html += '</div>'; // invite-card
+
+      // Action buttons
+      if (invite.is_valid) {
+        if (isAuthenticated) {
+          html += `<button class="btn btn-primary" onclick="acceptInvite()">Accept Invitation</button>`;
+        } else {
+          html += `<a href="/auth/login?redirect=/invite/${INVITE_ID}" class="btn btn-primary">Sign in to Accept</a>`;
+        }
+      } else {
+        let errorMsg = 'This invitation is no longer valid.';
+        if (invite.is_expired) errorMsg = 'This invitation has expired.';
+        if (invite.is_revoked) errorMsg = 'This invitation has been revoked.';
+        if (invite.max_uses_reached) errorMsg = 'This invitation has reached its maximum number of uses.';
+
+        html += `<div class="error-box">${errorMsg}</div>`;
+      }
+
+      html += '<div class="footer">';
+      html += '<a href="https://corteza.app">Learn more about Corteza</a>';
+      html += '</div>';
+
+      content.innerHTML = html;
+    }
+
+    async function acceptInvite() {
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = 'Accepting...';
+
+      try {
+        const response = await fetch(`/api/invites/${INVITE_ID}/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Show success message
+          document.getElementById('content').innerHTML = `
+            <div class="success-box">
+              <h2 style="margin-bottom: 8px;">✅ Welcome to ${escapeHtml(data.workspace_name)}!</h2>
+              <p>You've successfully joined the workspace as a ${data.role}.</p>
+            </div>
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+          `;
+        } else {
+          showError(data.error || 'Failed to accept invitation');
+          button.disabled = false;
+          button.textContent = 'Accept Invitation';
+        }
+      } catch (error) {
+        console.error('Error accepting invite:', error);
+        showError('Failed to accept invitation. Please try again.');
+        button.disabled = false;
+        button.textContent = 'Accept Invitation';
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('content').innerHTML = `
+        <h1>❌ Error</h1>
+        <div class="error-box">${escapeHtml(message)}</div>
+        <a href="https://corteza.app" class="btn btn-secondary">Go to Homepage</a>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load invite on page load
+    loadInvite();
+  </script>
+</body>
+</html>

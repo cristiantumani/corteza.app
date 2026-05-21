@@ -17,6 +17,9 @@ const { getSlackClient } = require('../config/slack-client');
 
 const router = express.Router();
 
+// Apply JSON body parser to all routes in this router
+router.use(express.json());
+
 /**
  * Helper function to safely get Slack client
  * Returns null if client is unavailable (e.g., test workspaces)
@@ -183,7 +186,11 @@ router.post('/api/spaces', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating space:', error);
-    res.status(500).json({ error: 'Failed to create space' });
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      error: `Failed to create space: ${error.message}`
+    });
   }
 });
 

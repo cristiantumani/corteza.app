@@ -11,6 +11,8 @@ let workspaceAdminsCollection = null;
 let extensionInstallsCollection = null;
 let workspaceSpacesCollection = null;
 let spaceMembersCollection = null;
+let workspaceInvitesCollection = null;
+let workspaceMembersCollection = null;
 
 /**
  * Connects to MongoDB and sets up indexes
@@ -49,6 +51,8 @@ async function connectToMongoDB() {
     extensionInstallsCollection = db.collection('extension_installs');
     workspaceSpacesCollection = db.collection('workspace_spaces');
     spaceMembersCollection = db.collection('space_members');
+    workspaceInvitesCollection = db.collection('workspace_invites');
+    workspaceMembersCollection = db.collection('workspace_members');
 
     // Create indexes for decisions collection
     await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
@@ -128,6 +132,24 @@ async function connectToMongoDB() {
     await decisionsCollection.createIndex({ workspace_id: 1, space_id: 1, type: 1 });
     await decisionsCollection.createIndex({ workspace_id: 1, space_id: 1, id: 1 });
     await decisionsCollection.createIndex({ space_id: 1, timestamp: -1 });
+
+    // Create indexes for workspace invites collection
+    await workspaceInvitesCollection.createIndex({ invite_id: 1 }, { unique: true });
+    await workspaceInvitesCollection.createIndex({ workspace_id: 1, status: 1 });
+    await workspaceInvitesCollection.createIndex({ workspace_id: 1, created_at: -1 });
+    await workspaceInvitesCollection.createIndex({ expires_at: 1 });
+
+    // Create indexes for workspace members collection
+    await workspaceMembersCollection.createIndex(
+      { workspace_id: 1, user_id: 1, removed_at: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { removed_at: null }
+      }
+    );
+    await workspaceMembersCollection.createIndex({ workspace_id: 1, removed_at: 1 });
+    await workspaceMembersCollection.createIndex({ user_id: 1, removed_at: 1 });
+    await workspaceMembersCollection.createIndex({ invited_by: 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -238,6 +260,26 @@ function getSpaceMembersCollection() {
   return spaceMembersCollection;
 }
 
+/**
+ * Returns the workspace invites collection
+ */
+function getWorkspaceInvitesCollection() {
+  if (!workspaceInvitesCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return workspaceInvitesCollection;
+}
+
+/**
+ * Returns the workspace members collection
+ */
+function getWorkspaceMembersCollection() {
+  if (!workspaceMembersCollection) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return workspaceMembersCollection;
+}
+
 module.exports = {
   connectToMongoDB,
   getDecisionsCollection,
@@ -249,5 +291,7 @@ module.exports = {
   getWorkspaceAdminsCollection,
   getExtensionInstallsCollection,
   getWorkspaceSpacesCollection,
-  getSpaceMembersCollection
+  getSpaceMembersCollection,
+  getWorkspaceInvitesCollection,
+  getWorkspaceMembersCollection
 };

@@ -1,0 +1,135 @@
+TWITTER LAUNCH THREAD
+==================================================
+
+Tweet 1 (Main Announcement):
+--------------------------------------------------
+🚀 Corteza is now a Chrome extension!
+
+Log team decisions from anywhere with Ctrl+Shift+M
+↓
+Find them instantly with AI search
+
+No more "where did we document that?"
+
+Install free: [CHROME_STORE_URL]
+
+Built by a product team, for product teams 🧠
+
+
+Tweet 2 (The Problem):
+--------------------------------------------------
+Product team reality:
+
+→ Great decision made in Slack
+→ Buried 2 months later
+→ Team re-explains it in a meeting
+→ 30 minutes wasted
+
+Sound familiar?
+
+This exact pain point led us to build Corteza.
+
+
+Tweet 3 (The Solution):
+--------------------------------------------------
+How it works:
+
+1️⃣ Press Ctrl+Shift+M on ANY webpage
+2️⃣ Log the decision (10 seconds)
+3️⃣ Ask your team's AI: "What did we decide about authentication?"
+4️⃣ Get instant answer with full context
+
+No folders. No searching. Just ask.
+
+
+Tweet 4 (The Tech):
+--------------------------------------------------
+Under the hood:
+
+• Claude AI for conversational responses
+• OpenAI embeddings for semantic search
+• Session-based auth (no extra login)
+• Works with or without Slack
+
+Free and open source: github.com/cristiantumani/corteza.app
+
+
+Tweet 5 (Call to Action):
+--------------------------------------------------
+Try it free:
+🔗 [CHROME_STORE_URL]
+
+Takes 30 seconds to install.
+Works immediately with your Corteza workspace.
+
+Questions? Drop them below 👇
+
+If this helped, RT to help other product teams! 🙏
+
+
+==================================================
+STANDALONE TWEETS (Post separately throughout the week)
+==================================================
+
+Day 2:
+--------------------------------------------------
+Behind the scenes: Building the Corteza extension
+
+Biggest challenge? Making it dead simple.
+
+One keyboard shortcut. One form. Done.
+
+No folders to organize. No tags to remember.
+
+Just capture context where it happens.
+
+[Screenshot of extension popup]
+
+
+Day 4:
+--------------------------------------------------
+"We stopped losing decisions in Slack threads."
+
+"Onboarding new members is 10x faster."
+
+"Finally, our tribal knowledge is searchable."
+
+Real feedback from Corteza users.
+
+Try it: [CHROME_STORE_URL]
+
+
+Day 7:
+--------------------------------------------------
+First week: [X] installations 🎉
+
+Thanks to everyone who tried Corteza!
+
+Top feature requests so far:
+1. Firefox support
+2. Mobile app
+3. Jira deep integration
+
+What would YOU want to see next? 👇
+
+
+==================================================
+INSTRUCTIONS:
+==================================================
+
+1. Replace [CHROME_STORE_URL] with your actual URL
+2. Post Tweet 1 on launch day
+3. Post Tweets 2-5 as thread replies (within 1 hour)
+4. Retweet thread from personal account
+5. Post standalone tweets on Days 2, 4, 7
+6. Engage with all replies and retweets
+
+Best times to tweet:
+- 9 AM, 1 PM, 5 PM (your timezone)
+- Tuesday-Thursday perform best
+
+Use images:
+- Tweet 1: Extension icon or screenshot
+- Tweet 3: Screenshot of the interface
+- Day 2: Behind-the-scenes screenshot
+- Day 4: User testimonial screenshot

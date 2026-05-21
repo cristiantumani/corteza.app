@@ -1,0 +1,30 @@
+# Chrome Web Store Listing - Copy-Paste Ready
+
+## Extension Name
+Corteza Team Memory
+
+## Short Description (132 chars max)
+Log and search your team's decisions using AI. Never lose important context again.
+
+## Category
+Productivity
+
+## Website
+https://corteza.app
+
+## Support Email
+cristiantumani@gmail.com
+
+## Privacy Policy URL
+https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+
+## Detailed Description
+[See PUBLISHING_GUIDE.md for full detailed description - it's too long to fit here]
+
+## Permission Justifications
+
+storage: Store user preferences and view settings locally
+cookies: Access session cookies to authenticate with corteza.app
+
+## Tags/Keywords
+team memory, decisions, AI search, knowledge management, productivity, team collaboration, documentation, decision tracking, semantic search

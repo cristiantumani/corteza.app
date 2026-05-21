@@ -1,0 +1,56 @@
+🚀 Big news: Corteza is now available as a Chrome extension!
+
+Remember that retrospective where we realized we were spending 30 minutes re-explaining decisions we'd already made?
+
+That pain led us to build Corteza—and now we're making it even more accessible.
+
+**Introducing: Corteza Browser Extension** 🧠
+
+Log team decisions from ANY webpage without breaking your flow:
+
+✅ Keyboard shortcut (Ctrl+Shift+M)
+✅ Works wherever you work
+✅ Instant sync with your team's memory
+✅ AI-powered search to find anything
+
+The best part? It uses your existing Corteza login—no extra setup.
+
+Real example:
+- Reading technical docs? Log why you chose that approach
+- In a Google Doc discussion? Capture the decision right there
+- Reviewing a PR? Document the context instantly
+
+Your team's memory, everywhere you work.
+
+🔗 Install now: [CHROME_STORE_URL]
+🌐 Learn more: https://corteza.app
+
+Built by a product team, for product teams.
+
+#ProductManagement #ChromeExtension #TeamProductivity #AITools #BuildInPublic
+
+---
+
+P.S. Works for teams with or without Slack. Email login supported!
+
+
+==================================================
+INSTRUCTIONS:
+==================================================
+
+1. Wait for Chrome Web Store approval email
+2. Get your extension URL from the email
+3. Replace [CHROME_STORE_URL] with your actual URL
+4. Copy this entire post
+5. Paste in LinkedIn (from Corteza company page)
+6. Add a screenshot of the extension
+7. Post!
+
+Best times to post:
+- Tuesday-Thursday
+- 8-10 AM in your timezone
+
+After posting:
+- Engage with comments in first 2 hours (boosts algorithm)
+- Share to your personal profile too
+- Pin it to company page

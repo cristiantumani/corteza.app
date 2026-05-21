@@ -1,0 +1,372 @@
+<!-- ============================================
+     WEBSITE UPDATES - Copy & Paste Ready
+     ============================================ -->
+
+<!-- 1. CHROME WEB STORE BADGE -->
+<!-- Add this anywhere on your homepage, preferably near the hero section -->
+
+<a href="[YOUR_CHROME_STORE_URL]"
+   target="_blank"
+   rel="noopener noreferrer"
+   class="chrome-store-badge">
+  <img
+    src="https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/iNEddTyWiMfLSwFD6qGq.png"
+    alt="Available in the Chrome Web Store"
+    height="58"
+  />
+</a>
+
+
+<!-- 2. ANNOUNCEMENT BANNER -->
+<!-- Add this at the very top of your site, above the header -->
+
+<div style="background: #000; color: #fff; text-align: center; padding: 12px 20px; font-size: 14px;">
+  🎉 NEW: Corteza is now available as a Chrome extension!
+  <a href="[YOUR_CHROME_STORE_URL]"
+     style="color: #fff; text-decoration: underline; margin-left: 8px;"
+     target="_blank">
+    Install now →
+  </a>
+</div>
+
+
+<!-- 3. HERO SECTION UPDATE -->
+<!-- Replace your existing hero section with this -->
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Your Team's Memory, Everywhere You Work</h1>
+    <p>Log decisions from any webpage. Search with AI. Never lose context again.</p>
+
+    <div class="hero-cta-buttons">
+      <a href="[YOUR_CHROME_STORE_URL]"
+         class="btn btn-primary"
+         target="_blank">
+        Install Chrome Extension
+      </a>
+      <a href="/dashboard" class="btn btn-secondary">
+        Try Dashboard
+      </a>
+      <a href="#demo" class="btn btn-outline">
+        Watch Demo
+      </a>
+    </div>
+
+    <!-- Badge below buttons -->
+    <div style="margin-top: 20px;">
+      <a href="[YOUR_CHROME_STORE_URL]" target="_blank" rel="noopener">
+        <img
+          src="https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/iNEddTyWiMfLSwFD6qGq.png"
+          alt="Available in the Chrome Web Store"
+          height="58"
+        />
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- 4. FEATURES SECTION - Add Extension Feature -->
+<!-- Add this as a new feature card -->
+
+<div class="feature-card">
+  <div class="feature-icon">🔌</div>
+  <h3>Browser Extension</h3>
+  <p>
+    Log decisions from any webpage with one keyboard shortcut.
+    No tool-switching required. Press Ctrl+Shift+M and you're done.
+  </p>
+  <a href="[YOUR_CHROME_STORE_URL]"
+     class="feature-link"
+     target="_blank">
+    Install Extension →
+  </a>
+</div>
+
+
+<!-- 5. INSTALLATION OPTIONS SECTION -->
+<!-- Add this new section to your homepage -->
+
+<section class="installation-options">
+  <div class="container">
+    <h2>Get Started with Corteza</h2>
+    <p>Choose how you want to log and search your team's decisions</p>
+
+    <div class="options-grid">
+      <!-- Option 1: Browser Extension -->
+      <div class="option-card featured">
+        <div class="option-badge">NEW</div>
+        <div class="option-icon">🔌</div>
+        <h3>Browser Extension</h3>
+        <p>Log from anywhere with one keyboard shortcut</p>
+        <ul class="option-features">
+          <li>✓ Works on any webpage</li>
+          <li>✓ Keyboard shortcut (Ctrl+Shift+M)</li>
+          <li>✓ Instant sync</li>
+        </ul>
+        <a href="[YOUR_CHROME_STORE_URL]"
+           class="btn btn-primary"
+           target="_blank">
+          Install for Chrome
+        </a>
+      </div>
+
+      <!-- Option 2: Slack Bot -->
+      <div class="option-card">
+        <div class="option-icon">💬</div>
+        <h3>Slack Integration</h3>
+        <p>Log directly from Slack conversations</p>
+        <ul class="option-features">
+          <li>✓ /log-decision command</li>
+          <li>✓ Search from Slack</li>
+          <li>✓ Team notifications</li>
+        </ul>
+        <a href="/slack/install" class="btn btn-secondary">
+          Add to Slack
+        </a>
+      </div>
+
+      <!-- Option 3: Dashboard -->
+      <div class="option-card">
+        <div class="option-icon">🖥️</div>
+        <h3>Web Dashboard</h3>
+        <p>Full-featured dashboard with AI search</p>
+        <ul class="option-features">
+          <li>✓ Advanced search</li>
+          <li>✓ Analytics</li>
+          <li>✓ Team management</li>
+        </ul>
+        <a href="/auth/login" class="btn btn-secondary">
+          Open Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CSS for Installation Options -->
+<style>
+.installation-options {
+  padding: 80px 20px;
+  background: #f8f9fa;
+}
+
+.installation-options h2 {
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.installation-options > div > p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 48px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.option-card {
+  background: white;
+  border: 2px solid #e1e4e8;
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.option-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.option-card.featured {
+  border-color: #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.option-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #000;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.option-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.option-card h3 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.option-card p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.option-features {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  text-align: left;
+}
+
+.option-features li {
+  padding: 8px 0;
+  color: #333;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #000;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2d2d2d;
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: #000;
+  border: 2px solid #e1e4e8;
+}
+
+.btn-secondary:hover {
+  background: #e1e4e8;
+}
+</style>
+
+
+<!-- 6. UPDATE NAVIGATION MENU -->
+<!-- Add this to your main navigation -->
+
+<nav>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="#features">Features</a></li>
+    <li>
+      <a href="[YOUR_CHROME_STORE_URL]" target="_blank">
+        Extension <span class="nav-badge">NEW</span>
+      </a>
+    </li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/auth/login">Dashboard</a></li>
+  </ul>
+</nav>
+
+<style>
+.nav-badge {
+  background: #000;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: 4px;
+  font-weight: 700;
+}
+</style>
+
+
+<!-- 7. FOOTER UPDATE -->
+<!-- Add extension link to footer -->
+
+<footer>
+  <div class="footer-section">
+    <h4>Product</h4>
+    <ul>
+      <li><a href="[YOUR_CHROME_STORE_URL]" target="_blank">Chrome Extension</a></li>
+      <li><a href="/slack">Slack Integration</a></li>
+      <li><a href="/dashboard">Web Dashboard</a></li>
+      <li><a href="/pricing">Pricing</a></li>
+    </ul>
+  </div>
+  <!-- Other footer sections... -->
+</footer>
+
+
+<!-- ============================================
+     JAVASCRIPT TRACKING (Optional)
+     ============================================ -->
+
+<script>
+// Track Chrome Web Store badge clicks
+document.querySelectorAll('a[href*="chrome.google.com/webstore"]').forEach(link => {
+  link.addEventListener('click', () => {
+    // Google Analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'click', {
+        'event_category': 'Chrome Extension',
+        'event_label': 'Badge Click'
+      });
+    }
+
+    // Or your analytics platform
+    console.log('Chrome Web Store link clicked');
+  });
+});
+</script>
+
+
+<!-- ============================================
+     META TAGS UPDATE (for social sharing)
+     ============================================ -->
+
+<!-- Add these to your <head> section -->
+
+<meta property="og:title" content="Corteza - Your Team's AI-Powered Memory">
+<meta property="og:description" content="Log decisions from any webpage. Search with AI. Never lose context again. Now available as a Chrome extension!">
+<meta property="og:image" content="https://corteza.app/og-image-extension.png">
+<meta property="og:url" content="https://corteza.app">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Corteza - Your Team's AI-Powered Memory">
+<meta name="twitter:description" content="Log decisions from any webpage. Search with AI. Now available as a Chrome extension!">
+<meta name="twitter:image" content="https://corteza.app/og-image-extension.png">
+
+
+<!-- ============================================
+     INSTRUCTIONS
+     ============================================ -->
+
+<!--
+1. Replace ALL instances of [YOUR_CHROME_STORE_URL] with your actual URL
+2. Choose which sections to add to your site
+3. Adjust colors/styles to match your brand
+4. Test all links work before deploying
+5. Deploy to production
+6. Verify badge appears and links work
+
+Priority sections to add:
+- Announcement banner (top of site)
+- Chrome Web Store badge (hero section)
+- Hero CTA buttons (with extension link)
+- Installation options section (new)
+
+Nice-to-have:
+- Navigation menu update
+- Footer update
+- Meta tags
+-->
