@@ -189,12 +189,15 @@ router.get('/api/invites', async (req, res) => {
 router.get('/api/invites/:invite_id', async (req, res) => {
   try {
     const { invite_id } = req.params;
+    console.log('📧 GET /api/invites/:invite_id - Looking up invite:', invite_id);
 
     const invitesCollection = getWorkspaceInvitesCollection();
 
     const invite = await invitesCollection.findOne({ invite_id: invite_id });
+    console.log('📧 Invite found:', !!invite);
 
     if (!invite) {
+      console.log('❌ Invite not found in database');
       return res.status(404).json({ success: false, error: 'Invite not found' });
     }
 

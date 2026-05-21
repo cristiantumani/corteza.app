@@ -198,14 +198,19 @@
 
   <script>
     const INVITE_ID = window.location.pathname.split('/invite/')[1];
+    console.log('📧 Invite ID:', INVITE_ID);
 
     async function loadInvite() {
       try {
+        console.log('📧 Fetching invite details from:', `/api/invites/${INVITE_ID}`);
         // Fetch invite details
         const response = await fetch(`/api/invites/${INVITE_ID}`);
+        console.log('📧 Response status:', response.status);
         const data = await response.json();
+        console.log('📧 Response data:', data);
 
         if (!data.success) {
+          console.error('❌ Invite not found or invalid:', data);
           showError('Invitation not found or invalid.');
           return;
         }
@@ -229,7 +234,8 @@
         renderInvite(invite, isAuthenticated);
 
       } catch (error) {
-        console.error('Error loading invite:', error);
+        console.error('❌ Error loading invite:', error);
+        console.error('Error details:', error.message, error.stack);
         showError('Failed to load invitation. Please try again.');
       }
     }
