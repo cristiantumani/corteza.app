@@ -1217,29 +1217,6 @@
 
     // ========== END SPACES FUNCTIONALITY ==========
 
-    // Initialize dashboard - check auth first, then load data
-    (async function init() {
-      // Update tab buttons
-      const tabs = document.querySelectorAll('.space-tab');
-      tabs.forEach(tab => tab.classList.remove('active'));
-
-      const activeTabBtn = Array.from(tabs).find(tab =>
-        tab.textContent.toLowerCase().includes(tabName.replace('-', ' '))
-      );
-      if (activeTabBtn) {
-        activeTabBtn.classList.add('active');
-      }
-
-      // Update tab content
-      const tabContents = document.querySelectorAll('.space-tab-content');
-      tabContents.forEach(content => content.classList.remove('active'));
-
-      const activeContent = document.getElementById(`${tabName}-tab`);
-      if (activeContent) {
-        activeContent.classList.add('active');
-      }
-    }
-
     // Load spaces list in manager
     async function loadSpacesList() {
       const container = document.getElementById('spaces-list');
