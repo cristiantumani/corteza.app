@@ -522,25 +522,44 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
 
     if (email && !user_id) {
       const { getWorkspaceMembersCollection } = require('../config/database');
-      const membersCollection = getWorkspaceMembersCollection();
+      const workspaceMembersCollection = getWorkspaceMembersCollection();
+
+      const normalizedEmail = email.toLowerCase().trim();
+      console.log(`📧 Looking up user by email: ${normalizedEmail} in workspace: ${workspace_id}`);
 
       // Look up user by email in workspace_members
-      const workspaceMember = await membersCollection.findOne({
+      const workspaceMember = await workspaceMembersCollection.findOne({
         workspace_id: workspace_id,
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         removed_at: null
       });
 
+      console.log(`📧 Workspace member found:`, workspaceMember ? `Yes (${workspaceMember.user_id})` : 'No');
+
       if (!workspaceMember) {
+        // Debug: Check if email exists with different workspace_id
+        const anyMember = await workspaceMembersCollection.findOne({
+          email: normalizedEmail,
+          removed_at: null
+        });
+        console.log(`📧 Email exists in ANY workspace:`, anyMember ? `Yes (workspace: ${anyMember.workspace_id})` : 'No');
+
+        // Debug: Show all members in this workspace
+        const allMembers = await workspaceMembersCollection.find({
+          workspace_id: workspace_id,
+          removed_at: null
+        }).toArray();
+        console.log(`📧 All members in workspace ${workspace_id}:`, allMembers.map(m => ({ email: m.email, user_id: m.user_id })));
+
         return res.status(404).json({
           error: 'User not found in workspace',
-          message: 'This email is not a member of the workspace. Please invite them to the workspace first.'
+          message: 'This email is not a member of the workspace. Please invite them to the workspace first via Team Invitations.'
         });
       }
 
       finalUserId = workspaceMember.user_id;
       finalUserName = workspaceMember.user_name || email;
-      console.log(`📧 Resolved email ${email} to user_id ${finalUserId}`);
+      console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
     }
 
     // Verify user is authenticated
