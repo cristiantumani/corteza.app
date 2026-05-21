@@ -731,6 +731,14 @@
       <div class="modal-body">
         <form id="create-invite-form" onsubmit="createInvite(event)">
           <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #000;">Email Address (Optional)</label>
+            <input type="email" id="invite-email" placeholder="teammate@company.com" style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 6px; font-size: 14px;">
+            <small style="color: #616061; display: block; margin-top: 6px;">
+              If provided, we'll email the invite link directly. Otherwise, you can copy and share the link manually.
+            </small>
+          </div>
+
+          <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #000;">Member Role *</label>
             <select id="invite-role" required style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 6px; font-size: 14px;">
               <option value="member" selected>👤 Member (Can create and view decisions)</option>
@@ -1367,6 +1375,7 @@
     async function createInvite(event) {
       event.preventDefault();
 
+      const email = document.getElementById('invite-email').value.trim();
       const role = document.getElementById('invite-role').value;
       const expiresValue = document.getElementById('invite-expires').value;
       const maxUsesInput = document.getElementById('invite-max-uses').value;
@@ -1375,7 +1384,8 @@
         workspace_id: WORKSPACE_ID,
         role: role,
         expires_in_days: expiresValue === 'null' ? null : parseInt(expiresValue),
-        max_uses: maxUsesInput ? parseInt(maxUsesInput) : null
+        max_uses: maxUsesInput ? parseInt(maxUsesInput) : null,
+        email: email || null
       };
 
       try {
@@ -1389,12 +1399,19 @@
 
         if (data.success) {
           closeCreateInviteModal();
-          showInviteLinkModal(
-            data.invite_url,
-            role,
-            data.expires_at,
-            maxUsesInput || 'Unlimited'
-          );
+
+          // If email was sent, show success message instead of the link modal
+          if (data.email_sent && email) {
+            alert(`✅ Invitation sent to ${email}!\n\nThey'll receive an email with the invite link.`);
+          } else {
+            showInviteLinkModal(
+              data.invite_url,
+              role,
+              data.expires_at,
+              maxUsesInput || 'Unlimited'
+            );
+          }
+
           // Refresh invites list if it's open
           if (document.getElementById('invites-list').style.display === 'block') {
             loadInvites();

@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { getWorkspaceInvitesCollection, getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
+const { sendInviteEmail } = require('../utils/n8n-client');
 
 const router = express.Router();
 
@@ -23,7 +24,9 @@ router.use(express.json());
  */
 router.post('/api/invites', async (req, res) => {
   try {
-    const { workspace_id, role = 'member', expires_in_days = 30, max_uses = null } = req.body;
+    const { workspace_id, role = 'member', expires_in_days = 30, max_uses = null, email = null } = req.body;
+
+    console.log('📧 POST /api/invites - Creating invite:', { workspace_id, role, email });
 
     // Verify user is authenticated
     if (!req.session?.user) {
@@ -34,7 +37,9 @@ router.post('/api/invites', async (req, res) => {
     const userName = req.session.user.user_name;
     const workspaceName = req.session.user.workspace_name || workspace_id;
 
-    // Verify user is workspace admin
+    console.log('📧 User:', { userId, userName, workspaceName });
+
+    // Verify user is workspace admin (or owner of their own workspace)
     const adminsCollection = getWorkspaceAdminsCollection();
 
     const isAdmin = await adminsCollection.findOne({
@@ -44,7 +49,14 @@ router.post('/api/invites', async (req, res) => {
       deactivated_at: null
     });
 
-    if (!isAdmin) {
+    console.log('📧 Is admin?', !!isAdmin);
+
+    // For email-authenticated workspaces, the creator is automatically admin
+    // If no admin record exists but user's workspace matches, allow them to create invites
+    const isWorkspaceOwner = req.session.user.workspace_id === workspace_id;
+
+    if (!isAdmin && !isWorkspaceOwner) {
+      console.log('⚠️  User not authorized - not admin and not workspace owner');
       return res.status(403).json({ success: false, error: 'Only workspace admins can create invites' });
     }
 
@@ -77,16 +89,38 @@ router.post('/api/invites', async (req, res) => {
     const baseUrl = process.env.APP_URL || 'https://app.corteza.app';
     const inviteUrl = `${baseUrl}/invite/${inviteId}`;
 
+    // Send email if email address was provided
+    let emailSent = false;
+    if (email && email.trim().length > 0) {
+      try {
+        const emailResult = await sendInviteEmail({
+          email: email.trim(),
+          inviter_name: userName,
+          workspace_name: workspaceName,
+          role: role,
+          invite_url: inviteUrl,
+          expires_days: expires_in_days || 30
+        });
+        emailSent = emailResult.success;
+        console.log('📧 Invite email sent to:', email);
+      } catch (emailError) {
+        console.error('⚠️  Failed to send invite email:', emailError);
+        // Don't fail the invite creation if email fails
+      }
+    }
+
     res.json({
       success: true,
       invite_id: inviteId,
       invite_url: inviteUrl,
-      expires_at: expiresAt.toISOString()
+      expires_at: expiresAt.toISOString(),
+      email_sent: emailSent
     });
 
   } catch (error) {
     console.error('Error creating invite:', error);
-    res.status(500).json({ success: false, error: 'Failed to create invite' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ success: false, error: `Failed to create invite: ${error.message}` });
   }
 });
 

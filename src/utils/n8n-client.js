@@ -116,7 +116,44 @@ async function sendReengagementEmail({ email, workspace_name, install_date }) {
   return { success: true };
 }
 
+/**
+ * Sends workspace invitation email via Resend
+ */
+async function sendInviteEmail({ email, inviter_name, workspace_name, role, invite_url, expires_days }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️  RESEND_API_KEY not configured — skipping invite email');
+    return { success: false, reason: 'resend_not_configured' };
+  }
+
+  const roleDescription = role === 'admin' ? 'an admin' : 'a member';
+
+  const result = await sendEmail({
+    to: email,
+    subject: `${inviter_name} invited you to join ${workspace_name} on Corteza`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">You're invited! 🎉</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
+          <strong>${inviter_name}</strong> has invited you to join <strong>${workspace_name}</strong> on Corteza as ${roleDescription}.
+        </p>
+        <a href="${invite_url}"
+           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Accept invitation →
+        </a>
+        <p style="font-size: 13px; color: #999; margin: 32px 0 0;">
+          This invitation expires in ${expires_days} days. If you didn't expect this, you can safely ignore this email.
+        </p>
+      </div>
+    `
+  });
+
+  console.log(`✅ Invite email sent to ${email}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
   sendMagicLinkEmail,
-  sendReengagementEmail
+  sendReengagementEmail,
+  sendInviteEmail
 };
