@@ -24,25 +24,31 @@ async function getInstallationStore() {
 /**
  * Get Slack Web API client for a workspace
  * @param {string} workspaceId - Slack team/workspace ID
- * @returns {Promise<WebClient>} Authenticated Slack Web API client
- * @throws {Error} if installation not found or OAuth not configured
+ * @returns {Promise<WebClient|null>} Authenticated Slack Web API client or null if not available
  */
 async function getSlackClient(workspaceId) {
   // If using OAuth, fetch installation from store
   if (config.slack.useOAuth) {
-    const store = await getInstallationStore();
-    const installation = await store.fetchInstallation({
-      teamId: workspaceId,
-      isEnterpriseInstall: false
-    });
+    try {
+      const store = await getInstallationStore();
+      const installation = await store.fetchInstallation({
+        teamId: workspaceId,
+        isEnterpriseInstall: false
+      });
 
-    if (!installation) {
-      throw new Error(`No installation found for workspace ${workspaceId}`);
+      if (!installation) {
+        // Email-authenticated workspace without Slack - return null gracefully
+        return null;
+      }
+
+      // Return the bot client from the installation
+      const { WebClient } = require('@slack/web-api');
+      return new WebClient(installation.bot.token);
+    } catch (error) {
+      // Installation not found or error fetching - return null for email-authenticated workspaces
+      console.log(`ℹ️  No Slack installation for workspace ${workspaceId} (likely email-authenticated)`);
+      return null;
     }
-
-    // Return the bot client from the installation
-    const { WebClient } = require('@slack/web-api');
-    return new WebClient(installation.bot.token);
   }
 
   // If single-workspace mode, use the global bot token
@@ -51,7 +57,8 @@ async function getSlackClient(workspaceId) {
     return new WebClient(config.slack.token);
   }
 
-  throw new Error('No Slack client available. OAuth not configured and no bot token provided.');
+  // No Slack client available - return null for email-authenticated workspaces
+  return null;
 }
 
 module.exports = {
