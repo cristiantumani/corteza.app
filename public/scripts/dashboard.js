@@ -1,6 +1,6 @@
     // Authentication check - must be logged in to access dashboard
     let currentUser = null;
-    let WORKSPACE_ID = null;
+    // WORKSPACE_ID is defined in the HTML file before this script loads
     let isCurrentUserAdmin = false;
 
     // Spaces state
