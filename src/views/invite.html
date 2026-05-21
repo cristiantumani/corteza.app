@@ -243,7 +243,7 @@
     function renderInvite(invite, isAuthenticated) {
       const content = document.getElementById('content');
 
-      let html = '<h1>🎉 You're invited!</h1>';
+      let html = '<h1>🎉 You\'re invited!</h1>';
       html += '<p class="subtitle">Join a workspace on Corteza</p>';
 
       // Invite card
@@ -307,7 +307,7 @@
           document.getElementById('content').innerHTML = `
             <div class="success-box">
               <h2 style="margin-bottom: 8px;">✅ Welcome to ${escapeHtml(data.workspace_name)}!</h2>
-              <p>You've successfully joined the workspace as a ${data.role}.</p>
+              <p>You\'ve successfully joined the workspace as a ${data.role}.</p>
             </div>
             <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
           `;
