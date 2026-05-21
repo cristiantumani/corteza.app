@@ -1050,37 +1050,65 @@
 
     // Show message when user has no accessible spaces
     function showNoSpacesMessage() {
-      const decisionsBody = document.getElementById('decisions-body');
+      // Hide all decision-related UI elements
       const statsSection = document.querySelector('.dashboard-stats');
+      const filtersSection = document.querySelector('.filters');
+      const decisionsTable = document.querySelector('.decisions-table');
+      const classicView = document.getElementById('classic-view');
+      const chatView = document.getElementById('chat-view');
+      const searchBar = document.getElementById('search');
       const heroSection = document.querySelector('.dashboard-hero');
 
-      // Hide stats if present
-      if (statsSection) {
-        statsSection.style.display = 'none';
-      }
+      // Hide decision-related sections
+      if (statsSection) statsSection.style.display = 'none';
+      if (filtersSection) filtersSection.style.display = 'none';
+      if (decisionsTable) decisionsTable.style.display = 'none';
+      if (classicView) classicView.style.display = 'none';
+      if (chatView) chatView.style.display = 'none';
 
-      // Replace hero content with message
+      // Replace hero content with workspace admin view
       if (heroSection) {
         heroSection.innerHTML = `
-          <div style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
-            <h2 style="color: #1d1c1d; margin-bottom: 12px;">No Spaces Available</h2>
-            <p style="color: #616061; margin-bottom: 24px; max-width: 500px; margin-left: auto; margin-right: auto;">
-              You haven't been added to any spaces yet. Spaces are where decisions are logged and organized.
-            </p>
-            <p style="color: #616061; margin-bottom: 24px;">
-              Please contact your workspace administrator to get access to a space.
-            </p>
-            <a href="/settings" class="btn" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-              Go to Settings
-            </a>
+          <div style="max-width: 800px; margin: 0 auto; padding: 60px 20px;">
+            <div style="text-align: center; margin-bottom: 48px;">
+              <div style="font-size: 64px; margin-bottom: 20px;">🏢</div>
+              <h1 style="color: #1d1c1d; margin-bottom: 12px; font-size: 32px;">Workspace Dashboard</h1>
+              <p style="color: #616061; font-size: 16px;">
+                This workspace is empty. Spaces are where teams organize and log their decisions.
+              </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+              <div style="background: white; border: 2px solid #E1E4E8; border-radius: 12px; padding: 32px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+                <h3 style="color: #1d1c1d; margin-bottom: 12px; font-size: 20px;">Create a Space</h3>
+                <p style="color: #616061; font-size: 14px; margin-bottom: 20px;">
+                  Set up spaces for different teams or projects (Marketing, Engineering, etc.)
+                </p>
+                <a href="/settings#spaces" class="btn" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                  Create Space
+                </a>
+              </div>
+
+              <div style="background: white; border: 2px solid #E1E4E8; border-radius: 12px; padding: 32px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+                <h3 style="color: #1d1c1d; margin-bottom: 12px; font-size: 20px;">Invite Team Members</h3>
+                <p style="color: #616061; font-size: 14px; margin-bottom: 20px;">
+                  Send invitations to team members to join your workspace
+                </p>
+                <a href="/settings#invites" class="btn btn-secondary" style="display: inline-block; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; border: 2px solid #667eea;">
+                  Send Invites
+                </a>
+              </div>
+            </div>
+
+            <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; text-align: center;">
+              <p style="color: #616061; font-size: 14px; margin: 0;">
+                💡 <strong>Tip:</strong> Create spaces first, then invite team members and assign them to specific spaces.
+              </p>
+            </div>
           </div>
         `;
-      }
-
-      // Clear decisions table
-      if (decisionsBody) {
-        decisionsBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">No spaces available</td></tr>';
       }
     }
 
@@ -1120,7 +1148,7 @@
       // Populate hero space filter
       const heroFilter = document.getElementById('space-filter-hero');
       if (heroFilter) {
-        heroFilter.innerHTML = '<option value="">All Accessible Spaces</option>';
+        heroFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
         currentUserSpaces.forEach(space => {
           console.log('  Adding space:', space.name, space.space_id);
           const option = document.createElement('option');
@@ -1138,7 +1166,7 @@
       // Populate classic view space filter
       const classicFilter = document.getElementById('space-filter');
       if (classicFilter) {
-        classicFilter.innerHTML = '<option value="">All Spaces</option>';
+        classicFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
         currentUserSpaces.forEach(space => {
           const option = document.createElement('option');
           option.value = space.space_id;
@@ -1153,7 +1181,7 @@
       // Populate chat view space filter
       const chatFilter = document.getElementById('space-filter-chat');
       if (chatFilter) {
-        chatFilter.innerHTML = '<option value="">All Accessible Spaces</option>';
+        chatFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
         currentUserSpaces.forEach(space => {
           const option = document.createElement('option');
           option.value = space.space_id;
@@ -1163,6 +1191,12 @@
           }
           chatFilter.appendChild(option);
         });
+      }
+
+      // Auto-select first space across all filters if no space is selected
+      if (!currentSpaceId && currentUserSpaces.length > 0) {
+        currentSpaceId = currentUserSpaces[0].space_id;
+        updateSpaceSelectors(currentSpaceId);
       }
 
       // Populate Log Memory modal space selector
