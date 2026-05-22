@@ -33,7 +33,12 @@ async function cleanupAllData() {
       'api_keys',
       'workspace_invites',
       'extension_installs',
-      'workspace_settings'
+      'workspace_settings',
+      'meeting_transcripts',
+      'ai_suggestions',
+      'ai_feedback',
+      'workspace_admins',
+      'sessions'
     ];
 
     console.log('\n🗑️  Starting cleanup...\n');
