@@ -194,6 +194,27 @@ router.post('/api/spaces', async (req, res) => {
 
     console.log(`✅ Created space: ${spaceId} (${name}) in workspace ${workspace_id}`);
 
+    // For private/shared spaces, automatically add creator as owner
+    if (visibility === 'private' || visibility === 'shared') {
+      const spaceMembersCollection = getSpaceMembersCollection();
+      const membershipId = `smem_${crypto.randomBytes(12).toString('hex')}`;
+
+      await spaceMembersCollection.insertOne({
+        membership_id: membershipId,
+        workspace_id: workspace_id,
+        space_id: spaceId,
+        user_id: userId,
+        user_name: userName,
+        role: 'owner',
+        added_by: userId,
+        added_by_name: userName,
+        added_at: new Date().toISOString(),
+        removed_at: null
+      });
+
+      console.log(`✅ Added creator as owner of ${visibility} space`);
+    }
+
     res.status(201).json({
       success: true,
       space: space
