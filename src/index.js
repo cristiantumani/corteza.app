@@ -13,7 +13,7 @@ const { serveDashboard, serveAIAnalytics, serveSettings, redirectToDashboard } =
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
 const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
 const { handleMe, handleLogout } = require('./routes/auth');
-const { handleLoginPage, handleTokenLogin } = require('./routes/dashboard-auth');
+const { handleLoginPage, handleTokenLogin, handleOnboardingPage } = require('./routes/dashboard-auth');
 const { handleSendMagicLink } = require('./routes/email-auth');
 const {
   handleDecisionCommand,
@@ -138,6 +138,7 @@ async function startApp() {
   expressApp.get('/auth/login', authRateLimiter, handleLoginPage); // Shows hybrid login page (email + Slack)
   expressApp.post('/auth/send-magic-link', authRateLimiter, require('express').json(), handleSendMagicLink); // Sends email magic link
   expressApp.get('/auth/token', authRateLimiter, handleTokenLogin); // Validates token and creates session
+  expressApp.get('/auth/onboarding', handleOnboardingPage); // Shows onboarding for new users (requires session)
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 

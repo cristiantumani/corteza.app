@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to Corteza</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+    }
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      color: #1d1d1f;
+      margin-bottom: 8px;
+      font-size: 32px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .step {
+      width: 40px;
+      height: 4px;
+      background: #e1e4e8;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+    .step.active {
+      background: #667eea;
+    }
+    .form-section {
+      display: none;
+    }
+    .form-section.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1d1d1f;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e1e4e8;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    small {
+      display: block;
+      color: #666;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #1d1d1f;
+    }
+    .btn-secondary:hover {
+      background: #e1e4e8;
+    }
+    .btn-skip {
+      background: transparent;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+    .btn-skip:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin-top: 4px;
+    }
+    .checkbox-group label {
+      font-weight: 400;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="icon">🧠</div>
+        <h1>Welcome to Corteza!</h1>
+        <p class="subtitle">Let's get you set up in just a few steps</p>
+      </div>
+
+      <div class="steps">
+        <div class="step active" id="step-1"></div>
+        <div class="step" id="step-2"></div>
+        <div class="step" id="step-3"></div>
+      </div>
+
+      <div id="message" class="message"></div>
+
+      <!-- Step 1: Password Setup -->
+      <div class="form-section active" id="section-1">
+        <h2 style="font-size: 20px; margin-bottom: 16px; color: #1d1d1f;">🔐 Set Your Password</h2>
+        <p style="color: #666; margin-bottom: 24px; font-size: 14px;">
+          Create a password so you can login faster next time (optional - you can skip and continue using magic links)
+        </p>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="At least 8 characters" minlength="8" />
+          <small>Make it strong! Mix letters, numbers, and symbols</small>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" placeholder="Re-enter your password" />
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-skip" onclick="skipStep(1)">Skip for now</button>
+          <button class="btn btn-primary" onclick="nextStep(1)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Profile Info -->
+      <div class="form-section" id="section-2">
+        <h2 style="font-size: 20px; margin-bottom: 16px; color: #1d1d1f;">👤 Tell us about yourself</h2>
+        <p style="color: #666; margin-bottom: 24px; font-size: 14px;">
+          This helps us understand how you'll use Corteza
+        </p>
+
+        <div class="form-group">
+          <label for="full-name">Full Name *</label>
+          <input type="text" id="full-name" placeholder="John Doe" required />
+        </div>
+
+        <div class="form-group">
+          <label for="role">Your Role *</label>
+          <select id="role" required>
+            <option value="">Select your role...</option>
+            <option value="founder">Founder / CEO</option>
+            <option value="product-manager">Product Manager</option>
+            <option value="developer">Software Developer</option>
+            <option value="designer">Designer</option>
+            <option value="team-lead">Team Lead / Manager</option>
+            <option value="consultant">Consultant</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="company-size">Team Size *</label>
+          <select id="company-size" required>
+            <option value="">Select team size...</option>
+            <option value="1">Just me</option>
+            <option value="2-5">2-5 people</option>
+            <option value="6-10">6-10 people</option>
+            <option value="11-25">11-25 people</option>
+            <option value="26-50">26-50 people</option>
+            <option value="51+">51+ people</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-secondary" onclick="prevStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="nextStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Use Case -->
+      <div class="form-section" id="section-3">
+        <h2 style="font-size: 20px; margin-bottom: 16px; color: #1d1d1f;">🎯 How will you use Corteza?</h2>
+        <p style="color: #666; margin-bottom: 24px; font-size: 14px;">
+          Help us tailor your experience
+        </p>
+
+        <div class="form-group">
+          <label for="use-case">Primary Use Case *</label>
+          <select id="use-case" required>
+            <option value="">Select your primary use case...</option>
+            <option value="product-decisions">Track product decisions</option>
+            <option value="meeting-notes">Store meeting notes & decisions</option>
+            <option value="team-knowledge">Build team knowledge base</option>
+            <option value="project-context">Document project context</option>
+            <option value="design-decisions">Track design decisions</option>
+            <option value="tech-decisions">Document technical architecture</option>
+            <option value="other">Other / Multiple uses</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="heard-about">How did you hear about Corteza? *</label>
+          <select id="heard-about" required>
+            <option value="">Select one...</option>
+            <option value="search">Google / Search engine</option>
+            <option value="social-media">Social media (Twitter, LinkedIn, etc.)</option>
+            <option value="friend">Friend or colleague</option>
+            <option value="slack-app-directory">Slack App Directory</option>
+            <option value="blog-article">Blog or article</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="early-access" />
+            <label for="early-access">
+              I'd like to participate in beta testing and provide feedback to help shape Corteza
+            </label>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-secondary" onclick="prevStep(3)">← Back</button>
+          <button class="btn btn-primary" onclick="completeOnboarding()" id="complete-btn">
+            Get Started! 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const formData = {};
+
+    function showMessage(text, type = 'error') {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      messageEl.style.display = 'block';
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 5000);
+    }
+
+    function updateSteps() {
+      for (let i = 1; i <= 3; i++) {
+        const step = document.getElementById(`step-${i}`);
+        const section = document.getElementById(`section-${i}`);
+
+        if (i === currentStep) {
+          step.classList.add('active');
+          section.classList.add('active');
+        } else if (i < currentStep) {
+          step.classList.add('active');
+          section.classList.remove('active');
+        } else {
+          step.classList.remove('active');
+          section.classList.remove('active');
+        }
+      }
+    }
+
+    function skipStep(step) {
+      if (step === 1) {
+        // Skip password setup
+        formData.password = null;
+        currentStep = 2;
+        updateSteps();
+      }
+    }
+
+    async function nextStep(step) {
+      if (step === 1) {
+        // Validate password
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (password && password.length < 8) {
+          showMessage('Password must be at least 8 characters');
+          return;
+        }
+
+        if (password && password !== confirmPassword) {
+          showMessage('Passwords do not match');
+          return;
+        }
+
+        formData.password = password || null;
+        currentStep = 2;
+        updateSteps();
+
+      } else if (step === 2) {
+        // Validate profile info
+        const fullName = document.getElementById('full-name').value.trim();
+        const role = document.getElementById('role').value;
+        const companySize = document.getElementById('company-size').value;
+
+        if (!fullName) {
+          showMessage('Please enter your full name');
+          return;
+        }
+
+        if (!role) {
+          showMessage('Please select your role');
+          return;
+        }
+
+        if (!companySize) {
+          showMessage('Please select your team size');
+          return;
+        }
+
+        formData.full_name = fullName;
+        formData.role = role;
+        formData.company_size = companySize;
+        currentStep = 3;
+        updateSteps();
+      }
+    }
+
+    function prevStep(step) {
+      currentStep = step - 1;
+      updateSteps();
+    }
+
+    async function completeOnboarding() {
+      // Validate final step
+      const useCase = document.getElementById('use-case').value;
+      const heardAbout = document.getElementById('heard-about').value;
+      const earlyAccess = document.getElementById('early-access').checked;
+
+      if (!useCase) {
+        showMessage('Please select your primary use case');
+        return;
+      }
+
+      if (!heardAbout) {
+        showMessage('Please tell us how you heard about Corteza');
+        return;
+      }
+
+      formData.use_case = useCase;
+      formData.heard_about = heardAbout;
+      formData.early_access = earlyAccess;
+
+      // Disable button
+      const btn = document.getElementById('complete-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        const response = await fetch('/auth/complete-onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Redirect to dashboard
+          window.location.href = '/dashboard';
+        } else {
+          showMessage(data.error || 'Failed to complete onboarding');
+          btn.disabled = false;
+          btn.textContent = 'Get Started! 🚀';
+        }
+      } catch (error) {
+        console.error('Onboarding error:', error);
+        showMessage('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Get Started! 🚀';
+      }
+    }
+  </script>
+</body>
+</html>

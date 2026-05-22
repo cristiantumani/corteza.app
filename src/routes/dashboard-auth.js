@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { getWorkspaceMembersCollection } = require('../config/database');
 
 /**
  * In-memory store for one-time login tokens
@@ -81,14 +82,35 @@ function handleTokenLogin(req, res) {
     authenticated_at: new Date().toISOString()
   };
 
-  // Save session and redirect to dashboard
-  req.session.save((err) => {
+  // Save session and check if onboarding is needed
+  req.session.save(async (err) => {
     if (err) {
       console.error('❌ Failed to save session:', err);
       return res.status(500).send('<html><body>Failed to create session</body></html>');
     }
 
     console.log(`✅ User logged in via token: ${userData.user_name} from workspace ${userData.workspace_name}`);
+
+    // Check if user needs onboarding
+    try {
+      const membersCollection = getWorkspaceMembersCollection();
+      const member = await membersCollection.findOne({
+        user_id: userData.user_id,
+        workspace_id: userData.workspace_id,
+        email: userData.email,
+        removed_at: null
+      });
+
+      // Redirect to onboarding if not completed
+      if (member && !member.onboarding_completed) {
+        console.log('🎯 Redirecting to onboarding for new user');
+        return res.redirect('/auth/onboarding');
+      }
+    } catch (error) {
+      console.error('Failed to check onboarding status:', error);
+      // Continue to dashboard on error
+    }
+
     res.redirect('/dashboard');
   });
 }
@@ -472,8 +494,40 @@ function handleLoginPage(req, res) {
   `);
 }
 
+/**
+ * Shows onboarding page for new users
+ * GET /auth/onboarding
+ */
+async function handleOnboardingPage(req, res) {
+  // Must be authenticated to access onboarding
+  if (!req.session?.user) {
+    return res.redirect('/auth/login');
+  }
+
+  try {
+    // Check if user already completed onboarding
+    const membersCollection = getWorkspaceMembersCollection();
+    const member = await membersCollection.findOne({
+      user_id: req.session.user.user_id,
+      workspace_id: req.session.user.workspace_id,
+      removed_at: null
+    });
+
+    if (member && member.onboarding_completed) {
+      // Already completed onboarding, redirect to dashboard
+      return res.redirect('/dashboard');
+    }
+  } catch (error) {
+    console.error('Failed to check onboarding status:', error);
+    // Continue to show onboarding on error
+  }
+
+  res.sendFile(require('path').join(__dirname, '../views', 'onboarding.html'));
+}
+
 module.exports = {
   generateLoginToken,  // Now exported for email-auth to use
   handleTokenLogin,
-  handleLoginPage
+  handleLoginPage,
+  handleOnboardingPage
 };
