@@ -55,24 +55,36 @@ router.get('/api/spaces', async (req, res) => {
     // Get Slack client (optional for test workspaces - returns null if unavailable)
     const client = await getSlackClientSafe(workspace_id);
 
-    // Get all accessible space IDs for user
-    const accessibleSpaceIds = await getUserAccessibleSpaces(client, workspace_id, userId);
-
-    if (accessibleSpaceIds.length === 0) {
-      return res.json({ success: true, spaces: [] });
-    }
+    // Check if user is workspace admin
+    const userIsAdmin = await isAdmin(client, workspace_id, userId);
 
     // Fetch space details
     const spacesCollection = getWorkspaceSpacesCollection();
-    const spaces = await spacesCollection.find({
-      workspace_id: workspace_id,
-      space_id: { $in: accessibleSpaceIds },
-      archived: false
-    }).sort({ is_default: -1, created_at: 1 }).toArray();
+    let spaces;
+
+    if (userIsAdmin) {
+      // Admins can SEE all spaces (for management), even if they can't access content
+      spaces = await spacesCollection.find({
+        workspace_id: workspace_id,
+        archived: false
+      }).sort({ is_default: -1, created_at: 1 }).toArray();
+    } else {
+      // Regular users only see accessible spaces
+      const accessibleSpaceIds = await getUserAccessibleSpaces(client, workspace_id, userId);
+
+      if (accessibleSpaceIds.length === 0) {
+        return res.json({ success: true, spaces: [] });
+      }
+
+      spaces = await spacesCollection.find({
+        workspace_id: workspace_id,
+        space_id: { $in: accessibleSpaceIds },
+        archived: false
+      }).sort({ is_default: -1, created_at: 1 }).toArray();
+    }
 
     // Get decision counts for each space
     const decisionsCollection = getDecisionsCollection();
-    const userIsAdmin = await isAdmin(client, workspace_id, userId);
 
     const spacesWithMetadata = await Promise.all(spaces.map(async (space) => {
       // Count decisions in this space
@@ -81,17 +93,18 @@ router.get('/api/spaces', async (req, res) => {
         space_id: space.space_id
       });
 
-      // Check if user is owner
-      const isOwner = space.created_by === userId;
+      // Check if user is creator (for display purposes)
+      const isCreator = space.created_by === userId;
 
       // Determine user's role in this space
       let userRole = null;
-      if (isOwner) {
-        userRole = 'owner';
-      } else if (space.visibility === 'public') {
+      const membersCollection = getSpaceMembersCollection();
+
+      if (space.visibility === 'public') {
+        // Public spaces: everyone in workspace is auto-member
         userRole = 'member';
-      } else if (space.visibility === 'shared') {
-        const membersCollection = getSpaceMembersCollection();
+      } else if (space.visibility === 'private' || space.visibility === 'shared') {
+        // Private/Shared: check explicit membership (even creator needs to be added)
         const membership = await membersCollection.findOne({
           space_id: space.space_id,
           user_id: userId,
@@ -103,9 +116,9 @@ router.get('/api/spaces', async (req, res) => {
       return {
         ...space,
         decision_count: decisionCount,
-        is_owner: isOwner,
-        user_role: userRole,
-        can_modify: userIsAdmin || isOwner || userRole === 'admin'
+        is_creator: isCreator,  // Who created it (may not be member)
+        user_role: userRole,    // Actual role in space (null if not member)
+        can_modify: userIsAdmin || isCreator || userRole === 'admin'  // Admins + creator + space admins can manage
       };
     }));
 
