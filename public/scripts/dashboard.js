@@ -63,6 +63,18 @@
         analyticsLink.href = `/ai-analytics?workspace_id=${WORKSPACE_ID}`;
       }
 
+      // Update context bar
+      const contextWorkspace = document.getElementById('context-workspace');
+      if (contextWorkspace) {
+        contextWorkspace.textContent = currentUser.workspace_name || WORKSPACE_ID;
+      }
+
+      const contextUser = document.getElementById('context-user');
+      if (contextUser) {
+        const userDisplay = currentUser.email || currentUser.user_name;
+        contextUser.textContent = userDisplay;
+      }
+
       // Update chat workspace info
       const chatWorkspaceInfo = document.getElementById('chat-workspace-info');
       if (chatWorkspaceInfo) {
@@ -1267,6 +1279,9 @@
       // Sync both filters
       updateSpaceSelectors(currentSpaceId);
 
+      // Update context bar with current space name
+      updateContextBarSpace();
+
       // Save to localStorage
       if (currentSpaceId) {
         localStorage.setItem('corteza_last_space_id', currentSpaceId);
@@ -1276,6 +1291,28 @@
 
       // Reload decisions with new space filter
       await fetchDecisions();
+    }
+
+    // Update the context bar with current space name
+    function updateContextBarSpace() {
+      const contextSpace = document.getElementById('context-space');
+      if (!contextSpace) return;
+
+      if (!currentSpaceId) {
+        contextSpace.textContent = 'No space selected';
+        return;
+      }
+
+      // Find the current space in allSpaces
+      const currentSpace = allSpaces.find(s => s.space_id === currentSpaceId);
+      if (currentSpace) {
+        const icon = currentSpace.settings?.icon || '📁';
+        const name = currentSpace.name;
+        const visibility = currentSpace.visibility === 'private' ? ' 🔒' : '';
+        contextSpace.textContent = `${icon} ${name}${visibility}`;
+      } else {
+        contextSpace.textContent = 'Unknown space';
+      }
     }
 
     // ========== SPACE MANAGEMENT MOVED TO SETTINGS ==========
@@ -1648,6 +1685,9 @@
           showNoSpacesMessage();
           return; // Don't load decisions/stats if no spaces
         }
+
+        // Update context bar with current space
+        updateContextBarSpace();
 
         fetchStats();
         fetchDecisions();
