@@ -648,22 +648,9 @@
         <button class="close-btn" onclick="closeSpaceMembersModal()">✕</button>
       </div>
 
-      <div class="modal-body">
-        <h3 style="margin: 0 0 15px 0; font-size: 16px;">Add Member</h3>
-        <form id="add-member-form" onsubmit="addSpaceMember(event)" style="margin-bottom: 30px;">
-          <div style="display: grid; grid-template-columns: 1fr 120px auto; gap: 10px;">
-            <input type="email" id="member-email" placeholder="member@example.com" required style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
-            <select id="member-role" style="padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px;">
-              <option value="viewer">👁️ Viewer</option>
-              <option value="member" selected>✏️ Member</option>
-              <option value="admin">⚙️ Admin</option>
-            </select>
-            <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">Add</button>
-          </div>
-          <small style="color: #616061; display: block; margin-top: 8px;">
-            💡 The user must already be a member of the workspace (invited via Team Invitations)
-          </small>
-        </form>
+      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+        <h3 style="margin: 0 0 15px 0; font-size: 16px;">Available to Add</h3>
+        <div id="available-members" style="margin-bottom: 30px;"></div>
 
         <h3 style="margin: 0 0 15px 0; font-size: 16px;">Current Members</h3>
         <div id="current-members"></div>
@@ -1261,23 +1248,65 @@
     }
 
     async function loadSpaceMembers(spaceId) {
-      const container = document.getElementById('current-members');
-      container.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">Loading members...</div>';
+      const currentContainer = document.getElementById('current-members');
+      const availableContainer = document.getElementById('available-members');
+
+      currentContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">Loading...</div>';
+      availableContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">Loading...</div>';
 
       try {
-        const response = await fetch(`/api/spaces/${spaceId}/members?workspace_id=${WORKSPACE_ID}`);
-        const data = await response.json();
+        // Load current space members
+        const spaceMembersResponse = await fetch(`/api/spaces/${spaceId}/members?workspace_id=${WORKSPACE_ID}`);
+        const spaceMembersData = await spaceMembersResponse.json();
 
-        if (data.success) {
-          if (data.members.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">No members yet. Add members above.</div>';
+        // Load all workspace members
+        const workspaceMembersResponse = await fetch(`/api/workspace-members?workspace_id=${WORKSPACE_ID}`);
+        const workspaceMembersData = await workspaceMembersResponse.json();
+
+        if (spaceMembersData.success && workspaceMembersData.success) {
+          const currentMembers = spaceMembersData.members || [];
+          const allWorkspaceMembers = workspaceMembersData.members || [];
+
+          // Get current member user_ids
+          const currentMemberIds = new Set(currentMembers.map(m => m.user_id));
+
+          // Filter available members (not in space)
+          const availableMembers = allWorkspaceMembers.filter(m => !currentMemberIds.has(m.user_id));
+
+          // Render available members
+          if (availableMembers.length === 0) {
+            availableContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">All workspace members are already in this space.</div>';
           } else {
-            container.innerHTML = data.members.map(member => `
+            availableContainer.innerHTML = availableMembers.map(member => `
+              <div style="background: #F8F9FA; border: 1px solid #E1E4E8; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${member.user_name || member.email || member.user_id}</strong>
+                  <div style="font-size: 12px; color: #616061; margin-top: 4px;">
+                    ${member.email || member.user_id}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select id="role-${member.user_id}" style="padding: 6px 10px; border: 1px solid #E1E4E8; border-radius: 4px; font-size: 13px;">
+                    <option value="viewer">👁️ Viewer</option>
+                    <option value="member" selected>✏️ Member</option>
+                    <option value="admin">⚙️ Admin</option>
+                  </select>
+                  <button class="btn btn-primary" onclick="quickAddMember('${spaceId}', '${member.email}', '${member.user_id}')" style="padding: 6px 16px; font-size: 13px; white-space: nowrap;">Add to Space</button>
+                </div>
+              </div>
+            `).join('');
+          }
+
+          // Render current members
+          if (currentMembers.length === 0) {
+            currentContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">No members yet.</div>';
+          } else {
+            currentContainer.innerHTML = currentMembers.map(member => `
               <div style="background: white; border: 1px solid #E1E4E8; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                   <strong>${member.user_name || member.user_id}</strong>
                   <div style="font-size: 12px; color: #616061; margin-top: 4px;">
-                    ${member.user_id} • ${member.role}
+                    ${member.email || member.user_id} • ${member.role}
                   </div>
                 </div>
                 ${member.role !== 'owner' ? `
@@ -1287,22 +1316,21 @@
             `).join('');
           }
         } else {
-          container.innerHTML = '<div style="text-align: center; padding: 20px; color: #DC2626;">Failed to load members</div>';
+          currentContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #DC2626;">Failed to load members</div>';
+          availableContainer.innerHTML = '';
         }
       } catch (error) {
         console.error('Error loading members:', error);
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #DC2626;">Failed to load members</div>';
+        currentContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #DC2626;">Failed to load members</div>';
+        availableContainer.innerHTML = '';
       }
     }
 
-    async function addSpaceMember(event) {
-      event.preventDefault();
-
-      const email = document.getElementById('member-email').value.trim().toLowerCase();
-      const role = document.getElementById('member-role').value;
+    async function quickAddMember(spaceId, email, userId) {
+      const role = document.getElementById(`role-${userId}`).value;
 
       try {
-        const response = await fetch(`/api/spaces/${currentSpaceId}/members`, {
+        const response = await fetch(`/api/spaces/${spaceId}/members`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ workspace_id: WORKSPACE_ID, email: email, role: role })
@@ -1311,9 +1339,8 @@
         const data = await response.json();
 
         if (data.success) {
-          alert('✅ Member added successfully!');
-          document.getElementById('add-member-form').reset();
-          loadSpaceMembers(currentSpaceId);
+          // Refresh the members list
+          loadSpaceMembers(spaceId);
         } else {
           alert(`❌ Failed to add member: ${data.error}`);
         }

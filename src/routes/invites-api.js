@@ -392,4 +392,44 @@ router.delete('/api/invites/:invite_id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/workspace-members
+ * List all members of a workspace
+ */
+router.get('/api/workspace-members', async (req, res) => {
+  try {
+    const { workspace_id } = req.query;
+
+    if (!workspace_id) {
+      return res.status(400).json({ success: false, error: 'workspace_id required' });
+    }
+
+    // Verify user is authenticated
+    if (!req.session?.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    // Verify user belongs to this workspace
+    if (req.session.user.workspace_id !== workspace_id) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    // Get all workspace members
+    const membersCollection = getWorkspaceMembersCollection();
+    const members = await membersCollection.find({
+      workspace_id: workspace_id,
+      removed_at: null
+    }).sort({ joined_at: 1 }).toArray();
+
+    res.json({
+      success: true,
+      members: members
+    });
+
+  } catch (error) {
+    console.error('Error listing workspace members:', error);
+    res.status(500).json({ success: false, error: 'Failed to list workspace members' });
+  }
+});
+
 module.exports = router;
