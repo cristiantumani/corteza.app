@@ -445,6 +445,43 @@
       </div>
     </div>
 
+    <!-- Password Section -->
+    <div class="settings-section">
+      <h2>🔐 Password & Login</h2>
+      <p>Set a password to enable faster login with email + password instead of magic links.</p>
+
+      <div style="background: #F0F7FF; border: 1px solid #667eea; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <form id="password-form" style="max-width: 500px;">
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d;">New Password</label>
+            <input
+              type="password"
+              id="new-password"
+              placeholder="At least 8 characters"
+              required
+              minlength="8"
+              style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px; font-size: 14px;"
+            />
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d;">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-password"
+              placeholder="Re-enter password"
+              required
+              minlength="8"
+              style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 6px; font-size: 14px;"
+            />
+          </div>
+          <div id="password-message" style="display: none; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 14px;"></div>
+          <button type="submit" class="btn btn-primary" id="save-password-btn">
+            💾 Set Password
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Spaces Section -->
     <div class="settings-section">
       <h2>📁 Spaces</h2>
@@ -816,6 +853,86 @@
 
   <script>
     const WORKSPACE_ID = '<WORKSPACE_ID>';
+
+    // Password Functions
+    const passwordForm = document.getElementById('password-form');
+    const passwordMessage = document.getElementById('password-message');
+
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const saveBtn = document.getElementById('save-password-btn');
+
+        // Clear previous messages
+        passwordMessage.style.display = 'none';
+        passwordMessage.className = '';
+
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+          passwordMessage.textContent = '❌ Passwords do not match';
+          passwordMessage.style.display = 'block';
+          passwordMessage.style.background = '#f8d7da';
+          passwordMessage.style.color = '#721c24';
+          passwordMessage.style.border = '1px solid #f5c6cb';
+          return;
+        }
+
+        // Validate password length
+        if (newPassword.length < 8) {
+          passwordMessage.textContent = '❌ Password must be at least 8 characters';
+          passwordMessage.style.display = 'block';
+          passwordMessage.style.background = '#f8d7da';
+          passwordMessage.style.color = '#721c24';
+          passwordMessage.style.border = '1px solid #f5c6cb';
+          return;
+        }
+
+        // Disable button
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Setting password...';
+
+        try {
+          const response = await fetch('/auth/set-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              password: newPassword,
+              confirm_password: confirmPassword
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            passwordMessage.textContent = '✅ ' + data.message;
+            passwordMessage.style.display = 'block';
+            passwordMessage.style.background = '#d4edda';
+            passwordMessage.style.color = '#155724';
+            passwordMessage.style.border = '1px solid #c3e6cb';
+            passwordForm.reset();
+          } else {
+            passwordMessage.textContent = '❌ ' + (data.error || 'Failed to set password');
+            passwordMessage.style.display = 'block';
+            passwordMessage.style.background = '#f8d7da';
+            passwordMessage.style.color = '#721c24';
+            passwordMessage.style.border = '1px solid #f5c6cb';
+          }
+        } catch (error) {
+          console.error('Set password error:', error);
+          passwordMessage.textContent = '❌ Network error. Please try again.';
+          passwordMessage.style.display = 'block';
+          passwordMessage.style.background = '#f8d7da';
+          passwordMessage.style.color = '#721c24';
+          passwordMessage.style.border = '1px solid #f5c6cb';
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = '💾 Set Password';
+        }
+      });
+    }
 
     // API Key Functions
     async function generateApiKey() {

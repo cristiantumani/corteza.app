@@ -274,9 +274,25 @@ function handleLoginPage(req, res) {
                 <small>Use lowercase letters, numbers, and hyphens only</small>
               </div>
 
+              <div class="form-group" id="password-group" style="display: none;">
+                <label for="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  autocomplete="current-password"
+                />
+              </div>
+
               <button type="submit" class="btn-primary" id="submit-btn">
-                Send Magic Link
+                Continue
               </button>
+
+              <div style="text-align: center; margin-top: 12px;">
+                <button type="button" id="toggle-mode-btn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 14px; text-decoration: underline; display: none;">
+                  Use magic link instead
+                </button>
+              </div>
             </form>
 
             <div class="divider">
@@ -296,12 +312,94 @@ function handleLoginPage(req, res) {
           const form = document.getElementById('email-form');
           const submitBtn = document.getElementById('submit-btn');
           const messageEl = document.getElementById('message');
+          const passwordGroup = document.getElementById('password-group');
+          const passwordInput = document.getElementById('password');
+          const emailInput = document.getElementById('email');
+          const workspaceInput = document.getElementById('workspace');
+          const toggleModeBtn = document.getElementById('toggle-mode-btn');
 
+          let usePasswordMode = false;
+          let hasPassword = false;
+          let checkTimeout = null;
+
+          // Auto-detect password status when email/workspace change
+          async function checkPasswordStatus() {
+            const email = emailInput.value.trim();
+            const workspace = workspaceInput.value.trim();
+
+            if (!email || !workspace || workspace.length < 2) {
+              passwordGroup.style.display = 'none';
+              toggleModeBtn.style.display = 'none';
+              submitBtn.textContent = 'Continue';
+              return;
+            }
+
+            try {
+              const response = await fetch('/auth/check-password-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, workspace })
+              });
+
+              const data = await response.json();
+              hasPassword = data.has_password;
+
+              if (hasPassword) {
+                // User has password - show password mode
+                usePasswordMode = true;
+                passwordGroup.style.display = 'block';
+                passwordInput.required = true;
+                submitBtn.textContent = 'Login';
+                toggleModeBtn.style.display = 'block';
+                toggleModeBtn.textContent = 'Use magic link instead';
+              } else {
+                // No password - use magic link mode
+                usePasswordMode = false;
+                passwordGroup.style.display = 'none';
+                passwordInput.required = false;
+                submitBtn.textContent = 'Send Magic Link';
+                toggleModeBtn.style.display = 'none';
+              }
+            } catch (error) {
+              console.error('Password check error:', error);
+            }
+          }
+
+          // Debounced password status check
+          emailInput.addEventListener('input', () => {
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkPasswordStatus, 500);
+          });
+
+          workspaceInput.addEventListener('input', () => {
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkPasswordStatus, 500);
+          });
+
+          // Toggle between password and magic link modes
+          toggleModeBtn.addEventListener('click', () => {
+            usePasswordMode = !usePasswordMode;
+
+            if (usePasswordMode) {
+              passwordGroup.style.display = 'block';
+              passwordInput.required = true;
+              submitBtn.textContent = 'Login';
+              toggleModeBtn.textContent = 'Use magic link instead';
+            } else {
+              passwordGroup.style.display = 'none';
+              passwordInput.required = false;
+              submitBtn.textContent = 'Send Magic Link';
+              toggleModeBtn.textContent = 'Use password instead';
+            }
+          });
+
+          // Form submission
           form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email = document.getElementById('email').value.trim();
-            const workspace = document.getElementById('workspace').value.trim().toLowerCase();
+            const email = emailInput.value.trim();
+            const workspace = workspaceInput.value.trim().toLowerCase();
+            const password = passwordInput.value;
 
             // Clear previous messages
             messageEl.style.display = 'none';
@@ -309,42 +407,63 @@ function handleLoginPage(req, res) {
 
             // Disable button
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Sending...';
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = usePasswordMode ? 'Logging in...' : 'Sending...';
 
             try {
-              const response = await fetch('/auth/send-magic-link', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  email: email,
-                  workspace_name: workspace
-                })
-              });
+              if (usePasswordMode && password) {
+                // Password login
+                const response = await fetch('/auth/login-with-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, workspace, password })
+                });
 
-              const data = await response.json();
+                const data = await response.json();
 
-              if (response.ok && data.success) {
-                // Success
-                messageEl.textContent = data.message;
-                messageEl.classList.add('success');
-                messageEl.style.display = 'block';
-                form.reset();
+                if (response.ok && data.success) {
+                  // Redirect to dashboard
+                  messageEl.textContent = data.message || 'Login successful!';
+                  messageEl.classList.add('success');
+                  messageEl.style.display = 'block';
+                  setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                  }, 500);
+                } else {
+                  messageEl.textContent = data.error || 'Login failed';
+                  messageEl.classList.add('error');
+                  messageEl.style.display = 'block';
+                }
               } else {
-                // Error
-                messageEl.textContent = data.error || 'Failed to send magic link';
-                messageEl.classList.add('error');
-                messageEl.style.display = 'block';
+                // Magic link
+                const response = await fetch('/auth/send-magic-link', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, workspace_name: workspace })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                  messageEl.textContent = data.message;
+                  messageEl.classList.add('success');
+                  messageEl.style.display = 'block';
+                  form.reset();
+                  passwordGroup.style.display = 'none';
+                  toggleModeBtn.style.display = 'none';
+                } else {
+                  messageEl.textContent = data.error || 'Failed to send magic link';
+                  messageEl.classList.add('error');
+                  messageEl.style.display = 'block';
+                }
               }
             } catch (error) {
               messageEl.textContent = 'Network error. Please try again.';
               messageEl.classList.add('error');
               messageEl.style.display = 'block';
             } finally {
-              // Re-enable button
               submitBtn.disabled = false;
-              submitBtn.textContent = 'Send Magic Link';
+              submitBtn.textContent = originalText;
             }
           });
         </script>

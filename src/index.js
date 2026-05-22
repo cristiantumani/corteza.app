@@ -219,6 +219,9 @@ async function startApp() {
   // AI extraction for web (requires authentication)
   expressApp.use(require('./routes/ai-extract-web'));
 
+  // Password authentication (partially public - login endpoint is public)
+  expressApp.use(require('./routes/password-auth'));
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
