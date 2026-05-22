@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getWorkspaceMembersCollection } = require('../config/database');
+const { getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
 
 /**
  * In-memory store for one-time login tokens
@@ -94,20 +94,61 @@ function handleTokenLogin(req, res) {
     // Check if user needs onboarding
     try {
       const membersCollection = getWorkspaceMembersCollection();
-      const member = await membersCollection.findOne({
+      let member = await membersCollection.findOne({
         user_id: userData.user_id,
         workspace_id: userData.workspace_id,
         email: userData.email,
         removed_at: null
       });
 
-      // Redirect to onboarding if not completed
-      if (member && !member.onboarding_completed) {
-        console.log('🎯 Redirecting to onboarding for new user');
+      // If member doesn't exist, create the record (new user from email auth)
+      if (!member) {
+        console.log('📝 Creating new workspace_members record for email auth user');
+
+        const membershipId = `mem_${crypto.randomBytes(12).toString('hex')}`;
+
+        const newMember = {
+          membership_id: membershipId,
+          workspace_id: userData.workspace_id,
+          workspace_name: userData.workspace_name,
+          user_id: userData.user_id,
+          user_name: userData.user_name,
+          email: userData.email,
+          role: 'admin', // First user in workspace is admin
+          joined_via: 'email',
+          joined_at: new Date().toISOString(),
+          removed_at: null,
+          onboarding_completed: false
+        };
+
+        await membersCollection.insertOne(newMember);
+
+        // Also create workspace_admins record
+        const adminsCollection = getWorkspaceAdminsCollection();
+
+        await adminsCollection.insertOne({
+          workspace_id: userData.workspace_id,
+          user_id: userData.user_id,
+          user_name: userData.user_name,
+          email: userData.email,
+          role: 'admin',
+          created_at: new Date().toISOString(),
+          deactivated_at: null
+        });
+
+        console.log(`✅ Created workspace_members and workspace_admins for ${userData.email}`);
+
+        // Redirect new user to onboarding
+        return res.redirect('/auth/onboarding');
+      }
+
+      // Existing member - check if onboarding completed
+      if (!member.onboarding_completed) {
+        console.log('🎯 Redirecting to onboarding for existing user without completed onboarding');
         return res.redirect('/auth/onboarding');
       }
     } catch (error) {
-      console.error('Failed to check onboarding status:', error);
+      console.error('Failed to check/create workspace member:', error);
       // Continue to dashboard on error
     }
 
