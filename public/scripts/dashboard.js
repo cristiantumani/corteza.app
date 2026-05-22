@@ -1063,6 +1063,10 @@
 
     // Show message when user has no accessible spaces
     async function showNoSpacesMessage() {
+      // Hide loading indicator
+      const loadingIndicator = document.getElementById('loading-indicator');
+      if (loadingIndicator) loadingIndicator.style.display = 'none';
+
       // Hide all decision-related UI elements
       const statsChat = document.getElementById('stats-chat');
       const statsClassic = document.getElementById('stats-classic');
@@ -1070,14 +1074,15 @@
       const chatView = document.getElementById('chat-view-container');
       const heroSection = document.querySelector('.hero-banner');
 
-      // Hide decision-related sections
+      // Hide decision-related sections (stats, classic view, hero)
       if (statsChat) statsChat.style.display = 'none';
       if (statsClassic) statsClassic.style.display = 'none';
       if (classicView) classicView.style.display = 'none';
       if (heroSection) heroSection.style.display = 'none';
 
-      // Hide the chat input area and show empty state message
+      // Show the chat view with empty state message
       if (chatView) {
+        chatView.style.display = 'block'; // Make sure chat view is visible
         const chatWrapper = chatView.querySelector('.chat-view-wrapper');
         if (chatWrapper) {
           // Get workspace admin info
@@ -1720,6 +1725,16 @@
           await showNoSpacesMessage();
           return; // Don't load decisions/stats if no spaces
         }
+
+        // User has spaces - hide loading indicator and show UI
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+
+        const statsChat = document.getElementById('stats-chat');
+        if (statsChat) statsChat.style.display = 'flex';
+
+        const chatView = document.getElementById('chat-view-container');
+        if (chatView) chatView.style.display = 'block';
 
         // Update context bar with current space
         updateContextBarSpace();

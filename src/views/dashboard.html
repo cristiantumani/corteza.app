@@ -86,7 +86,14 @@
   </div>
 
   <div class="container">
-    <!-- Stats for Classic View (8 cards) -->
+    <!-- Loading Indicator (shown while checking spaces) -->
+    <div id="loading-indicator" style="text-align: center; padding: 60px 20px;">
+      <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+      <h2 style="color: #1d1d1f; margin-bottom: 12px;">Loading your workspace...</h2>
+      <p style="color: #616061; font-size: 15px;">Checking your spaces and permissions</p>
+    </div>
+
+    <!-- Stats for Classic View (8 cards) - Hidden by default -->
     <div class="stats" id="stats-classic" style="display: none;">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
       <div class="stat-card"><h3>Decisions</h3><div class="number" id="decision-count">-</div></div>
@@ -98,8 +105,8 @@
       <div class="stat-card"><h3>This Week</h3><div class="number" id="week-count">-</div></div>
     </div>
 
-    <!-- Condensed Stats for Chat View (3 chips) -->
-    <div class="stats-condensed" id="stats-chat" style="display: flex;">
+    <!-- Condensed Stats for Chat View (3 chips) - Hidden by default -->
+    <div class="stats-condensed" id="stats-chat" style="display: none;">
       <div class="stat-chip">
         <span class="stat-label">Total:</span>
         <span class="stat-value" id="total-count-chat">-</span>
@@ -114,8 +121,8 @@
       </div>
     </div>
 
-    <!-- Chat View Container (New Primary Interface) -->
-    <div id="chat-view-container" class="view-container">
+    <!-- Chat View Container (New Primary Interface) - Hidden by default -->
+    <div id="chat-view-container" class="view-container" style="display: none;">
       <div id="chat-view-wrapper" class="chat-view-wrapper">
         <!-- Welcome Section -->
         <div class="chat-welcome" id="chat-welcome-main">
