@@ -216,6 +216,9 @@ async function startApp() {
   // Workspace invitations API routes (partially public - invite details endpoint is public)
   expressApp.use(require('./routes/invites-api'));
 
+  // AI extraction for web (requires authentication)
+  expressApp.use(require('./routes/ai-extract-web'));
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver

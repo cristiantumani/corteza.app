@@ -73,9 +73,14 @@
           <option value="">All Accessible Spaces</option>
         </select>
       </div>
-      <button class="hero-cta-btn" onclick="openLogMemoryModal()">
-        ➕ Log Team Memory
-      </button>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button class="hero-cta-btn" onclick="openLogMemoryModal()">
+          ➕ Log Team Memory
+        </button>
+        <button class="hero-cta-btn" onclick="openUploadNotesModal()" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
+          📄 Upload Meeting Notes
+        </button>
+      </div>
     </div>
     <div class="hero-decoration"></div>
   </div>
@@ -337,6 +342,117 @@
       <div class="modal-buttons">
         <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">Cancel</button>
         <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save Memory</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Meeting Notes Modal -->
+  <div class="modal-overlay" id="upload-notes-modal">
+    <div class="modal detail-modal" style="max-width: 900px;">
+      <div class="detail-header">
+        <h2>📄 Upload Meeting Notes</h2>
+        <button class="close-btn" onclick="closeUploadNotesModal()">✕ Close</button>
+      </div>
+
+      <!-- Upload Section (shown initially) -->
+      <div id="upload-section">
+        <div class="detail-section">
+          <p style="color: #616061; margin-bottom: 20px;">
+            Upload meeting notes, transcripts, or documents and let AI automatically extract decisions, context, and key information.
+          </p>
+
+          <div class="detail-item">
+            <label>📁 Space * <span style="font-weight: normal; color: #616061;">(where to save extracted decisions)</span></label>
+            <select
+              id="upload-notes-space"
+              style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px; margin-bottom: 20px;"
+            >
+              <option value="">Loading spaces...</option>
+            </select>
+          </div>
+
+          <!-- Tab selection for paste vs upload -->
+          <div style="display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 2px solid #E1E4E8;">
+            <button
+              id="paste-tab"
+              class="upload-tab active-tab"
+              onclick="switchUploadTab('paste')"
+              style="padding: 12px 24px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid #667eea; color: #667eea;"
+            >
+              📝 Paste Text
+            </button>
+            <button
+              id="upload-tab"
+              class="upload-tab"
+              onclick="switchUploadTab('upload')"
+              style="padding: 12px 24px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; color: #616061;"
+            >
+              📎 Upload File
+            </button>
+          </div>
+
+          <!-- Paste Text Option -->
+          <div id="paste-option">
+            <textarea
+              id="notes-text-input"
+              placeholder="Paste your meeting notes here... The AI will analyze it and suggest decisions to save."
+              rows="10"
+              style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: 'Monaco', 'Menlo', monospace; font-size: 13px; resize: vertical;"
+            ></textarea>
+          </div>
+
+          <!-- Upload File Option -->
+          <div id="upload-option" style="display: none;">
+            <div style="border: 2px dashed #E1E4E8; border-radius: 8px; padding: 40px; text-align: center; background: #F8F9FA;">
+              <input
+                type="file"
+                id="notes-file-input"
+                accept=".txt,.pdf,.docx,.doc"
+                style="display: none;"
+                onchange="handleFileSelect(event)"
+              />
+              <div id="file-drop-zone" onclick="document.getElementById('notes-file-input').click()" style="cursor: pointer;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
+                <p style="font-weight: 600; margin-bottom: 8px;">Click to upload or drag and drop</p>
+                <p style="color: #616061; font-size: 13px;">Supports: TXT, PDF, DOCX (Max 5MB)</p>
+              </div>
+              <div id="file-selected" style="display: none;">
+                <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+                <p id="file-name" style="font-weight: 600; margin-bottom: 8px;"></p>
+                <button onclick="clearFileSelection()" style="padding: 8px 16px; background: #E1E4E8; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                  Change File
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" onclick="closeUploadNotesModal()">Cancel</button>
+          <button class="modal-btn modal-btn-primary" onclick="analyzeNotes()" id="analyze-btn">
+            🤖 Analyze with AI
+          </button>
+        </div>
+      </div>
+
+      <!-- Suggestions Section (shown after analysis) -->
+      <div id="suggestions-section" style="display: none;">
+        <div class="detail-section">
+          <div style="background: #F0F7FF; border: 1px solid #667eea; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 8px 0; color: #667eea;">🤖 AI Analysis Complete</h3>
+            <p style="margin: 0; color: #616061;" id="suggestions-summary"></p>
+          </div>
+
+          <div id="suggestions-list"></div>
+        </div>
+
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" onclick="closeUploadNotesModal()">Cancel</button>
+          <button class="modal-btn modal-btn-secondary" onclick="backToUpload()">← Back to Upload</button>
+          <button class="modal-btn modal-btn-primary" onclick="saveApprovedSuggestions()" id="save-suggestions-btn">
+            💾 Save Approved (<span id="approved-count">0</span>)
+          </button>
+        </div>
       </div>
     </div>
   </div>

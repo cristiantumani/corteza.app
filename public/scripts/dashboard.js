@@ -1915,3 +1915,334 @@
         return div.innerHTML;
       }
     })();
+
+    // ========== UPLOAD MEETING NOTES FUNCTIONALITY ==========
+
+    let currentSuggestions = [];
+    let approvedSuggestions = new Set();
+
+    function openUploadNotesModal() {
+      const modal = document.getElementById('upload-notes-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+
+        // Populate space selector
+        const spaceSelect = document.getElementById('upload-notes-space');
+        if (spaceSelect) {
+          spaceSelect.innerHTML = '<option value="">Select a space...</option>';
+          currentUserSpaces.forEach(space => {
+            const option = document.createElement('option');
+            option.value = space.space_id;
+            option.textContent = `${space.settings.icon} ${space.name}`;
+            spaceSelect.appendChild(option);
+          });
+
+          // Pre-select current space if available
+          if (currentSpaceId) {
+            spaceSelect.value = currentSpaceId;
+          }
+        }
+
+        // Reset form
+        document.getElementById('notes-text-input').value = '';
+        clearFileSelection();
+        showUploadSection();
+      }
+    }
+
+    function closeUploadNotesModal() {
+      const modal = document.getElementById('upload-notes-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        currentSuggestions = [];
+        approvedSuggestions.clear();
+      }
+    }
+
+    function switchUploadTab(tab) {
+      const pasteTab = document.getElementById('paste-tab');
+      const uploadTab = document.getElementById('upload-tab');
+      const pasteOption = document.getElementById('paste-option');
+      const uploadOption = document.getElementById('upload-option');
+
+      if (tab === 'paste') {
+        pasteTab.style.borderBottom = '3px solid #667eea';
+        pasteTab.style.color = '#667eea';
+        uploadTab.style.borderBottom = '3px solid transparent';
+        uploadTab.style.color = '#616061';
+        pasteOption.style.display = 'block';
+        uploadOption.style.display = 'none';
+      } else {
+        pasteTab.style.borderBottom = '3px solid transparent';
+        pasteTab.style.color = '#616061';
+        uploadTab.style.borderBottom = '3px solid #667eea';
+        uploadTab.style.color = '#667eea';
+        pasteOption.style.display = 'none';
+        uploadOption.style.display = 'block';
+      }
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('file-drop-zone').style.display = 'none';
+        document.getElementById('file-selected').style.display = 'block';
+        document.getElementById('file-name').textContent = file.name;
+      }
+    }
+
+    function clearFileSelection() {
+      document.getElementById('notes-file-input').value = '';
+      document.getElementById('file-drop-zone').style.display = 'block';
+      document.getElementById('file-selected').style.display = 'none';
+    }
+
+    async function analyzeNotes() {
+      const spaceId = document.getElementById('upload-notes-space').value;
+      if (!spaceId) {
+        alert('Please select a space');
+        return;
+      }
+
+      const textInput = document.getElementById('notes-text-input').value;
+      const fileInput = document.getElementById('notes-file-input');
+      const file = fileInput.files[0];
+
+      if (!textInput && !file) {
+        alert('Please enter text or upload a file');
+        return;
+      }
+
+      const analyzeBtn = document.getElementById('analyze-btn');
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = '⏳ Analyzing...';
+
+      try {
+        const formData = new FormData();
+        formData.append('workspace_id', WORKSPACE_ID);
+        formData.append('space_id', spaceId);
+
+        if (file) {
+          formData.append('file', file);
+        } else {
+          formData.append('text', textInput);
+        }
+
+        const response = await fetch('/api/ai/extract-from-text', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to analyze notes');
+        }
+
+        if (data.success) {
+          currentSuggestions = data.suggestions || [];
+          approvedSuggestions.clear();
+          displaySuggestions(data);
+          showSuggestionsSection();
+        } else {
+          throw new Error(data.error || 'Analysis failed');
+        }
+
+      } catch (error) {
+        console.error('Analysis error:', error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = '🤖 Analyze with AI';
+      }
+    }
+
+    function displaySuggestions(data) {
+      const summaryEl = document.getElementById('suggestions-summary');
+      const listEl = document.getElementById('suggestions-list');
+
+      if (!summaryEl || !listEl) return;
+
+      summaryEl.textContent = data.message || `Found ${data.suggestions.length} suggestions`;
+
+      listEl.innerHTML = '';
+
+      if (data.suggestions.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #616061;">
+            <div style="font-size: 48px; margin-bottom: 12px;">🤔</div>
+            <p>No clear decisions found in this content.</p>
+            <p style="font-size: 13px;">Try uploading a different document or adding more context.</p>
+          </div>
+        `;
+        return;
+      }
+
+      data.suggestions.forEach((suggestion, index) => {
+        const confidence = suggestion.confidence_score || 0;
+        const confidencePercent = Math.round(confidence * 100);
+        const confidenceColor = confidence >= 0.8 ? '#10B981' : confidence >= 0.6 ? '#F59E0B' : '#EF4444';
+        const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
+
+        const card = document.createElement('div');
+        card.id = `suggestion-${suggestion.suggestion_id}`;
+        card.style.cssText = 'border: 2px solid #E1E4E8; border-radius: 8px; padding: 16px; margin-bottom: 16px; background: white;';
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 20px;">${typeEmoji[suggestion.decision_type]}</span>
+                <span style="font-weight: 600; font-size: 14px; color: #1d1c1d;">Suggestion ${index + 1}</span>
+                <span style="background: ${confidenceColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                  ${confidencePercent}% confidence
+                </span>
+                <span style="background: #F0F7FF; color: #667eea; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                  ${suggestion.decision_type}
+                </span>
+              </div>
+              <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(suggestion.decision_text)}</p>
+              ${suggestion.context ? `<p style="margin: 0; font-size: 13px; color: #616061; font-style: italic;">"${escapeHtml(suggestion.context.substring(0, 150))}${suggestion.context.length > 150 ? '...' : ''}"</p>` : ''}
+              ${suggestion.tags && suggestion.tags.length > 0 ? `<div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">${suggestion.tags.map(tag => `<span style="background: #F8F9FA; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: #616061;">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="approveSuggestion('${suggestion.suggestion_id}')" class="suggestion-approve-btn" style="flex: 1; padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+              ✅ Approve
+            </button>
+            <button onclick="editSuggestion('${suggestion.suggestion_id}')" style="flex: 1; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+              ✏️ Edit
+            </button>
+            <button onclick="rejectSuggestion('${suggestion.suggestion_id}')" style="padding: 8px 16px; background: #E1E4E8; color: #616061; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+              ❌ Reject
+            </button>
+          </div>
+        `;
+
+        listEl.appendChild(card);
+      });
+    }
+
+    function approveSuggestion(suggestionId) {
+      approvedSuggestions.add(suggestionId);
+      updateSuggestionCard(suggestionId, 'approved');
+      updateApprovedCount();
+    }
+
+    function rejectSuggestion(suggestionId) {
+      approvedSuggestions.delete(suggestionId);
+      updateSuggestionCard(suggestionId, 'rejected');
+      updateApprovedCount();
+    }
+
+    function editSuggestion(suggestionId) {
+      // For now, just approve - full edit modal can be added later
+      alert('Edit functionality coming soon! For now, approve and edit from the dashboard.');
+      approveSuggestion(suggestionId);
+    }
+
+    function updateSuggestionCard(suggestionId, status) {
+      const card = document.getElementById(`suggestion-${suggestionId}`);
+      if (!card) return;
+
+      if (status === 'approved') {
+        card.style.borderColor = '#10B981';
+        card.style.background = '#F0FDF4';
+        const approveBtn = card.querySelector('.suggestion-approve-btn');
+        if (approveBtn) {
+          approveBtn.textContent = '✅ Approved';
+          approveBtn.style.background = '#059669';
+        }
+      } else if (status === 'rejected') {
+        card.style.borderColor = '#E1E4E8';
+        card.style.background = '#F8F9FA';
+        card.style.opacity = '0.6';
+        const approveBtn = card.querySelector('.suggestion-approve-btn');
+        if (approveBtn) {
+          approveBtn.textContent = 'Approve';
+          approveBtn.style.background = '#10B981';
+        }
+      }
+    }
+
+    function updateApprovedCount() {
+      const countEl = document.getElementById('approved-count');
+      if (countEl) {
+        countEl.textContent = approvedSuggestions.size;
+      }
+    }
+
+    async function saveApprovedSuggestions() {
+      if (approvedSuggestions.size === 0) {
+        alert('Please approve at least one suggestion');
+        return;
+      }
+
+      const spaceId = document.getElementById('upload-notes-space').value;
+      const currentSpace = allSpaces.find(s => s.space_id === spaceId);
+      const spaceName = currentSpace ? currentSpace.name : null;
+
+      const saveBtn = document.getElementById('save-suggestions-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '⏳ Saving...';
+
+      try {
+        let savedCount = 0;
+        const errors = [];
+
+        for (const suggestionId of approvedSuggestions) {
+          try {
+            const response = await fetch('/api/ai/approve-suggestion', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                suggestion_id: suggestionId,
+                workspace_id: WORKSPACE_ID,
+                space_id: spaceId,
+                space_name: spaceName
+              })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+              savedCount++;
+            } else {
+              errors.push(data.error);
+            }
+          } catch (err) {
+            errors.push(err.message);
+          }
+        }
+
+        if (savedCount > 0) {
+          alert(`✅ Successfully saved ${savedCount} decision${savedCount > 1 ? 's' : ''}!${errors.length > 0 ? `\n\n⚠️ ${errors.length} failed` : ''}`);
+          closeUploadNotesModal();
+          await fetchDecisions(); // Refresh dashboard
+        } else {
+          throw new Error('Failed to save any decisions');
+        }
+
+      } catch (error) {
+        console.error('Save error:', error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Save Approved (<span id="approved-count">' + approvedSuggestions.size + '</span>)';
+      }
+    }
+
+    function showUploadSection() {
+      document.getElementById('upload-section').style.display = 'block';
+      document.getElementById('suggestions-section').style.display = 'none';
+    }
+
+    function showSuggestionsSection() {
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('suggestions-section').style.display = 'block';
+    }
+
+    function backToUpload() {
+      showUploadSection();
+      currentSuggestions = [];
+      approvedSuggestions.clear();
+    }
