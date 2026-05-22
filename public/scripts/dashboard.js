@@ -1117,26 +1117,88 @@
 
           // Show appropriate message based on admin status
           if (isCurrentUserAdmin) {
-            // Admin sees message to create spaces
+            // Admin sees inline space creation form
             chatWrapper.innerHTML = `
               <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
-                <div style="max-width: 600px; text-align: center;">
-                  <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
-                  <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">No Spaces Yet</h2>
-                  <p style="color: #616061; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                    Spaces help organize team decisions by department, project, or privacy level. Create your first space to get started.
-                  </p>
-                  <a href="/settings#spaces" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                    ➕ Create Your First Space
-                  </a>
-                  <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; margin-top: 32px; text-align: left;">
-                    <p style="color: #616061; font-size: 14px; margin: 0 0 12px 0;">
-                      <strong>💡 Quick Start:</strong>
+                <div style="max-width: 600px; width: 100%;">
+                  <div style="text-align: center; margin-bottom: 32px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+                    <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">Create Your First Space</h2>
+                    <p style="color: #616061; font-size: 16px; line-height: 1.6;">
+                      Spaces help organize team decisions by department, project, or privacy level.
                     </p>
-                    <ul style="color: #616061; font-size: 14px; margin: 0; padding-left: 20px; text-align: left;">
-                      <li style="margin-bottom: 8px;">Create a space (e.g., "Product Team" or "Engineering")</li>
+                  </div>
+
+                  <!-- Inline Space Creation Form -->
+                  <div style="background: white; border: 1px solid #E1E4E8; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <form id="quick-create-space-form" onsubmit="handleQuickCreateSpace(event)">
+                      <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
+                          Space Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="quick-space-name"
+                          required
+                          placeholder="e.g., Product Team, Engineering, Marketing"
+                          style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 15px;"
+                        />
+                      </div>
+
+                      <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
+                          Description
+                        </label>
+                        <textarea
+                          id="quick-space-description"
+                          placeholder="What's this space for?"
+                          rows="2"
+                          style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 15px; resize: vertical;"
+                        ></textarea>
+                      </div>
+
+                      <div style="margin-bottom: 24px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
+                          Visibility *
+                        </label>
+                        <select
+                          id="quick-space-visibility"
+                          required
+                          style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 15px;"
+                        >
+                          <option value="public">🌐 Public - All workspace members can access</option>
+                          <option value="shared">👥 Shared - Only invited members (you must add yourself)</option>
+                          <option value="private">🔒 Private - Only invited members (you must add yourself)</option>
+                        </select>
+                        <small style="color: #616061; font-size: 13px; margin-top: 6px; display: block;">
+                          You can change this later in Settings
+                        </small>
+                      </div>
+
+                      <button
+                        type="submit"
+                        id="quick-create-btn"
+                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+                      >
+                        ➕ Create Space
+                      </button>
+                    </form>
+
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #E1E4E8; text-align: center;">
+                      <a href="/settings" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+                        Advanced Settings →
+                      </a>
+                    </div>
+                  </div>
+
+                  <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; margin-top: 24px; text-align: left;">
+                    <p style="color: #616061; font-size: 14px; margin: 0 0 12px 0;">
+                      <strong>💡 Next Steps:</strong>
+                    </p>
+                    <ul style="color: #616061; font-size: 14px; margin: 0; padding-left: 20px;">
+                      <li style="margin-bottom: 8px;">Create your first space</li>
                       <li style="margin-bottom: 8px;">Invite team members to your workspace</li>
-                      <li>Add members to specific spaces based on their role</li>
+                      <li>Add members to specific spaces in Settings</li>
                     </ul>
                   </div>
                 </div>
@@ -1165,6 +1227,51 @@
     }
 
     // Load all accessible spaces for the current user
+    // Handle quick space creation from empty state
+    async function handleQuickCreateSpace(event) {
+      event.preventDefault();
+
+      const submitBtn = document.getElementById('quick-create-btn');
+      const originalBtnText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Creating...';
+
+      try {
+        const name = document.getElementById('quick-space-name').value.trim();
+        const description = document.getElementById('quick-space-description').value.trim();
+        const visibility = document.getElementById('quick-space-visibility').value;
+
+        const response = await fetch('/api/spaces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: WORKSPACE_ID,
+            name: name,
+            description: description || '',
+            visibility: visibility
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log('✅ Space created successfully:', data);
+
+          // Reload the page to show the new space
+          window.location.reload();
+        } else {
+          alert(`Failed to create space: ${data.error || 'Unknown error'}`);
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+      } catch (error) {
+        console.error('❌ Failed to create space:', error);
+        alert('Failed to create space. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
+    }
+
     async function loadSpaces() {
       try {
         console.log('🔍 Loading spaces for workspace:', WORKSPACE_ID);
