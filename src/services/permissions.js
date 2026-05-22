@@ -205,11 +205,6 @@ async function canAccessSpace(client, workspaceId, spaceId, userId) {
   try {
     const { getWorkspaceSpacesCollection, getSpaceMembersCollection } = require('../config/database');
 
-    // Workspace admins can access all spaces
-    if (await isAdmin(client, workspaceId, userId)) {
-      return true;
-    }
-
     // Get space details
     const spacesCollection = getWorkspaceSpacesCollection();
     const space = await spacesCollection.findOne({
@@ -227,18 +222,9 @@ async function canAccessSpace(client, workspaceId, spaceId, userId) {
       return true;
     }
 
-    // Private spaces: owner only
-    if (space.visibility === 'private') {
-      return space.created_by === userId;
-    }
-
-    // Shared spaces: check membership
-    if (space.visibility === 'shared') {
-      // Owner can access
-      if (space.created_by === userId) {
-        return true;
-      }
-
+    // Private & Shared spaces: only explicit members can access content
+    // (workspace admins can still manage spaces, but don't auto-access content)
+    if (space.visibility === 'private' || space.visibility === 'shared') {
       // Check if user is a member
       const membersCollection = getSpaceMembersCollection();
       const membership = await membersCollection.findOne({
@@ -274,20 +260,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
 
     console.log(`🔍 getUserAccessibleSpaces: workspace=${workspaceId}, user=${userId}`);
 
-    // Workspace admins can access all spaces
-    const userIsAdmin = await isAdmin(client, workspaceId, userId);
-    console.log(`   Is admin? ${userIsAdmin}`);
-
-    if (userIsAdmin) {
-      // Return all non-archived spaces
-      const allSpaces = await spacesCollection.find({
-        workspace_id: workspaceId,
-        archived: false
-      }).toArray();
-      console.log(`   Admin access: ${allSpaces.length} spaces`);
-      return allSpaces.map(s => s.space_id);
-    }
-
     // Get public spaces (everyone can access)
     const publicSpaces = await spacesCollection.find({
       workspace_id: workspaceId,
@@ -296,24 +268,7 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
     }).toArray();
     console.log(`   Public spaces: ${publicSpaces.length}`);
 
-    // Get private spaces owned by user
-    const privateSpaces = await spacesCollection.find({
-      workspace_id: workspaceId,
-      visibility: 'private',
-      created_by: userId,
-      archived: false
-    }).toArray();
-    console.log(`   Private spaces (owned): ${privateSpaces.length}`);
-
-    // Get shared spaces where user is owner or member
-    const sharedOwnedSpaces = await spacesCollection.find({
-      workspace_id: workspaceId,
-      visibility: 'shared',
-      created_by: userId,
-      archived: false
-    }).toArray();
-    console.log(`   Shared spaces (owned): ${sharedOwnedSpaces.length}`);
-
+    // Get user's memberships (private and shared spaces they're explicitly added to)
     const memberships = await membersCollection.find({
       workspace_id: workspaceId,
       user_id: userId,
@@ -321,31 +276,18 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
     }).toArray();
     console.log(`   Memberships found: ${memberships.length}`, memberships.map(m => ({ space_id: m.space_id, role: m.role })));
 
-    const sharedMemberSpaceIds = memberships.map(m => m.space_id);
-    const sharedMemberSpaces = await spacesCollection.find({
+    const memberSpaceIds = memberships.map(m => m.space_id);
+    const memberSpaces = await spacesCollection.find({
       workspace_id: workspaceId,
-      space_id: { $in: sharedMemberSpaceIds },
-      visibility: 'shared',
+      space_id: { $in: memberSpaceIds },
       archived: false
     }).toArray();
-    console.log(`   Shared spaces (member): ${sharedMemberSpaces.length}`);
-
-    // Also get private spaces where user is a member (for backwards compatibility)
-    const privateMemberSpaces = await spacesCollection.find({
-      workspace_id: workspaceId,
-      space_id: { $in: sharedMemberSpaceIds },
-      visibility: 'private',
-      archived: false
-    }).toArray();
-    console.log(`   Private spaces (member): ${privateMemberSpaces.length}`);
+    console.log(`   Member spaces: ${memberSpaces.length}`);
 
     // Combine all accessible spaces
     const allAccessibleSpaces = [
       ...publicSpaces,
-      ...privateSpaces,
-      ...sharedOwnedSpaces,
-      ...sharedMemberSpaces,
-      ...privateMemberSpaces
+      ...memberSpaces
     ];
 
     // Deduplicate by space_id
@@ -361,10 +303,8 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
 /**
  * Check if user can create decisions in a space
  * Rules:
- * - Workspace admins can create anywhere
  * - Public spaces: all workspace members can create
- * - Private spaces: owner only
- * - Shared spaces: owner, admins, and members (not viewers)
+ * - Private & Shared spaces: only explicit members with appropriate roles
  *
  * @param {object} client - Slack client
  * @param {string} workspaceId - Workspace ID
@@ -375,11 +315,6 @@ async function getUserAccessibleSpaces(client, workspaceId, userId) {
 async function canCreateInSpace(client, workspaceId, spaceId, userId) {
   try {
     const { getWorkspaceSpacesCollection, getSpaceMembersCollection } = require('../config/database');
-
-    // Workspace admins can create anywhere
-    if (await isAdmin(client, workspaceId, userId)) {
-      return true;
-    }
 
     // Get space details
     const spacesCollection = getWorkspaceSpacesCollection();
@@ -393,24 +328,13 @@ async function canCreateInSpace(client, workspaceId, spaceId, userId) {
       return false;
     }
 
-    // Public spaces: everyone can create
+    // Public spaces: everyone in workspace can create
     if (space.visibility === 'public') {
       return true;
     }
 
-    // Private spaces: owner only
-    if (space.visibility === 'private') {
-      return space.created_by === userId;
-    }
-
-    // Shared spaces: check role
-    if (space.visibility === 'shared') {
-      // Owner can create
-      if (space.created_by === userId) {
-        return true;
-      }
-
-      // Check member role (viewers can't create)
+    // Private & Shared spaces: check explicit membership
+    if (space.visibility === 'private' || space.visibility === 'shared') {
       const membersCollection = getSpaceMembersCollection();
       const membership = await membersCollection.findOne({
         workspace_id: workspaceId,
