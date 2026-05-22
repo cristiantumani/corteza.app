@@ -1279,9 +1279,11 @@
           } else {
             availableContainer.innerHTML = availableMembers.map(member => `
               <div style="background: #F8F9FA; border: 1px solid #E1E4E8; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong>${member.user_name || member.email || member.user_id}</strong>
-                  <div style="font-size: 12px; color: #616061; margin-top: 4px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <strong style="font-size: 14px;">${member.user_name || 'User'}</strong>
+                  </div>
+                  <div style="font-size: 13px; color: #667eea; font-weight: 500;">
                     ${member.email || member.user_id}
                   </div>
                 </div>
@@ -1303,15 +1305,20 @@
           } else {
             currentContainer.innerHTML = currentMembers.map(member => `
               <div style="background: white; border: 1px solid #E1E4E8; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong>${member.user_name || member.user_id}</strong>
-                  <div style="font-size: 12px; color: #616061; margin-top: 4px;">
-                    ${member.email || member.user_id} • ${member.role}
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <strong style="font-size: 14px;">${member.user_name || 'User'}</strong>
+                    <span style="background: ${member.role === 'owner' ? '#667eea' : member.role === 'admin' ? '#10B981' : '#6B7280'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                      ${member.role}
+                    </span>
+                  </div>
+                  <div style="font-size: 13px; color: #667eea; font-weight: 500;">
+                    ${member.email || member.user_id}
                   </div>
                 </div>
                 ${member.role !== 'owner' ? `
-                  <button class="btn btn-danger" onclick="removeSpaceMemberConfirm('${spaceId}', '${member.user_id}', '${member.user_name || member.user_id}')" style="padding: 6px 12px; font-size: 13px;">Remove</button>
-                ` : '<span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">OWNER</span>'}
+                  <button class="btn btn-danger" onclick="removeSpaceMemberConfirm('${spaceId}', '${member.user_id}', '${member.user_name || member.user_id}')" style="padding: 6px 12px; font-size: 13px; white-space: nowrap;">Remove</button>
+                ` : ''}
               </div>
             `).join('');
           }
