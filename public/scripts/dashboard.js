@@ -71,8 +71,9 @@
 
       const contextUser = document.getElementById('context-user');
       if (contextUser) {
-        const userDisplay = currentUser.email || currentUser.user_name;
-        contextUser.textContent = userDisplay;
+        // Always prefer email over username
+        contextUser.textContent = currentUser.email || currentUser.user_name || 'Unknown user';
+        console.log('Context bar user:', { email: currentUser.email, user_name: currentUser.user_name });
       }
 
       // Update chat workspace info
@@ -1061,66 +1062,100 @@
     // ========== SPACES FUNCTIONALITY ==========
 
     // Show message when user has no accessible spaces
-    function showNoSpacesMessage() {
+    async function showNoSpacesMessage() {
       // Hide all decision-related UI elements
-      const statsSection = document.querySelector('.dashboard-stats');
-      const filtersSection = document.querySelector('.filters');
-      const decisionsTable = document.querySelector('.decisions-table');
-      const classicView = document.getElementById('classic-view');
-      const chatView = document.getElementById('chat-view');
-      const searchBar = document.getElementById('search');
-      const heroSection = document.querySelector('.dashboard-hero');
+      const statsChat = document.getElementById('stats-chat');
+      const statsClassic = document.getElementById('stats-classic');
+      const classicView = document.getElementById('classic-view-container');
+      const chatView = document.getElementById('chat-view-container');
+      const heroSection = document.querySelector('.hero-banner');
 
       // Hide decision-related sections
-      if (statsSection) statsSection.style.display = 'none';
-      if (filtersSection) filtersSection.style.display = 'none';
-      if (decisionsTable) decisionsTable.style.display = 'none';
+      if (statsChat) statsChat.style.display = 'none';
+      if (statsClassic) statsClassic.style.display = 'none';
       if (classicView) classicView.style.display = 'none';
-      if (chatView) chatView.style.display = 'none';
+      if (heroSection) heroSection.style.display = 'none';
 
-      // Replace hero content with workspace admin view
-      if (heroSection) {
-        heroSection.innerHTML = `
-          <div style="max-width: 800px; margin: 0 auto; padding: 60px 20px;">
-            <div style="text-align: center; margin-bottom: 48px;">
-              <div style="font-size: 64px; margin-bottom: 20px;">🏢</div>
-              <h1 style="color: #1d1c1d; margin-bottom: 12px; font-size: 32px;">Workspace Dashboard</h1>
-              <p style="color: #616061; font-size: 16px;">
-                This workspace is empty. Spaces are where teams organize and log their decisions.
-              </p>
-            </div>
+      // Hide the chat input area and show empty state message
+      if (chatView) {
+        const chatWrapper = chatView.querySelector('.chat-view-wrapper');
+        if (chatWrapper) {
+          // Get workspace admin info
+          let adminEmailHtml = '<p style="color: #616061; font-size: 14px; margin-top: 20px;">Contact your workspace administrator to be added to a space.</p>';
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-              <div style="background: white; border: 2px solid #E1E4E8; border-radius: 12px; padding: 32px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
-                <h3 style="color: #1d1c1d; margin-bottom: 12px; font-size: 20px;">Create a Space</h3>
-                <p style="color: #616061; font-size: 14px; margin-bottom: 20px;">
-                  Set up spaces for different teams or projects (Marketing, Engineering, etc.)
-                </p>
-                <a href="/settings#spaces" class="btn" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                  Create Space
-                </a>
+          try {
+            const response = await fetch(`/api/workspace-admins?workspace_id=${WORKSPACE_ID}`);
+            const data = await response.json();
+
+            if (response.ok && data.admins && data.admins.length > 0) {
+              const adminEmails = data.admins
+                .filter(a => a.email)
+                .map(a => `<a href="mailto:${a.email}" style="color: #667eea; text-decoration: none; font-weight: 600;">${a.email}</a>`)
+                .join(', ');
+
+              if (adminEmails) {
+                adminEmailHtml = `
+                  <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; margin-top: 24px;">
+                    <p style="color: #616061; font-size: 14px; margin: 0 0 8px 0;">
+                      <strong>👤 Workspace Administrator${data.admins.length > 1 ? 's' : ''}:</strong>
+                    </p>
+                    <p style="color: #667eea; font-size: 14px; margin: 0;">
+                      ${adminEmails}
+                    </p>
+                  </div>
+                `;
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch workspace admins:', error);
+          }
+
+          // Show appropriate message based on admin status
+          if (isCurrentUserAdmin) {
+            // Admin sees message to create spaces
+            chatWrapper.innerHTML = `
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+                <div style="max-width: 600px; text-align: center;">
+                  <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+                  <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">No Spaces Yet</h2>
+                  <p style="color: #616061; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                    Spaces help organize team decisions by department, project, or privacy level. Create your first space to get started.
+                  </p>
+                  <a href="/settings#spaces" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    ➕ Create Your First Space
+                  </a>
+                  <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; margin-top: 32px; text-align: left;">
+                    <p style="color: #616061; font-size: 14px; margin: 0 0 12px 0;">
+                      <strong>💡 Quick Start:</strong>
+                    </p>
+                    <ul style="color: #616061; font-size: 14px; margin: 0; padding-left: 20px; text-align: left;">
+                      <li style="margin-bottom: 8px;">Create a space (e.g., "Product Team" or "Engineering")</li>
+                      <li style="margin-bottom: 8px;">Invite team members to your workspace</li>
+                      <li>Add members to specific spaces based on their role</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-
-              <div style="background: white; border: 2px solid #E1E4E8; border-radius: 12px; padding: 32px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
-                <h3 style="color: #1d1c1d; margin-bottom: 12px; font-size: 20px;">Invite Team Members</h3>
-                <p style="color: #616061; font-size: 14px; margin-bottom: 20px;">
-                  Send invitations to team members to join your workspace
-                </p>
-                <a href="/settings#invites" class="btn btn-secondary" style="display: inline-block; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; border: 2px solid #667eea;">
-                  Send Invites
-                </a>
+            `;
+          } else {
+            // Regular member sees message to contact admin
+            chatWrapper.innerHTML = `
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+                <div style="max-width: 600px; text-align: center;">
+                  <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+                  <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">No Spaces Available</h2>
+                  <p style="color: #616061; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+                    You're in the <strong>${currentUser.workspace_name || WORKSPACE_ID}</strong> workspace, but you haven't been added to any spaces yet.
+                  </p>
+                  <p style="color: #616061; font-size: 16px; line-height: 1.6;">
+                    Spaces are where teams organize and share decisions. Please contact your workspace administrator to be added to a space.
+                  </p>
+                  ${adminEmailHtml}
+                </div>
               </div>
-            </div>
-
-            <div style="background: #F8F9FA; border-radius: 8px; padding: 20px; text-align: center;">
-              <p style="color: #616061; font-size: 14px; margin: 0;">
-                💡 <strong>Tip:</strong> Create spaces first, then invite team members and assign them to specific spaces.
-              </p>
-            </div>
-          </div>
-        `;
+            `;
+          }
+        }
       }
     }
 
@@ -1682,7 +1717,7 @@
 
         // Check if user has no accessible spaces
         if (currentUserSpaces.length === 0) {
-          showNoSpacesMessage();
+          await showNoSpacesMessage();
           return; // Don't load decisions/stats if no spaces
         }
 

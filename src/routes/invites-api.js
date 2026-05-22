@@ -432,4 +432,62 @@ router.get('/api/workspace-members', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/workspace-admins
+ * Get workspace admin information
+ */
+router.get('/api/workspace-admins', async (req, res) => {
+  try {
+    const { workspace_id } = req.query;
+
+    if (!workspace_id) {
+      return res.status(400).json({ success: false, error: 'workspace_id required' });
+    }
+
+    // Verify user is authenticated
+    if (!req.session?.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    // Verify user belongs to this workspace
+    if (req.session.user.workspace_id !== workspace_id) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    // Get workspace admins
+    const adminsCollection = getWorkspaceAdminsCollection();
+    const admins = await adminsCollection.find({
+      workspace_id: workspace_id,
+      role: 'admin',
+      deactivated_at: null
+    }).toArray();
+
+    // Get admin user details from workspace_members
+    const membersCollection = getWorkspaceMembersCollection();
+    const adminDetails = await Promise.all(
+      admins.map(async (admin) => {
+        const member = await membersCollection.findOne({
+          workspace_id: workspace_id,
+          user_id: admin.user_id,
+          removed_at: null
+        });
+        return {
+          user_id: admin.user_id,
+          user_name: member?.user_name || admin.user_id,
+          email: member?.email || null
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      admins: adminDetails.filter(a => a !== null)
+    });
+
+  } catch (error) {
+    console.error('Error listing workspace admins:', error);
+    res.status(500).json({ success: false, error: 'Failed to list workspace admins' });
+  }
+});
+
 module.exports = router;
