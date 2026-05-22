@@ -578,10 +578,6 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
         finalUserName = workspaceMember.user_name || email;
         console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
       }
-
-        finalUserId = workspaceMember.user_id;
-        finalUserName = workspaceMember.user_name || email;
-        console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
     }
 
     // Verify user is authenticated
