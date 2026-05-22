@@ -566,9 +566,30 @@ async function handleOnboardingPage(req, res) {
   res.sendFile(require('path').join(__dirname, '../views', 'onboarding.html'));
 }
 
+/**
+ * Validates a token and returns user data (for password reset)
+ */
+function validateToken(token) {
+  const userData = loginTokens.get(token);
+  return userData || null;
+}
+
+/**
+ * Consumes a token (deletes it after use)
+ */
+function consumeToken(token) {
+  const userData = loginTokens.get(token);
+  if (userData) {
+    loginTokens.delete(token);
+  }
+  return userData || null;
+}
+
 module.exports = {
   generateLoginToken,  // Now exported for email-auth to use
   handleTokenLogin,
   handleLoginPage,
-  handleOnboardingPage
+  handleOnboardingPage,
+  validateToken,
+  consumeToken
 };

@@ -135,12 +135,18 @@ async function startApp() {
   });
 
   // Authentication routes (public, with rate limiting)
-  expressApp.get('/auth/login', authRateLimiter, handleLoginPage); // Shows hybrid login page (email + Slack)
+  expressApp.get('/auth/login', authRateLimiter, (req, res) => {
+    // Serve new hybrid login page
+    res.sendFile(require('path').join(__dirname, 'views', 'login-new.html'));
+  });
   expressApp.post('/auth/send-magic-link', authRateLimiter, require('express').json(), handleSendMagicLink); // Sends email magic link
   expressApp.get('/auth/token', authRateLimiter, handleTokenLogin); // Validates token and creates session
   expressApp.get('/auth/onboarding', handleOnboardingPage); // Shows onboarding for new users (requires session)
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
+
+  // New hybrid authentication endpoints
+  expressApp.use(require('./routes/auth-hybrid'));
 
   // Install page (public) - redirects to Bolt-managed OAuth which handles state/CSRF properly
   expressApp.get('/get-started', (req, res) => {

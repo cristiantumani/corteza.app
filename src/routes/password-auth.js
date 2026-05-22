@@ -28,15 +28,25 @@ router.post('/auth/login-with-password', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const normalizedWorkspace = workspace.toLowerCase().trim();
 
-    // Find user in workspace_members
+    // workspace param can be either workspace_id (WCRIS-TEST) or workspace name (cris-test)
+    // Try to find by workspace_id first, then by normalized name
     const membersCollection = getWorkspaceMembersCollection();
-    const member = await membersCollection.findOne({
+    let member = await membersCollection.findOne({
       email: normalizedEmail,
-      workspace_id: normalizedWorkspace,
+      workspace_id: workspace, // Try exact workspace_id match first
       removed_at: null
     });
+
+    // If not found, try normalized workspace name
+    if (!member) {
+      const normalizedWorkspace = workspace.toLowerCase().trim();
+      member = await membersCollection.findOne({
+        email: normalizedEmail,
+        workspace_id: normalizedWorkspace,
+        removed_at: null
+      });
+    }
 
     if (!member) {
       return res.status(401).json({
