@@ -1726,9 +1726,20 @@
           return; // Don't load decisions/stats if no spaces
         }
 
-        // User has spaces - hide loading indicator and show UI
+        // User has spaces - load data first, then show UI
+        // Update context bar with current space
+        updateContextBarSpace();
+
+        // Load initial data before showing UI (prevents flash)
+        await Promise.all([fetchStats(), fetchDecisions()]);
+
+        // Now hide loading indicator and show UI
         const loadingIndicator = document.getElementById('loading-indicator');
         if (loadingIndicator) loadingIndicator.style.display = 'none';
+
+        // Ensure hero banner stays hidden (we're in chat view by default)
+        const heroSection = document.querySelector('.hero-banner');
+        if (heroSection) heroSection.style.display = 'none';
 
         const statsChat = document.getElementById('stats-chat');
         if (statsChat) statsChat.style.display = 'flex';
@@ -1736,11 +1747,7 @@
         const chatView = document.getElementById('chat-view-container');
         if (chatView) chatView.style.display = 'block';
 
-        // Update context bar with current space
-        updateContextBarSpace();
-
-        fetchStats();
-        fetchDecisions();
+        // Set up auto-refresh
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
 
         // Initialize view toggle button
