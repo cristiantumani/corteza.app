@@ -52,7 +52,8 @@ async function handleSendMagicLink(req, res) {
       userId,
       displayName,
       workspaceId,
-      normalizedWorkspace
+      normalizedWorkspace,
+      normalizedEmail // Pass email for session storage
     );
 
     // Build magic link

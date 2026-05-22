@@ -18,9 +18,9 @@ setInterval(() => {
 
 /**
  * Generates a one-time login token for dashboard access
- * Called from /login Slack command
+ * Called from /login Slack command and email auth
  */
-function generateLoginToken(userId, userName, workspaceId, workspaceName) {
+function generateLoginToken(userId, userName, workspaceId, workspaceName, email = null) {
   const token = crypto.randomBytes(32).toString('hex');
 
   loginTokens.set(token, {
@@ -28,6 +28,7 @@ function generateLoginToken(userId, userName, workspaceId, workspaceName) {
     user_name: userName,
     workspace_id: workspaceId,
     workspace_name: workspaceName,
+    email: email, // Store email for session creation
     created_at: Date.now()
   });
 
@@ -76,6 +77,7 @@ function handleTokenLogin(req, res) {
     user_name: userData.user_name,
     workspace_id: userData.workspace_id,
     workspace_name: userData.workspace_name,
+    email: userData.email || null, // Include email for workspace operations
     authenticated_at: new Date().toISOString()
   };
 

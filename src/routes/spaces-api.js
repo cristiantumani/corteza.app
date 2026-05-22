@@ -537,29 +537,51 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
       console.log(`📧 Workspace member found:`, workspaceMember ? `Yes (${workspaceMember.user_id})` : 'No');
 
       if (!workspaceMember) {
-        // Debug: Check if email exists with different workspace_id
-        const anyMember = await workspaceMembersCollection.findOne({
-          email: normalizedEmail,
-          removed_at: null
-        });
-        console.log(`📧 Email exists in ANY workspace:`, anyMember ? `Yes (workspace: ${anyMember.workspace_id})` : 'No');
+        // FALLBACK: For email-authenticated users, try generating user_id from email
+        // This handles existing users who were added before email was stored in session
+        const crypto = require('crypto');
+        const generatedUserId = `U${crypto.createHash('md5').update(normalizedEmail).digest('hex').substring(0, 8).toUpperCase()}`;
+        console.log(`📧 Generated user_id from email: ${generatedUserId}`);
 
-        // Debug: Show all members in this workspace
-        const allMembers = await workspaceMembersCollection.find({
+        const memberByUserId = await workspaceMembersCollection.findOne({
           workspace_id: workspace_id,
+          user_id: generatedUserId,
           removed_at: null
-        }).toArray();
-        console.log(`📧 All members in workspace ${workspace_id}:`, allMembers.map(m => ({ email: m.email, user_id: m.user_id })));
-
-        return res.status(404).json({
-          error: 'User not found in workspace',
-          message: 'This email is not a member of the workspace. Please invite them to the workspace first via Team Invitations.'
         });
+
+        if (memberByUserId) {
+          console.log(`✅ Found member by generated user_id (old record without email)`);
+          // Update the record to include email for future lookups
+          await workspaceMembersCollection.updateOne(
+            { _id: memberByUserId._id },
+            { $set: { email: normalizedEmail } }
+          );
+          console.log(`✅ Updated workspace_members record with email: ${normalizedEmail}`);
+
+          finalUserId = memberByUserId.user_id;
+          finalUserName = memberByUserId.user_name || email;
+        } else {
+          // Debug: Show all members in this workspace
+          const allMembers = await workspaceMembersCollection.find({
+            workspace_id: workspace_id,
+            removed_at: null
+          }).toArray();
+          console.log(`📧 All members in workspace ${workspace_id}:`, allMembers.map(m => ({ email: m.email, user_id: m.user_id })));
+
+          return res.status(404).json({
+            error: 'User not found in workspace',
+            message: 'This email is not a member of the workspace. Please invite them to the workspace first via Team Invitations.'
+          });
+        }
+      } else {
+        finalUserId = workspaceMember.user_id;
+        finalUserName = workspaceMember.user_name || email;
+        console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
       }
 
-      finalUserId = workspaceMember.user_id;
-      finalUserName = workspaceMember.user_name || email;
-      console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
+        finalUserId = workspaceMember.user_id;
+        finalUserName = workspaceMember.user_name || email;
+        console.log(`✅ Resolved email ${email} to user_id ${finalUserId}`);
     }
 
     // Verify user is authenticated
