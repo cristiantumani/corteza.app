@@ -271,7 +271,32 @@
         if (isAuthenticated) {
           html += `<button class="btn btn-primary" onclick="acceptInvite()">Accept Invitation</button>`;
         } else {
-          html += `<a href="/auth/login?redirect=/invite/${INVITE_ID}" class="btn btn-primary">Sign in to Accept</a>`;
+          // Show signup form for new users
+          html += `
+            <div style="margin-bottom: 16px;">
+              <h3 style="font-size: 16px; margin-bottom: 16px; color: #1d1d1f;">Create your account</h3>
+              <form id="signup-form" onsubmit="signupAndAccept(event)">
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #1d1d1f;">Full Name</label>
+                  <input type="text" id="signup-name" required style="width: 100%; padding: 10px; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 14px;" placeholder="John Doe" />
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #1d1d1f;">Email</label>
+                  <input type="email" id="signup-email" required style="width: 100%; padding: 10px; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 14px;" placeholder="you@company.com" />
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #1d1d1f;">Password</label>
+                  <input type="password" id="signup-password" required minlength="8" style="width: 100%; padding: 10px; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 14px;" placeholder="At least 8 characters" />
+                  <small style="display: block; color: #666; font-size: 12px; margin-top: 4px;">Minimum 8 characters</small>
+                </div>
+                <button type="submit" class="btn btn-primary" id="signup-btn">Create Account & Join</button>
+              </form>
+            </div>
+            <div style="text-align: center; margin-top: 16px;">
+              <span style="color: #666; font-size: 13px;">Already have an account?</span>
+              <a href="/auth/login" style="color: #667eea; font-size: 13px; text-decoration: none; font-weight: 600; margin-left: 4px;">Sign in</a>
+            </div>
+          `;
         }
       } else {
         let errorMsg = 'This invitation is no longer valid.';
@@ -287,6 +312,56 @@
       html += '</div>';
 
       content.innerHTML = html;
+    }
+
+    async function signupAndAccept(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const button = document.getElementById('signup-btn');
+
+      button.disabled = true;
+      button.textContent = 'Creating account...';
+
+      try {
+        const response = await fetch(`/api/invites/${INVITE_ID}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            full_name: name
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Show success message
+          document.getElementById('content').innerHTML = `
+            <div class="success-box">
+              <h2 style="margin-bottom: 8px;">✅ Welcome to ${escapeHtml(data.workspace_name)}!</h2>
+              <p>Your account has been created. Let's complete your profile...</p>
+            </div>
+          `;
+
+          // Redirect to onboarding (steps 2-3) after 1 second
+          setTimeout(() => {
+            window.location.href = '/auth/onboarding';
+          }, 1000);
+        } else {
+          alert(data.error || 'Failed to create account');
+          button.disabled = false;
+          button.textContent = 'Create Account & Join';
+        }
+      } catch (error) {
+        console.error('Error signing up:', error);
+        alert('Failed to create account. Please try again.');
+        button.disabled = false;
+        button.textContent = 'Create Account & Join';
+      }
     }
 
     async function acceptInvite() {

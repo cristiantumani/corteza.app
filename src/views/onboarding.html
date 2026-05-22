@@ -180,23 +180,22 @@
       <div class="form-section active" id="section-1">
         <h2 style="font-size: 20px; margin-bottom: 16px; color: #1d1d1f;">🔐 Set Your Password</h2>
         <p style="color: #666; margin-bottom: 24px; font-size: 14px;">
-          Create a password so you can login faster next time (optional - you can skip and continue using magic links)
+          Create a secure password for faster login next time
         </p>
 
         <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="At least 8 characters" minlength="8" />
+          <label for="password">Password *</label>
+          <input type="password" id="password" placeholder="At least 8 characters" minlength="8" required />
           <small>Make it strong! Mix letters, numbers, and symbols</small>
         </div>
 
         <div class="form-group">
-          <label for="confirm-password">Confirm Password</label>
-          <input type="password" id="confirm-password" placeholder="Re-enter your password" />
+          <label for="confirm-password">Confirm Password *</label>
+          <input type="password" id="confirm-password" placeholder="Re-enter your password" required />
         </div>
 
         <div class="button-group">
-          <button class="btn btn-skip" onclick="skipStep(1)">Skip for now</button>
-          <button class="btn btn-primary" onclick="nextStep(1)">Continue →</button>
+          <button class="btn btn-primary" onclick="nextStep(1)" style="width: 100%;">Continue →</button>
         </div>
       </div>
 
@@ -330,32 +329,28 @@
       }
     }
 
-    function skipStep(step) {
-      if (step === 1) {
-        // Skip password setup
-        formData.password = null;
-        currentStep = 2;
-        updateSteps();
-      }
-    }
-
     async function nextStep(step) {
       if (step === 1) {
-        // Validate password
+        // Validate password (now mandatory)
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm-password').value;
 
-        if (password && password.length < 8) {
+        if (!password) {
+          showMessage('Password is required');
+          return;
+        }
+
+        if (password.length < 8) {
           showMessage('Password must be at least 8 characters');
           return;
         }
 
-        if (password && password !== confirmPassword) {
+        if (password !== confirmPassword) {
           showMessage('Passwords do not match');
           return;
         }
 
-        formData.password = password || null;
+        formData.password = password;
         currentStep = 2;
         updateSteps();
 

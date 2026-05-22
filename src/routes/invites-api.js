@@ -1,6 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const { getWorkspaceInvitesCollection, getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
+const { getWorkspaceInvitesCollection, getWorkspaceMembersCollection, getWorkspaceAdminsCollection, getSpaceMembersCollection } = require('../config/database');
 const { sendInviteEmail } = require('../utils/n8n-client');
 
 const router = express.Router();
@@ -236,8 +236,161 @@ router.get('/api/invites/:invite_id', async (req, res) => {
 });
 
 /**
+ * POST /api/invites/:invite_id/signup
+ * Sign up for new account via invite (for users without account)
+ * Body: { email, password, full_name }
+ */
+router.post('/api/invites/:invite_id/signup', async (req, res) => {
+  try {
+    const { invite_id } = req.params;
+    const { email, password, full_name } = req.body;
+
+    // Validate inputs
+    if (!email || !password || !full_name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, password, and full name are required'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters'
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const invitesCollection = getWorkspaceInvitesCollection();
+    const membersCollection = getWorkspaceMembersCollection();
+    const spaceMembersCollection = getSpaceMembersCollection();
+
+    // Get invite
+    const invite = await invitesCollection.findOne({ invite_id: invite_id });
+
+    if (!invite) {
+      return res.status(404).json({ success: false, error: 'Invite not found' });
+    }
+
+    // Validate invite
+    const isExpired = new Date(invite.expires_at) < new Date();
+    const maxUsesReached = invite.max_uses && invite.uses_count >= invite.max_uses;
+    const isRevoked = invite.status === 'revoked';
+
+    if (isExpired) {
+      return res.status(400).json({ success: false, error: 'Invite has expired' });
+    }
+
+    if (maxUsesReached) {
+      return res.status(400).json({ success: false, error: 'Invite has reached maximum uses' });
+    }
+
+    if (isRevoked || invite.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Invite is no longer valid' });
+    }
+
+    // Check if email is already a member of this workspace
+    const existingMember = await membersCollection.findOne({
+      workspace_id: invite.workspace_id,
+      email: normalizedEmail,
+      removed_at: null
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        success: false,
+        error: 'This email is already a member of the workspace. Please login instead.'
+      });
+    }
+
+    // Hash password
+    const bcrypt = require('bcrypt');
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Generate user_id (use email as user_id for email-based accounts)
+    const userId = `email_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`;
+
+    // Create workspace membership
+    const membershipId = `mem_${crypto.randomBytes(12).toString('hex')}`;
+    const membership = {
+      membership_id: membershipId,
+      workspace_id: invite.workspace_id,
+      workspace_name: invite.workspace_name,
+      user_id: userId,
+      user_name: full_name,
+      email: normalizedEmail,
+      password_hash: passwordHash,
+      password_set_at: new Date().toISOString(),
+      role: invite.role || 'member',
+      joined_via: 'invite',
+      invited_by: invite.invited_by,
+      invited_by_name: invite.invited_by_name,
+      joined_at: new Date().toISOString(),
+      removed_at: null,
+      onboarding_completed: false  // Will complete onboarding for steps 2-3
+    };
+
+    await membersCollection.insertOne(membership);
+
+    // Add to space if invite includes space_id
+    if (invite.space_id) {
+      const spaceMembershipId = `smem_${crypto.randomBytes(12).toString('hex')}`;
+      const spaceMembership = {
+        membership_id: spaceMembershipId,
+        workspace_id: invite.workspace_id,
+        space_id: invite.space_id,
+        user_id: userId,
+        user_name: full_name,
+        role: invite.space_role || 'member',
+        added_by: invite.invited_by,
+        added_by_name: invite.invited_by_name,
+        added_at: new Date().toISOString(),
+        removed_at: null
+      };
+
+      await spaceMembersCollection.insertOne(spaceMembership);
+    }
+
+    // Increment invite uses count
+    await invitesCollection.updateOne(
+      { invite_id: invite_id },
+      {
+        $inc: { uses_count: 1 },
+        $set: { last_used_at: new Date().toISOString() }
+      }
+    );
+
+    // Create session
+    req.session.user = {
+      user_id: userId,
+      user_name: full_name,
+      workspace_id: invite.workspace_id,
+      workspace_name: invite.workspace_name,
+      email: normalizedEmail,
+      authenticated_at: new Date().toISOString()
+    };
+
+    console.log(`✅ New user signed up via invite: ${normalizedEmail} joined ${invite.workspace_name}`);
+
+    res.json({
+      success: true,
+      workspace_id: invite.workspace_id,
+      workspace_name: invite.workspace_name,
+      space_id: invite.space_id || null,
+      needs_onboarding: true
+    });
+
+  } catch (error) {
+    console.error('Error signing up via invite:', error);
+    res.status(500).json({ success: false, error: 'Failed to create account' });
+  }
+});
+
+/**
  * POST /api/invites/:invite_id/accept
- * Accept an invite and join the workspace
+ * Accept an invite and join the workspace (for existing users)
  */
 router.post('/api/invites/:invite_id/accept', async (req, res) => {
   try {
@@ -309,6 +462,26 @@ router.post('/api/invites/:invite_id/accept', async (req, res) => {
 
     await membersCollection.insertOne(membership);
 
+    // Add to space if invite includes space_id
+    if (invite.space_id) {
+      const spaceMembersCollection = getSpaceMembersCollection();
+      const spaceMembershipId = `smem_${crypto.randomBytes(12).toString('hex')}`;
+      const spaceMembership = {
+        membership_id: spaceMembershipId,
+        workspace_id: invite.workspace_id,
+        space_id: invite.space_id,
+        user_id: userId,
+        user_name: userName,
+        role: invite.space_role || 'member',
+        added_by: invite.invited_by,
+        added_by_name: invite.invited_by_name,
+        added_at: new Date().toISOString(),
+        removed_at: null
+      };
+
+      await spaceMembersCollection.insertOne(spaceMembership);
+    }
+
     // Increment invite uses count
     await invitesCollection.updateOne(
       { invite_id: invite_id },
@@ -326,6 +499,7 @@ router.post('/api/invites/:invite_id/accept', async (req, res) => {
       success: true,
       workspace_id: invite.workspace_id,
       workspace_name: invite.workspace_name,
+      space_id: invite.space_id || null,
       role: invite.role
     });
 
