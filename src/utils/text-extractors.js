@@ -75,7 +75,9 @@ async function extractFromPDF(fileBuffer) {
     // Lazy-load pdf-parse only when actually needed
     if (!pdfParse) {
       try {
-        pdfParse = require('pdf-parse');
+        const pdfParseModule = require('pdf-parse');
+        // Handle both CommonJS and ES module exports
+        pdfParse = pdfParseModule.default || pdfParseModule;
       } catch (error) {
         console.error('❌ pdf-parse not available:', error.message);
         return {
@@ -84,6 +86,16 @@ async function extractFromPDF(fileBuffer) {
           error: 'PDF parsing not available in this environment. Please upload .txt or .docx files instead.'
         };
       }
+    }
+
+    // Verify pdfParse is a function
+    if (typeof pdfParse !== 'function') {
+      console.error('❌ pdf-parse loaded but is not a function:', typeof pdfParse);
+      return {
+        success: false,
+        text: '',
+        error: 'PDF parsing module failed to load correctly. Please upload .txt or .docx files instead.'
+      };
     }
 
     const data = await pdfParse(fileBuffer);
