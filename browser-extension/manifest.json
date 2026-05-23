@@ -3,7 +3,7 @@
   "name": "Corteza Team Memory",
   "version": "1.0.3",
   "description": "Log team decisions, context, and learnings from anywhere on the web",
-  "permissions": [],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://app.corteza.app/*",
     "https://*.railway.app/*",

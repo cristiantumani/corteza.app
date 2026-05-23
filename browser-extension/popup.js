@@ -77,8 +77,15 @@ async function loadSpaces() {
       populateSpaceSelector();
 
       // Restore last selected space or use first one
-      const storage = await chrome.storage.local.get('last_space_id');
-      const lastSpaceId = storage.last_space_id;
+      let lastSpaceId = null;
+      try {
+        if (chrome.storage && chrome.storage.local) {
+          const storage = await chrome.storage.local.get('last_space_id');
+          lastSpaceId = storage.last_space_id;
+        }
+      } catch (storageError) {
+        console.warn('Could not access chrome.storage:', storageError);
+      }
 
       if (lastSpaceId && availableSpaces.find(s => s.space_id === lastSpaceId)) {
         selectedSpaceId = lastSpaceId;
@@ -113,7 +120,9 @@ function populateSpaceSelector() {
     selectedSpaceId = e.target.value;
     updateContextSpace();
     // Save last selected space
-    chrome.storage.local.set({ last_space_id: selectedSpaceId });
+    if (chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ last_space_id: selectedSpaceId });
+    }
   });
 }
 
@@ -155,11 +164,15 @@ function showNoSpacesMessage() {
 function setupEventListeners() {
   // Memory form submission
   const form = document.getElementById('memory-form');
-  form.addEventListener('submit', handleSubmit);
+  if (form) {
+    form.addEventListener('submit', handleSubmit);
+  }
 
   // Character count for textarea
   const textarea = document.getElementById('text');
-  textarea.addEventListener('input', updateCharCount);
+  if (textarea) {
+    textarea.addEventListener('input', updateCharCount);
+  }
 
   // Email capture form submission
   const emailForm = document.getElementById('email-capture-form');
