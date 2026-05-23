@@ -491,20 +491,40 @@ router.get('/api/spaces/:space_id/members', async (req, res) => {
       return res.status(404).json({ error: 'Space not found' });
     }
 
-    if (space.visibility !== 'shared') {
-      return res.json({ members: [] }); // Only shared spaces have members
+    // Public spaces don't have explicit members
+    if (space.visibility === 'public') {
+      return res.json({ success: true, members: [] });
     }
 
-    // Get members
+    // Get members for private/shared spaces
     const membersCollection = getSpaceMembersCollection();
-    const members = await membersCollection.find({
+    const spaceMembers = await membersCollection.find({
       space_id: space_id,
       removed_at: null
     }).sort({ added_at: 1 }).toArray();
 
+    // Enrich with email from workspace_members
+    const { getWorkspaceMembersCollection } = require('../config/database');
+    const workspaceMembersCollection = getWorkspaceMembersCollection();
+
+    const enrichedMembers = await Promise.all(spaceMembers.map(async (member) => {
+      // Try to get email from workspace_members
+      const workspaceMember = await workspaceMembersCollection.findOne({
+        workspace_id: workspace_id,
+        user_id: member.user_id,
+        removed_at: null
+      });
+
+      return {
+        ...member,
+        email: workspaceMember?.email || null,
+        user_name: member.user_name || workspaceMember?.user_name || member.user_id
+      };
+    }));
+
     res.json({
       success: true,
-      members: members
+      members: enrichedMembers
     });
   } catch (error) {
     console.error('Error listing space members:', error);
