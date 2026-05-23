@@ -131,11 +131,19 @@ function showNoSpacesMessage() {
       <p style="color: #616061; font-size: 13px; margin-bottom: 20px;">
         You need to create a space in the dashboard first.
       </p>
-      <button class="btn-primary" onclick="chrome.runtime.sendMessage({ action: 'openDashboard' })">
+      <button class="btn-primary" id="open-dashboard-btn">
         Open Dashboard
       </button>
     </div>
   `;
+
+  // Add event listener to the button
+  const btn = document.getElementById('open-dashboard-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: 'openDashboard' });
+    });
+  }
 }
 
 // Setup event listeners
