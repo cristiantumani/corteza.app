@@ -10,8 +10,20 @@
 
 ## ✨ Features
 
+### 📁 Spaces - Organize Your Team's Knowledge (NEW!)
+- **Multiple Spaces:** Organize decisions by team, project, or privacy level
+- **3 Visibility Levels:**
+  - 🌍 **Public** - All workspace members can view and contribute
+  - 👥 **Shared** - Only invited members can access
+  - 🔒 **Private** - Your personal space for sensitive decisions
+- **Smart Permissions:** Owner, Admin, Member, and Viewer roles per space
+- **Direct Invitations:** Invite people to specific spaces via email
+- **Integrated Everywhere:** Dashboard, Chrome Extension, Slack, Obsidian plugin
+- **Migration-Ready:** Existing decisions automatically moved to default "General" space
+
 ### 🧠 Team Memory Logging
 - **Slash Commands:** Log memories with `/decision` or `/memory` in Slack
+- **Space Selection:** Choose which space to save each decision
 - **3 Memory Types:**
   - ✅ **Decisions** - Choices and commitments made
   - 💡 **Explanations** - How things work, technical details
@@ -32,15 +44,19 @@
 - **GDPR Compliance:** Export and delete workspace data
 
 ### 🔗 Integrations
+- **Chrome Extension:** Log decisions from anywhere on the web with space selection
+- **Obsidian Plugin:** Bidirectional sync with your personal knowledge base
 - **Per-Workspace Jira:** Each workspace configures its own Jira instance via `/settings`
 - **Slack OAuth:** Secure workspace authentication
 - **Multi-Tenancy:** Complete workspace isolation
 
 ### 🔐 Permissions & Security
-- **Role-Based Access:** Admin/Non-Admin permission system
-- **Auto-Promotion:** Slack Admins automatically become app Admins
-- **Permission Management:** `/permissions` command for granting/revoking access
-- **Workspace Isolation:** Admins can only edit their own decisions, Non-admins can only modify their own
+- **Two-Level Permissions:** Workspace-level (Admin/Member) + Space-level (Owner/Admin/Member/Viewer)
+- **Auto-Promotion:** Slack Admins automatically become workspace Admins
+- **Permission Management:** `/permissions` command for workspace access
+- **Space Management:** Create, manage, and invite members to spaces in Settings
+- **Workspace Isolation:** Complete separation between workspaces
+- **Space Privacy:** Private spaces truly private - only invited members can access
 - **Encrypted Storage:** Jira tokens encrypted at rest with AES-256
 
 ---
@@ -80,6 +96,19 @@
 
 ## 💬 Usage Examples
 
+### Create and Manage Spaces
+```
+1. Go to Dashboard → Settings → Manage Spaces
+2. Click "Create Space"
+3. Choose name, visibility (Public/Shared/Private), and icon
+4. Invite members directly (for Shared/Private spaces)
+```
+
+**Space Examples:**
+- **Engineering Team** (Public) - All tech decisions visible to everyone
+- **Product Roadmap** (Shared) - Product team collaboration
+- **CEO Notes** (Private) - Sensitive leadership decisions
+
 ### Add to Team Memory
 ```
 /decision We will use React for the frontend
@@ -90,6 +119,7 @@ or
 ```
 
 Fill in the modal with:
+- **Space** - Choose where to save this decision (NEW!)
 - Content text
 - Type (decision/explanation/context)
 - Category (product/ux/technical)
@@ -291,6 +321,8 @@ Optional:
 ```javascript
 {
   workspace_id: "T0WKH1NGL",
+  space_id: "sp_abc123xyz",       // NEW - Space assignment
+  space_name: "Engineering Team", // NEW - Denormalized for display
   id: 1,                    // Sequential per workspace
   text: "Decision to use PostgreSQL",
   type: "technical",        // product | technical | ux
@@ -301,6 +333,43 @@ Optional:
   creator: "John Doe",
   timestamp: "2024-12-21T10:00:00Z",
   embedding: [0.123, ...]   // 1536-dim vector for semantic search
+}
+```
+
+**workspace_spaces:** *(NEW - Space organization)*
+```javascript
+{
+  space_id: "sp_abc123xyz",
+  workspace_id: "T0WKH1NGL",
+  name: "Engineering Team",
+  description: "Engineering decisions",
+  visibility: "public",           // public | shared | private
+  created_by: "U123ABC",
+  created_by_name: "John Doe",
+  created_at: "2024-01-15T10:30:00Z",
+  updated_at: "2024-01-15T10:30:00Z",
+  is_default: true,              // Only one default per workspace
+  archived: false,
+  settings: {
+    color: "#667eea",
+    icon: "🏠"
+  }
+}
+```
+
+**space_members:** *(NEW - Space permissions)*
+```javascript
+{
+  membership_id: "mem_xyz789",
+  workspace_id: "T0WKH1NGL",
+  space_id: "sp_abc123xyz",
+  user_id: "U123ABC",
+  user_name: "John Doe",
+  role: "member",                 // owner | admin | member | viewer
+  added_by: "U999ABC",
+  added_by_name: "Jane Admin",
+  added_at: "2024-01-15T10:30:00Z",
+  removed_at: null                // Soft delete
 }
 ```
 
@@ -398,14 +467,18 @@ We're currently in **beta testing phase**. Contributions, feedback, and bug repo
 ## 📝 Roadmap
 
 ### Current Features ✅
+- [x] **Spaces system** - Organize by team, project, or privacy level (Public/Shared/Private)
+- [x] **Chrome Extension** - Log decisions from anywhere with space selection
+- [x] **Obsidian Plugin** - Bidirectional sync with personal knowledge base
 - [x] Decision logging via Slack slash commands (`/decision`, `/memory`)
 - [x] AI-powered transcript analysis with Claude
 - [x] Semantic search with vector embeddings
 - [x] Web dashboard with chat interface
 - [x] Per-workspace Jira configuration (`/settings`)
 - [x] Multi-workspace support with OAuth
-- [x] Role-based permissions (Admin/Non-Admin)
+- [x] Two-level permissions (Workspace + Space)
 - [x] Permission management (`/permissions`)
+- [x] Direct space invitations via email
 - [x] Encrypted Jira token storage
 - [x] GDPR compliance tools (export/delete)
 

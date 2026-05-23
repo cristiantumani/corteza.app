@@ -6,6 +6,128 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.4.0] - 2026-05-23
+
+### 🎉 Added - Spaces System
+
+**Major Feature: Organize decisions by team, project, or privacy level**
+
+**New Features:**
+- **Spaces within Workspaces:** Create unlimited spaces to organize decisions
+- **3 Visibility Levels:**
+  - 🌍 **Public** - All workspace members can view and contribute
+  - 👥 **Shared** - Only invited members can access
+  - 🔒 **Private** - Personal space for sensitive decisions
+- **Granular Permissions:** Owner, Admin, Member, Viewer roles per space
+- **Direct Space Invitations:** Invite people directly to spaces via email
+- **Space-Aware Search:** Semantic search respects space permissions
+- **Visual Indicators:** Color-coded badges, icons, privacy indicators
+- **Default Spaces:** Backward compatible - existing decisions auto-migrated to "General" space
+
+**Technical:**
+- New collections: `workspace_spaces`, `space_members`
+- Updated collections: `decisions` (added space_id, space_name)
+- New API endpoints: `/api/spaces/*` for space management
+- Enhanced permission system with workspace + space levels
+- Migration script for existing workspaces
+
+### 🌐 Added - Chrome Extension Space Integration
+
+**Extension Now Supports Spaces:**
+- **Visual Context Bar:** Purple gradient showing workspace and current space
+- **Space Selector:** Dropdown with all accessible spaces
+- **Space Icons:** Custom icons and privacy indicators (🔒)
+- **Persistent Selection:** Remembers last selected space
+- **Empty State:** Guidance when no spaces exist
+
+**Technical:**
+- Added `storage` permission to manifest.json
+- Implemented `/api/spaces` endpoint integration
+- Chrome storage API for space persistence
+- Defensive error handling and null checks
+
+### 🔧 Improved - Onboarding & Invitations
+
+**Streamlined User Experience:**
+- **One-Step Invitations:** Invite directly to spaces (no two-step process)
+- **Eliminated Duplicate Onboarding:** Users only enter details once
+- **Inline Space Creation:** Add members immediately after creating space
+- **Enhanced Member Display:** Show names and emails instead of user IDs
+- **Auto-Membership:** Invited users auto-added to both workspace and space
+
+### 🐛 Fixed
+
+**PDF Upload:**
+- Fixed "pdfParse is not a function" error (pdf-parse v2.4.5 compatibility)
+- Handle both CommonJS and ES module exports
+
+**Chrome Extension:**
+- Fixed "Cannot read properties of undefined (reading 'local')" - added storage permission
+- Fixed "Open Dashboard" button not working - proper event listener
+- Fixed event listener errors on null elements - defensive null checks
+
+**Space Management:**
+- Fixed admins unable to view space members - use `canModifySpace()` permission
+- Fixed members showing as user IDs - enrich with workspace_members data
+- Fixed duplicate onboarding for invited users - set onboarding_completed: true
+- Fixed auto-membership for private spaces - creators must explicitly join
+
+**Permissions:**
+- Workspace admins can manage all spaces (even if not members)
+- Space creators don't auto-join private spaces (true privacy)
+- Clear permission hierarchy: workspace admins > space owners > admins > members
+
+### 📚 Documentation
+
+**New Files:**
+- **RECENT_UPDATES.md** - Comprehensive list of all recent changes
+- **SPACES_DEPLOYMENT.md** - Technical implementation guide
+
+**Updated Files:**
+- **README.md** - Added spaces section, updated features
+- **browser-extension/README.md** - Added space selection guide
+- **CHANGELOG.md** - This file
+
+### 🔄 Database Changes
+
+**New Collections:**
+```javascript
+workspace_spaces: {
+  space_id, workspace_id, name, description,
+  visibility, created_by, is_default, archived, settings
+}
+
+space_members: {
+  membership_id, workspace_id, space_id,
+  user_id, role, added_by, removed_at
+}
+```
+
+**Updated Collections:**
+```javascript
+decisions: {
+  // NEW fields
+  space_id: "sp_abc123xyz",
+  space_name: "Engineering Team"
+}
+
+workspace_invites: {
+  // NEW fields
+  space_id: "sp_abc123xyz",
+  space_role: "member"
+}
+```
+
+### 🚀 Migration
+
+**Automatic Migration:**
+- All existing decisions moved to default "General" space (public)
+- Workspace owners assigned as space owners
+- No action required from users
+- Zero downtime migration
+
+---
+
 ## [0.3.0] - 2026-01-21
 
 ### 🎉 Added - Role-Based Permission System

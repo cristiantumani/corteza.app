@@ -4,6 +4,9 @@ A Chrome/Edge browser extension that allows you to log team decisions, context, 
 
 ## Features
 
+- **Space Selection** - Choose which space to save decisions (Public/Shared/Private spaces)
+- **Visual Context** - Purple gradient bar showing current workspace and selected space
+- **Smart Persistence** - Remembers your last selected space
 - Log team memories without leaving your current tab
 - Quick access via toolbar icon or keyboard shortcut (Ctrl+Shift+M / Cmd+Shift+M)
 - Reuses your Corteza dashboard authentication (session cookies)
@@ -62,11 +65,18 @@ After logging in via either method, the browser extension will automatically det
    - Click the extension icon in your toolbar, OR
    - Press `Ctrl+Shift+M` (Windows/Linux) or `Cmd+Shift+M` (Mac)
 
-2. **Check Auth Status**
-   - Top right of popup shows "✓ Logged in" (green) or "✗ Not logged in" (red)
+2. **Check Auth & Context**
+   - Top right shows "✓ Logged in" (green) or "✗ Not logged in" (red)
+   - Purple context bar shows your current workspace and space
    - If not logged in, click "Open Dashboard" to log in
 
-3. **Fill Form**
+3. **Select Space** (NEW!)
+   - Use the **📁 Space** dropdown to choose where to save this decision
+   - Options show space icon, name, and 🔒 for private spaces
+   - Extension remembers your last selected space
+   - **First time?** Create a space in the dashboard first
+
+4. **Fill Form**
    - **Memory*** (required): Enter the decision, context, or learning (10-5000 characters)
    - **Type*** (required): Select memory type
      - ✅ Decision - A choice that was made
@@ -174,6 +184,7 @@ The extension uses the existing Corteza API endpoint:
 {
   "text": "Memory content...",
   "type": "decision",
+  "space_id": "sp_abc123xyz",
   "category": "technical",
   "tags": "database, architecture",
   "epic_key": "PROJ-123",
@@ -299,6 +310,20 @@ Same process as Chrome, but submit to https://partner.microsoft.com/en-us/dashbo
 For issues or feature requests, please contact the Corteza development team or file an issue in the repository.
 
 ## Version History
+
+- **v1.0.4** (2026-05-23) - Space Integration
+  - **NEW:** Space selector dropdown with all accessible spaces
+  - **NEW:** Visual context bar showing workspace and selected space
+  - **NEW:** Persistent space selection (remembers last choice)
+  - **NEW:** Space icons and privacy indicators (🔒)
+  - **NEW:** Empty state with "Create space" guidance
+  - **FIX:** Added storage permission for chrome.storage.local
+  - **FIX:** Open Dashboard button now works correctly
+  - **FIX:** Defensive null checks prevent UI crashes
+
+- **v1.0.3** (2026-02-08) - Bug fixes
+  - Fixed email capture form submission
+  - Improved error handling
 
 - **v1.0.0** (2026-02-07) - Initial release
   - Basic memory logging functionality
