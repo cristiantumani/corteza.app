@@ -124,7 +124,9 @@ router.get('/api/spaces', async (req, res) => {
 
     res.json({ success: true, spaces: spacesWithMetadata });
   } catch (error) {
-    console.error('Error listing spaces:', error);
+    console.error('❌ Error listing spaces:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ success: false, error: 'Failed to list spaces' });
   }
 });

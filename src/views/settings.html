@@ -853,6 +853,7 @@
 
   <script>
     const WORKSPACE_ID = '<WORKSPACE_ID>';
+    const USER_ID = '<USER_ID>';
 
     // Password Functions
     const passwordForm = document.getElementById('password-form');
@@ -1205,15 +1206,18 @@
                   <div style="display: flex; gap: 15px; font-size: 13px; color: #616061;">
                     <span>${space.visibility === 'private' ? '🔒' : space.visibility === 'shared' ? '👥' : '🌐'} ${space.visibility.charAt(0).toUpperCase() + space.visibility.slice(1)}</span>
                     <span>📝 ${space.decision_count || 0} decisions</span>
-                    <span>${space.user_role === 'owner' ? '👑 Owner' : space.user_role.charAt(0).toUpperCase() + space.user_role.slice(1)}</span>
+                    <span>${space.user_role === 'owner' ? '👑 Owner' : space.user_role ? space.user_role.charAt(0).toUpperCase() + space.user_role.slice(1) : '👁️ View Only'}</span>
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                  ${space.user_role === 'owner' || space.user_role === 'admin' ? `
+                  ${space.can_modify ? `
                     <button class="btn btn-secondary" onclick="editSpace('${space.space_id}')" style="padding: 8px 16px;">✏️ Edit</button>
                   ` : ''}
-                  ${space.visibility === 'shared' && (space.user_role === 'owner' || space.user_role === 'admin') ? `
+                  ${space.visibility === 'shared' && space.can_modify ? `
                     <button class="btn btn-secondary" onclick="manageMembers('${space.space_id}', '${space.name}')" style="padding: 8px 16px;">👥 Members</button>
+                  ` : ''}
+                  ${(space.visibility === 'private' || space.visibility === 'shared') && !space.user_role && space.can_modify ? `
+                    <button class="btn btn-primary" onclick="addSelfToSpace('${space.space_id}', '${space.name}')" style="padding: 8px 16px;">➕ Add Myself</button>
                   ` : ''}
                   ${space.user_role === 'owner' && !space.is_default ? `
                     <button class="btn btn-danger" onclick="deleteSpace('${space.space_id}', '${space.name}')" style="padding: 8px 16px;">🗑️</button>
@@ -1349,6 +1353,35 @@
       } catch (error) {
         console.error('Error deleting space:', error);
         alert('❌ Failed to delete space');
+      }
+    }
+
+    async function addSelfToSpace(spaceId, spaceName) {
+      if (!confirm(`Add yourself as owner to "${spaceName}"?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: USER_ID,
+            role: 'owner'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Successfully added yourself to the space!');
+          loadSpacesList();  // Reload to show updated membership
+        } else {
+          alert(`❌ Failed to add yourself: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error adding self to space:', error);
+        alert('❌ Failed to add yourself to space');
       }
     }
 

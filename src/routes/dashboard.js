@@ -51,11 +51,13 @@ function serveAIAnalytics(req, res) {
  * GET /settings - Serves the settings page HTML
  */
 function serveSettings(req, res) {
-  // Get workspace_id from session
+  // Get user info from session
   const workspaceId = req.session?.user?.workspace_id || '';
+  const userId = req.session?.user?.user_id || '';
 
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = settingsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+  // Replace placeholders with actual values
+  let html = settingsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+  html = html.replace(/<USER_ID>/g, userId);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(html);
