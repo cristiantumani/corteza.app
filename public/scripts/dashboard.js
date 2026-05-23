@@ -1257,8 +1257,8 @@
         if (response.ok) {
           console.log('✅ Space created successfully:', data);
 
-          // Reload the page to show the new space
-          window.location.reload();
+          // Show "Add Members" step
+          showAddMembersStep(data.space);
         } else {
           alert(`Failed to create space: ${data.error || 'Unknown error'}`);
           submitBtn.disabled = false;
@@ -1269,6 +1269,181 @@
         alert('Failed to create space. Please try again.');
         submitBtn.disabled = false;
         submitBtn.textContent = originalBtnText;
+      }
+    }
+
+    // Show "Add Members" step after space creation
+    function showAddMembersStep(space) {
+      const chatView = document.getElementById('chat-view-container');
+      const chatWrapper = chatView.querySelector('.chat-view-wrapper');
+
+      if (chatWrapper) {
+        chatWrapper.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+            <div style="max-width: 600px; width: 100%;">
+              <div style="text-align: center; margin-bottom: 32px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">Space Created!</h2>
+                <p style="color: #616061; font-size: 16px; line-height: 1.6;">
+                  <strong>${space.settings.icon} ${space.name}</strong> is ready.
+                </p>
+              </div>
+
+              <!-- Add Members Form -->
+              <div style="background: white; border: 1px solid #E1E4E8; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #1d1c1d;">Invite Team Members (Optional)</h3>
+                <p style="color: #616061; font-size: 14px; margin: 0 0 20px 0;">
+                  Send email invitations to add people to this space. You can also do this later in Settings.
+                </p>
+
+                <form id="add-members-form" onsubmit="handleAddMembers(event, '${space.space_id}', '${space.name}')">
+                  <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
+                      Email Addresses
+                    </label>
+                    <textarea
+                      id="member-emails"
+                      placeholder="Enter email addresses (one per line)&#10;john@company.com&#10;jane@company.com"
+                      rows="4"
+                      style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 15px; resize: vertical; font-family: inherit;"
+                    ></textarea>
+                    <small style="color: #616061; font-size: 13px; margin-top: 6px; display: block;">
+                      Enter one email per line. They'll be invited to the workspace and added to this space.
+                    </small>
+                  </div>
+
+                  <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
+                      Space Role
+                    </label>
+                    <select
+                      id="member-space-role"
+                      style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 15px;"
+                    >
+                      <option value="member">Member - Can create and edit own decisions</option>
+                      <option value="admin">Admin - Can manage space and all decisions</option>
+                      <option value="viewer">Viewer - Read-only access</option>
+                    </select>
+                  </div>
+
+                  <div style="display: flex; gap: 12px;">
+                    <button
+                      type="button"
+                      onclick="window.location.reload()"
+                      style="flex: 1; padding: 14px; background: #E1E4E8; color: #1d1c1d; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+                    >
+                      Skip for Now
+                    </button>
+                    <button
+                      type="submit"
+                      id="send-invites-btn"
+                      style="flex: 1; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+                    >
+                      📧 Send Invites
+                    </button>
+                  </div>
+                </form>
+
+                <div id="invite-results" style="margin-top: 20px; display: none;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Handle adding members after space creation
+    async function handleAddMembers(event, spaceId, spaceName) {
+      event.preventDefault();
+
+      const emailsText = document.getElementById('member-emails').value.trim();
+      const spaceRole = document.getElementById('member-space-role').value;
+      const submitBtn = document.getElementById('send-invites-btn');
+      const resultsDiv = document.getElementById('invite-results');
+
+      if (!emailsText) {
+        alert('Please enter at least one email address');
+        return;
+      }
+
+      // Parse emails (split by newline or comma)
+      const emails = emailsText
+        .split(/[\n,]/)
+        .map(e => e.trim())
+        .filter(e => e.length > 0 && e.includes('@'));
+
+      if (emails.length === 0) {
+        alert('Please enter valid email addresses');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Sending invites...';
+
+      try {
+        const results = [];
+
+        // Send invites sequentially
+        for (const email of emails) {
+          try {
+            const response = await fetch('/api/invites', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                workspace_id: WORKSPACE_ID,
+                email: email,
+                role: 'member',  // Workspace role
+                space_id: spaceId,
+                space_role: spaceRole,
+                expires_in_days: 30
+              })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              results.push({ email, success: true, message: 'Invite sent' });
+            } else {
+              results.push({ email, success: false, message: data.error || 'Failed' });
+            }
+          } catch (error) {
+            results.push({ email, success: false, message: 'Network error' });
+          }
+        }
+
+        // Show results
+        const successCount = results.filter(r => r.success).length;
+        const failCount = results.filter(r => !r.success).length;
+
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = `
+          <div style="background: ${successCount > 0 ? '#F0F7FF' : '#FFF5F5'}; border: 1px solid ${successCount > 0 ? '#667eea' : '#E53E3E'}; border-radius: 8px; padding: 16px;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #1d1c1d;">
+              ${successCount > 0 ? '✅' : '❌'} ${successCount} invite(s) sent successfully
+              ${failCount > 0 ? `, ${failCount} failed` : ''}
+            </p>
+            ${results.map(r => `
+              <div style="font-size: 13px; color: #616061; margin-top: 4px;">
+                ${r.success ? '✅' : '❌'} ${r.email} - ${r.message}
+              </div>
+            `).join('')}
+          </div>
+
+          <button
+            onclick="window.location.reload()"
+            style="width: 100%; margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+          >
+            Go to Dashboard
+          </button>
+        `;
+
+        submitBtn.style.display = 'none';
+
+      } catch (error) {
+        console.error('❌ Failed to send invites:', error);
+        alert('Failed to send invites. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📧 Send Invites';
       }
     }
 

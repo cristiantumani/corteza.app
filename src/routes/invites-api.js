@@ -24,9 +24,9 @@ router.use(express.json());
  */
 router.post('/api/invites', async (req, res) => {
   try {
-    const { workspace_id, role = 'member', expires_in_days = 30, max_uses = null, email = null } = req.body;
+    const { workspace_id, role = 'member', expires_in_days = 30, max_uses = null, email = null, space_id = null, space_role = 'member' } = req.body;
 
-    console.log('📧 POST /api/invites - Creating invite:', { workspace_id, role, email });
+    console.log('📧 POST /api/invites - Creating invite:', { workspace_id, role, email, space_id, space_role });
 
     // Verify user is authenticated
     if (!req.session?.user) {
@@ -80,7 +80,9 @@ router.post('/api/invites', async (req, res) => {
       expires_at: expiresAt.toISOString(),
       max_uses: max_uses,
       uses_count: 0,
-      status: 'active'
+      status: 'active',
+      space_id: space_id || null,  // Optional: auto-add to space
+      space_role: space_role || 'member'  // Role within the space
     };
 
     await invitesCollection.insertOne(invite);
@@ -93,16 +95,26 @@ router.post('/api/invites', async (req, res) => {
     let emailSent = false;
     if (email && email.trim().length > 0) {
       try {
+        // Get space name if space_id is provided
+        let spaceName = null;
+        if (space_id) {
+          const { getWorkspaceSpacesCollection } = require('../config/database');
+          const spacesCollection = getWorkspaceSpacesCollection();
+          const space = await spacesCollection.findOne({ space_id: space_id });
+          spaceName = space?.name || null;
+        }
+
         const emailResult = await sendInviteEmail({
           email: email.trim(),
           inviter_name: userName,
           workspace_name: workspaceName,
           role: role,
           invite_url: inviteUrl,
-          expires_days: expires_in_days || 30
+          expires_days: expires_in_days || 30,
+          space_name: spaceName  // Include space name if inviting to specific space
         });
         emailSent = emailResult.success;
-        console.log('📧 Invite email sent to:', email);
+        console.log('📧 Invite email sent to:', email, spaceName ? `(space: ${spaceName})` : '');
       } catch (emailError) {
         console.error('⚠️  Failed to send invite email:', emailError);
         // Don't fail the invite creation if email fails
