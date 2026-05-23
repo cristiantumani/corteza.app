@@ -1213,7 +1213,7 @@
                   ${space.can_modify ? `
                     <button class="btn btn-secondary" onclick="editSpace('${space.space_id}')" style="padding: 8px 16px;">✏️ Edit</button>
                   ` : ''}
-                  ${space.visibility === 'shared' && space.can_modify ? `
+                  ${(space.visibility === 'private' || space.visibility === 'shared') && space.can_modify ? `
                     <button class="btn btn-secondary" onclick="manageMembers('${space.space_id}', '${space.name}')" style="padding: 8px 16px;">👥 Members</button>
                   ` : ''}
                   ${(space.visibility === 'private' || space.visibility === 'shared') && !space.user_role && space.can_modify ? `

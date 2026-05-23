@@ -628,9 +628,10 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
       return res.status(404).json({ error: 'Space not found' });
     }
 
-    if (space.visibility !== 'shared') {
+    // Only private and shared spaces support explicit membership
+    if (space.visibility === 'public') {
       return res.status(400).json({
-        error: 'Can only add members to shared spaces'
+        error: 'Cannot add members to public spaces - all workspace members automatically have access'
       });
     }
 
