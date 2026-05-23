@@ -1424,11 +1424,47 @@
           // Filter available members (not in space)
           const availableMembers = allWorkspaceMembers.filter(m => !currentMemberIds.has(m.user_id));
 
-          // Render available members
+          // Render invite by email section + available members
+          let availableHTML = `
+            <!-- Invite by Email Section -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; margin-bottom: 20px; color: white;">
+              <h4 style="margin: 0 0 12px 0; font-size: 16px;">📧 Invite New Person</h4>
+              <p style="margin: 0 0 16px 0; font-size: 14px; opacity: 0.9;">
+                Invite someone by email - they'll be added to both the workspace and this space.
+              </p>
+              <form id="invite-email-form-${spaceId}" onsubmit="inviteByEmail(event, '${spaceId}')" style="display: flex; gap: 10px;">
+                <input
+                  type="email"
+                  id="invite-email-${spaceId}"
+                  placeholder="email@company.com"
+                  required
+                  style="flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 14px;"
+                />
+                <select
+                  id="invite-role-${spaceId}"
+                  style="padding: 10px; border: none; border-radius: 6px; font-size: 14px; background: white;"
+                >
+                  <option value="member">✏️ Member</option>
+                  <option value="admin">⚙️ Admin</option>
+                  <option value="viewer">👁️ Viewer</option>
+                </select>
+                <button type="submit" style="padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                  Send Invite
+                </button>
+              </form>
+            </div>
+          `;
+
+          // Add existing workspace members section
           if (availableMembers.length === 0) {
-            availableContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #616061;">All workspace members are already in this space.</div>';
+            availableHTML += '<div style="text-align: center; padding: 20px; color: #616061; font-size: 14px;">All workspace members are already in this space.</div>';
           } else {
-            availableContainer.innerHTML = availableMembers.map(member => `
+            availableHTML += `
+              <div style="margin-bottom: 12px; font-weight: 600; color: #616061; font-size: 14px;">
+                📋 Existing Workspace Members
+              </div>
+            `;
+            availableHTML += availableMembers.map(member => `
               <div style="background: #F8F9FA; border: 1px solid #E1E4E8; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -1449,6 +1485,8 @@
               </div>
             `).join('');
           }
+
+          availableContainer.innerHTML = availableHTML;
 
           // Render current members
           if (currentMembers.length === 0) {
@@ -1505,6 +1543,53 @@
       } catch (error) {
         console.error('Error adding member:', error);
         alert('❌ Failed to add member');
+      }
+    }
+
+    async function inviteByEmail(event, spaceId) {
+      event.preventDefault();
+
+      const emailInput = document.getElementById(`invite-email-${spaceId}`);
+      const roleSelect = document.getElementById(`invite-role-${spaceId}`);
+      const email = emailInput.value.trim();
+      const spaceRole = roleSelect.value;
+
+      if (!email) {
+        alert('Please enter an email address');
+        return;
+      }
+
+      // Get current space name for the invite
+      const currentSpace = allSpaces.find(s => s.space_id === spaceId);
+      const spaceName = currentSpace?.name || 'the space';
+
+      try {
+        // Create an invite that includes the space_id
+        const response = await fetch('/api/invites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: WORKSPACE_ID,
+            email: email,
+            role: 'member',  // Workspace role
+            space_id: spaceId,
+            space_role: spaceRole,
+            expires_in_days: 30
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Invitation sent to ${email}!\n\nThey will be added to both the workspace and "${spaceName}" when they accept.`);
+          emailInput.value = '';  // Clear the input
+          roleSelect.value = 'member';  // Reset role
+        } else {
+          alert(`❌ Failed to send invite: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error sending invite:', error);
+        alert('❌ Failed to send invite. Please try again.');
       }
     }
 
