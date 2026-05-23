@@ -2,6 +2,9 @@
 
 let currentUser = null;
 let workspaceId = null;
+let workspaceName = null;
+let availableSpaces = [];
+let selectedSpaceId = null;
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', async () => {
@@ -18,7 +21,12 @@ async function checkAuthentication() {
     if (response.authenticated) {
       currentUser = response.user;
       workspaceId = response.workspace_id;
+      workspaceName = response.user.workspace_name || workspaceId;
+
       showAuthenticatedUI();
+
+      // Load spaces for this workspace
+      await loadSpaces();
     } else {
       showUnauthenticatedUI();
     }
@@ -32,10 +40,14 @@ async function checkAuthentication() {
 function showAuthenticatedUI() {
   document.getElementById('login-required').style.display = 'none';
   document.getElementById('memory-form').style.display = 'block';
+  document.getElementById('context-info').style.display = 'block';
 
   const authStatus = document.getElementById('auth-status');
   authStatus.textContent = '✓ Logged in';
   authStatus.classList.remove('logged-out');
+
+  // Update context info
+  document.getElementById('context-workspace').textContent = workspaceName;
 }
 
 // Show UI for unauthenticated users
@@ -46,6 +58,84 @@ function showUnauthenticatedUI() {
   const authStatus = document.getElementById('auth-status');
   authStatus.textContent = '✗ Not logged in';
   authStatus.classList.add('logged-out');
+}
+
+// Load spaces for the workspace
+async function loadSpaces() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'loadSpaces',
+      workspaceId: workspaceId
+    });
+
+    if (response.success && response.spaces && response.spaces.length > 0) {
+      availableSpaces = response.spaces;
+      populateSpaceSelector();
+
+      // Restore last selected space or use first one
+      const storage = await chrome.storage.local.get('last_space_id');
+      const lastSpaceId = storage.last_space_id;
+
+      if (lastSpaceId && availableSpaces.find(s => s.space_id === lastSpaceId)) {
+        selectedSpaceId = lastSpaceId;
+      } else {
+        selectedSpaceId = availableSpaces[0].space_id;
+      }
+
+      document.getElementById('space').value = selectedSpaceId;
+      updateContextSpace();
+    } else {
+      showNoSpacesMessage();
+    }
+  } catch (error) {
+    console.error('Failed to load spaces:', error);
+    showNoSpacesMessage();
+  }
+}
+
+// Populate space selector dropdown
+function populateSpaceSelector() {
+  const selector = document.getElementById('space');
+  selector.innerHTML = availableSpaces.map(space => `
+    <option value="${space.space_id}">
+      ${space.settings?.icon || '📁'} ${space.name}
+      ${space.visibility === 'private' ? ' 🔒' : ''}
+    </option>
+  `).join('');
+
+  // Listen for space changes
+  selector.addEventListener('change', (e) => {
+    selectedSpaceId = e.target.value;
+    updateContextSpace();
+    // Save last selected space
+    chrome.storage.local.set({ last_space_id: selectedSpaceId });
+  });
+}
+
+// Update context bar with selected space
+function updateContextSpace() {
+  const space = availableSpaces.find(s => s.space_id === selectedSpaceId);
+  if (space) {
+    const spaceName = `${space.settings?.icon || '📁'} ${space.name}`;
+    document.getElementById('context-space').textContent = spaceName;
+  }
+}
+
+// Show message when user has no accessible spaces
+function showNoSpacesMessage() {
+  const form = document.getElementById('memory-form');
+  form.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+      <h3 style="margin-bottom: 12px; color: #1D1D1F;">No Spaces Available</h3>
+      <p style="color: #616061; font-size: 13px; margin-bottom: 20px;">
+        You need to create a space in the dashboard first.
+      </p>
+      <button class="btn-primary" onclick="chrome.runtime.sendMessage({ action: 'openDashboard' })">
+        Open Dashboard
+      </button>
+    </div>
+  `;
 }
 
 // Setup event listeners
@@ -140,13 +230,14 @@ async function handleSubmit(e) {
   // Get form values
   const text = document.getElementById('text').value.trim();
   const type = document.getElementById('type').value;
+  const space_id = document.getElementById('space').value;
   const category = document.getElementById('category').value || null;
   const tags = document.getElementById('tags').value.trim() || null;
   const epic_key = document.getElementById('epic_key').value.trim() || null;
   const alternatives = document.getElementById('alternatives').value.trim() || null;
 
   // Validate
-  const validation = validateForm(text, type);
+  const validation = validateForm(text, type, space_id);
   if (!validation.valid) {
     showMessage('error', validation.error);
     return;
@@ -164,6 +255,7 @@ async function handleSubmit(e) {
       data: {
         text,
         type,
+        space_id,
         category,
         tags,
         epic_key,
@@ -189,7 +281,7 @@ async function handleSubmit(e) {
 }
 
 // Validate form
-function validateForm(text, type) {
+function validateForm(text, type, space_id) {
   if (!text || text.length < 10) {
     return {
       valid: false,
@@ -216,6 +308,13 @@ function validateForm(text, type) {
     return {
       valid: false,
       error: 'Invalid memory type'
+    };
+  }
+
+  if (!space_id) {
+    return {
+      valid: false,
+      error: 'Please select a space'
     };
   }
 

@@ -104,6 +104,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     getOrCreateInstallId().then(install_id => sendResponse({ install_id }));
     return true; // Keep channel open for async response
   }
+
+  if (request.action === 'loadSpaces') {
+    loadSpaces(request.workspaceId).then(sendResponse);
+    return true; // Keep channel open for async response
+  }
 });
 
 // Check authentication status
@@ -151,6 +156,42 @@ async function checkAuthentication() {
   // All endpoints unreachable
   updateBadge(false);
   return { authenticated: false, error: 'All API endpoints unreachable' };
+}
+
+// Load spaces for a workspace
+async function loadSpaces(workspaceId) {
+  try {
+    const response = await fetch(
+      `${currentApiUrl}/api/spaces?workspace_id=${workspaceId}`,
+      {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      console.log('Spaces loaded successfully:', data.spaces.length);
+      return {
+        success: true,
+        spaces: data.spaces
+      };
+    } else {
+      console.error('Failed to load spaces:', data);
+      return {
+        success: false,
+        spaces: []
+      };
+    }
+  } catch (error) {
+    console.error('Load spaces error:', error);
+    return {
+      success: false,
+      spaces: []
+    };
+  }
 }
 
 // Create memory via API

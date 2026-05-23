@@ -12,6 +12,18 @@
     <div id="auth-status" class="auth-status"></div>
   </div>
 
+  <!-- Context Info (shown when authenticated) -->
+  <div id="context-info" class="context-info" style="display: none;">
+    <div class="context-row">
+      <span class="context-label">🏢 Workspace:</span>
+      <span class="context-value" id="context-workspace">-</span>
+    </div>
+    <div class="context-row">
+      <span class="context-label">📁 Space:</span>
+      <span class="context-value" id="context-space">-</span>
+    </div>
+  </div>
+
   <!-- Login required: email capture form (hidden by default) -->
   <div id="login-required" class="login-message" style="display: none;">
     <p class="login-intro">Log team decisions from anywhere in Chrome.</p>
@@ -68,6 +80,14 @@
         <option value="risk">⚠️ Risk</option>
         <option value="assumption">🤔 Assumption</option>
       </select>
+    </div>
+
+    <div class="form-group">
+      <label for="space">📁 Space *</label>
+      <select id="space" required>
+        <option value="">Loading spaces...</option>
+      </select>
+      <small>Where this memory will be saved</small>
     </div>
 
     <div class="form-group">
