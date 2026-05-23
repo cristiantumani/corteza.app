@@ -192,28 +192,11 @@ router.post('/api/spaces', async (req, res) => {
     const spacesCollection = getWorkspaceSpacesCollection();
     await spacesCollection.insertOne(space);
 
-    console.log(`✅ Created space: ${spaceId} (${name}) in workspace ${workspace_id}`);
+    console.log(`✅ Created space: ${spaceId} (${name}) in workspace ${workspace_id} with visibility: ${visibility}`);
 
-    // For private/shared spaces, automatically add creator as owner
-    if (visibility === 'private' || visibility === 'shared') {
-      const spaceMembersCollection = getSpaceMembersCollection();
-      const membershipId = `smem_${crypto.randomBytes(12).toString('hex')}`;
-
-      await spaceMembersCollection.insertOne({
-        membership_id: membershipId,
-        workspace_id: workspace_id,
-        space_id: spaceId,
-        user_id: userId,
-        user_name: userName,
-        role: 'owner',
-        added_by: userId,
-        added_by_name: userName,
-        added_at: new Date().toISOString(),
-        removed_at: null
-      });
-
-      console.log(`✅ Added creator as owner of ${visibility} space`);
-    }
+    // NOTE: Creator is NOT auto-added to private/shared spaces
+    // They must explicitly add themselves as a member if they want access
+    // This ensures even admins don't get automatic access to private spaces they create
 
     res.status(201).json({
       success: true,
