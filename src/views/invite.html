@@ -347,9 +347,9 @@
             </div>
           `;
 
-          // Redirect to onboarding (steps 2-3) after 1 second
+          // Redirect to dashboard after 1 second (onboarding already completed)
           setTimeout(() => {
-            window.location.href = '/auth/onboarding';
+            window.location.href = '/dashboard';
           }, 1000);
         } else {
           alert(data.error || 'Failed to create account');

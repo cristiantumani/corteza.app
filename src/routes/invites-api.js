@@ -341,7 +341,8 @@ router.post('/api/invites/:invite_id/signup', async (req, res) => {
       invited_by_name: invite.invited_by_name,
       joined_at: new Date().toISOString(),
       removed_at: null,
-      onboarding_completed: false  // Will complete onboarding for steps 2-3
+      onboarding_completed: true,  // ✅ Already provided name, email, password - skip onboarding
+      onboarding_completed_at: new Date().toISOString()
     };
 
     await membersCollection.insertOne(membership);
@@ -391,7 +392,7 @@ router.post('/api/invites/:invite_id/signup', async (req, res) => {
       workspace_id: invite.workspace_id,
       workspace_name: invite.workspace_name,
       space_id: invite.space_id || null,
-      needs_onboarding: true
+      needs_onboarding: false  // ✅ Skip onboarding - user already provided all required info
     });
 
   } catch (error) {
