@@ -473,10 +473,10 @@ router.get('/api/spaces/:space_id/members', async (req, res) => {
     const userId = req.session.user.user_id;
     const client = await getSlackClientSafe(workspace_id);
 
-    // Check if user can access this space
-    const canAccess = await canAccessSpace(client, workspace_id, space_id, userId);
-    if (!canAccess) {
-      return res.status(403).json({ error: 'Access denied to this space' });
+    // Check if user can manage this space (workspace admins + space owners/admins can view members)
+    const canManage = await canModifySpace(client, workspace_id, space_id, userId);
+    if (!canManage) {
+      return res.status(403).json({ error: 'You do not have permission to view members of this space' });
     }
 
     // Get space to check if it's shared
@@ -527,8 +527,10 @@ router.get('/api/spaces/:space_id/members', async (req, res) => {
       members: enrichedMembers
     });
   } catch (error) {
-    console.error('Error listing space members:', error);
-    res.status(500).json({ error: 'Failed to list members' });
+    console.error('❌ Error listing space members:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ success: false, error: 'Failed to list members' });
   }
 });
 
