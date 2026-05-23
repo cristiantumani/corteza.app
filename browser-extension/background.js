@@ -161,6 +161,7 @@ async function checkAuthentication() {
 // Load spaces for a workspace
 async function loadSpaces(workspaceId) {
   try {
+    console.log('🔍 Loading spaces for workspace:', workspaceId);
     const response = await fetch(
       `${currentApiUrl}/api/spaces?workspace_id=${workspaceId}`,
       {
@@ -171,22 +172,23 @@ async function loadSpaces(workspaceId) {
     );
 
     const data = await response.json();
+    console.log('📦 API response:', { status: response.status, success: data.success, spaces: data.spaces });
 
     if (response.ok && data.success) {
-      console.log('Spaces loaded successfully:', data.spaces.length);
+      console.log('✅ Spaces loaded successfully:', data.spaces.length, data.spaces);
       return {
         success: true,
         spaces: data.spaces
       };
     } else {
-      console.error('Failed to load spaces:', data);
+      console.error('❌ Failed to load spaces:', data);
       return {
         success: false,
         spaces: []
       };
     }
   } catch (error) {
-    console.error('Load spaces error:', error);
+    console.error('❌ Load spaces error:', error);
     return {
       success: false,
       spaces: []

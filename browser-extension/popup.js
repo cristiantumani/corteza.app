@@ -63,12 +63,16 @@ function showUnauthenticatedUI() {
 // Load spaces for the workspace
 async function loadSpaces() {
   try {
+    console.log('🔍 loadSpaces called for workspace:', workspaceId);
     const response = await chrome.runtime.sendMessage({
       action: 'loadSpaces',
       workspaceId: workspaceId
     });
 
+    console.log('📦 Received response:', response);
+
     if (response.success && response.spaces && response.spaces.length > 0) {
+      console.log('✅ Found', response.spaces.length, 'spaces:', response.spaces);
       availableSpaces = response.spaces;
       populateSpaceSelector();
 
@@ -85,10 +89,11 @@ async function loadSpaces() {
       document.getElementById('space').value = selectedSpaceId;
       updateContextSpace();
     } else {
+      console.log('⚠️ No spaces available, showing empty state');
       showNoSpacesMessage();
     }
   } catch (error) {
-    console.error('Failed to load spaces:', error);
+    console.error('❌ Failed to load spaces:', error);
     showNoSpacesMessage();
   }
 }
