@@ -434,7 +434,8 @@ body.minimal-mode .stats,
 body.minimal-mode .stats-condensed,
 body.minimal-mode .view-toggle-btn,
 body.minimal-mode #chat-view-container,
-body.minimal-mode #classic-view-container {
+body.minimal-mode #classic-view-container,
+body.minimal-mode #chat-widget {
   display: none !important;
 }
 
