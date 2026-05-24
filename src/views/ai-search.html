@@ -11,6 +11,8 @@
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+    <link rel="stylesheet" href="/styles/dashboard-new.css">
 
     <style>
         .material-symbols-outlined {
@@ -257,7 +259,49 @@
     </div>
 </div>
 
-<!-- Modals will be inserted here by dashboard.js -->
+<!-- Modals -->
+<!-- Detail Modal (for viewing decision details from search results) -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <h2 id="detail-title">Memory Details</h2>
+      <div style="display: flex; gap: 10px;">
+        <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
+        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Content</h3>
+      <div class="content" id="detail-decision-text"></div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Type</label>
+        <div class="value" id="detail-type"></div>
+      </div>
+      <div class="detail-item">
+        <label>Creator</label>
+        <div class="value" id="detail-creator"></div>
+      </div>
+      <div class="detail-item">
+        <label>Date</label>
+        <div class="value" id="detail-date"></div>
+      </div>
+    </div>
+
+    <div class="detail-section" id="detail-epic-section" style="display: none;">
+      <h3>Jira Epic</h3>
+      <div class="content" id="detail-epic-info"></div>
+    </div>
+
+    <div class="detail-section" id="detail-tags-section" style="display: none;">
+      <h3>Tags</h3>
+      <div class="content" id="detail-tags"></div>
+    </div>
+  </div>
+</div>
 
 <script>
     // Initialize workspace ID
