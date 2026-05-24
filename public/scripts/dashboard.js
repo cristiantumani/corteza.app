@@ -11,11 +11,16 @@
     // Check authentication status on page load
     async function checkAuth() {
       try {
+        console.log('🔐 Checking authentication...');
         const response = await fetch('/auth/me');
+        console.log('🔐 Auth response status:', response.status);
+
         const data = await response.json();
+        console.log('🔐 Auth response data:', { authenticated: data.authenticated, user: data.user });
 
         if (!data.authenticated) {
           // Not authenticated - redirect to login
+          console.warn('❌ Not authenticated - redirecting to login');
           window.location.href = '/auth/login?return=' + encodeURIComponent(window.location.pathname);
           return false;
         }
@@ -23,6 +28,12 @@
         // Authenticated - store user info
         currentUser = data.user;
         WORKSPACE_ID = data.user.workspace_id;
+
+        console.log('✅ Authenticated:', {
+          user_id: currentUser.user_id,
+          user_name: currentUser.user_name,
+          workspace_id: WORKSPACE_ID
+        });
 
         // Check if user is admin
         await checkIfAdmin();
@@ -32,7 +43,7 @@
 
         return true;
       } catch (err) {
-        console.error('Auth check failed:', err);
+        console.error('❌ Auth check failed with error:', err);
         // Redirect to login on error
         window.location.href = '/auth/login';
         return false;

@@ -165,18 +165,30 @@
   // Override init to show minimal view
   const originalInit = window.onload;
   window.addEventListener('DOMContentLoaded', () => {
+    console.log('📱 Minimal DOMContentLoaded - checking minimal mode');
+
     // Wait a bit for dashboard.js to load
     setTimeout(() => {
-      if (document.body.classList.contains('minimal-mode')) {
+      const isMinimalMode = document.body.classList.contains('minimal-mode');
+      console.log('📱 Minimal mode check:', isMinimalMode);
+
+      if (isMinimalMode) {
         // Hide loading indicator and show minimal split view
         const loadingIndicator = document.getElementById('loading-indicator');
         const minimalView = document.getElementById('minimal-split-view');
+
+        console.log('📱 Minimal view elements:', {
+          loadingIndicator: !!loadingIndicator,
+          minimalView: !!minimalView,
+          loadingDisplay: loadingIndicator?.style.display
+        });
 
         // The original init will handle auth, spaces, and data loading
         // We just need to show the minimal view when ready
         const observer = new MutationObserver((mutations) => {
           // Check if loading is done (loading indicator hidden)
           if (loadingIndicator && loadingIndicator.style.display === 'none') {
+            console.log('✅ Loading complete - showing minimal view');
             if (minimalView) {
               minimalView.style.display = 'flex';
             }
@@ -189,6 +201,11 @@
             attributes: true,
             attributeFilter: ['style']
           });
+        } else {
+          console.warn('⚠️ Loading indicator not found - showing minimal view immediately');
+          if (minimalView) {
+            minimalView.style.display = 'flex';
+          }
         }
       }
     }, 100);
