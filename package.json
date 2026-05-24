@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@notionhq/client": "^5.6.0",
     "@slack/bolt": "^4.6.0",
     "archiver": "^7.0.1",
     "bcrypt": "^5.1.1",

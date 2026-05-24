@@ -2,7 +2,6 @@ const { getDecisionsCollection } = require('../config/database');
 const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { validateEpicKey, validateTags } = require('../middleware/validation');
 const { generateLoginToken } = require('./dashboard-auth');
-const { createDecisionInNotion } = require('../services/notion');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 
 /**
@@ -207,11 +206,6 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
           console.error(`⚠️  Embedding generation failed for decision #${decision.id}:`, err.message);
         });
     }
-
-    // Sync to Notion (non-blocking)
-    createDecisionInNotion(decision).catch(err => {
-      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
-    });
 
     // Add Jira comment if requested
     if (addComment && epicKey && jiraData) {

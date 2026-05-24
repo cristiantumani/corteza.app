@@ -12,7 +12,6 @@ const {
   validateUploadedFile,
   validateTranscriptContent
 } = require('../middleware/ai-validation');
-const { createDecisionInNotion } = require('../services/notion');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 
 /**
@@ -623,11 +622,6 @@ async function handleApproveAction({ ack, body, client }) {
       console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
     });
 
-    // Sync to Notion (non-blocking)
-    createDecisionInNotion(decision).catch(err => {
-      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
-    });
-
     // Update suggestion status
     await suggestionsCollection.updateOne(
       { workspace_id: workspace_id, suggestion_id: suggestionId },
@@ -1085,11 +1079,6 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
       console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
     });
 
-    // Sync to Notion (non-blocking)
-    createDecisionInNotion(decision).catch(err => {
-      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
-    });
-
     // Add Jira comment if requested
     if (addComment && editedData.epic_key && jiraData) {
       console.log('>>> Adding Jira comment...');
@@ -1478,11 +1467,6 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     // Generate embedding for semantic search (non-blocking)
     generateAndSaveEmbedding(decision).catch(err => {
       console.error(`⚠️  Embedding failed for decision #${decision.id}:`, err.message);
-    });
-
-    // Sync to Notion (non-blocking)
-    createDecisionInNotion(decision).catch(err => {
-      console.error(`⚠️  Notion sync failed for decision #${decision.id}:`, err.message);
     });
 
     // Add Jira comment (only if Jira data was fetched successfully)

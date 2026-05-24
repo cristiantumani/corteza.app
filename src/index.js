@@ -37,7 +37,6 @@ const { handleSettingsCommand, handleSettingsModalSubmit } = require('./routes/s
 const { getSettings, testJiraSettings, saveJiraSettings } = require('./routes/settings-api');
 const { handlePermissionsCommand } = require('./routes/permissions');
 const { requireWorkspaceAdmin } = require('./middleware/admin-check');
-const { initializeNotion } = require('./services/notion');
 const { initializeEmbeddings } = require('./services/embeddings');
 const {
   handleDemoEntry,
@@ -305,9 +304,6 @@ async function startApp() {
     console.error('❌ MongoDB connection error during startup:', error.message);
     console.error('⚠️  App is running but database operations will fail');
   }
-
-  // Initialize Notion integration (optional)
-  initializeNotion();
 
   // Initialize semantic search (optional)
   initializeEmbeddings();

@@ -1444,7 +1444,6 @@ async function createMemory(req, res) {
       source: source || 'dashboard', // Track where it came from
       timestamp: new Date().toISOString(),
       created_at: new Date(),
-      notion_page_url: null,
       jira_url: null
     };
 
