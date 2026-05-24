@@ -139,23 +139,44 @@
         const d = await r.json();
         console.log('✅ Stats received:', d);
 
-        // Update Classic View stats (8 cards)
-        document.getElementById('total-count').textContent = d.total;
-        document.getElementById('decision-count').textContent = d.byType.decision || 0;
-        document.getElementById('explanation-count').textContent = d.byType.explanation || 0;
-        document.getElementById('context-count').textContent = d.byType.context || 0;
-        document.getElementById('product-count').textContent = d.byCategory?.product || 0;
-        document.getElementById('ux-count').textContent = d.byCategory?.ux || 0;
-        document.getElementById('technical-count').textContent = d.byCategory?.technical || 0;
-        document.getElementById('week-count').textContent = d.lastWeek;
+        // Update Classic View stats (8 cards) - only if elements exist
+        const totalCount = document.getElementById('total-count');
+        if (totalCount) totalCount.textContent = d.total;
 
-        // Update Chat View condensed stats (3 chips)
-        document.getElementById('total-count-chat').textContent = d.total;
-        document.getElementById('decision-count-chat').textContent = d.byType.decision || 0;
-        document.getElementById('week-count-chat').textContent = d.lastWeek;
+        const decisionCount = document.getElementById('decision-count');
+        if (decisionCount) decisionCount.textContent = d.byType.decision || 0;
 
-        // Update hero section
-        document.getElementById('hero-total').textContent = d.total;
+        const explanationCount = document.getElementById('explanation-count');
+        if (explanationCount) explanationCount.textContent = d.byType.explanation || 0;
+
+        const contextCount = document.getElementById('context-count');
+        if (contextCount) contextCount.textContent = d.byType.context || 0;
+
+        const productCount = document.getElementById('product-count');
+        if (productCount) productCount.textContent = d.byCategory?.product || 0;
+
+        const uxCount = document.getElementById('ux-count');
+        if (uxCount) uxCount.textContent = d.byCategory?.ux || 0;
+
+        const technicalCount = document.getElementById('technical-count');
+        if (technicalCount) technicalCount.textContent = d.byCategory?.technical || 0;
+
+        const weekCount = document.getElementById('week-count');
+        if (weekCount) weekCount.textContent = d.lastWeek;
+
+        // Update Chat View condensed stats (3 chips) - only if elements exist
+        const totalCountChat = document.getElementById('total-count-chat');
+        if (totalCountChat) totalCountChat.textContent = d.total;
+
+        const decisionCountChat = document.getElementById('decision-count-chat');
+        if (decisionCountChat) decisionCountChat.textContent = d.byType.decision || 0;
+
+        const weekCountChat = document.getElementById('week-count-chat');
+        if (weekCountChat) weekCountChat.textContent = d.lastWeek;
+
+        // Update hero section - only if element exists
+        const heroTotal = document.getElementById('hero-total');
+        if (heroTotal) heroTotal.textContent = d.total;
       } catch (e) {}
     }
 
@@ -961,12 +982,24 @@
       return `${year}-${month}-${day}`;
     }
 
-    document.getElementById('search').addEventListener('input', debounce(fetchDecisions, 500));
-    document.getElementById('type-filter').addEventListener('change', fetchDecisions);
-    document.getElementById('category-filter').addEventListener('change', fetchDecisions);
-    document.getElementById('epic-filter').addEventListener('input', debounce(fetchDecisions, 500));
-    document.getElementById('date-from').addEventListener('change', fetchDecisions);
-    document.getElementById('date-to').addEventListener('change', fetchDecisions);
+    // Add event listeners only if elements exist (conditional for new dashboard design)
+    const searchEl = document.getElementById('search');
+    if (searchEl) searchEl.addEventListener('input', debounce(fetchDecisions, 500));
+
+    const typeFilterEl = document.getElementById('type-filter');
+    if (typeFilterEl) typeFilterEl.addEventListener('change', fetchDecisions);
+
+    const categoryFilterEl = document.getElementById('category-filter');
+    if (categoryFilterEl) categoryFilterEl.addEventListener('change', fetchDecisions);
+
+    const epicFilterEl = document.getElementById('epic-filter');
+    if (epicFilterEl) epicFilterEl.addEventListener('input', debounce(fetchDecisions, 500));
+
+    const dateFromEl = document.getElementById('date-from');
+    if (dateFromEl) dateFromEl.addEventListener('change', fetchDecisions);
+
+    const dateToEl = document.getElementById('date-to');
+    if (dateToEl) dateToEl.addEventListener('change', fetchDecisions);
 
     function debounce(func, wait) {
       let timeout;

@@ -189,22 +189,52 @@
   }
 
   // Update header with user info
-  const originalUpdateHeader = window.updateHeader;
-  if (originalUpdateHeader) {
-    window.updateHeader = function() {
-      if (window.currentUser) {
-        const headerUser = document.getElementById('header-user');
-        const headerWorkspace = document.getElementById('header-workspace');
-
-        if (headerUser) {
-          headerUser.textContent = window.currentUser.email || window.currentUser.user_name || 'User';
-        }
-        if (headerWorkspace) {
-          headerWorkspace.textContent = window.currentUser.workspace_name || window.WORKSPACE_ID;
-        }
+  window.updateHeader = function() {
+    // Call original updateHeader logic if needed for classic dashboard elements
+    const header = document.querySelector('header .container');
+    if (header) {
+      const h1 = header.querySelector('h1');
+      if (h1 && window.currentUser) {
+        h1.innerHTML += `
+          <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
+            ${window.currentUser.workspace_name} • ${window.currentUser.user_name}
+          </span>
+          <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
+            Logout →
+          </a>
+        `;
       }
-    };
-  }
+    }
+
+    // Update new dashboard header elements
+    if (window.currentUser) {
+      const headerUser = document.getElementById('header-user');
+      const headerWorkspace = document.getElementById('header-workspace');
+
+      if (headerUser) {
+        headerUser.textContent = window.currentUser.email || window.currentUser.user_name || 'User';
+      }
+      if (headerWorkspace) {
+        headerWorkspace.textContent = window.currentUser.workspace_name || window.WORKSPACE_ID;
+      }
+    }
+  };
+
+  // Add filter functions for new dashboard
+  window.applyFilters = function() {
+    // Trigger fetchDecisions if it exists
+    if (typeof window.fetchDecisions === 'function') {
+      window.fetchDecisions();
+    }
+  };
+
+  window.handleSpaceChange = function() {
+    const spaceFilter = document.getElementById('space-filter');
+    if (spaceFilter && typeof window.fetchDecisions === 'function') {
+      window.currentSpaceId = spaceFilter.value || null;
+      window.fetchDecisions();
+    }
+  };
 
   console.log('✅ New dashboard UI initialized');
 })();
