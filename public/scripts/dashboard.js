@@ -66,7 +66,23 @@
     // Update header with user info and logout button
     function updateHeader() {
       const header = document.querySelector('header .container');
-      const h1 = header.querySelector('h1');
+
+      // Only update old header elements if they exist (not in minimal mode)
+      if (header) {
+        const h1 = header.querySelector('h1');
+
+        // Add user info next to title (classic mode only)
+        if (h1) {
+          h1.innerHTML += `
+            <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
+              ${currentUser.workspace_name} • ${currentUser.user_name}
+            </span>
+            <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
+              Logout →
+            </a>
+          `;
+        }
+      }
 
       // Update AI analytics link with workspace_id
       const analyticsLink = document.querySelector('a[href*="ai-analytics"]');
@@ -74,7 +90,7 @@
         analyticsLink.href = `/ai-analytics?workspace_id=${WORKSPACE_ID}`;
       }
 
-      // Update context bar
+      // Update context bar (works in both minimal and classic mode)
       const contextWorkspace = document.getElementById('context-workspace');
       if (contextWorkspace) {
         contextWorkspace.textContent = currentUser.workspace_name || WORKSPACE_ID;
@@ -98,16 +114,6 @@
       if (heroWorkspaceName) {
         heroWorkspaceName.textContent = currentUser.workspace_name;
       }
-
-      // Add user info next to title
-      h1.innerHTML += `
-        <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
-          ${currentUser.workspace_name} • ${currentUser.user_name}
-        </span>
-        <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
-          Logout →
-        </a>
-      `;
     }
 
     let allDecisions = [];
