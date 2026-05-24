@@ -138,6 +138,9 @@ function handleTokenLogin(req, res) {
 
         console.log(`✅ Created workspace_members and workspace_admins for ${userData.email}`);
 
+        // Wait for session to propagate to MongoDB before redirecting
+        await new Promise(resolve => setTimeout(resolve, 150));
+
         // Redirect new user to onboarding
         return res.redirect('/auth/onboarding');
       }
@@ -145,12 +148,22 @@ function handleTokenLogin(req, res) {
       // Existing member - check if onboarding completed
       if (!member.onboarding_completed) {
         console.log('🎯 Redirecting to onboarding for existing user without completed onboarding');
+
+        // Wait for session to propagate to MongoDB before redirecting
+        await new Promise(resolve => setTimeout(resolve, 150));
+
         return res.redirect('/auth/onboarding');
       }
     } catch (error) {
       console.error('Failed to check/create workspace member:', error);
       // Continue to dashboard on error
     }
+
+    // Wait for session to propagate to MongoDB before redirecting
+    // This prevents race condition where dashboard loads before session is available
+    console.log('⏳ Waiting for session to propagate to MongoDB...');
+    await new Promise(resolve => setTimeout(resolve, 150));
+    console.log('✅ Session should be available now, redirecting to dashboard');
 
     res.redirect('/dashboard');
   });
