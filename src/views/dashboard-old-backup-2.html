@@ -8,74 +8,91 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="stylesheet" href="/styles/dashboard.css">
-  <link rel="stylesheet" href="/styles/dashboard-minimal.css">
 </head>
-<body class="minimal-mode">
-  <!-- Minimal Header -->
-  <div class="minimal-header">
-    <div class="minimal-header-left">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/settings">Settings</a>
-      <a href="/auth/logout">Logout</a>
-    </div>
-    <div class="minimal-header-right">
-      <span id="context-workspace">-</span> • <span id="context-user">-</span>
-    </div>
-  </div>
-
-  <!-- Loading Indicator (shown while checking spaces) -->
-  <div id="loading-indicator" class="minimal-loading">
-    <div>⏳</div>
-    <div>Loading your workspace...</div>
-  </div>
-
-  <!-- Minimal Split View -->
-  <div id="minimal-split-view" class="minimal-split-container" style="display: none;">
-    <!-- Left Panel: Decisions -->
-    <div class="minimal-decisions-panel">
-      <!-- Filter Bar -->
-      <div class="minimal-filter-bar">
-        <select id="space-filter" onchange="handleSpaceChange()">
-          <option value="">All Spaces</option>
-        </select>
-        <select id="type-filter" onchange="applyFilters()">
-          <option value="">All Types</option>
-          <option value="decision">Decision</option>
-          <option value="explanation">Explanation</option>
-          <option value="context">Context</option>
-          <option value="learning">Learning</option>
-          <option value="risk">Risk</option>
-          <option value="assumption">Assumption</option>
-        </select>
-        <input type="text" id="search" placeholder="Search..." oninput="applyFilters()">
-      </div>
-
-      <!-- Decisions List -->
-      <div class="minimal-decisions-list">
-        <div class="minimal-decisions-count" id="decisions-count">Loading...</div>
-        <div id="decisions-cards"></div>
-        <a href="#" class="minimal-new-decision" onclick="openLogMemoryModal(); return false;">+ New decision</a>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <h1>Dashboard</h1>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <button id="view-toggle-btn" class="view-toggle-btn chat-active">
+            <span id="toggle-icon-chat">💬</span>
+            <span id="toggle-text">Chat View</span>
+            <span id="toggle-icon-classic" style="display: none;">📊</span>
+          </button>
+          <div class="nav-links">
+            <a href="/ai-analytics?workspace_id=<WORKSPACE_ID>">🤖 AI Analytics</a>
+            <a href="/settings">⚙️ Settings</a>
+            <a href="/auth/logout">Logout</a>
+          </div>
+        </div>
       </div>
     </div>
+  </header>
 
-    <!-- Right Panel: Chat -->
-    <div class="minimal-chat-panel">
-      <!-- Chat Input (at top) -->
-      <div class="minimal-chat-input-container">
-        <input type="text" id="chat-input-main" class="minimal-chat-input" placeholder="Ask anything...">
-        <button id="chat-send-main" class="minimal-chat-send">→</button>
-      </div>
-
-      <!-- Chat Messages -->
-      <div class="minimal-chat-messages" id="chat-messages-main">
-        <div class="minimal-chat-welcome">
-          Ask me anything about your team's decisions
+  <!-- Context Bar -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom: 1px solid rgba(255,255,255,0.1);">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: rgba(255,255,255,0.8); font-size: 13px;">🏢 Workspace:</span>
+            <span style="color: white; font-weight: 600; font-size: 14px;" id="context-workspace">-</span>
+          </div>
+          <div style="color: rgba(255,255,255,0.4);">•</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: rgba(255,255,255,0.8); font-size: 13px;">📁 Space:</span>
+            <span style="color: white; font-weight: 600; font-size: 14px;" id="context-space">Select a space...</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: rgba(255,255,255,0.8); font-size: 13px;">👤 Logged in as:</span>
+          <span style="color: white; font-weight: 600; font-size: 14px;" id="context-user">-</span>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Hero Banner -->
+  <div class="hero-banner" style="display: none;">
+    <div class="hero-content">
+      <div class="hero-icon">🧠</div>
+      <h1 class="hero-title">Team Memory Dashboard</h1>
+      <p class="hero-subtitle">Your searchable knowledge base powered by AI</p>
+      <div class="hero-stats-mini">
+        <span class="hero-stat">
+          <span class="stat-number" id="hero-total">-</span> memories
+        </span>
+        <span class="hero-stat-separator">•</span>
+        <span class="hero-stat" id="hero-workspace-name">Loading...</span>
+      </div>
+      <!-- Space Selector -->
+      <div class="space-selector-hero">
+        <label for="space-filter-hero">📁 Space:</label>
+        <select id="space-filter-hero" onchange="handleSpaceChange()">
+          <option value="">All Accessible Spaces</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button class="hero-cta-btn" onclick="openLogMemoryModal()">
+          ➕ Log Team Memory
+        </button>
+        <button class="hero-cta-btn" onclick="openUploadNotesModal()" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
+          📄 Upload Meeting Notes
+        </button>
+      </div>
+    </div>
+    <div class="hero-decoration"></div>
+  </div>
+
   <div class="container">
+    <!-- Loading Indicator (shown while checking spaces) -->
+    <div id="loading-indicator" style="text-align: center; padding: 60px 20px;">
+      <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+      <h2 style="color: #1d1d1f; margin-bottom: 12px;">Loading your workspace...</h2>
+      <p style="color: #616061; font-size: 15px;">Checking your spaces and permissions</p>
+    </div>
+
     <!-- Stats for Classic View (8 cards) - Hidden by default -->
     <div class="stats" id="stats-classic" style="display: none;">
       <div class="stat-card"><h3>Total</h3><div class="number" id="total-count">-</div></div>
@@ -663,6 +680,5 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
   </script>
   <script src="/scripts/dashboard.js?v=3"></script>
-  <script src="/scripts/dashboard-minimal.js?v=1"></script>
 </body>
 </html>

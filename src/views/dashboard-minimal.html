@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Corteza</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #FFFFFF;
+      color: #1D1D1F;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      height: 50px;
+      border-bottom: 1px solid #E5E5E5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      background: #FFFFFF;
+    }
+
+    .header-left {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .header-left a {
+      color: #1D1D1F;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .header-left a:hover {
+      color: #616061;
+    }
+
+    .header-right {
+      font-size: 13px;
+      color: #616061;
+    }
+
+    /* Split Container */
+    .split-container {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+    /* Left Panel - Decisions */
+    .decisions-panel {
+      flex: 0 0 65%;
+      border-right: 1px solid #E5E5E5;
+      display: flex;
+      flex-direction: column;
+      background: #FFFFFF;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      height: 48px;
+      border-bottom: 1px solid #E5E5E5;
+      display: flex;
+      gap: 10px;
+      padding: 0 20px;
+      align-items: center;
+    }
+
+    .filter-bar select,
+    .filter-bar input {
+      padding: 6px 10px;
+      border: 1px solid #E5E5E5;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #FFFFFF;
+      color: #1D1D1F;
+    }
+
+    .filter-bar select {
+      min-width: 150px;
+    }
+
+    .filter-bar input[type="text"] {
+      flex: 1;
+      max-width: 300px;
+    }
+
+    /* Decisions List */
+    .decisions-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .decisions-count {
+      font-size: 13px;
+      color: #616061;
+      margin-bottom: 20px;
+    }
+
+    .decision-card {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #F5F5F5;
+    }
+
+    .decision-card:last-child {
+      border-bottom: none;
+    }
+
+    .decision-header {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: baseline;
+    }
+
+    .decision-id {
+      font-weight: 600;
+      color: #616061;
+      font-size: 13px;
+    }
+
+    .decision-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1D1D1F;
+      line-height: 1.4;
+    }
+
+    .decision-meta {
+      font-size: 12px;
+      color: #616061;
+      margin-bottom: 8px;
+    }
+
+    .decision-text {
+      font-size: 14px;
+      color: #1D1D1F;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .decision-actions {
+      display: flex;
+      gap: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .decision-card:hover .decision-actions {
+      opacity: 1;
+    }
+
+    .decision-actions button {
+      font-size: 12px;
+      color: #616061;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .decision-actions button:hover {
+      color: #1D1D1F;
+    }
+
+    .new-decision-btn {
+      color: #1D1D1F;
+      text-decoration: none;
+      font-size: 14px;
+      display: inline-block;
+      margin-top: 20px;
+    }
+
+    .new-decision-btn:hover {
+      color: #616061;
+    }
+
+    /* Right Panel - Chat */
+    .chat-panel {
+      flex: 0 0 35%;
+      display: flex;
+      flex-direction: column;
+      background: #FAFAFA;
+    }
+
+    /* Chat Input (at top) */
+    .chat-input-container {
+      height: 48px;
+      border-bottom: 1px solid #E5E5E5;
+      display: flex;
+      padding: 0 12px;
+      align-items: center;
+      gap: 8px;
+      background: #FFFFFF;
+    }
+
+    .chat-input {
+      flex: 1;
+      border: none;
+      font-size: 14px;
+      color: #1D1D1F;
+      outline: none;
+    }
+
+    .chat-input::placeholder {
+      color: #AAAAAA;
+    }
+
+    .chat-send-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #1D1D1F;
+      font-size: 18px;
+    }
+
+    .chat-send-btn:hover {
+      color: #616061;
+    }
+
+    /* Chat Messages */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .chat-welcome {
+      text-align: center;
+      padding: 60px 20px;
+      color: #AAAAAA;
+    }
+
+    .chat-bubble {
+      margin-bottom: 20px;
+    }
+
+    .chat-bubble.user {
+      text-align: right;
+    }
+
+    .chat-bubble-content {
+      display: inline-block;
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .chat-bubble.user .chat-bubble-content {
+      background: #1D1D1F;
+      color: #FFFFFF;
+    }
+
+    .chat-bubble.ai .chat-bubble-content {
+      background: #FFFFFF;
+      color: #1D1D1F;
+      border: 1px solid #E5E5E5;
+      text-align: left;
+    }
+
+    /* Loading State */
+    .loading-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #AAAAAA;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #AAAAAA;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    /* Modals - keeping existing styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #FFFFFF;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border: 1px solid #E5E5E5;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #FFFFFF;
+    }
+
+    .modal-btn-primary {
+      background: #1D1D1F;
+      color: #FFFFFF;
+      border: none;
+    }
+
+    .modal-btn-delete {
+      background: #DC3545;
+      color: #FFFFFF;
+      border: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .split-container {
+        flex-direction: column;
+      }
+      .decisions-panel {
+        flex: 0 0 60%;
+        border-right: none;
+        border-bottom: 1px solid #E5E5E5;
+      }
+      .chat-panel {
+        flex: 0 0 40%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/auth/logout">Logout</a>
+    </div>
+    <div class="header-right">
+      <span id="header-workspace">ninja-excel</span> • <span id="header-user">ctumani</span>
+    </div>
+  </div>
+
+  <!-- Split Container -->
+  <div class="split-container">
+    <!-- Left Panel: Decisions -->
+    <div class="decisions-panel">
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <select id="space-filter">
+          <option value="">All Spaces</option>
+        </select>
+        <select id="type-filter">
+          <option value="">All Types</option>
+          <option value="decision">Decision</option>
+          <option value="explanation">Explanation</option>
+          <option value="context">Context</option>
+        </select>
+        <input type="text" id="search-input" placeholder="Search...">
+      </div>
+
+      <!-- Decisions List -->
+      <div class="decisions-list">
+        <!-- Loading State -->
+        <div class="loading-state" id="loading-state">
+          <div>⏳</div>
+          <div style="margin-top: 12px;">Loading decisions...</div>
+        </div>
+
+        <!-- Decisions Container -->
+        <div id="decisions-container" style="display: none;">
+          <div class="decisions-count" id="decisions-count">45 decisions</div>
+
+          <!-- Decision Cards will be inserted here -->
+          <div id="decisions-cards"></div>
+
+          <a href="#" class="new-decision-btn" onclick="openLogMemoryModal(); return false;">+ New decision</a>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state" style="display: none;">
+          <div class="empty-state-icon">📭</div>
+          <div>No decisions found</div>
+          <div style="margin-top: 12px; font-size: 13px;">
+            <a href="#" onclick="openLogMemoryModal(); return false;" style="color: #1D1D1F;">Create your first decision</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Chat -->
+    <div class="chat-panel">
+      <!-- Chat Input -->
+      <div class="chat-input-container">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Ask anything...">
+        <button class="chat-send-btn" id="chat-send-btn">→</button>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-welcome">
+          Ask me anything about your team's decisions
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals will be added here - keeping all existing modals from original dashboard -->
+
+  <!-- Log Memory Modal (simplified placeholder) -->
+  <div class="modal-overlay" id="log-memory-modal">
+    <div class="modal">
+      <h2>Log New Decision</h2>
+      <p>Modal content placeholder - will use existing modal from original</p>
+      <div class="modal-buttons">
+        <button class="modal-btn" onclick="closeLogMemoryModal()">Cancel</button>
+        <button class="modal-btn modal-btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Placeholder variables
+    const WORKSPACE_ID = new URLSearchParams(window.location.search).get('workspace_id') || '';
+    let USER_ID = '';
+    let USER_NAME = '';
+    let decisions = [];
+
+    // Initialize
+    async function init() {
+      // Will integrate with existing dashboard.js functions
+      console.log('Minimal dashboard initialized');
+    }
+
+    function openLogMemoryModal() {
+      document.getElementById('log-memory-modal').classList.add('active');
+    }
+
+    function closeLogMemoryModal() {
+      document.getElementById('log-memory-modal').classList.remove('active');
+    }
+
+    // Load on page ready
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
