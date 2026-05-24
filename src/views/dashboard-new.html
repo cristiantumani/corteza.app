@@ -82,7 +82,7 @@
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
             <span class="text-sm font-medium">Home</span>
         </a>
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="#" onclick="openAISearch(); return false;">
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/ai-search">
             <span class="material-symbols-outlined">search</span>
             <span class="text-sm font-medium">Search</span>
         </a>
@@ -165,7 +165,7 @@
             </div>
 
             <div class="col-span-12 lg:col-span-5">
-                <div onclick="openAISearch()" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full">
+                <a href="/ai-search" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full block">
                     <div class="flex flex-col h-full justify-between">
                         <div>
                             <div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary mb-4">
@@ -180,7 +180,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
 
@@ -239,8 +239,7 @@
     });
 
     function openAISearch() {
-        // This will be implemented when you provide the AI search design
-        alert('AI Search coming soon!');
+        window.location.href = '/ai-search';
     }
 </script>
 

@@ -25,6 +25,12 @@ const dashboardNewHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load AI search HTML once at startup
+const aiSearchHTML = fs.readFileSync(
+  path.join(__dirname, '../views/ai-search.html'),
+  'utf8'
+);
+
 /**
  * GET /dashboard - Serves the dashboard HTML
  */
@@ -84,6 +90,20 @@ function serveDashboardNew(req, res) {
 }
 
 /**
+ * GET /ai-search - Serves the AI search interface HTML
+ */
+function serveAISearch(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = aiSearchHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
+}
+
+/**
  * GET / - Redirect to dashboard
  */
 function redirectToDashboard(req, res) {
@@ -95,6 +115,7 @@ module.exports = {
   serveDashboard,
   serveDashboardNew,
   serveAIAnalytics,
+  serveAISearch,
   serveSettings,
   redirectToDashboard
 };
