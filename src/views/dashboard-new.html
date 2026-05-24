@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corteza | Decision Intelligence</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fcf8fb;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+    </style>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3953bd",
+                        "secondary": "#754aa1",
+                        "tertiary": "#006947",
+                        "background": "#fcf8fb",
+                        "surface": "#fcf8fb",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f5",
+                        "surface-container": "#f0edef",
+                        "on-surface": "#1b1b1d",
+                        "on-surface-variant": "#444653",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#546cd7",
+                        "secondary-container": "#ce9ffd",
+                        "tertiary-container": "#00855b",
+                        "outline-variant": "#c5c5d5",
+                        "outline": "#757684"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-surface">
+
+<!-- Loading Indicator -->
+<div id="loading-indicator" class="fixed inset-0 bg-surface z-50 flex items-center justify-center">
+    <div class="text-center">
+        <div class="text-6xl mb-4">⏳</div>
+        <div class="text-lg text-on-surface-variant">Loading your workspace...</div>
+    </div>
+</div>
+
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-low border-r border-outline-variant flex flex-col py-8 px-4 gap-4 shadow-sm z-20">
+    <div class="flex items-center gap-2 px-4 mb-8">
+        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+        </div>
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-primary leading-none">Corteza</h1>
+            <p class="text-xs text-on-surface-variant opacity-70 uppercase tracking-widest">Decision Intelligence</p>
+        </div>
+    </div>
+
+    <nav class="flex-1 flex flex-col gap-1">
+        <a class="flex items-center gap-4 text-primary font-bold border-r-4 border-primary bg-primary-container/10 px-4 py-2 rounded-l-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/dashboard">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+            <span class="text-sm font-medium">Home</span>
+        </a>
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="#" onclick="openAISearch(); return false;">
+            <span class="material-symbols-outlined">search</span>
+            <span class="text-sm font-medium">Search</span>
+        </a>
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/settings">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-sm font-medium">Settings</span>
+        </a>
+    </nav>
+
+    <button onclick="openLogMemoryModal()" class="bg-[#667EEA] text-on-primary font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 mb-8">
+        <span class="material-symbols-outlined">add</span>
+        New Decision
+    </button>
+
+    <div class="mt-auto flex flex-col gap-1 border-t border-outline-variant pt-4">
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200" href="/auth/logout">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-sm font-medium">Log Out</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Top Header -->
+<header class="fixed top-0 right-0 left-64 h-16 z-10 bg-surface border-b border-outline-variant flex items-center justify-between px-6 shadow-sm">
+    <div class="flex items-center gap-4 flex-1">
+        <!-- Space Filter -->
+        <select id="space-filter" onchange="handleSpaceChange()" class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none">
+            <option value="">All Spaces</option>
+        </select>
+
+        <!-- Search Input -->
+        <div class="relative flex-1 max-w-xl">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-60">search</span>
+            <input id="search" oninput="applyFilters()" class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search decisions..." type="text">
+        </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+        <button class="p-2 rounded-full hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined">notifications</span>
+        </button>
+
+        <div class="h-8 w-px bg-outline-variant"></div>
+
+        <div class="flex items-center gap-2">
+            <div class="text-right">
+                <p class="text-sm font-medium text-on-surface" id="header-user">-</p>
+                <p class="text-xs text-on-surface-variant" id="header-workspace">-</p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="ml-64 mt-16 p-12 min-h-screen" id="main-content">
+    <div class="max-w-[1440px] mx-auto">
+        <!-- Hero Header -->
+        <div class="mb-12">
+            <h2 class="text-5xl font-bold mb-2 tracking-tight">Executive Dashboard</h2>
+            <p class="text-lg text-on-surface-variant max-w-2xl">Track your team's strategic decisions and context. Stay aligned on what matters.</p>
+        </div>
+
+        <!-- Action Cards -->
+        <div class="grid grid-cols-12 gap-6 mb-12">
+            <div class="col-span-12 lg:col-span-7">
+                <div onclick="openLogMemoryModal()" class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] p-8 text-on-primary shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300">
+                    <div class="relative z-10 flex flex-col h-full justify-between min-h-[180px]">
+                        <div>
+                            <span class="material-symbols-outlined text-4xl mb-4" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                            <h3 class="text-2xl font-semibold mb-2">Log Decision</h3>
+                            <p class="text-base opacity-90 max-w-sm">Capture strategic decisions, context, and learnings in your team's knowledge base.</p>
+                        </div>
+                        <div class="flex items-center gap-2 mt-6">
+                            <span class="text-sm font-medium">Start logging</span>
+                            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </div>
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-5">
+                <div onclick="openAISearch()" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full">
+                    <div class="flex flex-col h-full justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary mb-4">
+                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-on-surface mb-2">AI Search</h3>
+                            <p class="text-base text-on-surface-variant">Ask questions about your team's decisions using natural language.</p>
+                        </div>
+                        <div class="mt-6">
+                            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                                <div class="w-0 group-hover:w-full h-full bg-[#667EEA] transition-all duration-700 ease-out"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decisions Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h4 class="text-2xl font-semibold">Recent Decisions</h4>
+            <div class="flex items-center gap-4">
+                <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
+                    <option value="">All Types</option>
+                    <option value="decision">Decision</option>
+                    <option value="explanation">Explanation</option>
+                    <option value="context">Context</option>
+                    <option value="learning">Learning</option>
+                </select>
+                <span class="text-sm text-on-surface-variant" id="decisions-count">0 decisions</span>
+            </div>
+        </div>
+
+        <!-- Decisions Grid -->
+        <div id="decisions-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Decision cards will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <div class="text-6xl mb-4">📭</div>
+            <p class="text-lg text-on-surface-variant mb-4">No decisions found</p>
+            <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Create your first decision</button>
+        </div>
+    </div>
+</main>
+
+<!-- Modals will be inserted here by existing dashboard.js -->
+
+<script>
+    // Initialize workspace ID
+    var WORKSPACE_ID = '<WORKSPACE_ID>';
+</script>
+<script src="/scripts/dashboard.js?v=4"></script>
+<script src="/scripts/dashboard-new.js?v=1"></script>
+<script>
+    // Additional UI enhancements for new design
+    document.addEventListener('DOMContentLoaded', () => {
+        // Add entrance animations for cards
+        setTimeout(() => {
+            document.querySelectorAll('#decisions-cards > *').forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100 * index);
+            });
+        }, 500);
+    });
+
+    function openAISearch() {
+        // This will be implemented when you provide the AI search design
+        alert('AI Search coming soon!');
+    }
+</script>
+
+</body>
+</html>

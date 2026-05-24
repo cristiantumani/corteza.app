@@ -19,6 +19,12 @@ const settingsHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load new dashboard HTML once at startup
+const dashboardNewHTML = fs.readFileSync(
+  path.join(__dirname, '../views/dashboard-new.html'),
+  'utf8'
+);
+
 /**
  * GET /dashboard - Serves the dashboard HTML
  */
@@ -64,6 +70,20 @@ function serveSettings(req, res) {
 }
 
 /**
+ * GET /dashboard-new - Serves the new Tailwind dashboard HTML (for testing)
+ */
+function serveDashboardNew(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = dashboardNewHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
+}
+
+/**
  * GET / - Redirect to dashboard
  */
 function redirectToDashboard(req, res) {
@@ -73,6 +93,7 @@ function redirectToDashboard(req, res) {
 
 module.exports = {
   serveDashboard,
+  serveDashboardNew,
   serveAIAnalytics,
   serveSettings,
   redirectToDashboard

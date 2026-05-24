@@ -9,7 +9,7 @@ const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats,
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveAIAnalytics, serveSettings, redirectToDashboard } = require('./routes/dashboard');
+const { serveDashboard, serveDashboardNew, serveAIAnalytics, serveSettings, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
 const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -166,6 +166,7 @@ async function startApp() {
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard);
+  expressApp.get('/dashboard-new', requireAuthBrowser, serveDashboardNew); // New Tailwind design (testing)
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
   expressApp.get('/settings', requireAuthBrowser, serveSettings);
 
