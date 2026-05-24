@@ -9,13 +9,23 @@
  * GET /auth/me
  */
 function handleMe(req, res) {
+  console.log('🔐 /auth/me called:', {
+    hasSession: !!req.session,
+    sessionID: req.sessionID,
+    hasUser: !!(req.session && req.session.user),
+    userId: req.session?.user?.user_id,
+    sessionKeys: req.session ? Object.keys(req.session) : []
+  });
+
   if (!req.session || !req.session.user) {
+    console.log('❌ /auth/me: Not authenticated');
     return res.status(401).json({
       authenticated: false,
       error: 'Not authenticated'
     });
   }
 
+  console.log('✅ /auth/me: Authenticated as', req.session.user.user_name);
   res.json({
     authenticated: true,
     user: req.session.user

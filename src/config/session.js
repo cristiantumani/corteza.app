@@ -21,7 +21,7 @@ function createSessionMiddleware() {
       collectionName: 'sessions',
       ttl: 7 * 24 * 60 * 60, // Session expires after 7 days
       autoRemove: 'native', // Use MongoDB's built-in TTL for cleanup
-      touchAfter: 60 // Update session every minute to keep it alive
+      touchAfter: 10 // Update session every 10 seconds (reduced from 60 for better reliability)
     }),
 
     // Cookie settings
@@ -29,7 +29,8 @@ function createSessionMiddleware() {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
       httpOnly: true, // Prevent JavaScript access to cookies (XSS protection)
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax' // CSRF protection
+      sameSite: 'lax', // CSRF protection
+      path: '/' // Ensure cookie is sent for all paths
     },
 
     // Session options
