@@ -1020,13 +1020,20 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Close modals on overlay click
-    document.getElementById('delete-modal').addEventListener('click', function(e) {
-      if (e.target === this) closeDeleteModal();
-    });
-    document.getElementById('detail-modal').addEventListener('click', function(e) {
-      if (e.target === this) closeDetailModal();
-    });
+    // Close modals on overlay click (only if modals exist)
+    const deleteModal = document.getElementById('delete-modal');
+    if (deleteModal) {
+      deleteModal.addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
+      });
+    }
+
+    const detailModal = document.getElementById('detail-modal');
+    if (detailModal) {
+      detailModal.addEventListener('click', function(e) {
+        if (e.target === this) closeDetailModal();
+      });
+    }
 
     // Close modals on Escape key
     document.addEventListener('keydown', function(e) {

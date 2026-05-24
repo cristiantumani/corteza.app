@@ -10,7 +10,8 @@
     <link rel="shortcut icon" href="/favicon.ico">
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols_Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/dashboard.css">
 
     <style>
         .material-symbols-outlined {
@@ -213,7 +214,231 @@
     </div>
 </main>
 
-<!-- Modals will be inserted here by existing dashboard.js -->
+<!-- Modals -->
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h2>🗑️ Delete Memory</h2>
+    <p>Are you sure you want to delete memory <strong id="delete-decision-id">#0</strong>? This action cannot be undone.</p>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Memory Modal -->
+<div class="modal-overlay" id="log-memory-modal">
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <h2>➕ Log Team Memory</h2>
+      <button class="close-btn" onclick="closeLogMemoryModal()">✕ Close</button>
+    </div>
+
+    <div class="detail-section">
+      <h3>What happened?</h3>
+      <textarea
+        id="log-memory-text"
+        placeholder="Describe the decision, context, or explanation..."
+        rows="5"
+        style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
+      ></textarea>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Type *</label>
+        <select
+          id="log-memory-type"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        >
+          <option value="decision">Decision</option>
+          <option value="explanation">Explanation</option>
+          <option value="context">Context</option>
+          <option value="learning">Learning</option>
+          <option value="risk">Risk</option>
+          <option value="assumption">Assumption</option>
+        </select>
+      </div>
+
+      <div class="detail-item">
+        <label>📁 Space *</label>
+        <select
+          id="log-memory-space"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        >
+          <option value="">Loading spaces...</option>
+        </select>
+      </div>
+
+      <div class="detail-item">
+        <label>Category</label>
+        <input
+          type="text"
+          id="log-memory-category"
+          placeholder="e.g., Frontend, Backend, UX"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        />
+      </div>
+
+      <div class="detail-item">
+        <label>Tags</label>
+        <input
+          type="text"
+          id="log-memory-tags"
+          placeholder="Comma-separated tags"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        />
+      </div>
+
+      <div class="detail-item">
+        <label>Epic Key / Jira</label>
+        <input
+          type="text"
+          id="log-memory-epic"
+          placeholder="e.g., PROJ-123"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        />
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Additional Context (Optional)</h3>
+      <textarea
+        id="log-memory-alternatives"
+        placeholder="Any alternatives considered, additional details, or related information..."
+        rows="3"
+        style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
+      ></textarea>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save Memory</button>
+    </div>
+  </div>
+</div>
+
+<!-- Decision Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <h2 id="detail-title">Memory Details</h2>
+      <div style="display: flex; gap: 10px;">
+        <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
+        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Content</h3>
+      <div class="content" id="detail-decision-text"></div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Type</label>
+        <div class="value" id="detail-type"></div>
+      </div>
+      <div class="detail-item">
+        <label>Creator</label>
+        <div class="value" id="detail-creator"></div>
+      </div>
+      <div class="detail-item">
+        <label>Date</label>
+        <div class="value" id="detail-date"></div>
+      </div>
+      <div class="detail-item" id="detail-confidence-container" style="display: none;">
+        <label>AI Confidence</label>
+        <div class="value" id="detail-confidence"></div>
+      </div>
+    </div>
+
+    <div class="detail-section" id="detail-meeting-section" style="display: none;">
+      <h3>Meeting Context</h3>
+      <div class="content" id="detail-meeting-info"></div>
+    </div>
+
+    <div class="detail-section" id="detail-epic-section" style="display: none;">
+      <h3>Jira Epic</h3>
+      <div class="content" id="detail-epic-info"></div>
+    </div>
+
+    <div class="detail-section" id="detail-tags-section" style="display: none;">
+      <h3>Tags</h3>
+      <div class="content" id="detail-tags"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Decision Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal edit-modal">
+    <div class="detail-header">
+      <h2>✏️ Edit Memory</h2>
+      <button class="close-btn" onclick="closeEditModal()">✕ Cancel</button>
+    </div>
+
+    <form id="edit-form" onsubmit="saveEdit(event)">
+      <input type="hidden" id="edit-decision-id">
+
+      <div class="form-group">
+        <label for="edit-decision-text">Content *</label>
+        <textarea id="edit-decision-text" rows="4" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-decision-type">Type *</label>
+        <select id="edit-decision-type" required>
+          <option value="decision">Decision</option>
+          <option value="explanation">Explanation</option>
+          <option value="context">Context</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-decision-space">📁 Space *</label>
+        <select id="edit-decision-space" required>
+          <option value="">Loading spaces...</option>
+        </select>
+        <small>Move this memory to a different space</small>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-decision-category">Category (optional)</label>
+        <select id="edit-decision-category">
+          <option value="">None</option>
+          <option value="product">Product</option>
+          <option value="ux">UX</option>
+          <option value="technical">Technical</option>
+        </select>
+        <small>Product, UX, or Technical domain</small>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-epic-key">Epic Key</label>
+        <input type="text" id="edit-epic-key" placeholder="e.g. LOK-123">
+        <small>Leave empty to remove epic link</small>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-tags">Tags</label>
+        <input type="text" id="edit-tags" placeholder="tag1, tag2, tag3">
+        <small>Comma-separated tags</small>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-alternatives">Additional Comments</label>
+        <textarea id="edit-alternatives" rows="3"></textarea>
+      </div>
+
+      <div class="modal-buttons">
+        <button type="button" class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="modal-btn modal-btn-primary">💾 Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
     // Initialize workspace ID
