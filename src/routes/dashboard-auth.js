@@ -141,8 +141,17 @@ function handleTokenLogin(req, res) {
         // Wait for session to propagate to MongoDB before redirecting
         await new Promise(resolve => setTimeout(resolve, 150));
 
-        // Redirect new user to onboarding
-        return res.redirect('/auth/onboarding');
+        // Redirect new user to onboarding (client-side to preserve session)
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head><meta charset="UTF-8"><title>Redirecting...</title></head>
+            <body>
+              <p>Setting up your account...</p>
+              <script>setTimeout(() => window.location.href = '/auth/onboarding', 100);</script>
+            </body>
+          </html>
+        `);
       }
 
       // Existing member - check if onboarding completed
@@ -152,7 +161,17 @@ function handleTokenLogin(req, res) {
         // Wait for session to propagate to MongoDB before redirecting
         await new Promise(resolve => setTimeout(resolve, 150));
 
-        return res.redirect('/auth/onboarding');
+        // Client-side redirect to preserve session
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head><meta charset="UTF-8"><title>Redirecting...</title></head>
+            <body>
+              <p>Loading...</p>
+              <script>setTimeout(() => window.location.href = '/auth/onboarding', 100);</script>
+            </body>
+          </html>
+        `);
       }
     } catch (error) {
       console.error('Failed to check/create workspace member:', error);
@@ -163,9 +182,52 @@ function handleTokenLogin(req, res) {
     // This prevents race condition where dashboard loads before session is available
     console.log('⏳ Waiting for session to propagate to MongoDB...');
     await new Promise(resolve => setTimeout(resolve, 150));
-    console.log('✅ Session should be available now, redirecting to dashboard');
+    console.log('✅ Session should be available now');
 
-    res.redirect('/dashboard');
+    // Use client-side redirect instead of server-side to ensure cookie is set
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Redirecting...</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              background: #f5f5f5;
+            }
+            .loader {
+              text-align: center;
+            }
+            .spinner {
+              font-size: 48px;
+              animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="loader">
+            <div class="spinner">⏳</div>
+            <p>Loading dashboard...</p>
+          </div>
+          <script>
+            // Give browser time to process Set-Cookie header
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 100);
+          </script>
+        </body>
+      </html>
+    `);
   });
 }
 
