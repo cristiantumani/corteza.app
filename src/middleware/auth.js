@@ -100,10 +100,10 @@ function addSecurityHeaders(req, res, next) {
   // Content-Security-Policy to prevent XSS and injection attacks
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net", // unsafe-inline needed for inline scripts in dashboard
-    "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for inline styles
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com", // unsafe-inline needed for inline scripts in dashboard
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // unsafe-inline needed for inline styles, Google Fonts for Material icons
     "img-src 'self' data: https:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts for Material icons
     "connect-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
