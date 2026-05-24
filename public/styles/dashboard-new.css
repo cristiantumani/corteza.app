@@ -1,0 +1,35 @@
+/* Dashboard New - Override old dashboard styles */
+
+/* Hide old dashboard elements that shouldn't appear */
+.feedback-widget,
+.chat-widget,
+.hero-banner,
+.stats,
+.stats-condensed,
+.stats-classic,
+.stats-chat,
+.view-toggle-btn,
+#chat-view-container,
+#classic-view-container {
+  display: none !important;
+}
+
+/* Prevent body overflow issues */
+body {
+  overflow-x: hidden;
+}
+
+/* Fix main content area */
+#main-content {
+  overflow-x: visible;
+}
+
+/* Ensure sidebar stays fixed */
+aside {
+  overflow-y: auto;
+}
+
+/* Ensure header is properly positioned */
+header {
+  overflow: visible;
+}
