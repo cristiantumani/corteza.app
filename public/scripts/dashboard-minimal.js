@@ -4,28 +4,19 @@
 (function() {
   'use strict';
 
-  // Store reference to original renderDecisions
-  const originalRenderDecisions = window.renderDecisions;
-
-  // Override renderDecisions to use minimal card view
-  window.renderDecisions = function(decisions) {
-    // If we're in minimal mode, render cards
-    if (document.body.classList.contains('minimal-mode')) {
-      renderMinimalDecisions(decisions);
-    } else {
-      // Fall back to original table rendering
-      if (originalRenderDecisions) {
-        originalRenderDecisions(decisions);
-      }
-    }
-  };
+  console.log('📱 Minimal dashboard script loaded');
 
   // Render decisions as minimal cards
   function renderMinimalDecisions(decisions) {
     const cardsContainer = document.getElementById('decisions-cards');
     const countElement = document.getElementById('decisions-count');
 
-    if (!cardsContainer || !countElement) return;
+    if (!cardsContainer || !countElement) {
+      console.warn('⚠️ Minimal view containers not found', { cardsContainer: !!cardsContainer, countElement: !!countElement });
+      return;
+    }
+
+    console.log('📊 Rendering', decisions.length, 'decisions in minimal view');
 
     // Update count
     const count = decisions.length;
@@ -89,15 +80,41 @@
       </div>
       <div class="minimal-decision-text">${escapeHtml(text)}</div>
       <div class="minimal-decision-actions">
-        <button onclick="openDetailModal(${index}); event.stopPropagation();">View</button>
-        ${canModify ? `<button onclick="openDeleteModal(${decision.id}); event.stopPropagation();">Delete</button>` : ''}
-        <button onclick="askAboutDecision(${decision.id}); event.stopPropagation();">Ask AI</button>
+        <button data-action="view" data-index="${index}">View</button>
+        ${canModify ? `<button data-action="delete" data-id="${decision.id}">Delete</button>` : ''}
+        <button data-action="ask" data-id="${decision.id}">Ask AI</button>
       </div>
     `;
 
+    // Add event listeners to action buttons
+    const actionButtons = card.querySelectorAll('.minimal-decision-actions button');
+    actionButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+
+        if (action === 'view') {
+          const idx = parseInt(btn.dataset.index);
+          if (typeof window.openDetailModal === 'function') {
+            window.openDetailModal(idx);
+          }
+        } else if (action === 'delete') {
+          const id = parseInt(btn.dataset.id);
+          if (typeof window.openDeleteModal === 'function') {
+            window.openDeleteModal(id);
+          }
+        } else if (action === 'ask') {
+          const id = parseInt(btn.dataset.id);
+          window.askAboutDecision(id);
+        }
+      });
+    });
+
     // Click card to view details
     card.addEventListener('click', () => {
-      window.openDetailModal(index);
+      if (typeof window.openDetailModal === 'function') {
+        window.openDetailModal(index);
+      }
     });
 
     return card;
@@ -177,14 +194,39 @@
     }, 100);
   });
 
+  // Store decisions globally for filtering
+  let minimalDecisions = [];
+
+  // Store original renderDecisions reference
+  const originalRenderDecisionsRef = window.renderDecisions;
+
+  // Intercept renderDecisions to cache decisions
+  window.renderDecisions = function(decisions) {
+    // Cache decisions for filtering
+    minimalDecisions = decisions || [];
+
+    // If we're in minimal mode, render cards
+    if (document.body.classList.contains('minimal-mode')) {
+      renderMinimalDecisions(minimalDecisions);
+    } else if (originalRenderDecisionsRef) {
+      // Fall back to original table rendering
+      originalRenderDecisionsRef(minimalDecisions);
+    }
+  };
+
   // Apply filters (integrated with existing filter system)
   window.applyFilters = function() {
     // Get filter values
     const searchValue = document.getElementById('search')?.value.toLowerCase() || '';
     const typeFilter = document.getElementById('type-filter')?.value || '';
 
+    if (minimalDecisions.length === 0) {
+      console.warn('⚠️ No decisions to filter');
+      return;
+    }
+
     // Filter decisions
-    const filtered = window.allDecisions.filter(d => {
+    const filtered = minimalDecisions.filter(d => {
       // Search filter
       const matchesSearch = !searchValue ||
         d.text.toLowerCase().includes(searchValue) ||
@@ -197,8 +239,10 @@
       return matchesSearch && matchesType;
     });
 
+    console.log('🔍 Filtered', filtered.length, 'of', minimalDecisions.length, 'decisions');
+
     // Re-render
-    window.renderDecisions(filtered);
+    renderMinimalDecisions(filtered);
   };
 
   console.log('✅ Minimal dashboard initialized');
