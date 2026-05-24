@@ -122,8 +122,16 @@
 
     async function fetchStats() {
       try {
+        console.log('📊 Fetching stats for workspace:', WORKSPACE_ID);
         const r = await fetch(`/api/stats?workspace_id=${WORKSPACE_ID}`);
+
+        if (!r.ok) {
+          console.error('❌ Stats fetch failed:', r.status, r.statusText);
+          throw new Error(`Stats API returned ${r.status}`);
+        }
+
         const d = await r.json();
+        console.log('✅ Stats received:', d);
 
         // Update Classic View stats (8 cards)
         document.getElementById('total-count').textContent = d.total;
@@ -2009,26 +2017,44 @@
 
     // Initialize dashboard - check auth first, then load data
     (async function init() {
-      const authenticated = await checkAuth();
-      if (authenticated) {
+      try {
+        console.log('🚀 Dashboard init starting...');
+        const authenticated = await checkAuth();
+
+        if (!authenticated) {
+          console.log('❌ Not authenticated, init aborted');
+          return;
+        }
+
+        console.log('✅ Authenticated, loading spaces...');
         await loadSpaces();  // Load spaces first
+
+        console.log('📊 Spaces loaded:', currentUserSpaces.length, 'accessible spaces');
 
         // Check if user has no accessible spaces
         if (currentUserSpaces.length === 0) {
+          console.log('⚠️ No accessible spaces, showing message');
           await showNoSpacesMessage();
           return; // Don't load decisions/stats if no spaces
         }
 
         // User has spaces - load data first, then show UI
+        console.log('📁 Current space:', currentSpaceId);
+
         // Update context bar with current space
         updateContextBarSpace();
 
+        console.log('📥 Loading initial data (stats + decisions)...');
         // Load initial data before showing UI (prevents flash)
         await Promise.all([fetchStats(), fetchDecisions()]);
+        console.log('✅ Initial data loaded');
 
         // Now hide loading indicator and show UI
         const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        if (loadingIndicator) {
+          loadingIndicator.style.display = 'none';
+          console.log('✅ Loading indicator hidden');
+        }
 
         // Ensure hero banner stays hidden (we're in chat view by default)
         const heroSection = document.querySelector('.hero-banner');
@@ -2039,6 +2065,8 @@
 
         const chatView = document.getElementById('chat-view-container');
         if (chatView) chatView.style.display = 'block';
+
+        console.log('✅ UI shown, setting up auto-refresh');
 
         // Set up auto-refresh
         setInterval(() => { fetchStats(); fetchDecisions(); }, 30000);
@@ -2068,9 +2096,39 @@
 
         // Load saved view preference (default to Chat View)
         loadViewPreference();
+
+        console.log('✅ Dashboard initialization complete');
+      } catch (error) {
+        console.error('❌ Dashboard initialization failed:', error);
+
+        // Always hide loading indicator even on error
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+          loadingIndicator.style.display = 'none';
+        }
+
+        // Show error message
+        const minimalView = document.getElementById('minimal-split-view');
+        if (minimalView) {
+          minimalView.innerHTML = `
+            <div style="padding: 40px; text-align: center;">
+              <h2>⚠️ Failed to load dashboard</h2>
+              <p style="margin: 20px 0; color: #666;">${error.message || 'Unknown error'}</p>
+              <button onclick="window.location.reload()" style="padding: 10px 20px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                Reload Page
+              </button>
+            </div>
+          `;
+          minimalView.style.display = 'flex';
+        }
       }
-      // Initialize feedback widget
-      initFeedbackWidget();
+
+      // Initialize feedback widget (always, even if init fails)
+      try {
+        initFeedbackWidget();
+      } catch (e) {
+        console.error('Failed to init feedback widget:', e);
+      }
     })();
     // Suggestion chip handler (global scope)
     function useSuggestion(text) {
