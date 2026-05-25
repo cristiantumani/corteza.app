@@ -1795,6 +1795,54 @@
       }
     }
 
+    // Show notification toast
+    function showNotification(message) {
+      console.log(`📢 ${message}`);
+
+      // Create toast notification
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        background: #333;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease-out;
+      `;
+      toast.textContent = message;
+
+      // Add animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(400px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(400px); opacity: 0; }
+        }
+      `;
+      if (!document.querySelector('style[data-toast-styles]')) {
+        style.setAttribute('data-toast-styles', 'true');
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(toast);
+
+      // Remove after 3 seconds
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
     // Handle space filter change (exposed globally for HTML onchange)
     window.handleSpaceChange = async function() {
       console.log('🔄 handleSpaceChange called');
