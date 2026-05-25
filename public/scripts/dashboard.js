@@ -1769,8 +1769,8 @@
       if (chatFilter) chatFilter.value = spaceId || '';
     }
 
-    // Handle space filter change
-    async function handleSpaceChange() {
+    // Handle space filter change (exposed globally for HTML onchange)
+    window.handleSpaceChange = async function() {
       console.log('🔄 handleSpaceChange called');
       const heroFilter = document.getElementById('space-filter-hero');
       const classicFilter = document.getElementById('space-filter');
@@ -1814,7 +1814,7 @@
       if (currentSpace) {
         showNotification(`Switched to ${currentSpace.settings?.icon || '📁'} ${currentSpace.name}`);
       }
-    }
+    };
 
     // Update the context bar with current space name
     function updateContextBarSpace() {
