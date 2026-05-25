@@ -261,13 +261,7 @@
     }
   };
 
-  window.handleSpaceChange = function() {
-    const spaceFilter = document.getElementById('space-filter');
-    if (spaceFilter && typeof window.fetchDecisions === 'function') {
-      window.currentSpaceId = spaceFilter.value || null;
-      window.fetchDecisions();
-    }
-  };
+  // Note: handleSpaceChange is defined in dashboard.js - don't override it here
 
   console.log('✅ New dashboard UI initialized');
 })();
