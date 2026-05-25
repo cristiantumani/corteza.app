@@ -1,5 +1,7 @@
 const { hybridSearch, generateConversationalResponse } = require('../services/semantic-search');
 const { validateQueryParams } = require('../middleware/validation');
+const { canAccessSpace } = require('../services/permissions');
+const { getSlackClient } = require('../config/slack-client');
 
 /**
  * Parse query parameters from URL
@@ -69,9 +71,49 @@ async function handleSemanticSearch(req, res) {
       });
     }
 
+    // Space-first architecture: space_id is REQUIRED
+    if (!requestData.space_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'space_id is required for search',
+        message: 'You must select a space to perform a search'
+      });
+    }
+
+    // Validate user has access to this space
+    const userId = req.session?.user?.user_id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authentication required'
+      });
+    }
+
+    try {
+      const client = await getSlackClient(requestData.workspace_id);
+      const hasAccess = await canAccessSpace(client, requestData.workspace_id, requestData.space_id, userId);
+
+      if (!hasAccess) {
+        console.log(`⚠️  User ${userId} attempted to search space ${requestData.space_id} without permission`);
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied to this space',
+          message: 'You do not have permission to search in this space'
+        });
+      }
+    } catch (accessError) {
+      console.error('❌ Error validating space access:', accessError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to validate space access'
+      });
+    }
+
     // Build search options
     const searchOptions = {
       workspace_id: requestData.workspace_id,
+      space_id: requestData.space_id,  // SECURITY FIX: Filter search by space
       limit: requestData.limit || 10,
       minScore: requestData.minScore || 0.5  // Low threshold to get candidates; false positives filtered later
     };

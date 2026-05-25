@@ -65,6 +65,15 @@
         throw new Error('No workspace_id found in user session');
       }
 
+      // Get current space from URL or localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      let currentSpaceId = urlParams.get('space') || localStorage.getItem('corteza_last_space_id');
+      console.log('📁 Space ID:', currentSpaceId);
+
+      if (!currentSpaceId) {
+        throw new Error('No space selected. Please return to dashboard and select a space.');
+      }
+
       // Perform semantic search with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -77,6 +86,7 @@
         body: JSON.stringify({
           query: query,
           workspace_id: workspaceId,
+          space_id: currentSpaceId,  // ADD THIS
           conversational: true,
           conversationHistory: conversationHistory,
           limit: 20

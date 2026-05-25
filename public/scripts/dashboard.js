@@ -502,6 +502,13 @@
 
     async function fetchDecisions() {
       try {
+        // ENFORCE: Must have a space selected
+        if (!currentSpaceId) {
+          console.error('❌ No space selected, cannot fetch decisions');
+          await showNoSpacesMessage();
+          return;
+        }
+
         const searchEl = document.getElementById('search');
         const typeEl = document.getElementById('type-filter');
         const categoryEl = document.getElementById('category-filter');
@@ -517,8 +524,8 @@
         const dateTo = dateToEl ? dateToEl.value : '';
 
         const p = new URLSearchParams();
-        p.append('workspace_id', WORKSPACE_ID);  // ADD workspace_id
-        if (currentSpaceId) p.append('space_id', currentSpaceId);  // ADD space filter
+        p.append('workspace_id', WORKSPACE_ID);
+        p.append('space_id', currentSpaceId);  // ALWAYS REQUIRED
         if (s) p.append('search', s);
         if (t) p.append('type', t);
         if (c) p.append('category', c);
@@ -528,6 +535,19 @@
         p.append('limit', '100');
 
         const r = await fetch(`/api/decisions?${p}`);
+
+        if (r.status === 403) {
+          // User lost access to current space
+          console.warn('⚠️  Access denied to space, re-initializing...');
+          localStorage.removeItem('corteza_last_space_id');
+          await initializeSpaceContext(); // Re-initialize with valid space
+          return;
+        }
+
+        if (!r.ok) {
+          throw new Error(`Failed to fetch decisions: ${r.status}`);
+        }
+
         const d = await r.json();
         allDecisions = d.decisions;
         window.allDecisions = allDecisions; // Keep window reference updated
@@ -536,7 +556,7 @@
         console.error('❌ Error fetching decisions:', err);
         const tbody = document.getElementById('decisions-body');
         if (tbody) {
-          tbody.innerHTML = '<tr><td colspan="8">Error</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8">Error loading decisions</td></tr>';
         }
       }
     }
@@ -710,13 +730,26 @@
 
     // Log Memory Modal Functions
     function openLogMemoryModal() {
-      // Clear form
+      // ENFORCE: Must have a space selected
+      if (!currentSpaceId) {
+        alert('Please select a space first');
+        return;
+      }
+
+      // Clear form fields
       document.getElementById('log-memory-text').value = '';
       document.getElementById('log-memory-type').value = 'decision';
       document.getElementById('log-memory-category').value = '';
       document.getElementById('log-memory-tags').value = '';
       document.getElementById('log-memory-epic').value = '';
       document.getElementById('log-memory-alternatives').value = '';
+
+      // Display current space (read-only)
+      const currentSpace = currentUserSpaces.find(s => s.space_id === currentSpaceId);
+      const spaceDisplay = document.getElementById('log-memory-current-space');
+      if (spaceDisplay && currentSpace) {
+        spaceDisplay.textContent = `${currentSpace.settings?.icon || '📁'} ${currentSpace.name}`;
+      }
 
       // Show modal
       document.getElementById('log-memory-modal').classList.add('active');
@@ -729,7 +762,6 @@
     async function submitLogMemory() {
       const text = document.getElementById('log-memory-text').value.trim();
       const type = document.getElementById('log-memory-type').value;
-      const spaceId = document.getElementById('log-memory-space').value;
       const category = document.getElementById('log-memory-category').value.trim();
       const tags = document.getElementById('log-memory-tags').value.trim();
       const epicKey = document.getElementById('log-memory-epic').value.trim();
@@ -741,8 +773,10 @@
         return;
       }
 
-      if (!spaceId) {
-        alert('Please select a space');
+      // ENFORCE: Use current space
+      if (!currentSpaceId) {
+        alert('No space selected. Please select a space from the header.');
+        closeLogMemoryModal();
         return;
       }
 
@@ -753,7 +787,7 @@
           body: JSON.stringify({
             text,
             type,
-            space_id: spaceId,
+            space_id: currentSpaceId,  // USE CURRENT SPACE
             category: category || null,
             tags: tags || null,
             epic_key: epicKey || null,
@@ -1553,19 +1587,85 @@
           console.log('✅ Loaded', data.spaces.length, 'spaces');
           allSpaces = data.spaces;
           currentUserSpaces = data.spaces;
-          populateSpaceSelectors();
-
-          // Restore last selected space from localStorage
-          const lastSpaceId = localStorage.getItem('corteza_last_space_id');
-          if (lastSpaceId && allSpaces.find(s => s.space_id === lastSpaceId)) {
-            currentSpaceId = lastSpaceId;
-            updateSpaceSelectors(lastSpaceId);
-          }
+          // Note: Space selection is now handled by initializeSpaceContext()
         } else {
           console.warn('⚠️  Failed to load spaces:', data);
         }
       } catch (error) {
         console.error('❌ Failed to load spaces:', error);
+      }
+    }
+
+    // Initialize space context with priority-based selection
+    async function initializeSpaceContext() {
+      console.log('🎯 Initializing space context...');
+
+      // 1. Check if user has any accessible spaces
+      if (currentUserSpaces.length === 0) {
+        console.log('⚠️ No accessible spaces');
+        await showNoSpacesMessage();
+        return;
+      }
+
+      // 2. Determine which space to select (priority order)
+      let selectedSpaceId = null;
+
+      // Priority 1: URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSpaceId = urlParams.get('space');
+      if (urlSpaceId && currentUserSpaces.find(s => s.space_id === urlSpaceId)) {
+        selectedSpaceId = urlSpaceId;
+        console.log('📍 Space selected from URL:', selectedSpaceId);
+      }
+
+      // Priority 2: localStorage
+      if (!selectedSpaceId) {
+        const savedSpaceId = localStorage.getItem('corteza_last_space_id');
+        if (savedSpaceId && currentUserSpaces.find(s => s.space_id === savedSpaceId)) {
+          selectedSpaceId = savedSpaceId;
+          console.log('💾 Space restored from localStorage:', selectedSpaceId);
+        }
+      }
+
+      // Priority 3: Default space
+      if (!selectedSpaceId) {
+        const defaultSpace = currentUserSpaces.find(s => s.is_default);
+        if (defaultSpace) {
+          selectedSpaceId = defaultSpace.space_id;
+          console.log('⭐ Using default space:', selectedSpaceId);
+        }
+      }
+
+      // Priority 4: First accessible space
+      if (!selectedSpaceId) {
+        selectedSpaceId = currentUserSpaces[0].space_id;
+        console.log('📂 Using first accessible space:', selectedSpaceId);
+      }
+
+      // 3. Set current space
+      currentSpaceId = selectedSpaceId;
+      updateSpaceSelectors(currentSpaceId);
+      updateContextBarSpace();
+      updateURLWithSpace(currentSpaceId, false); // Don't create history entry
+
+      // 4. Save to localStorage
+      localStorage.setItem('corteza_last_space_id', currentSpaceId);
+
+      // 5. Populate space selectors
+      populateSpaceSelectors();
+
+      console.log('✅ Space context initialized:', currentSpaceId);
+    }
+
+    // Update URL with space parameter
+    function updateURLWithSpace(spaceId, addToHistory = true) {
+      const url = new URL(window.location);
+      url.searchParams.set('space', spaceId);
+
+      if (addToHistory) {
+        history.pushState({ space: spaceId }, '', url);
+      } else {
+        history.replaceState({ space: spaceId }, '', url);
       }
     }
 
@@ -1576,7 +1676,7 @@
       // Populate hero space filter
       const heroFilter = document.getElementById('space-filter-hero');
       if (heroFilter) {
-        heroFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
+        heroFilter.innerHTML = ''; // No default placeholder
         currentUserSpaces.forEach(space => {
           console.log('  Adding space:', space.name, space.space_id);
           const option = document.createElement('option');
@@ -1594,7 +1694,7 @@
       // Populate classic view space filter
       const classicFilter = document.getElementById('space-filter');
       if (classicFilter) {
-        classicFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
+        classicFilter.innerHTML = ''; // No default placeholder or "All Spaces" option
         currentUserSpaces.forEach(space => {
           const option = document.createElement('option');
           option.value = space.space_id;
@@ -1609,7 +1709,7 @@
       // Populate chat view space filter
       const chatFilter = document.getElementById('space-filter-chat');
       if (chatFilter) {
-        chatFilter.innerHTML = '<option value="" disabled selected>Select a space...</option>';
+        chatFilter.innerHTML = ''; // No default placeholder
         currentUserSpaces.forEach(space => {
           const option = document.createElement('option');
           option.value = space.space_id;
@@ -1621,35 +1721,8 @@
         });
       }
 
-      // Auto-select first space across all filters if no space is selected
-      if (!currentSpaceId && currentUserSpaces.length > 0) {
-        currentSpaceId = currentUserSpaces[0].space_id;
-        updateSpaceSelectors(currentSpaceId);
-      }
-
-      // Populate Log Memory modal space selector
-      const logMemorySpace = document.getElementById('log-memory-space');
-      if (logMemorySpace) {
-        logMemorySpace.innerHTML = '';
-
-        // Only show spaces where user can create
-        const creatableSpaces = currentUserSpaces.filter(s =>
-          s.visibility === 'public' ||
-          s.is_owner ||
-          s.user_role === 'admin' ||
-          s.user_role === 'member'
-        );
-
-        creatableSpaces.forEach(space => {
-          const option = document.createElement('option');
-          option.value = space.space_id;
-          option.textContent = `${space.settings.icon} ${space.name}`;
-          if (space.is_default) {
-            option.selected = true;
-          }
-          logMemorySpace.appendChild(option);
-        });
-      }
+      // Note: Space selection is now handled by initializeSpaceContext()
+      // Note: Log Memory modal no longer has space dropdown - uses current space
 
       // Populate Edit Decision modal space selector
       const editSpace = document.getElementById('edit-decision-space');
@@ -1690,23 +1763,38 @@
       const chatFilter = document.getElementById('space-filter-chat');
 
       // Get value from whichever filter triggered the change
-      currentSpaceId = (heroFilter?.value || classicFilter?.value || chatFilter?.value) || null;
+      const newSpaceId = (heroFilter?.value || classicFilter?.value || chatFilter?.value);
 
-      // Sync both filters
-      updateSpaceSelectors(currentSpaceId);
-
-      // Update context bar with current space name
-      updateContextBarSpace();
-
-      // Save to localStorage
-      if (currentSpaceId) {
-        localStorage.setItem('corteza_last_space_id', currentSpaceId);
-      } else {
-        localStorage.removeItem('corteza_last_space_id');
+      // ENFORCE: Space must be selected
+      if (!newSpaceId) {
+        alert('You must select a space to continue');
+        updateSpaceSelectors(currentSpaceId); // Restore previous selection
+        return;
       }
+
+      // VALIDATE: User has access to this space
+      const hasAccess = currentUserSpaces.find(s => s.space_id === newSpaceId);
+      if (!hasAccess) {
+        alert('You do not have access to this space');
+        updateSpaceSelectors(currentSpaceId); // Restore previous selection
+        return;
+      }
+
+      // Update current space
+      currentSpaceId = newSpaceId;
+      updateSpaceSelectors(currentSpaceId);
+      updateContextBarSpace();
+      updateURLWithSpace(currentSpaceId, true); // Add to history
+      localStorage.setItem('corteza_last_space_id', currentSpaceId);
 
       // Reload decisions with new space filter
       await fetchDecisions();
+
+      // Show notification
+      const currentSpace = currentUserSpaces.find(s => s.space_id === currentSpaceId);
+      if (currentSpace) {
+        showNotification(`Switched to ${currentSpace.settings?.icon || '📁'} ${currentSpace.name}`);
+      }
     }
 
     // Update the context bar with current space name
@@ -2108,18 +2196,16 @@
 
         console.log('📊 Spaces loaded:', currentUserSpaces.length, 'accessible spaces');
 
-        // Check if user has no accessible spaces
+        // Initialize space context (handles no spaces, URL params, localStorage, etc.)
+        await initializeSpaceContext();
+
+        // If no spaces available, initializeSpaceContext() shows the no-spaces message
         if (currentUserSpaces.length === 0) {
-          console.log('⚠️ No accessible spaces, showing message');
-          await showNoSpacesMessage();
           return; // Don't load decisions/stats if no spaces
         }
 
         // User has spaces - load data first, then show UI
         console.log('📁 Current space:', currentSpaceId);
-
-        // Update context bar with current space
-        updateContextBarSpace();
 
         console.log('📥 Loading initial data (stats + decisions)...');
         // Load initial data before showing UI (prevents flash)
@@ -2702,3 +2788,32 @@
       currentSuggestions = [];
       approvedSuggestions.clear();
     }
+
+    // Navigation with space context preservation
+    window.navigateToSearch = function(event) {
+      event.preventDefault();
+      const urlParams = new URLSearchParams();
+      if (currentSpaceId) {
+        urlParams.set('space', currentSpaceId);
+      }
+      window.location.href = `/ai-search?${urlParams}`;
+    };
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', async (event) => {
+      if (event.state && event.state.space) {
+        const newSpaceId = event.state.space;
+        const hasAccess = currentUserSpaces.find(s => s.space_id === newSpaceId);
+
+        if (hasAccess) {
+          currentSpaceId = newSpaceId;
+          updateSpaceSelectors(currentSpaceId);
+          updateContextBarSpace();
+          localStorage.setItem('corteza_last_space_id', currentSpaceId);
+          await fetchDecisions();
+        } else {
+          // User no longer has access, initialize with valid space
+          await initializeSpaceContext();
+        }
+      }
+    });

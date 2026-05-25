@@ -62,7 +62,7 @@
     </div>
 
     <nav class="flex-1 flex flex-col gap-1">
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/dashboard">
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="#" onclick="navigateToDashboard(event)">
             <span class="material-symbols-outlined">home</span>
             <span class="text-sm font-medium">Home</span>
         </a>
@@ -92,6 +92,15 @@
 <!-- Main Content -->
 <main class="ml-64 p-12 pb-48 min-h-screen" id="main-content">
     <div class="max-w-[1600px] mx-auto">
+
+        <!-- Space Context Indicator -->
+        <div class="flex items-center gap-3 mb-6 px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl">
+            <span class="material-symbols-outlined text-primary">folder</span>
+            <div>
+                <div class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Searching in</div>
+                <div id="search-current-space" class="font-bold text-on-surface">Loading space...</div>
+            </div>
+        </div>
 
         <!-- Loading State -->
         <div id="search-loading" class="hidden text-center py-20">
@@ -283,6 +292,74 @@
 </script>
 <script src="/scripts/dashboard.js?v=4"></script>
 <script src="/scripts/ai-search.js?v=4"></script>
+
+<!-- Initialize Space Context Indicator -->
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let currentSpaceId = urlParams.get('space') || localStorage.getItem('corteza_last_space_id');
+
+      const spaceDisplayEl = document.getElementById('search-current-space');
+
+      if (!currentSpaceId) {
+        spaceDisplayEl.textContent = 'No space selected';
+        spaceDisplayEl.style.color = '#ef4444';
+        return;
+      }
+
+      // Fetch user and workspace info
+      const userData = await fetch('/auth/me').then(r => r.json());
+      const workspaceId = userData.user?.workspace_id;
+
+      if (!workspaceId) {
+        spaceDisplayEl.textContent = 'Error loading workspace';
+        spaceDisplayEl.style.color = '#ef4444';
+        return;
+      }
+
+      // Fetch spaces
+      const spacesRes = await fetch(`/api/spaces?workspace_id=${workspaceId}`);
+      const spacesData = await spacesRes.json();
+
+      if (!spacesRes.ok || !spacesData.spaces) {
+        spaceDisplayEl.textContent = 'Error loading spaces';
+        spaceDisplayEl.style.color = '#ef4444';
+        return;
+      }
+
+      // Find current space
+      const currentSpace = spacesData.spaces.find(s => s.space_id === currentSpaceId);
+      if (currentSpace) {
+        spaceDisplayEl.textContent = `${currentSpace.settings?.icon || '📁'} ${currentSpace.name}`;
+        spaceDisplayEl.style.color = '';
+      } else {
+        spaceDisplayEl.textContent = 'Space not found';
+        spaceDisplayEl.style.color = '#ef4444';
+      }
+    } catch (error) {
+      console.error('Error loading space context:', error);
+      const spaceDisplayEl = document.getElementById('search-current-space');
+      if (spaceDisplayEl) {
+        spaceDisplayEl.textContent = 'Error loading space';
+        spaceDisplayEl.style.color = '#ef4444';
+      }
+    }
+  });
+
+  // Navigation with space context preservation
+  window.navigateToDashboard = function(event) {
+    event.preventDefault();
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSpaceId = urlParams.get('space') || localStorage.getItem('corteza_last_space_id');
+
+    const dashboardUrlParams = new URLSearchParams();
+    if (currentSpaceId) {
+      dashboardUrlParams.set('space', currentSpaceId);
+    }
+    window.location.href = `/dashboard?${dashboardUrlParams}`;
+  };
+</script>
 
 </body>
 </html>

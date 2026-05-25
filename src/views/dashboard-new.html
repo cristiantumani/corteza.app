@@ -58,7 +58,7 @@
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
             <span class="text-sm font-medium">Home</span>
         </a>
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/ai-search">
+        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="#" onclick="navigateToSearch(event)">
             <span class="material-symbols-outlined">search</span>
             <span class="text-sm font-medium">Search</span>
         </a>
@@ -85,8 +85,8 @@
 <header class="fixed top-0 right-0 left-64 h-16 z-10 bg-surface border-b border-outline-variant flex items-center justify-between px-6 shadow-sm">
     <div class="flex items-center gap-4 flex-1">
         <!-- Space Filter -->
-        <select id="space-filter" onchange="handleSpaceChange()" class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none">
-            <option value="">All Spaces</option>
+        <select id="space-filter" onchange="handleSpaceChange()" class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none space-selector-required">
+            <!-- No "All Spaces" option - populated by JavaScript -->
         </select>
 
         <!-- Search Input -->
@@ -237,13 +237,13 @@
       </div>
 
       <div class="detail-item">
-        <label>📁 Space *</label>
-        <select
-          id="log-memory-space"
-          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
-        >
-          <option value="">Loading spaces...</option>
-        </select>
+        <label>📁 Space</label>
+        <div class="current-space-display" style="background: #F6F8FA; border: 1px solid #E1E4E8; border-radius: 8px; padding: 10px; font-size: 14px;">
+          <span id="log-memory-current-space" style="font-weight: 600;">Loading...</span>
+        </div>
+        <small style="color: #616061; font-size: 12px; margin-top: 4px; display: block;">
+          To log decisions in a different space, switch spaces from the header first.
+        </small>
       </div>
 
       <div class="detail-item">

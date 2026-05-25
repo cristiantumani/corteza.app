@@ -190,6 +190,7 @@ async function semanticSearch(query, options = {}) {
 
   const {
     workspace_id,
+    space_id,
     type,
     category,
     dateFrom,
@@ -202,10 +203,15 @@ async function semanticSearch(query, options = {}) {
     throw new Error('workspace_id is required for semantic search');
   }
 
+  if (!space_id) {
+    throw new Error('space_id is required for semantic search');
+  }
+
   try {
     // Generate embedding for the search query
     console.log(`🔍 Semantic search: "${query}"`);
     console.log(`   🏢 Workspace ID: ${workspace_id}`);
+    console.log(`   📁 Space ID: ${space_id}`);
 
     // MongoDB connection for debugging
     const db = getDatabase();
@@ -231,7 +237,10 @@ async function semanticSearch(query, options = {}) {
     }
 
     // Build filter for pre-filtering before vector search
-    const preFilter = { workspace_id };
+    const preFilter = {
+      workspace_id,
+      space_id  // SECURITY FIX: Filter search by space
+    };
 
     if (type) {
       preFilter.type = type;
@@ -587,12 +596,13 @@ function extractDecisionId(query) {
 /**
  * Fetch a specific decision by ID
  */
-async function fetchDecisionById(decisionId, workspaceId) {
+async function fetchDecisionById(decisionId, workspaceId, spaceId) {
   const decisionsCollection = getDecisionsCollection();
 
   const decision = await decisionsCollection.findOne({
     id: decisionId,
-    workspace_id: workspaceId
+    workspace_id: workspaceId,
+    space_id: spaceId  // SECURITY FIX: Ensure decision is in user's current space
   });
 
   if (!decision) {
@@ -628,7 +638,7 @@ async function hybridSearch(query, options = {}) {
   const decisionId = extractDecisionId(query);
   if (decisionId) {
     console.log(`   🎯 Decision ID detected: #${decisionId}`);
-    const idResult = await fetchDecisionById(decisionId, options.workspace_id);
+    const idResult = await fetchDecisionById(decisionId, options.workspace_id, options.space_id);
 
     if (idResult) {
       return {
@@ -681,6 +691,7 @@ async function hybridSearch(query, options = {}) {
 async function keywordSearch(query, options = {}) {
   const {
     workspace_id,
+    space_id,
     type,
     dateFrom,
     dateTo,
@@ -689,6 +700,10 @@ async function keywordSearch(query, options = {}) {
 
   if (!workspace_id) {
     throw new Error('workspace_id is required for search');
+  }
+
+  if (!space_id) {
+    throw new Error('space_id is required for search');
   }
 
   const decisionsCollection = getDecisionsCollection();
@@ -709,6 +724,7 @@ async function keywordSearch(query, options = {}) {
 
   const filter = {
     workspace_id,
+    space_id,  // SECURITY FIX: Filter search by space
     $or: orConditions
   };
 
