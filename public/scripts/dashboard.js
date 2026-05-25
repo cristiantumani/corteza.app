@@ -533,7 +533,11 @@
         window.allDecisions = allDecisions; // Keep window reference updated
         renderDecisions(d.decisions);
       } catch (err) {
-        document.getElementById('decisions-body').innerHTML = '<tr><td colspan="8">Error</td></tr>';
+        console.error('❌ Error fetching decisions:', err);
+        const tbody = document.getElementById('decisions-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8">Error</td></tr>';
+        }
       }
     }
 
@@ -2216,6 +2220,12 @@
       const chatInput = document.getElementById('chat-input');
       const chatSend = document.getElementById('chat-send');
       const chatMessages = document.getElementById('chat-messages');
+
+      // Skip chat widget initialization if elements don't exist (new dashboard doesn't have chat widget)
+      if (!chatToggle || !chatContainer) {
+        console.log('ℹ️  Chat widget not found, skipping initialization');
+        return;
+      }
 
       let isOpen = false;
 
