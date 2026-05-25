@@ -93,7 +93,19 @@ async function handleSemanticSearch(req, res) {
         }
 
         // Perform hybrid search
-        const searchResult = await hybridSearch(requestData.query, searchOptions);
+        let searchResult;
+        try {
+          searchResult = await hybridSearch(requestData.query, searchOptions);
+        } catch (searchError) {
+          console.error('❌ Hybrid search failed:', searchError);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            error: 'Search failed',
+            details: searchError.message
+          }));
+          return;
+        }
 
         console.log(`✅ Search completed:`);
         console.log(`   - Method: ${searchResult.searchMethod}`);
