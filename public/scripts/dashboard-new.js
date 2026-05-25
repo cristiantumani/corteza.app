@@ -84,6 +84,9 @@
     const isOwnDecision = decision.user_id === (window.currentUser && window.currentUser.user_id);
     const canModify = window.isCurrentUserAdmin || isOwnDecision;
 
+    // Get user name (try user_name first, then creator as fallback)
+    const userName = decision.user_name || decision.creator || 'Unknown User';
+
     // Build card HTML
     card.innerHTML = `
       <div class="flex items-start justify-between mb-4">
@@ -104,9 +107,9 @@
       <div class="flex items-center justify-between pt-4 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
-            ${getInitials(decision.creator)}
+            ${getInitials(userName)}
           </div>
-          <span class="text-xs font-medium">${escapeHtml(decision.creator || 'Unknown')}</span>
+          <span class="text-xs font-medium">${escapeHtml(userName)}</span>
         </div>
         <span class="text-xs text-on-surface-variant">${dateStr}</span>
       </div>
@@ -192,13 +195,22 @@
   }
 
   function getInitials(name) {
-    if (!name) return '??';
-    return name
-      .split(' ')
+    if (!name) return 'U';
+
+    const parts = name.split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return 'U';
+
+    if (parts.length === 1) {
+      // Single word - take first 2 chars
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    // Multiple words - take first char of first 2 words
+    return parts
+      .slice(0, 2)
       .map(n => n[0])
       .join('')
-      .toUpperCase()
-      .substring(0, 2);
+      .toUpperCase();
   }
 
   function escapeHtml(text) {
