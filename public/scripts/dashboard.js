@@ -538,6 +538,10 @@
 
     function renderDecisions(decisions) {
       const tbody = document.getElementById('decisions-body');
+      if (!tbody) {
+        // Table doesn't exist, new dashboard is likely active
+        return;
+      }
       if (decisions.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8">No memories found</td></tr>';
         return;
@@ -601,6 +605,10 @@
         </tr>`;
       }).join('');
     }
+
+    // Expose key functions to window for dashboard-new.js to override and for onclick handlers
+    window.renderDecisions = renderDecisions;
+    window.fetchDecisions = fetchDecisions;
 
     function openDeleteModal(id) {
       deleteTargetId = id;
@@ -903,6 +911,22 @@
         deleteBtn.textContent = originalText;
       }
     }
+
+    // Expose modal functions to window for onclick handlers and dashboard-new.js
+    window.openDetailModal = openDetailModal;
+    window.closeDetailModal = closeDetailModal;
+    window.openDeleteModal = openDeleteModal;
+    window.closeDeleteModal = closeDeleteModal;
+    window.confirmDelete = confirmDelete;
+    window.openLogMemoryModal = openLogMemoryModal;
+    window.closeLogMemoryModal = closeLogMemoryModal;
+    window.submitLogMemory = submitLogMemory;
+    window.openEditModal = openEditModal;
+    window.closeEditModal = closeEditModal;
+    window.saveEdit = saveEdit;
+    window.allDecisions = allDecisions;
+    window.currentUser = currentUser;
+    window.isCurrentUserAdmin = isCurrentUserAdmin;
 
     function exportToCSV() {
       const csv = [
