@@ -509,6 +509,8 @@
           return;
         }
 
+        console.log(`📥 Fetching decisions for space: ${currentSpaceId}`);
+
         const searchEl = document.getElementById('search');
         const typeEl = document.getElementById('type-filter');
         const categoryEl = document.getElementById('category-filter');
@@ -534,6 +536,7 @@
         if (dateTo) p.append('date_to', dateTo);
         p.append('limit', '100');
 
+        console.log(`   📡 API call: /api/decisions?${p}`);
         const r = await fetch(`/api/decisions?${p}`);
 
         if (r.status === 403) {
@@ -549,6 +552,7 @@
         }
 
         const d = await r.json();
+        console.log(`   ✅ Received ${d.decisions.length} decisions for space ${currentSpaceId}`);
         allDecisions = d.decisions;
         window.allDecisions = allDecisions; // Keep window reference updated
         renderDecisions(d.decisions);
@@ -1767,12 +1771,15 @@
 
     // Handle space filter change
     async function handleSpaceChange() {
+      console.log('🔄 handleSpaceChange called');
       const heroFilter = document.getElementById('space-filter-hero');
       const classicFilter = document.getElementById('space-filter');
       const chatFilter = document.getElementById('space-filter-chat');
 
       // Get value from whichever filter triggered the change
       const newSpaceId = (heroFilter?.value || classicFilter?.value || chatFilter?.value);
+      console.log(`   - Old space: ${currentSpaceId}`);
+      console.log(`   - New space: ${newSpaceId}`);
 
       // ENFORCE: Space must be selected
       if (!newSpaceId) {
@@ -1795,6 +1802,9 @@
       updateContextBarSpace();
       updateURLWithSpace(currentSpaceId, true); // Add to history
       localStorage.setItem('corteza_last_space_id', currentSpaceId);
+
+      console.log(`   ✅ Space updated to: ${currentSpaceId}`);
+      console.log('   🔄 Fetching decisions for new space...');
 
       // Reload decisions with new space filter
       await fetchDecisions();
