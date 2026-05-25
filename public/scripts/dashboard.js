@@ -1700,6 +1700,11 @@
           }
           heroFilter.appendChild(option);
         });
+
+        // Attach event listener programmatically
+        heroFilter.removeEventListener('change', window.handleSpaceChange); // Remove old listener if exists
+        heroFilter.addEventListener('change', window.handleSpaceChange);
+        console.log('✅ Event listener attached to space-filter-hero');
       } else {
         console.warn('⚠️  space-filter-hero element not found');
       }
@@ -1717,6 +1722,11 @@
           }
           classicFilter.appendChild(option);
         });
+
+        // Attach event listener programmatically
+        classicFilter.removeEventListener('change', window.handleSpaceChange); // Remove old listener if exists
+        classicFilter.addEventListener('change', window.handleSpaceChange);
+        console.log('✅ Event listener attached to space-filter');
       }
 
       // Populate chat view space filter
@@ -1732,6 +1742,11 @@
           }
           chatFilter.appendChild(option);
         });
+
+        // Attach event listener programmatically
+        chatFilter.removeEventListener('change', window.handleSpaceChange); // Remove old listener if exists
+        chatFilter.addEventListener('change', window.handleSpaceChange);
+        console.log('✅ Event listener attached to space-filter-chat');
       }
 
       // Note: Space selection is now handled by initializeSpaceContext()
