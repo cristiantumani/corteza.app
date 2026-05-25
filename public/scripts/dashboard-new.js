@@ -60,11 +60,13 @@
     if (emptyState) emptyState.classList.add('hidden');
     container.classList.remove('hidden');
 
-    // Render each decision as a card
+    // Render each decision as a card using DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
     decisions.forEach((decision, index) => {
       const card = createDecisionCard(decision, index);
-      container.appendChild(card);
+      fragment.appendChild(card);
     });
+    container.appendChild(fragment);  // Single reflow instead of N reflows
   }
 
   function createDecisionCard(decision, index) {

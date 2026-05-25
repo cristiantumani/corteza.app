@@ -7,6 +7,7 @@
     "start": "node src/index.js",
     "dev": "node src/index.js",
     "fix-oauth": "node fix-oauth-db.js",
+    "build:css": "NODE_ENV=production postcss src/styles/tailwind.input.css -o public/styles/tailwind.min.css",
     "test": "echo \"Error: no test specified\" && exit 1",
     "eval": "node evals/run-evals.js",
     "eval:search": "node evals/run-search-evals.js",
@@ -40,6 +41,14 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
-    "braintrust": "^2.2.0"
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/postcss": "^4.3.0",
+    "autoprefixer": "^10.5.0",
+    "braintrust": "^2.2.0",
+    "cssnano": "^8.0.1",
+    "postcss": "^8.5.15",
+    "postcss-cli": "^11.0.1",
+    "tailwindcss": "^4.3.0",
+    "tailwindcss-cli": "^0.1.2"
   }
 }

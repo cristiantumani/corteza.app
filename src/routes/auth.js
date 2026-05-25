@@ -4,11 +4,14 @@
  * This file only handles /auth/me and /auth/logout
  */
 
+const { getSlackClient } = require('../config/slack-client');
+const { isWorkspaceAdmin } = require('../middleware/admin-check');
+
 /**
  * Returns current authenticated user info
  * GET /auth/me
  */
-function handleMe(req, res) {
+async function handleMe(req, res) {
   console.log('🔐 /auth/me called:', {
     hasSession: !!req.session,
     sessionID: req.sessionID,
@@ -25,10 +28,25 @@ function handleMe(req, res) {
     });
   }
 
-  console.log('✅ /auth/me: Authenticated as', req.session.user.user_name);
+  // Check if user is workspace admin
+  let is_admin = false;
+  try {
+    const workspaceId = req.session.user.workspace_id;
+    const userId = req.session.user.user_id;
+    const client = await getSlackClient(workspaceId);
+    is_admin = await isWorkspaceAdmin(client, userId, workspaceId);
+  } catch (error) {
+    console.error('❌ Error checking admin status in /auth/me:', error.message);
+    // Continue without admin status on error
+  }
+
+  console.log('✅ /auth/me: Authenticated as', req.session.user.user_name, 'is_admin:', is_admin);
   res.json({
     authenticated: true,
-    user: req.session.user
+    user: {
+      ...req.session.user,
+      is_admin
+    }
   });
 }
 

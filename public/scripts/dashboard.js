@@ -28,15 +28,14 @@
         // Authenticated - store user info
         currentUser = data.user;
         WORKSPACE_ID = data.user.workspace_id;
+        isCurrentUserAdmin = data.user.is_admin || false;
 
         console.log('✅ Authenticated:', {
           user_id: currentUser.user_id,
           user_name: currentUser.user_name,
-          workspace_id: WORKSPACE_ID
+          workspace_id: WORKSPACE_ID,
+          is_admin: isCurrentUserAdmin
         });
-
-        // Check if user is admin
-        await checkIfAdmin();
 
         // Update header with user info
         updateHeader();
@@ -50,18 +49,6 @@
       }
     }
 
-    // Check if current user is admin
-    async function checkIfAdmin() {
-      try {
-        const response = await fetch(`/api/permissions/check?workspace_id=${WORKSPACE_ID}`);
-        const data = await response.json();
-        isCurrentUserAdmin = data.is_admin === true;
-        console.log('Admin status:', isCurrentUserAdmin);
-      } catch (error) {
-        console.error('Failed to check admin status:', error);
-        isCurrentUserAdmin = false;
-      }
-    }
 
     // Update header with user info and logout button
     function updateHeader() {
@@ -2107,15 +2094,17 @@
     (async function init() {
       try {
         console.log('🚀 Dashboard init starting...');
-        const authenticated = await checkAuth();
+
+        // Parallelize auth and spaces loading for better performance
+        const [authenticated] = await Promise.all([
+          checkAuth(),
+          loadSpaces()  // Can run in parallel since WORKSPACE_ID is pre-set in HTML
+        ]);
 
         if (!authenticated) {
           console.log('❌ Not authenticated, init aborted');
           return;
         }
-
-        console.log('✅ Authenticated, loading spaces...');
-        await loadSpaces();  // Load spaces first
 
         console.log('📊 Spaces loaded:', currentUserSpaces.length, 'accessible spaces');
 
