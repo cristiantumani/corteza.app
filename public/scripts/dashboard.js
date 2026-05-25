@@ -705,7 +705,7 @@
       }
 
       // Handle tags
-      if (decision.tags && decision.tags.length > 0) {
+      if (decision.tags && Array.isArray(decision.tags) && decision.tags.length > 0) {
         document.getElementById('detail-tags-section').style.display = 'block';
         // Security: Escape HTML in tags to prevent XSS
         document.getElementById('detail-tags').innerHTML = decision.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
@@ -2570,7 +2570,7 @@
               </div>
               <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(suggestion.decision_text)}</p>
               ${suggestion.context ? `<p style="margin: 0; font-size: 13px; color: #616061; font-style: italic;">"${escapeHtml(suggestion.context.substring(0, 150))}${suggestion.context.length > 150 ? '...' : ''}"</p>` : ''}
-              ${suggestion.tags && suggestion.tags.length > 0 ? `<div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">${suggestion.tags.map(tag => `<span style="background: #F8F9FA; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: #616061;">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+              ${suggestion.tags && Array.isArray(suggestion.tags) && suggestion.tags.length > 0 ? `<div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">${suggestion.tags.map(tag => `<span style="background: #F8F9FA; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: #616061;">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
             </div>
           </div>
           <div style="display: flex; gap: 8px; margin-top: 12px;">
