@@ -1651,15 +1651,17 @@
 
       // 3. Set current space
       currentSpaceId = selectedSpaceId;
+
+      // 4. Populate space selectors FIRST (must happen before setting selected value)
+      populateSpaceSelectors();
+
+      // 5. Then set the selected value
       updateSpaceSelectors(currentSpaceId);
       updateContextBarSpace();
       updateURLWithSpace(currentSpaceId, false); // Don't create history entry
 
-      // 4. Save to localStorage
+      // 6. Save to localStorage
       localStorage.setItem('corteza_last_space_id', currentSpaceId);
-
-      // 5. Populate space selectors
-      populateSpaceSelectors();
 
       console.log('✅ Space context initialized:', currentSpaceId);
     }
