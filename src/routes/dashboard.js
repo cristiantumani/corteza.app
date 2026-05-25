@@ -1,8 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load dashboard HTML once at startup
+// Load new dashboard HTML (now the main dashboard)
 const dashboardHTML = fs.readFileSync(
+  path.join(__dirname, '../views/dashboard-new.html'),
+  'utf8'
+);
+
+// Load old dashboard HTML (kept as backup)
+const dashboardOldHTML = fs.readFileSync(
   path.join(__dirname, '../views/dashboard.html'),
   'utf8'
 );
@@ -19,12 +25,6 @@ const settingsHTML = fs.readFileSync(
   'utf8'
 );
 
-// Load new dashboard HTML once at startup
-const dashboardNewHTML = fs.readFileSync(
-  path.join(__dirname, '../views/dashboard-new.html'),
-  'utf8'
-);
-
 // Load AI search HTML once at startup
 const aiSearchHTML = fs.readFileSync(
   path.join(__dirname, '../views/ai-search.html'),
@@ -32,7 +32,7 @@ const aiSearchHTML = fs.readFileSync(
 );
 
 /**
- * GET /dashboard - Serves the dashboard HTML
+ * GET /dashboard - Serves the new Tailwind/Material Design dashboard
  */
 function serveDashboard(req, res) {
   // Get workspace_id from session
@@ -76,14 +76,14 @@ function serveSettings(req, res) {
 }
 
 /**
- * GET /dashboard-new - Serves the new Tailwind dashboard HTML (for testing)
+ * GET /dashboard-old - Serves the old dashboard HTML (backup/legacy)
  */
-function serveDashboardNew(req, res) {
+function serveDashboardOld(req, res) {
   // Get workspace_id from session
   const workspaceId = req.session?.user?.workspace_id || '';
 
   // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = dashboardNewHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+  const html = dashboardOldHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(html);
@@ -113,7 +113,7 @@ function redirectToDashboard(req, res) {
 
 module.exports = {
   serveDashboard,
-  serveDashboardNew,
+  serveDashboardOld,
   serveAIAnalytics,
   serveAISearch,
   serveSettings,
