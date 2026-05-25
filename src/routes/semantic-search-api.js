@@ -105,13 +105,19 @@ async function handleSemanticSearch(req, res) {
         // Generate conversational response (if requested)
         let conversationalResponse = null;
         if (requestData.conversational !== false) {
-          // Pass conversation history for context-aware responses
-          const conversationHistory = requestData.conversationHistory || [];
-          conversationalResponse = await generateConversationalResponse(
-            requestData.query,
-            searchResult.results,
-            conversationHistory
-          );
+          try {
+            // Pass conversation history for context-aware responses
+            const conversationHistory = requestData.conversationHistory || [];
+            conversationalResponse = await generateConversationalResponse(
+              requestData.query,
+              searchResult.results,
+              conversationHistory
+            );
+          } catch (aiError) {
+            console.error('⚠️ AI response generation failed, continuing without conversational response:', aiError.message);
+            // Continue without conversational response rather than failing entirely
+            conversationalResponse = `Found ${searchResult.results.all.length} relevant decision${searchResult.results.all.length !== 1 ? 's' : ''}`;
+          }
         }
 
         // Return results
