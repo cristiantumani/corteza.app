@@ -9,7 +9,7 @@ const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats,
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, redirectToDashboard } = require('./routes/dashboard');
+const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
 const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -165,6 +165,7 @@ async function startApp() {
   });
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
+  expressApp.get('/select-space', requireAuthBrowser, serveSpaceSelector); // Space selector for multi-space users
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard); // New Tailwind/Material Design dashboard
   expressApp.get('/dashboard-old', requireAuthBrowser, serveDashboardOld); // Old dashboard (backup)
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);

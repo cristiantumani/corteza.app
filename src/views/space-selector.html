@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Space | Corteza</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link rel="stylesheet" href="/styles/tailwind.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9FAFB;
+        }
+        .space-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .space-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        .create-space-card {
+            border: 2px dashed #D1D5DB;
+            transition: all 0.2s;
+        }
+        .create-space-card:hover {
+            border-color: #6366F1;
+            background-color: #F0F1FF;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col py-8 px-4 gap-4 shadow-sm z-20">
+    <div class="flex items-center gap-2 px-4 mb-8">
+        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+        </div>
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-indigo-600 leading-none">Corteza</h1>
+            <p class="text-xs text-gray-500 opacity-70 uppercase tracking-widest">Decision Intelligence</p>
+        </div>
+    </div>
+
+    <nav class="flex-1 flex flex-col gap-1">
+        <a class="flex items-center gap-4 text-indigo-600 font-bold border-r-4 border-indigo-600 bg-indigo-50 px-4 py-2 rounded-l-lg" href="#">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+            <span class="text-sm font-medium">Home</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 opacity-50 cursor-not-allowed" href="#">
+            <span class="material-symbols-outlined">query_stats</span>
+            <span class="text-sm font-medium">Decisions</span>
+        </a>
+    </nav>
+
+    <div class="mt-auto flex flex-col gap-1 border-t border-gray-200 pt-4">
+        <a class="flex items-center gap-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200" href="#">
+            <span class="material-symbols-outlined">help</span>
+            <span class="text-sm font-medium">Help</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200" href="/auth/logout">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-sm font-medium">Logout</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="ml-64 p-12 min-h-screen">
+    <!-- Search Bar -->
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 max-w-xl relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                <input
+                    type="text"
+                    id="space-search"
+                    placeholder="Search spaces or analyses..."
+                    class="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    oninput="filterSpaces(this.value)"
+                />
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+                <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">help</span>
+                </button>
+                <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold" id="user-avatar">
+                    U
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Section -->
+    <div class="max-w-7xl mx-auto mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Welcome back, <span id="user-name">User</span></h1>
+        <p class="text-lg text-gray-600">Select a workspace to continue your decision intelligence journey.</p>
+    </div>
+
+    <!-- Spaces Grid -->
+    <div class="max-w-7xl mx-auto">
+        <div id="spaces-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Loading state -->
+            <div class="col-span-full text-center py-20">
+                <div class="text-6xl mb-4">⏳</div>
+                <div class="text-lg text-gray-600">Loading your spaces...</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    var WORKSPACE_ID = '<WORKSPACE_ID>';
+    let allSpaces = [];
+
+    // Get user initials
+    function getInitials(name) {
+        if (!name) return 'U';
+        const parts = name.split(' ').filter(p => p.length > 0);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    }
+
+    // Format time ago
+    function timeAgo(timestamp) {
+        if (!timestamp) return 'Never';
+        const now = new Date();
+        const date = new Date(timestamp);
+        const seconds = Math.floor((now - date) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+        if (seconds < 2592000) return Math.floor(seconds / 604800) + 'w ago';
+        return Math.floor(seconds / 2592000) + 'mo ago';
+    }
+
+    // Create space card
+    function createSpaceCard(space) {
+        const isActive = space.last_activity && (new Date() - new Date(space.last_activity)) < 7200000; // 2 hours
+
+        return `
+            <div class="space-card bg-white rounded-2xl p-6 shadow-sm border border-gray-200" onclick="selectSpace('${space.space_id}')">
+                <!-- Icon and Active Badge -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">
+                        ${space.settings?.icon || '📁'}
+                    </div>
+                    ${isActive ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-md">Active</span>' : ''}
+                </div>
+
+                <!-- Space Name -->
+                <h3 class="text-xl font-bold text-gray-900 mb-2">${space.name}</h3>
+
+                <!-- Description -->
+                <p class="text-sm text-gray-600 mb-6 line-clamp-2" style="min-height: 40px;">
+                    ${space.settings?.description || 'No description available'}
+                </p>
+
+                <!-- Metadata -->
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div class="flex items-center gap-1 text-gray-600">
+                        <span class="material-symbols-outlined text-sm">group</span>
+                        <span class="text-xs font-medium">${space.member_count || 0} Members</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-gray-600">
+                        <span class="material-symbols-outlined text-sm">schedule</span>
+                        <span class="text-xs">${timeAgo(space.last_activity)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Create "Create New Space" card
+    function createNewSpaceCard() {
+        return `
+            <div class="create-space-card bg-white rounded-2xl p-6 shadow-sm cursor-pointer flex flex-col items-center justify-center" onclick="window.location.href='/settings?tab=spaces'" style="min-height: 280px;">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-4xl text-gray-400">add</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Create New Space</h3>
+                <p class="text-sm text-gray-600 text-center">
+                    Start a fresh intelligence environment
+                </p>
+            </div>
+        `;
+    }
+
+    // Select space and navigate
+    function selectSpace(spaceId) {
+        localStorage.setItem('corteza_last_space_id', spaceId);
+        window.location.href = `/dashboard?space=${spaceId}`;
+    }
+
+    // Filter spaces
+    function filterSpaces(query) {
+        const lowerQuery = query.toLowerCase();
+        const filtered = allSpaces.filter(space =>
+            space.name.toLowerCase().includes(lowerQuery) ||
+            (space.settings?.description || '').toLowerCase().includes(lowerQuery)
+        );
+        renderSpaces(filtered);
+    }
+
+    // Render spaces
+    function renderSpaces(spaces) {
+        const grid = document.getElementById('spaces-grid');
+
+        if (spaces.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <div class="text-6xl mb-4">🔍</div>
+                    <div class="text-lg text-gray-600">No spaces found</div>
+                </div>
+            `;
+            return;
+        }
+
+        const cards = spaces.map(space => createSpaceCard(space)).join('');
+        grid.innerHTML = cards + createNewSpaceCard();
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Get user info
+            const userResponse = await fetch('/auth/me');
+            const userData = await userResponse.json();
+
+            if (!userData.authenticated) {
+                window.location.href = '/auth/login';
+                return;
+            }
+
+            const user = userData.user;
+            WORKSPACE_ID = user.workspace_id;
+
+            // Update user info
+            document.getElementById('user-name').textContent = user.user_name?.split(' ')[0] || 'User';
+            document.getElementById('user-avatar').textContent = getInitials(user.user_name);
+
+            // Fetch spaces
+            const spacesResponse = await fetch(`/api/spaces?workspace_id=${WORKSPACE_ID}`);
+            const spacesData = await spacesResponse.json();
+
+            if (spacesResponse.ok && spacesData.spaces) {
+                allSpaces = spacesData.spaces;
+
+                // Sort spaces by last activity
+                allSpaces.sort((a, b) => {
+                    const aTime = a.last_activity ? new Date(a.last_activity) : new Date(0);
+                    const bTime = b.last_activity ? new Date(b.last_activity) : new Date(0);
+                    return bTime - aTime;
+                });
+
+                renderSpaces(allSpaces);
+
+                // If user has only one space, auto-select it
+                if (allSpaces.length === 1) {
+                    selectSpace(allSpaces[0].space_id);
+                }
+            } else {
+                document.getElementById('spaces-grid').innerHTML = `
+                    <div class="col-span-full text-center py-20">
+                        <div class="text-6xl mb-4">❌</div>
+                        <div class="text-lg text-gray-600">Failed to load spaces</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading spaces:', error);
+            document.getElementById('spaces-grid').innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <div class="text-6xl mb-4">❌</div>
+                    <div class="text-lg text-gray-600">Error loading spaces</div>
+                </div>
+            `;
+        }
+    });
+</script>
+
+</body>
+</html>

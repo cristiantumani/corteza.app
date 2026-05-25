@@ -318,7 +318,7 @@
 
     // Get user name (try user_name first, then creator as fallback)
     const userName = decision.user_name || decision.creator || 'Unknown User';
-    const displayName = userName.split(' ')[0]; // First name only
+    const displayName = userName ? userName.split(' ')[0] : 'Unknown'; // First name only
 
     // Score color
     let scoreColor = 'text-on-surface-variant';

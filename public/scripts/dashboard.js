@@ -1627,6 +1627,13 @@
         }
       }
 
+      // If user has multiple spaces and no space selected yet, redirect to space selector
+      if (!selectedSpaceId && currentUserSpaces.length > 1) {
+        console.log('🔀 Multiple spaces, no selection - redirecting to space selector');
+        window.location.href = '/select-space';
+        return;
+      }
+
       // Priority 3: Default space
       if (!selectedSpaceId) {
         const defaultSpace = currentUserSpaces.find(s => s.is_default);
@@ -1636,10 +1643,10 @@
         }
       }
 
-      // Priority 4: First accessible space
+      // Priority 4: First accessible space (single space user)
       if (!selectedSpaceId) {
         selectedSpaceId = currentUserSpaces[0].space_id;
-        console.log('📂 Using first accessible space:', selectedSpaceId);
+        console.log('📂 Auto-selecting only accessible space:', selectedSpaceId);
       }
 
       // 3. Set current space

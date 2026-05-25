@@ -31,6 +31,12 @@ const aiSearchHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load space selector HTML once at startup
+const spaceSelectorHTML = fs.readFileSync(
+  path.join(__dirname, '../views/space-selector.html'),
+  'utf8'
+);
+
 /**
  * GET /dashboard - Serves the new Tailwind/Material Design dashboard
  */
@@ -104,6 +110,20 @@ function serveAISearch(req, res) {
 }
 
 /**
+ * GET /select-space - Serves the space selector page
+ */
+function serveSpaceSelector(req, res) {
+  // Get workspace_id from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+
+  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
+  const html = spaceSelectorHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
+}
+
+/**
  * GET / - Redirect to dashboard
  */
 function redirectToDashboard(req, res) {
@@ -117,5 +137,6 @@ module.exports = {
   serveAIAnalytics,
   serveAISearch,
   serveSettings,
+  serveSpaceSelector,
   redirectToDashboard
 };
