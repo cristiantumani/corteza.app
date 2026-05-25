@@ -53,6 +53,7 @@ async function handleSemanticSearch(req, res) {
         console.log(`   - Query: "${requestData.query}"`);
         console.log(`   - Workspace ID: ${requestData.workspace_id}`);
         console.log(`   - Conversational: ${requestData.conversational !== false}`);
+        console.log(`   - Timestamp: ${new Date().toISOString()}`);
 
         // Validate required fields
         if (!requestData.query) {
@@ -93,9 +94,11 @@ async function handleSemanticSearch(req, res) {
         }
 
         // Perform hybrid search
+        console.log('   📊 Starting hybrid search...');
         let searchResult;
         try {
           searchResult = await hybridSearch(requestData.query, searchOptions);
+          console.log('   ✅ Hybrid search completed');
         } catch (searchError) {
           console.error('❌ Hybrid search failed:', searchError);
           res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -117,6 +120,7 @@ async function handleSemanticSearch(req, res) {
         // Generate conversational response (if requested)
         let conversationalResponse = null;
         if (requestData.conversational !== false) {
+          console.log('   🤖 Generating conversational response...');
           try {
             // Pass conversation history for context-aware responses
             const conversationHistory = requestData.conversationHistory || [];
@@ -125,6 +129,7 @@ async function handleSemanticSearch(req, res) {
               searchResult.results,
               conversationHistory
             );
+            console.log('   ✅ Conversational response generated');
           } catch (aiError) {
             console.error('⚠️ AI response generation failed, continuing without conversational response:', aiError.message);
             // Continue without conversational response rather than failing entirely
@@ -133,6 +138,7 @@ async function handleSemanticSearch(req, res) {
         }
 
         // Return results
+        console.log('   📤 Sending response to client...');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,

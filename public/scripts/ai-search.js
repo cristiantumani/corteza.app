@@ -59,7 +59,10 @@
       const userData = await userResponse.json();
       const workspaceId = userData.workspace_id;
 
-      // Perform semantic search
+      // Perform semantic search with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/semantic-search', {
         method: 'POST',
         headers: {
@@ -71,12 +74,15 @@
           conversational: true,
           conversationHistory: conversationHistory,
           limit: 20
-        })
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Search failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Search failed with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -105,7 +111,12 @@
       document.getElementById('search-loading').classList.add('hidden');
       document.getElementById('empty-state').classList.remove('hidden');
 
-      alert('Search failed: ' + error.message);
+      // Better error message for timeout
+      if (error.name === 'AbortError') {
+        alert('Search request timed out after 30 seconds. The server might be processing a large query or experiencing issues. Please try again.');
+      } else {
+        alert('Search failed: ' + error.message);
+      }
     }
   };
 
