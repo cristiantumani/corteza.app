@@ -57,7 +57,13 @@
         throw new Error('Not authenticated');
       }
       const userData = await userResponse.json();
-      const workspaceId = userData.workspace_id;
+      console.log('👤 User data from /auth/me:', userData);
+      const workspaceId = userData.user?.workspace_id;
+      console.log('🏢 Workspace ID:', workspaceId);
+
+      if (!workspaceId) {
+        throw new Error('No workspace_id found in user session');
+      }
 
       // Perform semantic search with timeout
       const controller = new AbortController();
