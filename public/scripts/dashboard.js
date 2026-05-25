@@ -2910,3 +2910,376 @@
         }
       }
     });
+
+    // ========================================
+    // FILE UPLOAD & AI EXTRACTION
+    // ========================================
+
+    let selectedFile = null;
+    let currentTranscriptId = null;
+
+    window.openFileUploadModal = function() {
+      // ENFORCE: Must have a space selected
+      if (!currentSpaceId) {
+        alert('Please select a space first');
+        return;
+      }
+
+      selectedFile = null;
+      document.getElementById('file-upload-modal').classList.add('active');
+      document.getElementById('file-selected-info').style.display = 'none';
+      document.getElementById('upload-progress').style.display = 'none';
+      document.getElementById('upload-submit-btn').disabled = true;
+    };
+
+    window.closeFileUploadModal = function() {
+      document.getElementById('file-upload-modal').classList.remove('active');
+      clearFileSelection();
+    };
+
+    window.clearFileSelection = function() {
+      selectedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-selected-info').style.display = 'none';
+      document.getElementById('upload-submit-btn').disabled = true;
+    };
+
+    // File input change handler
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          handleFileSelected(file);
+        }
+      });
+    }
+
+    // Drag and drop handlers
+    const dropZone = document.getElementById('file-drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('click', () => {
+        document.getElementById('file-input').click();
+      });
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#667EEA';
+        dropZone.style.background = '#E7F3FF';
+      });
+
+      dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#E1E4E8';
+        dropZone.style.background = '#F6F8FA';
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#E1E4E8';
+        dropZone.style.background = '#F6F8FA';
+
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          handleFileSelected(file);
+        }
+      });
+    }
+
+    function handleFileSelected(file) {
+      // Validate file type
+      const allowedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Unsupported file type. Please upload TXT, PDF, or DOCX files.');
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File is too large. Maximum size is 5MB.');
+        return;
+      }
+
+      selectedFile = file;
+
+      // Show file info
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = formatFileSize(file.size);
+      document.getElementById('file-selected-info').style.display = 'block';
+      document.getElementById('upload-submit-btn').disabled = false;
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    window.submitFileUpload = async function() {
+      if (!selectedFile) {
+        alert('Please select a file first');
+        return;
+      }
+
+      if (!currentSpaceId) {
+        alert('No space selected. Please select a space from the header.');
+        return;
+      }
+
+      try {
+        // Show progress
+        document.getElementById('upload-progress').style.display = 'block';
+        document.getElementById('upload-submit-btn').disabled = true;
+        document.getElementById('upload-status').textContent = 'Uploading file...';
+        document.getElementById('progress-bar').style.width = '30%';
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('workspace_id', WORKSPACE_ID);
+        formData.append('space_id', currentSpaceId);
+        formData.append('file_name', selectedFile.name);
+
+        // Upload file
+        const response = await fetch('/api/ai/extract-from-text', {
+          method: 'POST',
+          body: formData
+        });
+
+        document.getElementById('upload-status').textContent = 'Processing with AI...';
+        document.getElementById('progress-bar').style.width = '70%';
+
+        const data = await response.json();
+
+        document.getElementById('progress-bar').style.width = '100%';
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to process file');
+        }
+
+        console.log('✅ AI extraction complete:', data);
+
+        // Close upload modal
+        closeFileUploadModal();
+
+        // Show AI suggestions modal
+        if (data.suggestions && data.suggestions.length > 0) {
+          currentTranscriptId = data.transcript_id;
+          showAISuggestions(data.suggestions, data.cached);
+        } else {
+          showNotification('No decisions found in the file');
+          document.getElementById('no-suggestions').style.display = 'block';
+          document.getElementById('suggestions-list').style.display = 'none';
+          document.getElementById('ai-suggestions-modal').classList.add('active');
+        }
+
+      } catch (error) {
+        console.error('❌ Upload error:', error);
+        alert('Failed to process file: ' + error.message);
+        document.getElementById('upload-progress').style.display = 'none';
+        document.getElementById('upload-submit-btn').disabled = false;
+      }
+    };
+
+    function showAISuggestions(suggestions, cached) {
+      const modal = document.getElementById('ai-suggestions-modal');
+      const summary = document.getElementById('suggestions-summary');
+      const list = document.getElementById('suggestions-list');
+      const noSuggestions = document.getElementById('no-suggestions');
+
+      // Update summary
+      const cachedText = cached ? ' (from cache - no AI credits used)' : '';
+      summary.textContent = `Found ${suggestions.length} potential decision${suggestions.length !== 1 ? 's' : ''} in your file${cachedText}. Review and approve the ones you want to save.`;
+
+      // Clear list
+      list.innerHTML = '';
+      noSuggestions.style.display = 'none';
+      list.style.display = 'flex';
+
+      // Render suggestions
+      suggestions.forEach((suggestion, index) => {
+        const card = createSuggestionCard(suggestion, index);
+        list.appendChild(card);
+      });
+
+      modal.classList.add('active');
+    }
+
+    function createSuggestionCard(suggestion, index) {
+      const card = document.createElement('div');
+      card.className = 'bg-white border border-gray-300 rounded-lg p-6 shadow-sm';
+      card.id = `suggestion-${suggestion.suggestion_id}`;
+
+      const typeColors = {
+        'decision': 'bg-blue-100 text-blue-800',
+        'explanation': 'bg-green-100 text-green-800',
+        'context': 'bg-purple-100 text-purple-800',
+        'learning': 'bg-yellow-100 text-yellow-800',
+        'risk': 'bg-red-100 text-red-800',
+        'assumption': 'bg-gray-100 text-gray-800'
+      };
+
+      const typeColor = typeColors[suggestion.decision_type] || typeColors['decision'];
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between mb-3">
+          <span class="px-3 py-1 rounded-full text-xs font-semibold ${typeColor}">${suggestion.decision_type}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-500">Confidence: ${Math.round(suggestion.confidence_score * 100)}%</span>
+          </div>
+        </div>
+
+        <p class="text-base font-medium text-gray-900 mb-3" id="suggestion-text-${suggestion.suggestion_id}">${escapeHtml(suggestion.decision_text)}</p>
+
+        ${suggestion.context ? `<p class="text-sm text-gray-600 mb-3 italic">Context: ${escapeHtml(suggestion.context)}</p>` : ''}
+
+        ${suggestion.epic_key ? `<p class="text-sm text-gray-600 mb-3">📎 Epic: ${escapeHtml(suggestion.epic_key)}</p>` : ''}
+
+        ${suggestion.tags && suggestion.tags.length > 0 ? `
+          <div class="flex gap-2 mb-4 flex-wrap">
+            ${suggestion.tags.map(tag => `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">${escapeHtml(tag)}</span>`).join('')}
+          </div>
+        ` : ''}
+
+        <div class="flex gap-2 pt-4 border-t border-gray-200">
+          <button onclick="approveSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+            ✓ Approve
+          </button>
+          <button onclick="editSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+            ✏️ Edit
+          </button>
+          <button onclick="rejectSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+            ✕ Reject
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    window.closeAISuggestionsModal = function() {
+      document.getElementById('ai-suggestions-modal').classList.remove('active');
+      currentTranscriptId = null;
+    };
+
+    window.approveSuggestion = async function(suggestionId) {
+      try {
+        const response = await fetch('/api/ai/approve-suggestion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestion_id: suggestionId,
+            workspace_id: WORKSPACE_ID,
+            space_id: currentSpaceId
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to approve suggestion');
+        }
+
+        console.log('✅ Suggestion approved:', data);
+
+        // Remove the card
+        const card = document.getElementById(`suggestion-${suggestionId}`);
+        if (card) {
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          card.style.transition = 'all 0.3s';
+          setTimeout(() => card.remove(), 300);
+        }
+
+        showNotification(`✅ Decision #${data.decision_id} saved successfully!`);
+
+        // Check if all suggestions processed
+        setTimeout(() => {
+          const remainingSuggestions = document.querySelectorAll('#suggestions-list > div');
+          if (remainingSuggestions.length === 0) {
+            closeAISuggestionsModal();
+            fetchDecisions();
+            fetchStats();
+          }
+        }, 400);
+
+      } catch (error) {
+        console.error('❌ Approve error:', error);
+        alert('Failed to approve suggestion: ' + error.message);
+      }
+    };
+
+    window.rejectSuggestion = async function(suggestionId) {
+      if (!confirm('Are you sure you want to reject this suggestion?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/ai/reject-suggestion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestion_id: suggestionId,
+            workspace_id: WORKSPACE_ID
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to reject suggestion');
+        }
+
+        console.log('✅ Suggestion rejected');
+
+        // Remove the card
+        const card = document.getElementById(`suggestion-${suggestionId}`);
+        if (card) {
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          card.style.transition = 'all 0.3s';
+          setTimeout(() => card.remove(), 300);
+        }
+
+        showNotification('Suggestion rejected');
+
+        // Check if all suggestions processed
+        setTimeout(() => {
+          const remainingSuggestions = document.querySelectorAll('#suggestions-list > div');
+          if (remainingSuggestions.length === 0) {
+            closeAISuggestionsModal();
+          }
+        }, 400);
+
+      } catch (error) {
+        console.error('❌ Reject error:', error);
+        alert('Failed to reject suggestion: ' + error.message);
+      }
+    };
+
+    window.editSuggestion = function(suggestionId) {
+      // For now, just show a simple prompt to edit the text
+      // TODO: Could create a full edit modal if needed
+      const textElement = document.getElementById(`suggestion-text-${suggestionId}`);
+      const currentText = textElement.textContent;
+
+      const newText = prompt('Edit the decision text:', currentText);
+      if (newText && newText !== currentText) {
+        textElement.textContent = newText;
+
+        // Store the edit in memory (we'll send it when approving)
+        if (!window.suggestionEdits) {
+          window.suggestionEdits = {};
+        }
+        window.suggestionEdits[suggestionId] = { decision_text: newText };
+
+        showNotification('Edit saved. Click Approve to save the decision.');
+      }
+    };
+
+    // Helper function to escape HTML (prevent XSS)
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }

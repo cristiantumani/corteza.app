@@ -141,14 +141,14 @@
             </div>
 
             <div class="col-span-12 lg:col-span-5">
-                <a href="/ai-search" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full block">
+                <div onclick="openFileUploadModal()" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full">
                     <div class="flex flex-col h-full justify-between">
                         <div>
                             <div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary mb-4">
-                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">upload_file</span>
                             </div>
-                            <h3 class="text-2xl font-semibold text-on-surface mb-2">AI Search</h3>
-                            <p class="text-base text-on-surface-variant">Ask questions about your team's decisions using natural language.</p>
+                            <h3 class="text-2xl font-semibold text-on-surface mb-2">Upload a File</h3>
+                            <p class="text-base text-on-surface-variant">Upload a file and let the AI extract your decisions automatically.</p>
                         </div>
                         <div class="mt-6">
                             <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
@@ -156,7 +156,7 @@
                             </div>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
         </div>
 
@@ -415,11 +415,90 @@
   </div>
 </div>
 
+<!-- File Upload Modal -->
+<div class="modal-overlay" id="file-upload-modal">
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <h2>📤 Upload File for AI Extraction</h2>
+      <button class="close-btn" onclick="closeFileUploadModal()">✕ Close</button>
+    </div>
+
+    <div class="detail-section">
+      <p style="color: #616061; margin-bottom: 16px;">Upload a meeting transcript, document, or notes file. Our AI will automatically extract decisions and key points for you to review.</p>
+
+      <div style="border: 2px dashed #E1E4E8; border-radius: 12px; padding: 32px; text-align: center; background: #F6F8FA; cursor: pointer;" id="file-drop-zone">
+        <span class="material-symbols-outlined" style="font-size: 48px; color: #667EEA; margin-bottom: 12px;">cloud_upload</span>
+        <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Drop file here or click to browse</p>
+        <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">Supports TXT, PDF, DOCX (max 5MB)</p>
+        <input type="file" id="file-input" accept=".txt,.pdf,.docx,.doc" style="display: none;" />
+        <button type="button" class="modal-btn modal-btn-primary" onclick="document.getElementById('file-input').click()">
+          Choose File
+        </button>
+      </div>
+
+      <div id="file-selected-info" style="display: none; margin-top: 16px; padding: 12px; background: #E7F3FF; border: 1px solid #667EEA; border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="material-symbols-outlined" style="color: #667EEA;">description</span>
+          <div style="flex: 1;">
+            <p id="file-name" style="font-weight: 600; font-size: 14px;"></p>
+            <p id="file-size" style="font-size: 12px; color: #616061;"></p>
+          </div>
+          <button type="button" onclick="clearFileSelection()" style="background: none; border: none; cursor: pointer; color: #616061; font-size: 20px;">&times;</button>
+        </div>
+      </div>
+
+      <div id="upload-progress" style="display: none; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 14px; font-weight: 600;">Processing...</span>
+          <span id="upload-status" style="font-size: 14px; color: #616061;">Uploading file</span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #E1E4E8; border-radius: 4px; overflow: hidden;">
+          <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(to right, #667EEA, #764BA2); transition: width 0.3s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeFileUploadModal()">Cancel</button>
+      <button id="upload-submit-btn" class="modal-btn modal-btn-primary" onclick="submitFileUpload()" disabled>
+        Extract Decisions
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Suggestions Review Modal -->
+<div class="modal-overlay" id="ai-suggestions-modal">
+  <div class="modal detail-modal" style="max-width: 900px;">
+    <div class="detail-header">
+      <h2>🤖 AI Extracted Decisions</h2>
+      <button class="close-btn" onclick="closeAISuggestionsModal()">✕ Close</button>
+    </div>
+
+    <div class="detail-section">
+      <p id="suggestions-summary" style="color: #616061; margin-bottom: 16px;"></p>
+
+      <div id="suggestions-list" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Suggestions will be dynamically inserted here -->
+      </div>
+
+      <div id="no-suggestions" style="display: none; text-align: center; padding: 48px;">
+        <span class="material-symbols-outlined" style="font-size: 64px; color: #E1E4E8; margin-bottom: 16px;">search_off</span>
+        <p style="font-size: 16px; color: #616061;">No clear decisions found in this file. Try uploading a different document.</p>
+      </div>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeAISuggestionsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
     // Initialize workspace ID
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
-<script src="/scripts/dashboard.js?v=11"></script>
+<script src="/scripts/dashboard.js?v=12"></script>
 <script src="/scripts/dashboard-new.js?v=5"></script>
 <script>
     // Additional UI enhancements for new design
