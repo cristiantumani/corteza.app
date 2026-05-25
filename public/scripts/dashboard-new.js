@@ -10,11 +10,29 @@
   let allDecisionsForRender = [];
 
   // Override renderDecisions to use new card design
-  const originalRenderDecisions = window.renderDecisions;
-  window.renderDecisions = function(decisions) {
-    allDecisionsForRender = decisions || [];
-    renderNewDesignCards(allDecisionsForRender);
-  };
+  // Wait a tick to ensure dashboard.js has exposed window.renderDecisions
+  setTimeout(() => {
+    console.log('🔄 Overriding renderDecisions with new card design');
+    const originalRenderDecisions = window.renderDecisions;
+    window.renderDecisions = function(decisions) {
+      console.log('📋 Rendering decisions in new card format:', decisions ? decisions.length : 0);
+      allDecisionsForRender = decisions || [];
+
+      // Call original if it exists and table exists (for compatibility)
+      if (originalRenderDecisions && document.getElementById('decisions-body')) {
+        originalRenderDecisions(decisions);
+      }
+
+      // Render new card design
+      renderNewDesignCards(allDecisionsForRender);
+    };
+
+    // Trigger initial render if decisions already loaded
+    if (window.allDecisions && window.allDecisions.length > 0) {
+      console.log('📋 Found existing decisions, rendering now');
+      window.renderDecisions(window.allDecisions);
+    }
+  }, 100);
 
   function renderNewDesignCards(decisions) {
     const container = document.getElementById('decisions-cards');

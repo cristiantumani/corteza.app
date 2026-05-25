@@ -530,6 +530,7 @@
         const r = await fetch(`/api/decisions?${p}`);
         const d = await r.json();
         allDecisions = d.decisions;
+        window.allDecisions = allDecisions; // Keep window reference updated
         renderDecisions(d.decisions);
       } catch (err) {
         document.getElementById('decisions-body').innerHTML = '<tr><td colspan="8">Error</td></tr>';
