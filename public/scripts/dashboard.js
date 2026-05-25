@@ -211,12 +211,18 @@
       // Get hero banner
       const heroBanner = document.querySelector('.hero-banner');
 
+      // If elements don't exist (new dashboard), skip view toggling
+      if (!chatContainer || !classicContainer) {
+        console.log('ℹ️  View toggle elements not found, skipping (likely new dashboard)');
+        return;
+      }
+
       if (currentView === 'chat') {
         // Show Chat View
-        chatContainer.style.display = 'block';
-        classicContainer.style.display = 'none';
-        statsClassic.style.display = 'none';
-        statsChat.style.display = 'flex';
+        if (chatContainer) chatContainer.style.display = 'block';
+        if (classicContainer) classicContainer.style.display = 'none';
+        if (statsClassic) statsClassic.style.display = 'none';
+        if (statsChat) statsChat.style.display = 'flex';
 
         // Hide hero banner in Chat View (makes chat input more prominent)
         if (heroBanner) heroBanner.style.display = 'none';
@@ -225,10 +231,10 @@
         if (chatWidget) chatWidget.style.display = 'none';
 
         // Update toggle button
-        toggleBtn.classList.add('chat-active');
-        toggleText.textContent = 'Chat View';
-        toggleIconChat.style.display = 'inline';
-        toggleIconClassic.style.display = 'none';
+        if (toggleBtn) toggleBtn.classList.add('chat-active');
+        if (toggleText) toggleText.textContent = 'Chat View';
+        if (toggleIconChat) toggleIconChat.style.display = 'inline';
+        if (toggleIconClassic) toggleIconClassic.style.display = 'none';
 
         // Focus chat input
         setTimeout(() => {
@@ -238,10 +244,10 @@
 
       } else {
         // Show Classic View
-        chatContainer.style.display = 'none';
-        classicContainer.style.display = 'block';
-        statsClassic.style.display = 'grid';
-        statsChat.style.display = 'none';
+        if (chatContainer) chatContainer.style.display = 'none';
+        if (classicContainer) classicContainer.style.display = 'block';
+        if (statsClassic) statsClassic.style.display = 'grid';
+        if (statsChat) statsChat.style.display = 'none';
 
         // Show hero banner in Classic View
         if (heroBanner) heroBanner.style.display = 'block';
@@ -250,10 +256,10 @@
         if (chatWidget) chatWidget.style.display = 'block';
 
         // Update toggle button
-        toggleBtn.classList.remove('chat-active');
-        toggleText.textContent = 'Classic View';
-        toggleIconChat.style.display = 'none';
-        toggleIconClassic.style.display = 'inline';
+        if (toggleBtn) toggleBtn.classList.remove('chat-active');
+        if (toggleText) toggleText.textContent = 'Classic View';
+        if (toggleIconChat) toggleIconChat.style.display = 'none';
+        if (toggleIconClassic) toggleIconClassic.style.display = 'inline';
       }
 
       // Save preference to localStorage
@@ -509,12 +515,19 @@
 
     async function fetchDecisions() {
       try {
-        const s = document.getElementById('search').value;
-        const t = document.getElementById('type-filter').value;
-        const c = document.getElementById('category-filter').value;
-        const e = document.getElementById('epic-filter').value;
-        const dateFrom = document.getElementById('date-from').value;
-        const dateTo = document.getElementById('date-to').value;
+        const searchEl = document.getElementById('search');
+        const typeEl = document.getElementById('type-filter');
+        const categoryEl = document.getElementById('category-filter');
+        const epicEl = document.getElementById('epic-filter');
+        const dateFromEl = document.getElementById('date-from');
+        const dateToEl = document.getElementById('date-to');
+
+        const s = searchEl ? searchEl.value : '';
+        const t = typeEl ? typeEl.value : '';
+        const c = categoryEl ? categoryEl.value : '';
+        const e = epicEl ? epicEl.value : '';
+        const dateFrom = dateFromEl ? dateFromEl.value : '';
+        const dateTo = dateToEl ? dateToEl.value : '';
 
         const p = new URLSearchParams();
         p.append('workspace_id', WORKSPACE_ID);  // ADD workspace_id
