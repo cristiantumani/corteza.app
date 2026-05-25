@@ -1775,13 +1775,24 @@
 
     // Update space selectors to show current selection
     function updateSpaceSelectors(spaceId) {
+      console.log(`🔧 updateSpaceSelectors called with: ${spaceId}`);
       const heroFilter = document.getElementById('space-filter-hero');
       const classicFilter = document.getElementById('space-filter');
       const chatFilter = document.getElementById('space-filter-chat');
 
-      if (heroFilter) heroFilter.value = spaceId || '';
-      if (classicFilter) classicFilter.value = spaceId || '';
-      if (chatFilter) chatFilter.value = spaceId || '';
+      if (heroFilter) {
+        console.log(`   - Setting space-filter-hero from ${heroFilter.value} to ${spaceId}`);
+        heroFilter.value = spaceId || '';
+      }
+      if (classicFilter) {
+        console.log(`   - Setting space-filter from ${classicFilter.value} to ${spaceId}`);
+        classicFilter.value = spaceId || '';
+        console.log(`   - space-filter now has value: ${classicFilter.value}`);
+      }
+      if (chatFilter) {
+        console.log(`   - Setting space-filter-chat from ${chatFilter.value} to ${spaceId}`);
+        chatFilter.value = spaceId || '';
+      }
     }
 
     // Handle space filter change (exposed globally for HTML onchange)
