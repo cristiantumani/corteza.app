@@ -106,7 +106,7 @@
           <div class="w-8 h-8 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
             ${getInitials(decision.creator)}
           </div>
-          <span class="text-xs font-medium">${escapeHtml(decision.creator)}</span>
+          <span class="text-xs font-medium">${escapeHtml(decision.creator || 'Unknown')}</span>
         </div>
         <span class="text-xs text-on-surface-variant">${dateStr}</span>
       </div>
@@ -192,6 +192,7 @@
   }
 
   function getInitials(name) {
+    if (!name) return '??';
     return name
       .split(' ')
       .map(n => n[0])
