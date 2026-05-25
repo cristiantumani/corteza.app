@@ -1,6 +1,6 @@
 /* Dashboard New - Override old dashboard styles */
 
-/* Hide old dashboard elements that shouldn't appear */
+/* Hide ALL old dashboard elements */
 .feedback-widget,
 .chat-widget,
 .hero-banner,
@@ -10,7 +10,29 @@
 .stats-chat,
 .view-toggle-btn,
 #chat-view-container,
-#classic-view-container {
+#classic-view-container,
+.container header,
+.container .hero-banner,
+nav:not(aside nav),
+header:not(.fixed),
+.hero-section,
+.hero-filter,
+.space-picker,
+#hero-space-filter,
+#classic-space-filter,
+#chat-space-filter {
+  display: none !important;
+}
+
+/* Hide any elements with Material icon text fallbacks */
+span.material-symbols-outlined:not(:empty):not([style*="font-variation-settings"]) {
+  font-size: 0;
+}
+
+/* Force hide old layout containers */
+body > .container,
+body > header:not(.fixed),
+body > nav:not(aside nav) {
   display: none !important;
 }
 
@@ -30,6 +52,6 @@ aside {
 }
 
 /* Ensure header is properly positioned */
-header {
+header.fixed {
   overflow: visible;
 }
