@@ -306,6 +306,10 @@
     const date = new Date(decision.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const score = decision.score ? Math.round(decision.score * 100) : 0;
 
+    // Get user name (try user_name first, then creator as fallback)
+    const userName = decision.user_name || decision.creator || 'Unknown User';
+    const displayName = userName.split(' ')[0]; // First name only
+
     // Score color
     let scoreColor = 'text-on-surface-variant';
     if (score >= 80) scoreColor = 'text-tertiary';
@@ -326,9 +330,9 @@
       <div class="flex items-center justify-between pt-3 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
-            ${getInitials(decision.creator)}
+            ${getInitials(userName)}
           </div>
-          <span class="text-xs font-medium">${escapeHtml(decision.creator.split(' ')[0])}</span>
+          <span class="text-xs font-medium">${escapeHtml(displayName)}</span>
         </div>
         <span class="text-xs text-on-surface-variant">${date}</span>
       </div>
@@ -400,12 +404,22 @@
   }
 
   function getInitials(name) {
-    return name
-      .split(' ')
+    if (!name) return 'U';
+
+    const parts = name.split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return 'U';
+
+    if (parts.length === 1) {
+      // Single word - take first 2 chars
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    // Multiple words - take first char of first 2 words
+    return parts
+      .slice(0, 2)
       .map(n => n[0])
       .join('')
-      .toUpperCase()
-      .substring(0, 2);
+      .toUpperCase();
   }
 
   function escapeHtml(text) {
