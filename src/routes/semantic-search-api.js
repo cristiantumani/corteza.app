@@ -38,142 +38,123 @@ function parseQueryParams(url) {
  * }
  */
 async function handleSemanticSearch(req, res) {
+  console.log('🔍 [ENTRY] handleSemanticSearch called');
+  console.log('   - Request method:', req.method);
+  console.log('   - Request URL:', req.url);
+  console.log('   - Has session:', !!req.session);
+  console.log('   - User ID:', req.session?.user_id);
+  console.log('   - Request body:', req.body);
+
   try {
-    // Parse request body
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
+    const requestData = req.body;
 
-    req.on('end', async () => {
+    console.log('🔍 Semantic search request received:');
+    console.log(`   - Query: "${requestData.query}"`);
+    console.log(`   - Workspace ID: ${requestData.workspace_id}`);
+    console.log(`   - Conversational: ${requestData.conversational !== false}`);
+    console.log(`   - Timestamp: ${new Date().toISOString()}`);
+
+    // Validate required fields
+    if (!requestData.query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query is required'
+      });
+    }
+
+    if (!requestData.workspace_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'workspace_id is required'
+      });
+    }
+
+    // Build search options
+    const searchOptions = {
+      workspace_id: requestData.workspace_id,
+      limit: requestData.limit || 10,
+      minScore: requestData.minScore || 0.5  // Low threshold to get candidates; false positives filtered later
+    };
+
+    if (requestData.type) {
+      searchOptions.type = requestData.type;
+    }
+
+    if (requestData.dateFrom) {
+      searchOptions.dateFrom = new Date(requestData.dateFrom);
+    }
+
+    if (requestData.dateTo) {
+      searchOptions.dateTo = new Date(requestData.dateTo);
+    }
+
+    // Perform hybrid search
+    console.log('   📊 Starting hybrid search...');
+    let searchResult;
+    try {
+      searchResult = await hybridSearch(requestData.query, searchOptions);
+      console.log('   ✅ Hybrid search completed');
+    } catch (searchError) {
+      console.error('❌ Hybrid search failed:', searchError);
+      return res.status(500).json({
+        success: false,
+        error: 'Search failed',
+        details: searchError.message
+      });
+    }
+
+    console.log(`✅ Search completed:`);
+    console.log(`   - Method: ${searchResult.searchMethod}`);
+    console.log(`   - Results: ${searchResult.results.all.length}`);
+    if (searchResult.results.all.length > 0) {
+      console.log(`   - Top score: ${(searchResult.results.all[0].score * 100).toFixed(1)}%`);
+    }
+
+    // Generate conversational response (if requested)
+    let conversationalResponse = null;
+    if (requestData.conversational !== false) {
+      console.log('   🤖 Generating conversational response...');
       try {
-        const requestData = JSON.parse(body);
-
-        console.log('🔍 Semantic search request received:');
-        console.log(`   - Query: "${requestData.query}"`);
-        console.log(`   - Workspace ID: ${requestData.workspace_id}`);
-        console.log(`   - Conversational: ${requestData.conversational !== false}`);
-        console.log(`   - Timestamp: ${new Date().toISOString()}`);
-
-        // Validate required fields
-        if (!requestData.query) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            success: false,
-            error: 'Query is required'
-          }));
-          return;
-        }
-
-        if (!requestData.workspace_id) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            success: false,
-            error: 'workspace_id is required'
-          }));
-          return;
-        }
-
-        // Build search options
-        const searchOptions = {
-          workspace_id: requestData.workspace_id,
-          limit: requestData.limit || 10,
-          minScore: requestData.minScore || 0.5  // Low threshold to get candidates; false positives filtered later
-        };
-
-        if (requestData.type) {
-          searchOptions.type = requestData.type;
-        }
-
-        if (requestData.dateFrom) {
-          searchOptions.dateFrom = new Date(requestData.dateFrom);
-        }
-
-        if (requestData.dateTo) {
-          searchOptions.dateTo = new Date(requestData.dateTo);
-        }
-
-        // Perform hybrid search
-        console.log('   📊 Starting hybrid search...');
-        let searchResult;
-        try {
-          searchResult = await hybridSearch(requestData.query, searchOptions);
-          console.log('   ✅ Hybrid search completed');
-        } catch (searchError) {
-          console.error('❌ Hybrid search failed:', searchError);
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            success: false,
-            error: 'Search failed',
-            details: searchError.message
-          }));
-          return;
-        }
-
-        console.log(`✅ Search completed:`);
-        console.log(`   - Method: ${searchResult.searchMethod}`);
-        console.log(`   - Results: ${searchResult.results.all.length}`);
-        if (searchResult.results.all.length > 0) {
-          console.log(`   - Top score: ${(searchResult.results.all[0].score * 100).toFixed(1)}%`);
-        }
-
-        // Generate conversational response (if requested)
-        let conversationalResponse = null;
-        if (requestData.conversational !== false) {
-          console.log('   🤖 Generating conversational response...');
-          try {
-            // Pass conversation history for context-aware responses
-            const conversationHistory = requestData.conversationHistory || [];
-            conversationalResponse = await generateConversationalResponse(
-              requestData.query,
-              searchResult.results,
-              conversationHistory
-            );
-            console.log('   ✅ Conversational response generated');
-          } catch (aiError) {
-            console.error('⚠️ AI response generation failed, continuing without conversational response:', aiError.message);
-            // Continue without conversational response rather than failing entirely
-            conversationalResponse = `Found ${searchResult.results.all.length} relevant decision${searchResult.results.all.length !== 1 ? 's' : ''}`;
-          }
-        }
-
-        // Return results
-        console.log('   📤 Sending response to client...');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: true,
-          query: requestData.query,
-          response: conversationalResponse,
-          decisions: searchResult.results.all,
-          categorized: {
-            highlyRelevant: searchResult.results.highlyRelevant,
-            relevant: searchResult.results.relevant,
-            somewhatRelevant: searchResult.results.somewhatRelevant
-          },
-          searchMethod: searchResult.searchMethod,
-          resultsCount: searchResult.results.all.length,
-          executedAt: new Date().toISOString()
-        }));
-
-      } catch (parseError) {
-        console.error('Error parsing request:', parseError);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          error: 'Invalid JSON in request body'
-        }));
+        // Pass conversation history for context-aware responses
+        const conversationHistory = requestData.conversationHistory || [];
+        conversationalResponse = await generateConversationalResponse(
+          requestData.query,
+          searchResult.results,
+          conversationHistory
+        );
+        console.log('   ✅ Conversational response generated');
+      } catch (aiError) {
+        console.error('⚠️ AI response generation failed, continuing without conversational response:', aiError.message);
+        // Continue without conversational response rather than failing entirely
+        conversationalResponse = `Found ${searchResult.results.all.length} relevant decision${searchResult.results.all.length !== 1 ? 's' : ''}`;
       }
+    }
+
+    // Return results
+    console.log('   📤 Sending response to client...');
+    return res.status(200).json({
+      success: true,
+      query: requestData.query,
+      response: conversationalResponse,
+      decisions: searchResult.results.all,
+      categorized: {
+        highlyRelevant: searchResult.results.highlyRelevant,
+        relevant: searchResult.results.relevant,
+        somewhatRelevant: searchResult.results.somewhatRelevant
+      },
+      searchMethod: searchResult.searchMethod,
+      resultsCount: searchResult.results.all.length,
+      executedAt: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('Semantic search error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
+    console.error('❌ Semantic search error:', error);
+    return res.status(500).json({
       success: false,
       error: error.message || 'Semantic search failed',
-      hint: error.message.includes('index') ?
+      hint: error.message?.includes('index') ?
         'Vector search index not set up. See setup-vector-search.md' : undefined
-    }));
+    });
   }
 }
 

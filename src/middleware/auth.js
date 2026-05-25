@@ -10,14 +10,23 @@ const rateLimit = require('express-rate-limit');
  * Returns JSON 401 error if not authenticated
  */
 function requireAuth(req, res, next) {
+  console.log(`🔐 [AUTH] requireAuth check for ${req.originalUrl}:`, {
+    hasSession: !!req.session,
+    hasUser: !!(req.session && req.session.user),
+    userId: req.session?.user?.user_id,
+    method: req.method
+  });
+
   // Check if user is authenticated (session exists)
   if (!req.session || !req.session.user) {
+    console.log(`❌ [AUTH] Unauthorized request to ${req.originalUrl}`);
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Authentication required. Please log in at /auth/login'
     });
   }
 
+  console.log(`✅ [AUTH] Authorized, passing to next middleware`);
   // User is authenticated, continue to next middleware
   next();
 }
@@ -56,16 +65,23 @@ function requireAuthBrowser(req, res, next) {
  * Ensures authenticated user can only access their own workspace data
  */
 function requireWorkspaceAccess(req, res, next) {
+  console.log(`🏢 [WORKSPACE] requireWorkspaceAccess check for ${req.originalUrl}`);
+  console.log(`   - Method: ${req.method}`);
+  console.log(`   - Query workspace_id: ${req.query.workspace_id}`);
+  console.log(`   - Body workspace_id: ${req.body?.workspace_id}`);
+  console.log(`   - User workspace_id: ${req.session?.user?.workspace_id}`);
+
   // First check authentication
   if (!req.session || !req.session.user) {
+    console.log(`❌ [WORKSPACE] No session/user`);
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Authentication required'
     });
   }
 
-  // Get workspace_id from query params
-  const requestedWorkspaceId = req.query.workspace_id;
+  // Get workspace_id from query params (for GET) or body (for POST)
+  const requestedWorkspaceId = req.query.workspace_id || req.body?.workspace_id;
 
   // If no workspace_id requested, inject authenticated user's workspace
   if (!requestedWorkspaceId) {

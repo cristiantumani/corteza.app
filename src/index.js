@@ -183,7 +183,7 @@ async function startApp() {
   expressApp.delete('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteDecision);
   expressApp.get('/api/stats', apiRateLimiter, requireAuth, requireWorkspaceAccess, getStats);
   expressApp.get('/api/ai-analytics', apiRateLimiter, requireAuth, requireWorkspaceAccess, getAIAnalytics);
-  expressApp.post('/api/semantic-search', aiRateLimiter, requireAuth, requireWorkspaceAccess, handleSemanticSearch);
+  expressApp.post('/api/semantic-search', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
   expressApp.post('/api/memory/create', apiRateLimiter, require('express').json(), requireAuth, createMemory);
 
