@@ -25,6 +25,12 @@ const settingsHTML = fs.readFileSync(
   'utf8'
 );
 
+// Load new settings HTML (Material Design 3)
+const settingsNewHTML = fs.readFileSync(
+  path.join(__dirname, '../views/settings-new.html'),
+  'utf8'
+);
+
 // Load AI search HTML once at startup
 const aiSearchHTML = fs.readFileSync(
   path.join(__dirname, '../views/ai-search.html'),
@@ -69,6 +75,22 @@ function serveAIAnalytics(req, res) {
  * GET /settings - Serves the settings page HTML
  */
 function serveSettings(req, res) {
+  // Get user info from session
+  const workspaceId = req.session?.user?.workspace_id || '';
+  const userId = req.session?.user?.user_id || '';
+
+  // Replace placeholders with actual values (using new Material Design 3 version)
+  let html = settingsNewHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+  html = html.replace(/<USER_ID>/g, userId);
+
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
+}
+
+/**
+ * GET /settings-old - Serves the old settings page HTML (backup)
+ */
+function serveSettingsOld(req, res) {
   // Get user info from session
   const workspaceId = req.session?.user?.workspace_id || '';
   const userId = req.session?.user?.user_id || '';
@@ -137,6 +159,7 @@ module.exports = {
   serveAIAnalytics,
   serveAISearch,
   serveSettings,
+  serveSettingsOld,
   serveSpaceSelector,
   redirectToDashboard
 };

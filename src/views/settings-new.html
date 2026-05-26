@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Corteza</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                primary: "#3953bd",
+                "surface-variant": "#e4e2e4",
+                "inverse-primary": "#b9c3ff",
+                "on-primary": "#ffffff",
+                "surface-container-highest": "#e4e2e4",
+                outline: "#757684",
+                "on-error": "#ffffff",
+                "inverse-on-surface": "#f3f0f2",
+                "surface-container-high": "#eae7ea",
+                "on-secondary-fixed": "#2c0051",
+                "surface-tint": "#3c55bf",
+                "surface-dim": "#dcd9dc",
+                "primary-container": "#546cd7",
+                "surface-container": "#f0edef",
+                "on-primary-container": "#fffbff",
+                error: "#ba1a1a",
+                "tertiary-fixed": "#6ffbbe",
+                "primary-fixed-dim": "#b9c3ff",
+                "surface-container-low": "#f6f3f5",
+                "secondary-fixed": "#f0dbff",
+                "on-tertiary-fixed-variant": "#005236",
+                "on-primary-fixed-variant": "#1f3ba6",
+                "secondary-container": "#ce9ffd",
+                "on-background": "#1b1b1d",
+                "surface-bright": "#fcf8fb",
+                "primary-fixed": "#dde1ff",
+                "on-surface-variant": "#444653",
+                "tertiary-fixed-dim": "#4edea3",
+                "on-error-container": "#93000a",
+                "surface-container-lowest": "#ffffff",
+                "on-tertiary-container": "#f5fff6",
+                "on-tertiary": "#ffffff",
+                "on-secondary": "#ffffff",
+                tertiary: "#006947",
+                secondary: "#754aa1",
+                "on-secondary-fixed-variant": "#5c3187",
+                "error-container": "#ffdad6",
+                "tertiary-container": "#00855b",
+                "on-tertiary-fixed": "#002113",
+                "inverse-surface": "#303032",
+                "outline-variant": "#c5c5d5",
+                background: "#fcf8fb",
+                "secondary-fixed-dim": "#dcb8ff",
+                "on-surface": "#1b1b1d",
+                "on-secondary-container": "#5a3086",
+                "on-primary-fixed": "#001356",
+                surface: "#fcf8fb"
+              }
+            }
+          }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .sidebar-active-scale {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-active-scale:active {
+            transform: scale(0.95);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e4e2e4;
+            border-radius: 10px;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface overflow-hidden">
+    <!-- SideNavBar -->
+    <aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-low border-r border-outline-variant flex flex-col py-8 px-4 gap-4 z-20">
+        <div class="mb-8 px-2 flex flex-col gap-1">
+            <h1 class="text-2xl font-extrabold tracking-tight text-primary">Corteza</h1>
+            <p class="text-xs text-on-surface-variant opacity-70">Decision Intelligence</p>
+        </div>
+        <nav class="flex-1 flex flex-col gap-2">
+            <a href="/dashboard" class="flex items-center gap-4 text-on-surface-variant font-medium p-4 rounded-lg hover:bg-surface-container-highest transition-all duration-200 sidebar-active-scale">
+                <span class="material-symbols-outlined">home</span>
+                <span class="text-sm">Home</span>
+            </a>
+            <a href="/ai-search" class="flex items-center gap-4 text-on-surface-variant font-medium p-4 rounded-lg hover:bg-surface-container-highest transition-all duration-200 sidebar-active-scale">
+                <span class="material-symbols-outlined">search</span>
+                <span class="text-sm">Search</span>
+            </a>
+            <a href="/ai-analytics" class="flex items-center gap-4 text-on-surface-variant font-medium p-4 rounded-lg hover:bg-surface-container-highest transition-all duration-200 sidebar-active-scale">
+                <span class="material-symbols-outlined">insights</span>
+                <span class="text-sm">Analytics</span>
+            </a>
+            <a href="/settings" class="flex items-center gap-4 text-primary font-bold border-r-4 border-primary bg-primary-container/10 p-4 rounded-lg transition-all duration-200 sidebar-active-scale">
+                <span class="material-symbols-outlined">settings</span>
+                <span class="text-sm">Settings</span>
+            </a>
+        </nav>
+        <div class="mt-auto flex flex-col gap-2 pt-8 border-t border-outline-variant">
+            <button onclick="window.location.href='/dashboard'" class="w-full bg-primary text-on-primary font-bold py-3 px-6 rounded-xl shadow-sm hover:opacity-90 transition-all mb-4">
+                New Decision
+            </button>
+            <a href="/auth/logout" class="flex items-center gap-4 text-on-surface-variant font-medium p-2 rounded-lg hover:bg-surface-container-highest transition-all">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="text-sm">Log Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- TopAppBar -->
+    <header class="fixed top-0 right-0 left-64 h-16 z-10 flex items-center justify-between px-6 w-full bg-surface border-b border-outline-variant shadow-sm">
+        <div class="flex items-center gap-4">
+            <h2 class="text-2xl font-bold text-on-surface">Settings</h2>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-primary text-on-primary rounded-full flex items-center justify-center font-bold text-xs" id="user-avatar">
+                    U
+                </div>
+                <span class="text-sm text-on-surface-variant font-medium" id="user-display-name">Loading...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Canvas -->
+    <main class="ml-64 pt-16 h-screen overflow-y-auto bg-background">
+        <div class="max-w-[1200px] mx-auto p-8">
+            <div class="grid grid-cols-12 gap-6">
+
+                <!-- Section 1: API Keys -->
+                <section class="col-span-12 md:col-span-8 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">API Keys</h3>
+                            <p class="text-sm text-on-surface-variant">Access the Semantic Search API and integrate with external tools.</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl">key</span>
+                    </div>
+
+                    <div id="api-keys-list" class="space-y-4 mb-6">
+                        <!-- API keys will be inserted here -->
+                    </div>
+
+                    <button onclick="openGenerateKeyModal()" class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                        <span class="material-symbols-outlined text-xl">add</span>
+                        Create New API Key
+                    </button>
+                </section>
+
+                <!-- Section 2: Password & Security -->
+                <section class="col-span-12 md:col-span-4 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col h-full">
+                    <div class="mb-6">
+                        <div class="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined">lock_reset</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-on-surface mb-1">Security</h3>
+                        <p class="text-sm text-on-surface-variant">Update your credentials to maintain account integrity.</p>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">Current Password</label>
+                            <input id="current-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="••••••••" type="password">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">New Password</label>
+                            <input id="new-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="Min. 12 characters" type="password">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">Confirm New Password</label>
+                            <input id="confirm-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="••••••••" type="password">
+                        </div>
+                    </div>
+                    <button onclick="resetPassword()" class="mt-8 w-full border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                        Reset Password
+                    </button>
+                </section>
+
+                <!-- Section 3: Manage Spaces -->
+                <section class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Manage Spaces</h3>
+                            <p class="text-sm text-on-surface-variant">Configure isolated environments for different teams or strategic initiatives.</p>
+                        </div>
+                        <button onclick="openCreateSpaceModal()" class="flex items-center gap-2 bg-primary text-on-primary text-sm font-bold py-3 px-6 rounded-lg shadow-sm hover:opacity-90 transition-all">
+                            <span class="material-symbols-outlined text-xl">add_box</span>
+                            Create New Space
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="border-b border-outline-variant">
+                                <tr>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Space Name</th>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Member Count</th>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Last Activity</th>
+                                    <th class="pb-2 text-right text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spaces-table" class="divide-y divide-outline-variant/30">
+                                <!-- Spaces will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Data Privacy & Team Invitations (Two Column Grid) -->
+                <div class="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Data Privacy & Export -->
+                    <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Data Privacy & Export</h3>
+                            <p class="text-sm text-on-surface-variant">Export your intelligence history or manage retention policies.</p>
+                        </div>
+                        <div class="flex-1 space-y-6">
+                            <div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant">
+                                <div>
+                                    <p class="text-sm font-bold text-on-surface">Export All Decisions</p>
+                                    <p class="text-xs text-on-surface-variant">Full JSON dump of logged decisions.</p>
+                                </div>
+                                <button onclick="exportData()" class="p-4 rounded-full bg-primary text-on-primary shadow-sm hover:scale-105 transition-transform">
+                                    <span class="material-symbols-outlined">download</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-error-container rounded-lg border border-error">
+                                <div>
+                                    <p class="text-sm font-bold text-on-error-container">Delete All Data</p>
+                                    <p class="text-xs text-on-error-container/70">Permanently remove all workspace data.</p>
+                                </div>
+                                <button onclick="openDeleteDataModal()" class="p-4 rounded-full bg-error text-on-error shadow-sm hover:scale-105 transition-transform">
+                                    <span class="material-symbols-outlined">delete_forever</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Team Invitations -->
+                    <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Team Invitations</h3>
+                            <p class="text-sm text-on-surface-variant">Create invite links to add new team members to your workspace.</p>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center">
+                            <button onclick="openCreateInviteModal()" class="flex items-center gap-2 bg-primary text-on-primary text-sm font-bold py-4 px-8 rounded-lg shadow-sm hover:opacity-90 transition-all">
+                                <span class="material-symbols-outlined">person_add</span>
+                                Create Invite Link
+                            </button>
+                        </div>
+                        <div id="active-invites-list" class="mt-6 space-y-2">
+                            <!-- Active invites will be listed here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Footer Branding -->
+            <footer class="mt-12 pt-8 border-t border-outline-variant text-center opacity-40">
+                <p class="text-xs">Corteza Decision Intelligence Platform • Enterprise Edition</p>
+            </footer>
+        </div>
+    </main>
+
+    <!-- Generate API Key Modal -->
+    <div class="modal-overlay" id="generate-key-modal">
+        <div class="modal p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Generate API Key</h3>
+                <button onclick="closeGenerateKeyModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Key Name</label>
+                <input id="api-key-name" type="text" placeholder="e.g., Production API" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeGenerateKeyModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                    Cancel
+                </button>
+                <button onclick="generateApiKey()" class="flex-1 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                    Generate Key
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Space Modal -->
+    <div class="modal-overlay" id="create-space-modal">
+        <div class="modal p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Create New Space</h3>
+                <button onclick="closeCreateSpaceModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Space Name</label>
+                    <input id="space-name" type="text" placeholder="e.g., Engineering Strategy" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Icon (emoji)</label>
+                    <input id="space-icon" type="text" placeholder="📊" maxlength="2" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Description</label>
+                    <textarea id="space-description" placeholder="What is this space for?" rows="3" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeCreateSpaceModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                    Cancel
+                </button>
+                <button onclick="createSpace()" class="flex-1 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                    Create Space
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Space Members Modal -->
+    <div class="modal-overlay" id="manage-members-modal">
+        <div class="modal p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Space Members: <span id="members-space-name"></span></h3>
+                <button onclick="closeMembersModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="members-list" class="mb-6 space-y-3 max-h-96 overflow-y-auto">
+                <!-- Members will be inserted here -->
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeMembersModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Invite Modal -->
+    <div class="modal-overlay" id="create-invite-modal">
+        <div class="modal p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Create Invite Link</h3>
+                <button onclick="closeCreateInviteModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Select Space</label>
+                <select id="invite-space-select" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                    <!-- Spaces will be populated here -->
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeCreateInviteModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                    Cancel
+                </button>
+                <button onclick="createInvite()" class="flex-1 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                    Generate Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Data Confirmation Modal -->
+    <div class="modal-overlay" id="delete-data-modal">
+        <div class="modal p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-error">Delete All Workspace Data</h3>
+                <button onclick="closeDeleteDataModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="mb-6">
+                <p class="text-sm text-on-surface-variant mb-4">This action will permanently delete all decisions, spaces, and settings for your workspace. This cannot be undone.</p>
+                <label class="block text-sm font-medium mb-2">Type "DELETE" to confirm</label>
+                <input id="delete-confirmation" type="text" class="w-full bg-surface-container-low border border-error rounded-lg p-3 outline-none focus:border-error">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteDataModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                    Cancel
+                </button>
+                <button onclick="deleteAllData()" class="flex-1 bg-error text-on-error font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                    Delete Everything
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var WORKSPACE_ID = '<WORKSPACE_ID>';
+    </script>
+    <script src="/scripts/settings-new.js?v=1"></script>
+</body>
+</html>

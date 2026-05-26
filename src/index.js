@@ -9,7 +9,7 @@ const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats,
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
+const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, serveSettingsOld, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
 const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -171,6 +171,7 @@ async function startApp() {
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
   expressApp.get('/ai-search', requireAuthBrowser, serveAISearch); // AI search interface
   expressApp.get('/settings', requireAuthBrowser, serveSettings);
+  expressApp.get('/settings-old', requireAuthBrowser, serveSettingsOld); // Old settings page (backup)
 
   // Feedback route (early registration to avoid conflicts, with rate limiting)
   expressApp.post('/api/feedback', apiRateLimiter, require('express').json(), requireAuth, submitFeedback);
