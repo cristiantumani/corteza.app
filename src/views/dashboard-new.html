@@ -301,6 +301,7 @@
       <h2 id="detail-title">Memory Details</h2>
       <div style="display: flex; gap: 10px;">
         <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
+        <button class="delete-btn" onclick="deleteCurrentDecision()" style="background: #ba1a1a; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ Delete</button>
         <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
       </div>
     </div>
@@ -498,7 +499,7 @@
     // Initialize workspace ID
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
-<script src="/scripts/dashboard.js?v=12"></script>
+<script src="/scripts/dashboard.js?v=13"></script>
 <script src="/scripts/dashboard-new.js?v=5"></script>
 <script>
     // Additional UI enhancements for new design

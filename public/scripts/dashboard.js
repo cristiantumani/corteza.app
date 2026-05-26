@@ -678,10 +678,15 @@
       const isOwnDecision = decision.user_id === currentUser.user_id;
       const canModify = isCurrentUserAdmin || isOwnDecision;
 
-      // Show/hide edit button based on permissions
+      // Show/hide edit and delete buttons based on permissions
       const editBtn = document.querySelector('#detail-modal .edit-btn');
       if (editBtn) {
         editBtn.style.display = canModify ? 'inline-block' : 'none';
+      }
+
+      const deleteBtn = document.querySelector('#detail-modal .delete-btn');
+      if (deleteBtn) {
+        deleteBtn.style.display = canModify ? 'inline-block' : 'none';
       }
 
       // Handle meeting context / alternatives
@@ -967,6 +972,13 @@
     window.openEditModal = openEditModal;
     window.closeEditModal = closeEditModal;
     window.saveEdit = saveEdit;
+    window.deleteCurrentDecision = function() {
+      if (currentDecisionIndex === null) return;
+      const decision = allDecisions[currentDecisionIndex];
+      if (decision) {
+        openDeleteModal(decision.id);
+      }
+    };
     window.allDecisions = allDecisions;
     window.currentUser = currentUser;
     window.isCurrentUserAdmin = isCurrentUserAdmin;
