@@ -2960,8 +2960,10 @@
     const fileInput = document.getElementById('file-input');
     if (fileInput) {
       fileInput.addEventListener('change', (e) => {
+        console.log('📎 File input change event fired');
         const file = e.target.files[0];
         if (file) {
+          console.log('📄 File selected:', file.name);
           handleFileSelected(file);
         }
       });
@@ -2970,7 +2972,11 @@
     // Drag and drop handlers
     const dropZone = document.getElementById('file-drop-zone');
     if (dropZone) {
-      dropZone.addEventListener('click', () => {
+      dropZone.addEventListener('click', (e) => {
+        // Don't trigger if clicking on a button (the "Choose File" button handles it)
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+          return;
+        }
         document.getElementById('file-input').click();
       });
 
@@ -2999,26 +3005,33 @@
     }
 
     function handleFileSelected(file) {
+      console.log('🔧 handleFileSelected called with:', file.name, file.type, file.size);
+
       // Validate file type
       const allowedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
       if (!allowedTypes.includes(file.type)) {
+        console.log('❌ Invalid file type:', file.type);
         alert('Unsupported file type. Please upload TXT, PDF, or DOCX files.');
         return;
       }
 
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
+        console.log('❌ File too large:', file.size);
         alert('File is too large. Maximum size is 5MB.');
         return;
       }
 
       selectedFile = file;
+      console.log('✅ File validated and selected');
 
       // Show file info
       document.getElementById('file-name').textContent = file.name;
       document.getElementById('file-size').textContent = formatFileSize(file.size);
       document.getElementById('file-selected-info').style.display = 'block';
       document.getElementById('upload-submit-btn').disabled = false;
+
+      console.log('✅ File info displayed, upload button enabled');
     }
 
     function formatFileSize(bytes) {
