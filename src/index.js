@@ -12,6 +12,7 @@ const { requireApiKey } = require('./middleware/api-key-auth');
 const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, serveSettingsOld, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
 const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
+const { extractFromApi } = require('./routes/extract-api');
 const { handleMe, handleLogout } = require('./routes/auth');
 const { handleLoginPage, handleTokenLogin, handleOnboardingPage } = require('./routes/dashboard-auth');
 const { handleSendMagicLink } = require('./routes/email-auth');
@@ -179,8 +180,8 @@ async function startApp() {
   // Feedback route (early registration to avoid conflicts, with rate limiting)
   expressApp.post('/api/feedback', apiRateLimiter, require('express').json(), requireAuth, submitFeedback);
 
-  // AI extraction route (for n8n automation, with stricter rate limiting)
-  expressApp.post('/api/extract-decisions', aiRateLimiter, require('express').json(), requireAuth, extractDecisionsFromText);
+  // AI extraction route (session-authenticated, with stricter rate limiting)
+  expressApp.post('/api/extract-decisions', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, extractDecisionsFromText);
 
   // Protected routes - API (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/decisions', apiRateLimiter, requireAuth, requireWorkspaceAccess, getDecisions);
@@ -199,6 +200,9 @@ async function startApp() {
 
   // Integration API routes (requires API key authentication)
   expressApp.get('/api/v1/decisions/:id', apiRateLimiter, requireApiKey, getDecisionById);
+
+  // Transcript extraction for automations, e.g. Google Drive via n8n (requires API key authentication)
+  expressApp.post('/api/v1/extract', aiRateLimiter, require('express').json({ limit: '1mb' }), requireApiKey, extractFromApi);
 
   // Obsidian integration (requires API key authentication)
   expressApp.post('/api/v1/import/obsidian', aiRateLimiter, require('express').json(), requireApiKey, importFromObsidian);

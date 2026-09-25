@@ -1,5 +1,7 @@
 # n8n Email Magic Link Setup Guide
 
+> **Deprecated:** Corteza now sends magic link, invite and re-engagement emails directly through Resend (`src/utils/n8n-client.js`, configured with `RESEND_API_KEY`). This n8n/Gmail workflow is no longer used and is kept for reference only.
+
 This guide shows how to configure the n8n workflow to send magic link emails for Corteza authentication.
 
 ## Overview

@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### 🔒 Security
+- `/api/extract-decisions` now only runs against the caller's own workspace, so another workspace's approved/rejected examples can no longer be pulled into the AI prompt
+- Approving or rejecting an AI suggestion from the dashboard now checks that it belongs to the caller's workspace
+
+### Added - Google Drive transcript import (Phase 0)
+- `POST /api/v1/extract`: API-key endpoint for automations (e.g. Google Drive → n8n). Extracted decisions are saved as pending suggestions in the target space (or the workspace's default space)
+- Dashboard banner listing pending AI suggestions for the current space, with review/approve/reject (`GET /api/ai/pending-suggestions`)
+- File upload accepts `.md` and `.vtt`/`.srt` caption files (Google Meet, Zoom and Teams transcripts)
+
+### Changed
+- `N8N_AUTOMATIONS_GUIDE.md`: Drive workflow now uses an API key instead of a copied session cookie, and exports Google Docs as text
+- `docs/n8n-email-setup.md` marked deprecated (emails are sent via Resend)
+- Upload no longer offers legacy `.doc`, which the parser never supported
+
+---
+
 ## [0.4.0] - 2026-05-23
 
 ### 🎉 Added - Spaces System

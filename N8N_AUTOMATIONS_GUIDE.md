@@ -6,13 +6,13 @@ This guide covers the Google Drive transcript automation. The weekly digest and 
 
 ## 🤖 Automation 1: Google Drive → AI Decision Extraction
 
-**Value:** Zero-friction decision capture. Users just drop meeting transcripts into a Google Drive folder and decisions are automatically extracted and posted to Slack.
+**Value:** Zero-friction decision capture. Users drop meeting transcripts (including Google Meet transcripts and Gemini meeting notes) into a Google Drive folder, and Corteza extracts the decisions and queues them for review in the dashboard.
 
 ### Prerequisites
 
-1. Google Drive folder for transcripts (create one: "Corteza Transcripts")
-2. Slack workspace connection in n8n
-3. Your Corteza app deployed with `/api/extract-decisions` endpoint
+1. Google Drive folder for transcripts (create one: "Corteza Transcripts", or use Meet's "Meet Recordings" folder)
+2. A Corteza API key: **Settings → API Keys → Create New API Key**
+3. Optional: Slack workspace connection in n8n (for notifications)
 
 ### n8n Workflow Setup
 
@@ -21,8 +21,7 @@ This guide covers the Google Drive transcript automation. The weekly digest and 
 2. Configure:
    - **Trigger On:** File Created
    - **Drive:** My Drive
-   - **Folder:** Select your "Corteza Transcripts" folder
-   - **Watch For:** Text files (`.txt`, `.md`, `.docx`)
+   - **Folder:** Select your transcripts folder
    - **Polling Time:** 1 minute (or real-time if available)
 
 #### Node 2: Download File Content
@@ -30,80 +29,64 @@ This guide covers the Google Drive transcript automation. The weekly digest and 
 2. Configure:
    - **Operation:** Download
    - **File ID:** `{{ $json.id }}`
-   - **Output Format:** Text
+   - **Google File Conversion → Docs To Format:** `text/plain` (Meet transcripts and Gemini notes are Google Docs)
+3. Add an **Extract From File** node (**Operation:** Extract From Text File) so the content is available as `{{ $json.data }}`
 
 #### Node 3: Extract Decisions via API
 1. Add **HTTP Request** node
 2. Configure:
    - **Method:** POST
-   - **URL:** `https://app.corteza.app/api/extract-decisions`
-   - **Authentication:** Generic Credential Type
-     - **Header Name:** `Cookie`
-     - **Header Value:** `connect.sid=YOUR_SESSION_COOKIE`
-   - **Headers:**
-     ```json
-     {
-       "Content-Type": "application/json"
-     }
-     ```
+   - **URL:** `https://app.corteza.app/api/v1/extract`
+   - **Authentication:** Generic Credential Type → **Header Auth**
+     - **Name:** `Authorization`
+     - **Value:** `Bearer corteza_YOUR_API_KEY`
    - **Body (JSON):**
      ```json
      {
        "text": "{{ $json.data }}",
        "fileName": "{{ $node["Google Drive Trigger"].json.name }}",
-       "workspace_id": "T0WKH1NGL",
-       "user_id": "U03CTCX0P7Y",
-       "user_name": "cristian.tumani"
+       "source": "google-drive"
      }
      ```
+   - Optional: add `"space_id": "..."` to target a specific space. Without it, suggestions go to the workspace's default space.
 
-**How to get session cookie:**
-1. Go to `https://app.corteza.app/dashboard`
-2. Open DevTools (F12) → Application tab → Cookies
-3. Copy the `connect.sid` value
+The workspace and user come from the API key, so there is nothing else to configure. API keys don't expire unless you set an expiry, and you can revoke them in Settings.
 
-#### Node 4: Check if Decisions Found
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "suggestions": [{ "suggestion_id": "...", "decision_text": "...", "decision_type": "decision", "confidence_score": 0.9 }],
+  "transcript_id": "transcript_...",
+  "space_id": "...",
+  "message": "Queued 2 suggestions for review in the dashboard"
+}
+```
+
+The suggestions are saved as pending. A banner on the dashboard shows them for approval, editing or rejection.
+
+#### Node 4: Check if Decisions Found (optional)
 1. Add **IF** node
 2. Configure:
    - **Condition:** `{{ $json.count }}` is greater than `0`
 
-#### Node 5a: Post to Slack (if decisions found)
+#### Node 5: Notify Slack (optional)
 1. Add **Slack** node (connect to IF "true" branch)
 2. Configure:
    - **Operation:** Post Message
    - **Channel:** #decisions (or your preferred channel)
    - **Message:**
      ```
-     🤖 *AI extracted {{ $json.count }} decision(s) from meeting transcript*
+     🤖 *AI extracted {{ $json.count }} decision(s) from {{ $json.fileName }}*
 
-     📄 File: {{ $json.fileName }}
-     👤 Uploaded by: {{ $json.user_name }}
-
-     *Decisions found:*
-     {{#each $json.decisions}}
-     {{add @index 1}}. *{{this.decision}}* (Type: {{this.type}}, Category: {{this.category}})
-        _Context: {{this.alternatives}}_
-     {{/each}}
-
-     ✅ Review and approve these in Slack to add to your decision log.
-     ```
-
-#### Node 5b: No Decisions Found (if false)
-1. Add **Slack** node (connect to IF "false" branch)
-2. Configure:
-   - **Channel:** #decisions
-   - **Message:**
-     ```
-     📄 New transcript uploaded: {{ $json.fileName }}
-
-     ℹ️  No decisions detected. The file might not contain decision-making discussions.
+     Review them in Corteza: https://app.corteza.app/dashboard
      ```
 
 ### Workflow Diagram
 ```
-Google Drive Trigger → Download File → API Extract →
-  IF (count > 0) ──┬→ Post decisions to Slack
-                   └→ Post "no decisions" to Slack
+Google Drive Trigger → Download File → Extract From File → POST /api/v1/extract →
+  IF (count > 0) → Notify Slack (optional)
 ```
 
 ### Testing
@@ -121,8 +104,8 @@ Google Drive Trigger → Download File → API Extract →
    ```
 
 2. Wait 1 minute for n8n to pick it up
-3. Check Slack for the extracted decisions
-4. Check Railway logs for: `🤖 AI extraction endpoint called`
+3. Open the dashboard and check for the "waiting for review" banner
+4. Check Railway logs for: `📝 API extraction:`
 
 ---
 
@@ -154,7 +137,10 @@ User feedback from the dashboard is also handled in the app now. It is stored in
 ### Google Drive Automation
 
 **Issue:** Authentication fails
-**Fix:** Re-authenticate Google Drive connection in n8n
+**Fix:** Re-authenticate Google Drive connection in n8n. If Corteza returns 401, check the API key is active in Settings → API Keys and the header is `Authorization: Bearer <key>`
+
+**Issue:** `Transcript too short`
+**Fix:** Transcripts need at least 100 words
 
 **Issue:** No executions triggered
 **Fix:**
@@ -162,8 +148,8 @@ User feedback from the dashboard is also handled in the app now. It is stored in
 - Verify folder ID is correct
 - Check polling interval
 
-**Issue:** 401 on API extract endpoint
-**Fix:** Update session cookie (expires after 7 days)
+**Issue:** 403 on API extract endpoint
+**Fix:** The API key's user can't create decisions in the target space. Pass a `space_id` for a space they belong to, or add them to the space
 
 ---
 
@@ -180,8 +166,7 @@ Once these are working, consider adding:
 
 ## 📝 Notes
 
-- The Google Drive automation requires a valid session cookie that expires after 7 days
-- Consider creating a service account for long-term automation
+- The Google Drive automation authenticates with a Corteza API key (no session cookie needed)
 - MongoDB queries use ISO date format for timestamp comparisons
 - All workflows can be duplicated and customized per workspace
 
