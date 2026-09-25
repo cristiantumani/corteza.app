@@ -152,6 +152,9 @@ async function startApp() {
     res.redirect('/slack/install');
   });
 
+  // Weekly digest unsubscribe (public — authorized by a signed link)
+  expressApp.use(require('./routes/digest'));
+
   // Demo routes (public — no auth required)
   expressApp.get('/demo', apiRateLimiter, handleDemoEntry);
   expressApp.get('/demo/dashboard', apiRateLimiter, handleDemoDashboard);
@@ -314,6 +317,7 @@ async function startApp() {
 
   // Start re-engagement job for inactive extension installs
   require('./jobs/reengagement').startReengagementJob();
+  require('./jobs/weekly-digest').startWeeklyDigestJob();
 }
 
 // Start the application
