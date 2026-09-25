@@ -15,7 +15,10 @@ async function extractTextFromFile(fileBuffer, fileName, mimeType) {
     // Determine file type from extension and mime type
     const fileExtension = fileName.toLowerCase().split('.').pop();
 
-    if (fileExtension === 'txt' || mimeType === 'text/plain') {
+    // Caption files are checked first: browsers often report .srt as text/plain
+    if (fileExtension === 'vtt' || fileExtension === 'srt' || mimeType === 'text/vtt') {
+      return extractFromCaptions(fileBuffer);
+    } else if (fileExtension === 'txt' || mimeType === 'text/plain') {
       return extractFromPlainText(fileBuffer);
     } else if (fileExtension === 'md' || mimeType === 'text/markdown') {
       return extractFromPlainText(fileBuffer);
@@ -30,7 +33,7 @@ async function extractTextFromFile(fileBuffer, fileName, mimeType) {
       return {
         success: false,
         text: '',
-        error: `Unsupported file type: ${fileExtension}. Supported: .txt, .md, .pdf, .docx`
+        error: `Unsupported file type: ${fileExtension}. Supported: .txt, .md, .vtt, .srt, .pdf, .docx`
       };
     }
   } catch (error) {
@@ -61,6 +64,56 @@ function extractFromPlainText(fileBuffer) {
       success: false,
       text: '',
       error: `Failed to decode text file: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Extracts spoken text from caption files (.vtt, .srt), e.g. Google Meet,
+ * Zoom or Teams transcripts. Drops headers, cue numbers and timestamps, and
+ * turns WebVTT voice tags (<v Name>) into "Name: text" lines.
+ * @param {Buffer} fileBuffer
+ * @returns {Object} { success: boolean, text: string, error: string | null }
+ */
+function extractFromCaptions(fileBuffer) {
+  try {
+    const raw = fileBuffer.toString('utf-8').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const lines = [];
+
+    for (const block of raw.split(/\n{2,}/)) {
+      const blockLines = block.split('\n').map(l => l.trim()).filter(Boolean);
+      if (blockLines.length === 0) continue;
+
+      // Skip WebVTT header and metadata blocks
+      if (/^(WEBVTT|NOTE|STYLE|REGION)\b/.test(blockLines[0])) continue;
+
+      // Drop the cue identifier (SRT number or VTT id) and the timing line
+      const timingIndex = blockLines.findIndex(l => l.includes('-->'));
+      const cueLines = timingIndex === -1 ? blockLines : blockLines.slice(timingIndex + 1);
+
+      for (const line of cueLines) {
+        const voice = line.match(/^<v(?:\.[^\s>]+)?\s+([^>]+)>(.*?)(?:<\/v>)?$/);
+        const text = (voice ? `${voice[1].trim()}: ${voice[2]}` : line)
+          .replace(/<[^>]+>/g, '')
+          .trim();
+
+        // Captions often repeat a line across consecutive cues
+        if (text && text !== lines[lines.length - 1]) {
+          lines.push(text);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      text: lines.join('\n'),
+      error: null
+    };
+  } catch (error) {
+    return {
+      success: false,
+      text: '',
+      error: `Failed to parse caption file: ${error.message}`
     };
   }
 }
@@ -179,6 +232,7 @@ async function extractFromDOCX(fileBuffer) {
 module.exports = {
   extractTextFromFile,
   extractFromPlainText,
+  extractFromCaptions,
   extractFromPDF,
   extractFromDOCX
 };

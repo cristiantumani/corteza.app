@@ -1147,7 +1147,7 @@ const EXTRACTION_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
  * POST /api/extract-decisions - Extract decisions from transcript text
- * Used by n8n automation (Google Drive → AI Extract)
+ * Session-authenticated; automations should use POST /api/v1/extract with an API key instead
  *
  * CREDIT OPTIMIZATION: Added caching to prevent duplicate Claude API calls
  * - Caches extraction results by content hash
@@ -1169,14 +1169,16 @@ async function extractDecisionsFromText(req, res) {
       return;
     }
 
-    const { text, fileName, workspace_id, user_id, user_name } = req.body;
+    const { text, fileName, user_id, user_name } = req.body;
+    // Set by requireWorkspaceAccess, so callers can only use their own workspace
+    const workspace_id = req.authenticatedWorkspaceId;
 
     // Validate required fields
     if (!text || !workspace_id) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: false,
-        error: 'Missing required fields: text and workspace_id'
+        error: 'Missing required field: text'
       }));
       return;
     }

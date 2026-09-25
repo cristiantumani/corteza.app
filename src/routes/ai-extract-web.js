@@ -12,6 +12,7 @@ const {
   validateTranscriptContent
 } = require('../middleware/ai-validation');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
+const { canAccessSpace } = require('../services/permissions');
 const multer = require('multer');
 
 const router = express.Router();
@@ -23,14 +24,19 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'text/plain',
+      'text/markdown',
+      'text/vtt',
+      'application/x-subrip',
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
-    if (allowedTypes.includes(file.mimetype)) {
+    // Browsers report inconsistent MIME types for .md/.vtt/.srt, so also allow by extension
+    const allowedExtensions = ['txt', 'md', 'vtt', 'srt', 'pdf', 'docx'];
+    const extension = file.originalname.toLowerCase().split('.').pop();
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(extension)) {
       cb(null, true);
     } else {
-      cb(new Error('Unsupported file type. Please upload TXT, PDF, or DOCX files.'));
+      cb(new Error('Unsupported file type. Please upload TXT, MD, VTT, SRT, PDF, or DOCX files.'));
     }
   }
 });
@@ -48,7 +54,7 @@ function hashTranscriptContent(content) {
  *
  * Body (form-data):
  * - text: string (meeting notes text) OR
- * - file: file upload (txt, pdf, docx)
+ * - file: file upload (txt, md, vtt, srt, pdf, docx)
  * - workspace_id: string
  * - space_id: string
  * - file_name: string (optional, defaults to "Meeting Notes")
@@ -228,7 +234,7 @@ async function processTranscriptWeb(transcriptContent, metadata) {
       word_count: wordCount,
       uploaded_by: metadata.user_id,
       uploaded_by_name: metadata.user_name,
-      uploaded_via: 'web',
+      uploaded_via: metadata.uploaded_via || 'web',
       uploaded_at: new Date().toISOString(),
       processed_at: null,
       ai_model: null,
@@ -322,6 +328,11 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
     // Verify authentication
     if (!req.session?.user) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    // Only allow acting on suggestions in the user's own workspace
+    if (workspace_id !== req.session.user.workspace_id) {
+      return res.status(403).json({ success: false, error: 'Access denied to this workspace' });
     }
 
     const userId = req.session.user.user_id;
@@ -459,6 +470,11 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
+    // Only allow acting on suggestions in the user's own workspace
+    if (workspace_id !== req.session.user.workspace_id) {
+      return res.status(403).json({ success: false, error: 'Access denied to this workspace' });
+    }
+
     const userId = req.session.user.user_id;
 
     // Fetch suggestion
@@ -508,4 +524,54 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/ai/pending-suggestions
+ * List AI suggestions still awaiting review in a space, e.g. ones created by
+ * automations (Google Drive via n8n) through POST /api/v1/extract
+ *
+ * Query:
+ * - workspace_id: string
+ * - space_id: string
+ */
+router.get('/api/ai/pending-suggestions', async (req, res) => {
+  try {
+    if (!req.session?.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const { workspace_id, space_id } = req.query;
+
+    if (!workspace_id || !space_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'workspace_id and space_id are required'
+      });
+    }
+
+    if (workspace_id !== req.session.user.workspace_id) {
+      return res.status(403).json({ success: false, error: 'Access denied to this workspace' });
+    }
+
+    const canAccess = await canAccessSpace(null, workspace_id, space_id, req.session.user.user_id);
+    if (!canAccess) {
+      return res.status(403).json({ success: false, error: 'Access denied to this space' });
+    }
+
+    const suggestions = await getAISuggestionsCollection()
+      .find({ workspace_id, space_id, status: 'pending' })
+      .sort({ created_at: -1 })
+      .limit(50)
+      .toArray();
+
+    res.json({ success: true, suggestions });
+  } catch (error) {
+    console.error('❌ Error fetching pending suggestions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch pending suggestions'
+    });
+  }
+});
+
 module.exports = router;
+module.exports.processTranscriptWeb = processTranscriptWeb;

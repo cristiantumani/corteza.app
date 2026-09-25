@@ -1894,6 +1894,7 @@
 
       // Reload decisions with new space filter
       await fetchDecisions();
+      fetchPendingSuggestions();
 
       // Show notification
       const currentSpace = currentUserSpaces.find(s => s.space_id === currentSpaceId);
@@ -2316,6 +2317,7 @@
         // Load initial data before showing UI (prevents flash)
         await Promise.all([fetchStats(), fetchDecisions()]);
         console.log('✅ Initial data loaded');
+        fetchPendingSuggestions();
 
         // Now hide loading indicator and show UI
         const loadingIndicator = document.getElementById('loading-indicator');
@@ -3008,10 +3010,12 @@
       console.log('🔧 handleFileSelected called with:', file.name, file.type, file.size);
 
       // Validate file type
-      const allowedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
-      if (!allowedTypes.includes(file.type)) {
-        console.log('❌ Invalid file type:', file.type);
-        alert('Unsupported file type. Please upload TXT, PDF, or DOCX files.');
+      // Browsers report inconsistent MIME types for .md/.vtt/.srt, so check the extension
+      const allowedExtensions = ['txt', 'md', 'vtt', 'srt', 'pdf', 'docx'];
+      const extension = file.name.toLowerCase().split('.').pop();
+      if (!allowedExtensions.includes(extension)) {
+        console.log('❌ Invalid file type:', file.name, file.type);
+        alert('Unsupported file type. Please upload TXT, MD, VTT, SRT, PDF, or DOCX files.');
         return;
       }
 
@@ -3106,7 +3110,7 @@
       }
     };
 
-    function showAISuggestions(suggestions, cached) {
+    function showAISuggestions(suggestions, cached, summaryText) {
       const modal = document.getElementById('ai-suggestions-modal');
       const summary = document.getElementById('suggestions-summary');
       const list = document.getElementById('suggestions-list');
@@ -3114,7 +3118,7 @@
 
       // Update summary
       const cachedText = cached ? ' (from cache - no AI credits used)' : '';
-      summary.textContent = `Found ${suggestions.length} potential decision${suggestions.length !== 1 ? 's' : ''} in your file${cachedText}. Review and approve the ones you want to save.`;
+      summary.textContent = summaryText || `Found ${suggestions.length} potential decision${suggestions.length !== 1 ? 's' : ''} in your file${cachedText}. Review and approve the ones you want to save.`;
 
       // Clear list
       list.innerHTML = '';
@@ -3185,6 +3189,46 @@
     window.closeAISuggestionsModal = function() {
       document.getElementById('ai-suggestions-modal').classList.remove('active');
       currentTranscriptId = null;
+      fetchPendingSuggestions();
+    };
+
+    // Pending suggestions queued by automations (POST /api/v1/extract), e.g. Google Drive via n8n
+    let pendingSuggestions = [];
+
+    async function fetchPendingSuggestions() {
+      const banner = document.getElementById('pending-suggestions-banner');
+      if (!banner || !currentSpaceId) return;
+
+      try {
+        const params = new URLSearchParams({ workspace_id: WORKSPACE_ID, space_id: currentSpaceId });
+        const response = await fetch(`/api/ai/pending-suggestions?${params}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch pending suggestions');
+
+        pendingSuggestions = data.suggestions || [];
+      } catch (error) {
+        console.error('❌ Pending suggestions error:', error);
+        pendingSuggestions = [];
+      }
+
+      if (pendingSuggestions.length > 0) {
+        const count = pendingSuggestions.length;
+        document.getElementById('pending-suggestions-text').textContent =
+          `${count} AI-extracted decision${count !== 1 ? 's are' : ' is'} waiting for review in this space.`;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    window.openPendingSuggestions = function() {
+      if (pendingSuggestions.length === 0) return;
+      const count = pendingSuggestions.length;
+      showAISuggestions(
+        pendingSuggestions,
+        false,
+        `${count} decision${count !== 1 ? 's were' : ' was'} extracted from imported transcripts. Review and approve the ones you want to save.`
+      );
     };
 
     window.approveSuggestion = async function(suggestionId) {

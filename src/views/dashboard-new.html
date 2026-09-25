@@ -121,6 +121,15 @@
             <p class="text-lg text-on-surface-variant max-w-2xl">Track your team's strategic decisions and context. Stay aligned on what matters.</p>
         </div>
 
+        <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
+        <div id="pending-suggestions-banner" class="hidden mb-8 flex items-center justify-between gap-4 rounded-xl border border-primary bg-primary-container/20 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">pending_actions</span>
+                <p class="text-base text-on-surface" id="pending-suggestions-text"></p>
+            </div>
+            <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">Review</button>
+        </div>
+
         <!-- Action Cards -->
         <div class="grid grid-cols-12 gap-6 mb-12">
             <div class="col-span-12 lg:col-span-7">
@@ -430,8 +439,8 @@
       <div style="border: 2px dashed #E1E4E8; border-radius: 12px; padding: 32px; text-align: center; background: #F6F8FA; cursor: pointer;" id="file-drop-zone">
         <span class="material-symbols-outlined" style="font-size: 48px; color: #667EEA; margin-bottom: 12px;">cloud_upload</span>
         <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Drop file here or click to browse</p>
-        <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">Supports TXT, PDF, DOCX (max 5MB)</p>
-        <input type="file" id="file-input" accept=".txt,.pdf,.docx,.doc" style="display: none;" />
+        <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">Supports TXT, MD, PDF, DOCX and VTT/SRT captions, e.g. Google Meet transcripts (max 5MB)</p>
+        <input type="file" id="file-input" accept=".txt,.md,.vtt,.srt,.pdf,.docx" style="display: none;" />
         <button type="button" class="modal-btn modal-btn-primary" onclick="event.stopPropagation(); document.getElementById('file-input').click()">
           Choose File
         </button>
@@ -499,7 +508,7 @@
     // Initialize workspace ID
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
-<script src="/scripts/dashboard.js?v=14"></script>
+<script src="/scripts/dashboard.js?v=15"></script>
 <script src="/scripts/dashboard-new.js?v=5"></script>
 <script>
     // Additional UI enhancements for new design
