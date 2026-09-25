@@ -1159,7 +1159,7 @@
       };
 
       try {
-        // Send to backend API (which forwards to n8n webhook)
+        // Send to backend API (stores feedback and notifies the team)
         const response = await fetch('/api/feedback', {
           method: 'POST',
           headers: {

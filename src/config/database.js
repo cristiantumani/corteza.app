@@ -151,6 +151,9 @@ async function connectToMongoDB() {
     await workspaceMembersCollection.createIndex({ user_id: 1, removed_at: 1 });
     await workspaceMembersCollection.createIndex({ invited_by: 1 });
 
+    // Weekly digest: one run per workspace per week (claimed with a unique insert)
+    await db.collection('digest_runs').createIndex({ workspace_id: 1, week_start: 1 }, { unique: true });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {

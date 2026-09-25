@@ -1,9 +1,10 @@
 const crypto = require('crypto');
-const { getDecisionsCollection, getWorkspaceSpacesCollection } = require('../config/database');
+const { getDecisionsCollection, getWorkspaceSpacesCollection, getDatabase } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
 const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace, canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
+const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -1052,17 +1053,15 @@ function healthCheck(req, res) {
 }
 
 /**
- * POST /api/feedback - Submit user feedback to n8n webhook
- * Proxies feedback from frontend to n8n to avoid CORS issues
+ * POST /api/feedback - Submit user feedback
+ * Stores feedback in the `feedback` collection and emails FEEDBACK_EMAIL (if set) via Resend
  */
 async function submitFeedback(req, res) {
-  console.log('📝 Feedback endpoint called');
   try {
-    const feedbackData = req.body;
-    console.log('📝 Feedback data:', feedbackData);
+    const { type, feedback, email, source } = req.body || {};
 
     // Validate required fields
-    if (!feedbackData.type || !feedbackData.feedback) {
+    if (typeof type !== 'string' || !type.trim() || typeof feedback !== 'string' || !feedback.trim()) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: false,
@@ -1071,62 +1070,56 @@ async function submitFeedback(req, res) {
       return;
     }
 
-    // Forward to n8n webhook (server-to-server, no CORS)
-    const n8nWebhookUrl = 'https://cristiantumani.app.n8n.cloud/webhook/feedback';
-    console.log('📤 Forwarding to n8n:', n8nWebhookUrl);
-
-    const https = require('https');
-    const url = require('url');
-
-    const webhookUrl = url.parse(n8nWebhookUrl);
-    const postData = JSON.stringify(feedbackData);
-
-    const options = {
-      hostname: webhookUrl.hostname,
-      port: 443,
-      path: webhookUrl.path,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    };
-
-    console.log('📤 Request options:', options);
-
-    const webhookReq = https.request(options, (webhookRes) => {
-      console.log('✅ n8n responded with status:', webhookRes.statusCode);
-      let responseData = '';
-
-      webhookRes.on('data', (chunk) => {
-        responseData += chunk;
-      });
-
-      webhookRes.on('end', () => {
-        console.log('✅ n8n response complete:', responseData);
-        // Forward n8n response to frontend
-        res.writeHead(webhookRes.statusCode, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: webhookRes.statusCode === 200,
-          message: 'Feedback submitted successfully'
-        }));
-        console.log('✅ Response sent to frontend');
-      });
-    });
-
-    webhookReq.on('error', (error) => {
-      console.error('❌ Error forwarding to n8n:', error);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+    if (feedback.length > 10000) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: false,
-        error: 'Failed to submit feedback to webhook'
+        error: 'Feedback is too long (max 10,000 characters)'
       }));
-    });
+      return;
+    }
 
-    webhookReq.write(postData);
-    webhookReq.end();
-    console.log('📤 Request sent to n8n');
+    // Identity comes from the session, not the request body
+    const user = req.session.user;
+    const contactEmail = typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ? email.trim()
+      : (user.email || null);
 
+    const feedbackDoc = {
+      type: type.trim().slice(0, 50),
+      feedback: feedback.trim(),
+      email: contactEmail,
+      workspace_id: user.workspace_id,
+      workspace_name: user.workspace_name || null,
+      user_id: user.user_id,
+      user_name: user.user_name || null,
+      source: typeof source === 'string' ? source.slice(0, 50) : 'dashboard',
+      created_at: new Date()
+    };
+
+    await getDatabase().collection('feedback').insertOne(feedbackDoc);
+    console.log(`📝 Feedback (${feedbackDoc.type}) saved from ${feedbackDoc.user_name} in ${feedbackDoc.workspace_id}`);
+
+    // Notify the team; feedback is already saved, so an email failure doesn't fail the request
+    const notifyTo = process.env.FEEDBACK_EMAIL;
+    if (notifyTo && process.env.RESEND_API_KEY) {
+      sendFeedbackNotificationEmail({
+        to: notifyTo,
+        type: feedbackDoc.type,
+        feedback: feedbackDoc.feedback,
+        user_name: feedbackDoc.user_name,
+        user_email: feedbackDoc.email,
+        workspace_name: feedbackDoc.workspace_name,
+        workspace_id: feedbackDoc.workspace_id,
+        source: feedbackDoc.source
+      }).catch(error => console.error('❌ Feedback notification email failed:', error.message));
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      message: 'Feedback submitted successfully'
+    }));
   } catch (error) {
     console.error('Error submitting feedback:', error);
     res.writeHead(500, { 'Content-Type': 'application/json' });

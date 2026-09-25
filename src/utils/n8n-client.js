@@ -7,7 +7,7 @@ const fetch = globalThis.fetch || require('node-fetch');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
-async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, html, replyTo, headers }) {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
@@ -28,7 +28,9 @@ async function sendEmail({ to, subject, html }) {
         from: 'Corteza <noreply@corteza.app>',
         to: [to],
         subject,
-        html
+        html,
+        ...(replyTo && { reply_to: replyTo }),
+        ...(headers && { headers })
       }),
       signal: controller.signal
     });
@@ -152,8 +154,111 @@ async function sendInviteEmail({ email, inviter_name, workspace_name, role, invi
   return { success: true, email_id: result.id };
 }
 
+/**
+ * Escapes text for safe inclusion in email HTML
+ */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Sends a notification about new user feedback to the team (FEEDBACK_EMAIL)
+ */
+async function sendFeedbackNotificationEmail({ to, type, feedback, user_name, user_email, workspace_name, workspace_id, source }) {
+  const result = await sendEmail({
+    to,
+    subject: `[Corteza feedback] ${type} from ${user_name || 'a user'}`,
+    replyTo: user_email || undefined,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #111;">
+        <h1 style="font-size: 20px; font-weight: 700; margin: 0 0 16px;">New feedback: ${escapeHtml(type)}</h1>
+        <p style="font-size: 15px; white-space: pre-wrap; background: #f6f8fa; border-radius: 8px; padding: 16px; margin: 0 0 24px;">${escapeHtml(feedback)}</p>
+        <table style="font-size: 14px; color: #555; border-collapse: collapse;">
+          <tr><td style="padding: 4px 16px 4px 0;">From</td><td>${escapeHtml(user_name || 'Unknown')}${user_email ? ` &lt;${escapeHtml(user_email)}&gt;` : ''}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;">Workspace</td><td>${escapeHtml(workspace_name || workspace_id)} (${escapeHtml(workspace_id)})</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;">Source</td><td>${escapeHtml(source || 'dashboard')}</td></tr>
+        </table>
+      </div>
+    `
+  });
+
+  console.log(`✅ Feedback notification sent to ${to}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
+/**
+ * Sends a member their workspace's weekly decision digest
+ * @param {Object} params
+ * @param {Object} params.stats - Output of buildDigestStats (jobs/weekly-digest.js)
+ * @param {string} params.unsubscribe_url - Signed link that turns the digest off for this member
+ */
+async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe_url }) {
+  const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const changeText = stats.change > 0
+    ? `▲ ${stats.change} vs previous week`
+    : stats.change < 0 ? `▼ ${Math.abs(stats.change)} vs previous week` : 'Same as previous week';
+
+  const row = (label, value) =>
+    `<tr><td style="padding: 6px 0; color: #555;">${escapeHtml(label)}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(value)}</td></tr>`;
+
+  const section = (title, body) => body ? `
+        <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 8px;">${title}</h2>
+        ${body}` : '';
+
+  const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px;">Your weekly decision digest</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(stats.periodLabel)}</p>
+
+        <div style="background: #f6f8fa; border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 36px; font-weight: 800;">${stats.thisWeek}</div>
+          <div style="font-size: 14px; color: #555;">decision${stats.thisWeek === 1 ? '' : 's'} logged · ${escapeHtml(changeText)}</div>
+        </div>
+        ${section('Latest decisions', stats.recent.length ? `<ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.5;">${stats.recent.map(d =>
+          `<li style="margin-bottom: 8px;">${escapeHtml(d.text)} <span style="color: #888;">— ${escapeHtml(d.creator)}${d.space ? `, ${escapeHtml(d.space)}` : ''}</span></li>`
+        ).join('')}</ul>` : '')}
+        ${section('By type', stats.byType.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.byType.map(([type, count]) => row(type, count)).join('')}</table>` : '')}
+        ${section('Top contributors', stats.topContributors.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.topContributors.map(([name, count]) => row(name, count)).join('')}</table>` : '')}
+        ${section('Top tags', stats.topTags.length ? `<p style="margin: 0; font-size: 13px; line-height: 2;">${stats.topTags.map(([tag, count]) =>
+          `<span style="background: #eef0ff; color: #3f3fb0; border-radius: 12px; padding: 4px 10px; margin-right: 6px; white-space: nowrap;">${escapeHtml(tag)} (${count})</span>`
+        ).join('')}</p>` : '')}
+
+        <a href="${dashboardUrl}/dashboard"
+           style="display: inline-block; margin-top: 32px; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Open dashboard →
+        </a>
+        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
+          You get this because you're a member of ${escapeHtml(workspace_name)} on Corteza.
+          <a href="${unsubscribe_url}" style="color: #999;">Unsubscribe from weekly digests</a>.
+        </p>
+      </div>
+    `;
+
+  const result = await sendEmail({
+    to: email,
+    subject: `Weekly digest: ${stats.thisWeek} decision${stats.thisWeek === 1 ? '' : 's'} in ${workspace_name}`,
+    html,
+    headers: {
+      'List-Unsubscribe': `<${unsubscribe_url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
+  sendEmail,
+  escapeHtml,
   sendMagicLinkEmail,
   sendReengagementEmail,
-  sendInviteEmail
+  sendInviteEmail,
+  sendFeedbackNotificationEmail,
+  sendWeeklyDigestEmail
 };
