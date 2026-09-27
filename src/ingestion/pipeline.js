@@ -1,5 +1,8 @@
 const { getDatabase } = require('../config/database');
 const { createDecision } = require('../core/decisions/decision-service');
+const { createActionItem } = require('../core/actions/action-service');
+const { requestMissingDueDates } = require('../core/actions/due-date-requests');
+const { getWorkspaceMembersCollection } = require('../config/database');
 
 /**
  * Ingestion pipeline: Transcript → dedupe → AI extraction → saved decisions.
@@ -131,11 +134,12 @@ function buildExtractionText(transcript) {
  * @param {Object} [options]
  * @param {Function} [options.extract] - (text, workspaceId) => { decisions } (defaults to Claude)
  * @param {boolean} [options.manual] - chosen by a person (see claim)
- * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], error?: string }>}
+ * @param {Function} [options.requestDueDates] - (actionItems, transcript) => Promise; asks owners for missing due dates
+ * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], actionItems: Object[], error?: string }>}
  */
-async function ingestTranscript(transcript, { extract, manual = false } = {}) {
+async function ingestTranscript(transcript, { extract, manual = false, requestDueDates = requestMissingDueDates } = {}) {
   const ingestion = await claim(transcript, manual);
-  if (!ingestion) return { status: 'duplicate', decisions: [] };
+  if (!ingestion) return { status: 'duplicate', decisions: [], actionItems: [] };
 
   const key = { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId };
 
@@ -143,15 +147,27 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
     const wordCount = (transcript.text || '').split(/\s+/).filter(Boolean).length;
     if (wordCount < MIN_WORDS) {
       await ingestions().updateOne(key, { $set: { status: 'skipped', skip_reason: 'too_short', word_count: wordCount, updated_at: new Date() } });
-      return { status: 'skipped', decisions: [] };
+      return { status: 'skipped', decisions: [], actionItems: [] };
     }
 
     const extractDecisions = extract || require('../services/claude').extractDecisionsFromTranscript;
     const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId);
 
+    const source = {
+      type: transcript.source,
+      external_id: transcript.externalId,
+      title: transcript.title || null,
+      url: transcript.url || null,
+      occurred_at: transcript.occurredAt ? new Date(transcript.occurredAt).toISOString() : null
+    };
+    const extractedItems = result.decisions || [];
+
+    // Decisions (and open questions, risks) first, so action items can link to them
     const decisions = [];
-    for (const extracted of result.decisions || []) {
-      decisions.push(await createDecision({
+    const decisionIdByIndex = new Map();
+    for (const [index, extracted] of extractedItems.entries()) {
+      if (extracted.decision_type === 'action_item') continue;
+      const decision = await createDecision({
         workspaceId: transcript.workspaceId,
         spaceId: transcript.spaceId,
         spaceName: transcript.spaceName || null,
@@ -169,16 +185,38 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
         rationale: extracted.rationale || null,
         evidenceQuote: extracted.evidence_quote || null,
         author: transcript.author,
-        source: {
-          type: transcript.source,
-          external_id: transcript.externalId,
-          title: transcript.title || null,
-          url: transcript.url || null,
-          occurred_at: transcript.occurredAt ? new Date(transcript.occurredAt).toISOString() : null
-        },
+        source,
         capture: 'ai',
         confidence: extracted.confidence,
         decidedAt: transcript.occurredAt || null
+      });
+      decisions.push(decision);
+      decisionIdByIndex.set(index, decision.id);
+    }
+
+    // Action items ("pendientes"): owners matched to workspace members
+    const extractedActions = extractedItems.filter(item => item.decision_type === 'action_item');
+    const members = extractedActions.length === 0 ? [] : await getWorkspaceMembersCollection()
+      .find({ workspace_id: transcript.workspaceId, removed_at: null })
+      .project({ user_id: 1, user_name: 1, email: 1 })
+      .toArray();
+    const actionItems = [];
+    for (const extracted of extractedActions) {
+      actionItems.push(await createActionItem({
+        workspaceId: transcript.workspaceId,
+        spaceId: transcript.spaceId,
+        spaceName: transcript.spaceName || null,
+        text: extracted.decision_text,
+        ownerNames: extracted.owner_names || (extracted.owner_name ? [extracted.owner_name] : []),
+        dueDate: extracted.due_date || null,
+        decisionId: decisionIdByIndex.get(extracted.decision_ref) ?? null,
+        source,
+        rationale: extracted.rationale || null,
+        evidenceQuote: extracted.evidence_quote || null,
+        capture: 'ai',
+        confidence: extracted.confidence,
+        author: transcript.author,
+        members
       }));
     }
 
@@ -188,6 +226,7 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
         word_count: wordCount,
         decisions_created: decisions.length,
         decision_ids: decisions.map(d => d.id),
+        action_items_created: actionItems.length,
         model: result.model || null,
         completed_at: new Date(),
         updated_at: new Date()
@@ -195,12 +234,18 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
       $unset: { error: '' }
     });
 
-    console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} decision(s)`);
-    return { status: 'completed', decisions };
+    console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} decision(s), ${actionItems.length} action item(s)`);
+
+    try {
+      await requestDueDates(actionItems, transcript);
+    } catch (error) {
+      console.error('❌ Asking owners for due dates failed:', error.message);
+    }
+    return { status: 'completed', decisions, actionItems };
   } catch (error) {
     console.error(`❌ Ingestion failed for ${transcript.source} ${transcript.externalId}:`, error.message);
     await ingestions().updateOne(key, { $set: { status: 'failed', error: error.message.slice(0, 500), updated_at: new Date() } });
-    return { status: 'failed', decisions: [], error: error.message };
+    return { status: 'failed', decisions: [], actionItems: [], error: error.message };
   }
 }
 

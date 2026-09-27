@@ -189,6 +189,12 @@ async function connectToMongoDB() {
     await db.collection('meet_imports').createIndex({ import_id: 1 }, { unique: true });
     await db.collection('meet_imports').createIndex({ status: 1, lease_until: 1 });
 
+    // Action items (core/actions)
+    await db.collection('action_items').createIndex({ item_id: 1 }, { unique: true });
+    await db.collection('action_items').createIndex({ workspace_id: 1, status: 1, due_date: 1 });
+    await db.collection('action_items').createIndex({ workspace_id: 1, owner_ids: 1, status: 1 });
+    await db.collection('action_items').createIndex({ workspace_id: 1, decision_id: 1 });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {

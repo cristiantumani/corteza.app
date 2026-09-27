@@ -69,15 +69,22 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     }
   });
 
-  test('a transcript is extracted once and every decision is saved as AI-captured', async () => {
+  test('a transcript is extracted once: decisions saved as AI-captured, action items linked with owners', async () => {
     const space = await spaces.ensureDefaultSpace('WPIPE');
+    await db.collection('workspace_members').insertMany([
+      { workspace_id: 'WPIPE', user_id: 'U1', user_name: 'Ana Ruiz', email: 'ana@acme.com', removed_at: null },
+      { workspace_id: 'WPIPE', user_id: 'U2', user_name: 'Bob Chen', email: 'bob@acme.com', removed_at: null },
+      { workspace_id: 'WPIPE', user_id: 'U3', user_name: 'Martín Marchant', email: 'martin@acme.com', removed_at: null }
+    ]);
     const extract = fakeExtract([
       { decision_text: 'Move launch to Friday', decision_type: 'decision', tags: ['launch'], confidence: 0.92, context: 'Ana proposed it' },
       { decision_text: 'Budget is capped at 10k', decision_type: 'context', tags: [], confidence: 0.8 },
       {
-        decision_text: 'Bob sends the launch checklist', decision_type: 'action_item', confidence: 0.9,
-        owner_name: 'Bob', due_date: '2026-10-02', rationale: 'Support needs it before launch', evidence_quote: 'I will send the checklist by Friday'
-      }
+        decision_text: 'Bob and Martin send the launch checklist', decision_type: 'action_item', confidence: 0.9,
+        owner_names: ['Bob', 'Martin'], due_date: '2026-10-02', decision_ref: 0,
+        rationale: 'Support needs it before launch', evidence_quote: 'I will send the checklist by Friday'
+      },
+      { decision_text: 'Someone books the venue', decision_type: 'action_item', confidence: 0.7, owner_names: ['Carla'], due_date: null, decision_ref: null }
     ]);
     const transcript = {
       workspaceId: 'WPIPE', source: 'google_meet', externalId: 'conferenceRecords/1', title: 'Launch sync',
@@ -85,21 +92,17 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
       url: 'https://docs.google.com/document/d/x', spaceId: space.space_id, spaceName: space.name,
       author: { user_id: 'U1', name: 'Ana' }
     };
+    const dueDateRequests = [];
+    const requestDueDates = async (items, t) => { dueDateRequests.push({ items, title: t.title }); };
 
-    const first = await pipeline.ingestTranscript(transcript, { extract });
+    const first = await pipeline.ingestTranscript(transcript, { extract, requestDueDates });
     assert.equal(first.status, 'completed');
-    assert.equal(first.decisions.length, 3);
+    assert.equal(first.decisions.length, 2, 'action items are not decisions');
+    assert.equal(first.actionItems.length, 2);
     assert.match(extract.calls[0].text, /^Meeting: Launch sync\nDate: 2026-09-27\nParticipants: Ana, Bob, Carla/);
 
     const saved = await db.collection('decisions').find({ workspace_id: 'WPIPE' }).sort({ id: 1 }).toArray();
-    assert.deepEqual(saved.map(d => d.id), [1, 2, 3]);
-    const action = saved[2];
-    assert.equal(action.type, 'action_item');
-    assert.equal(action.owner_name, 'Bob');
-    assert.equal(action.due_date, '2026-10-02');
-    assert.equal(action.rationale, 'Support needs it before launch');
-    assert.equal(action.evidence_quote, 'I will send the checklist by Friday');
-    assert.match(action.alternatives, /Quote: "I will send the checklist by Friday"/);
+    assert.deepEqual(saved.map(d => d.id), [1, 2]);
     assert.equal(saved[0].capture, 'ai');
     assert.equal(saved[0].confidence, 0.92);
     assert.equal(saved[0].space_id, space.space_id);
@@ -109,14 +112,32 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.equal(saved[0].creator, 'Ana');
     assert.match(saved[0].alternatives, /Captured automatically from "Launch sync"[\s\S]*Ana proposed it/);
 
-    const again = await pipeline.ingestTranscript(transcript, { extract });
+    const items = await db.collection('action_items').find({ workspace_id: 'WPIPE' }).sort({ created_at: 1 }).toArray();
+    const checklist = items.find(item => item.text.includes('checklist'));
+    assert.equal(checklist.decision_id, 1, 'linked to the decision it carries out');
+    assert.deepEqual(checklist.owners.map(owner => owner.user_id), ['U2', 'U3'], 'spoken names matched to members, accents ignored');
+    assert.deepEqual(checklist.owner_ids, ['U2', 'U3']);
+    assert.equal(checklist.due_date, '2026-10-02');
+    assert.equal(checklist.status, 'open');
+    assert.equal(checklist.rationale, 'Support needs it before launch');
+    assert.equal(checklist.evidence_quote, 'I will send the checklist by Friday');
+    assert.equal(checklist.source.title, 'Launch sync');
+    const venue = items.find(item => item.text.includes('venue'));
+    assert.deepEqual(venue.owners, [{ name: 'Carla', user_id: null, email: null }], 'unmatched names are kept');
+    assert.equal(venue.decision_id, null);
+    assert.equal(dueDateRequests.length, 1);
+    assert.equal(dueDateRequests[0].items.length, 2);
+
+    const again = await pipeline.ingestTranscript(transcript, { extract, requestDueDates });
     assert.equal(again.status, 'duplicate');
     assert.equal(extract.calls.length, 1, 'extraction is not repeated');
-    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WPIPE' }), 3);
+    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WPIPE' }), 2);
+    assert.equal(await db.collection('action_items').countDocuments({ workspace_id: 'WPIPE' }), 2);
 
     const ingestion = await db.collection('ingestions').findOne({ external_id: 'conferenceRecords/1' });
     assert.equal(ingestion.status, 'completed');
-    assert.deepEqual(ingestion.decision_ids, [1, 2, 3]);
+    assert.deepEqual(ingestion.decision_ids, [1, 2]);
+    assert.equal(ingestion.action_items_created, 2);
   });
 
   test('failed extraction is recorded and retried later, not immediately', async () => {

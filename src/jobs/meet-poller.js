@@ -114,13 +114,13 @@ async function pollConnection(connection, deps = {}) {
       spaceName: space.name,
       author: { user_id: connection.user_id, name: connection.user_name }
     });
-    results.push({ title: meeting.title, url: meeting.url, status: outcome.status, decisions: outcome.decisions });
+    results.push({ title: meeting.title, url: meeting.url, status: outcome.status, decisions: outcome.decisions, actionItems: outcome.actionItems || [] });
   }
 
   const captured = results.filter(r => r.status === 'completed');
   const decisionsCaptured = captured.reduce((sum, r) => sum + r.decisions.length, 0);
 
-  for (const result of captured.filter(r => r.decisions.length > 0)) {
+  for (const result of captured.filter(r => r.decisions.length > 0 || r.actionItems.length > 0)) {
     notify(connection, result).catch(error => console.error('❌ Meet summary email failed:', error.message));
   }
 
@@ -137,7 +137,10 @@ async function notifyCaptured(connection, result) {
     email: connection.google_email,
     meeting_title: result.title,
     meeting_url: result.url,
-    decisions: result.decisions.map(d => ({ id: d.id, text: d.text, type: d.type }))
+    decisions: result.decisions.map(d => ({ id: d.id, text: d.text, type: d.type })),
+    action_items: result.actionItems.map(item => ({
+      text: item.text, owners: item.owners.map(owner => owner.name), due_date: item.due_date
+    }))
   });
 }
 

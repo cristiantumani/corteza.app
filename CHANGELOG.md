@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Action items ("pendientes") with owners and due dates (roadmap B1/B2)
+- **Separate from decisions:** action items live in a new `action_items` collection with several owners, a due date and a status (open, done, cancelled). Each is linked to the decision it carries out, for example "Se decide comenzar la investigación" → "Investigación técnica", owned by Martín and Felipe
+- **Owners are real people:** names spoken in the meeting are matched to workspace members, ignoring accents; unmatched names are kept
+- **Action items page (`/actions`):** filter by mine or everyone, status, overdue, due this week or no due date; mark items done and set dates inline. The decision detail lists its action items
+- **"When will this be done?" email:** when an action item from a recent meeting has no due date, its owners get one email per meeting with a link to set the date
+- Capture emails and import progress count action items
+- Extraction returns `owner_names` (a list) and `decision_ref`
+- Migration `005-move-action-items.js` moves action items that were briefly saved as decisions
+
 ### Changed - Extraction v2 (roadmap A2)
 - **New item types:** meetings now yield `decision`, `action_item`, `open_question` and `risk`. Background explanations and "context" are no longer captured as decisions
 - **Richer items:** each item carries `owner_name`, `due_date` (relative dates resolved from the meeting date), `rationale`, a verbatim `evidence_quote` and `supersedes_hint`. The dashboard shows the owner and due date

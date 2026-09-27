@@ -109,13 +109,26 @@ A6. **Operations.**
 
 ### Phase B: Follow-through, the core differentiator (about 5 weeks)
 
-B1. **Action items linked to decisions.**
-- New `action_items` collection in `src/core/actions/`: `{decision_id, text, owner_user_id, due_at, status, evidence, source}`.
-- Each decision shows its follow-ups.
+B1. **Action items linked to decisions.** *(done, Sept 2026)*
+- `action_items` collection (`src/core/actions/action-service.js`): several owners, due date, status (open, done, cancelled), and `decision_id` linking the item to the decision it carries out.
+- **Action items** page (`/actions`) with filters: mine or everyone, status, overdue, due this week, no due date. Each decision's detail view shows its action items.
+- When an action item has no due date, its owners get an email asking when it will be done (`src/core/actions/due-date-requests.js`). This only happens for meetings from the last 7 days.
 
-B2. **Owner resolution.**
-- Match the Meet participant display name (`participantName` in `src/ingestion/sources/google-meet.js`) and the extracted `owner_name` to workspace members.
-- Unmatched items stay unassigned, and a one-click "assign" is available.
+B2. **Owner resolution.** *(done: `src/core/actions/owners.js`)*
+- Owner names spoken in the meeting are matched to workspace members by full name, a unique first name, or a name prefix, ignoring accents.
+- Unmatched names are kept, with no user attached.
+- Still to do: a one-click "assign" for unmatched owners.
+
+B2b. **Meeting scorecard (new, from pilot feedback).** It's like a sales call scorecard, but for internal meetings.
+- **After each meeting, the organizer only** gets a note, for example "Weekly Ops · 7/10". It covers:
+  - the decisions made
+  - the % of action items with an owner and a due date
+  - open questions nobody took on
+  - whether last time's open items were reviewed
+  - one or two tips for next time
+- **Playbooks per meeting type** (a "script"): each team defines what its Weekly Ops, planning meetings or 1:1s should cover, and the meeting is checked against its playbook.
+- **We rate meetings, not people.** Team trends are opt-in for leaders (C4).
+- Most metrics come from the extracted items at no cost. The playbook check and the tips come from the same extraction call.
 
 B3. **Nudges.**
 - **Personal email "Your open commitments":** sent weekly, plus due-date reminders. Uses the Resend helpers in `src/utils/n8n-client.js` and a new `src/jobs/followups.js`.

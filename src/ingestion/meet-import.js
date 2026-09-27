@@ -234,6 +234,7 @@ async function runImport(importId, deps = {}) {
           status: outcome.status === 'duplicate' ? 'already_imported' : outcome.status,
           title: meeting.title,
           decisions_created: outcome.decisions.length,
+          action_items_created: (outcome.actionItems || []).length,
           error: outcome.status === 'failed' ? 'Corteza couldn’t extract decisions right now. Try importing it again later.' : null
         };
         if (outcome.error) console.error(`❌ Meet import ${importId}: extraction failed for ${item.meeting_id}: ${outcome.error}`);
@@ -249,11 +250,12 @@ async function runImport(importId, deps = {}) {
         [`items.${index}.status`]: result.status,
         [`items.${index}.title`]: result.title,
         [`items.${index}.decisions_created`]: result.decisions_created,
+        [`items.${index}.action_items_created`]: result.action_items_created || 0,
         [`items.${index}.error`]: result.error || null,
         lease_until: new Date(Date.now() + LEASE_MS),
         updated_at: now()
       },
-      $inc: { done: 1, decisions_created: result.decisions_created }
+      $inc: { done: 1, decisions_created: result.decisions_created, action_items_created: result.action_items_created || 0 }
     });
   }
 

@@ -53,6 +53,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | Decision types (decision, action_item, open_question, risk, …) | `src/core/decisions/types.js` |
+| Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`, `due-date-requests.js`) |
+| Action items page and API (`/actions`, `/api/action-items`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js` |
 | Extraction eval (labeled transcripts, scoring) | `scripts/eval-extraction.js`, `scripts/eval/score.js`, `test/fixtures/extraction/` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
 | Google verification / launch checklist | `docs/launch/google-verification.md` |
@@ -72,6 +74,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 
 ## Conventions and rules
 
+- **New action items go through `createActionItem`** (`src/core/actions/action-service.js`), never into `decisions`.
 - **New decisions go through `createDecision`** (`src/core/decisions/decision-service.js`); new transcript sources are adapters in `src/ingestion/sources/` that call `ingestTranscript`.
 - **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker (Slack, API, AI), use `ensureDefaultSpace(workspaceId)` from `src/services/spaces.js`.
 - **Workspace isolation:** never trust a `workspace_id` from the request body or query. Use the session's (`req.session.user.workspace_id`), `requireWorkspaceAccess`, or the API key's (`req.user.workspace_id`).

@@ -255,15 +255,21 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
 
 /**
  * Tells the user which decisions Corteza captured automatically from a meeting
- * @param {Object} params - { email, meeting_title, meeting_url, decisions: [{ id, text, type }] }
+ * @param {Object} params - { email, meeting_title, meeting_url, decisions: [{ id, text, type }],
+ *   action_items?: [{ text, owners: [name], due_date }] }
  */
-async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, decisions }) {
+async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, decisions, action_items = [] }) {
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
   const count = decisions.length;
+  const actionsHtml = action_items.length === 0 ? '' : `
+        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 8px;">Action items</h2>
+        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
+          ${action_items.map(item => `<li style="margin-bottom: 8px;">${escapeHtml(item.text)} <span style="color: #888;">(${escapeHtml(item.owners.join(', ') || 'no owner')} · ${escapeHtml(item.due_date || 'no due date')})</span></li>`).join('')}
+        </ul>`;
 
   const result = await sendEmail({
     to: email,
-    subject: `${count} decision${count === 1 ? '' : 's'} captured from "${meeting_title}"`,
+    subject: `${count} decision${count === 1 ? '' : 's'}${action_items.length ? ` and ${action_items.length} action item${action_items.length === 1 ? '' : 's'}` : ''} captured from "${meeting_title}"`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
@@ -275,6 +281,7 @@ async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, deci
         <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
           ${decisions.map(d => `<li style="margin-bottom: 8px;">${escapeHtml(d.text)} <span style="color: #888;">(${escapeHtml(d.type)})</span></li>`).join('')}
         </ul>
+        ${actionsHtml}
         <a href="${dashboardUrl}/dashboard"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
           Review in Corteza →
@@ -290,7 +297,46 @@ async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, deci
   return { success: true, email_id: result.id };
 }
 
+/**
+ * Asks an owner to set due dates on their action items from a meeting
+ * @param {Object} params - { email, name, meetingTitle, meetingUrl, items: [{ item_id, text }] }
+ */
+async function sendDueDateRequestEmail({ email, name, meetingTitle, meetingUrl, items }) {
+  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const count = items.length;
+  const firstName = String(name || '').split(' ')[0];
+
+  const result = await sendEmail({
+    to: email,
+    subject: `When will ${count === 1 ? 'this be' : 'these be'} done? ${count} action item${count === 1 ? '' : 's'} from "${meetingTitle}"`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${firstName ? `${escapeHtml(firstName)}, when` : 'When'} will ${count === 1 ? 'this be' : 'these be'} done?</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
+          In ${meetingUrl ? `<a href="${escapeHtml(meetingUrl)}" style="color: #3953bd;">${escapeHtml(meetingTitle)}</a>` : `<strong>${escapeHtml(meetingTitle)}</strong>`}
+          you took on ${count === 1 ? 'an action item' : 'these action items'} without a due date. Setting one helps the team follow up.
+        </p>
+        <ul style="padding-left: 0; list-style: none; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
+          ${items.map(item => `
+            <li style="margin-bottom: 12px; padding: 12px 16px; border: 1px solid #e5e5e5; border-radius: 10px;">
+              ${escapeHtml(item.text)}<br>
+              <a href="${baseUrl}/actions?item=${encodeURIComponent(item.item_id)}" style="color: #3953bd; font-weight: 600; font-size: 13px;">Set a due date →</a>
+            </li>`).join('')}
+        </ul>
+        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
+          Corteza captured these from the meeting's transcript or Gemini notes. If one isn't yours or won't happen, mark it cancelled in Corteza.
+        </p>
+      </div>
+    `
+  });
+
+  console.log(`✅ Due date request sent to ${email}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
+  sendDueDateRequestEmail,
   sendMeetingCaptureEmail,
   sendEmail,
   escapeHtml,

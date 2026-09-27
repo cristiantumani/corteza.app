@@ -145,11 +145,12 @@ Do not return background explanations, how-things-work descriptions, small talk,
 Fields for each item:
 - decision_type: "decision" | "action_item" | "open_question" | "risk"
 - decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the language of the transcript. State the outcome itself, the way it would read in a decision log, not a narration of the conversation. Write "Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel", not "Se propuso iniciar una investigación…" or "Cristian propuso…"; write "Launch moves to October 22", not "The team discussed moving the launch". Who proposed or said what belongs in evidence_quote. For action items, name the owner and the task ("Ana envía el deck de precios antes del viernes"). If something was only proposed and not agreed, it is not a decision.
-- owner_name: the person responsible, as named in the meeting, or null
+- owner_names: the people responsible, as named in the meeting (for example ["Martín Marchant", "Felipe Silva"]); [] if nobody was named
 - due_date: "YYYY-MM-DD" if a deadline was stated; resolve relative dates ("next Friday") from the meeting date given in the header; otherwise null
 - rationale: why this was decided or needed, in one or two sentences. Include context from anywhere in the meeting that led to it, such as a strategy, goal, problem or constraint presented earlier ("A raíz de la nueva estrategia presentada…"), even if it was not said in the same sentence. null if the meeting gives no reason.
 - evidence_quote: a short verbatim quote (under 200 characters) from the transcript or notes that supports the item
 - supersedes_hint: if the speakers say this changes or reverses an earlier decision, a short description of what it replaces, otherwise null
+- decision_ref: for an action_item that carries out a decision in your list, the 0-based position of that decision in the array you return; otherwise null. When a decision needs work to happen ("se decide comenzar una investigación técnica, a cargo de Martín y Felipe"), return the decision and an action_item for the work, linked with decision_ref.
 - epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null
 - tags: 2-5 lowercase keywords
 - confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
@@ -290,9 +291,15 @@ function optionalText(value, max) {
 function normalizeItem(item) {
   if (!item || typeof item !== 'object') return item;
   const evidence = optionalText(item.evidence_quote, 300);
+  const ownerNames = (Array.isArray(item.owner_names) ? item.owner_names : [item.owner_name])
+    .map(name => optionalText(name, 100))
+    .filter(Boolean)
+    .slice(0, 10);
   return {
     ...item,
-    owner_name: optionalText(item.owner_name, 100),
+    owner_names: ownerNames,
+    owner_name: ownerNames[0] || null,
+    decision_ref: Number.isInteger(item.decision_ref) && item.decision_ref >= 0 ? item.decision_ref : null,
     due_date: typeof item.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.due_date) ? item.due_date : null,
     rationale: optionalText(item.rationale, 500),
     evidence_quote: evidence,

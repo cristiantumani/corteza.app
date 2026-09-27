@@ -678,6 +678,27 @@
       valueElement.textContent = value || '';
     }
 
+    /** Action items that carry out a decision (see /actions); hidden when there are none */
+    async function loadDecisionActionItems(decisionId) {
+      const section = document.getElementById('detail-actions-section');
+      const list = document.getElementById('detail-actions');
+      if (!section || !list) return;
+      section.style.display = 'none';
+      try {
+        const response = await fetch(`/api/action-items?owner=all&status=all&decision_id=${encodeURIComponent(decisionId)}`, { credentials: 'include' });
+        const data = await response.json();
+        if (!response.ok || !data.items.length) return;
+        list.innerHTML = data.items.map(item => {
+          const owners = item.owners.map(owner => owner.name).join(', ') || 'No owner';
+          const due = item.due_date ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString() : 'no due date';
+          return `<div style="margin-bottom: 8px;">${item.status === 'done' ? '✅' : '⬜'} ${escapeHtml(item.text)}<br><small>${escapeHtml(owners)} · ${escapeHtml(due)}</small></div>`;
+        }).join('') + '<a href="/actions" style="font-size: 13px;">Open action items →</a>';
+        section.style.display = 'block';
+      } catch (error) {
+        console.error('Could not load action items:', error);
+      }
+    }
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
@@ -697,6 +718,8 @@
       showDetailField('detail-owner-container', 'detail-owner', decision.owner_name);
       showDetailField('detail-due-container', 'detail-due',
         decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);
+
+      loadDecisionActionItems(decision.id);
 
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;

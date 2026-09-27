@@ -139,6 +139,9 @@ async function startApp() {
   // Connect Google Meet (automatic decision capture)
   expressApp.use(require('./integrations/google/routes'));
 
+  // Action items ("pendientes"): page and API
+  expressApp.use(require('./http/action-items'));
+
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/auth/login');
