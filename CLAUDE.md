@@ -6,7 +6,7 @@ Guide for AI agents (and humans) working on Corteza. Read this first, then `docs
 
 A team decision log focused on **Google Workspace**:
 
-1. **Automatic capture:** reads Google Meet transcripts and Gemini meeting notes and saves the decisions in them with no human in the loop. Being built; see the roadmap below.
+1. **Automatic capture:** reads Google Meet transcripts and Gemini meeting notes and saves the decisions in them with no human in the loop (Settings → Google Meet).
 2. **Manual capture:** the Chrome extension (`browser-extension/`) and the dashboard's Log Decision form.
 3. **Slack as an input source only:** `/decision` and transcript uploads. Slack must not be used for sign-up, login or identity.
 
@@ -44,6 +44,11 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Workspaces (Google domain ↔ workspace) | `src/core/workspaces/workspace-service.js` |
 | Users and memberships | `src/core/users/user-service.js` |
 | Invites (validate, join) | `src/core/invites/invite-service.js` |
+| Create a decision (single write path for new code) | `src/core/decisions/decision-service.js` (`createDecision`) |
+| Transcript → decisions pipeline (dedupe, extract, auto-save) | `src/ingestion/pipeline.js` (`ingestTranscript`) |
+| Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js` |
+| Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
+| Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | Embeddings / semantic search | `src/services/embeddings.js`, `src/services/semantic-search.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
@@ -53,7 +58,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` |
-| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` |
+| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet) |
 | Chrome extension | `browser-extension/` |
 | DB migrations (manual, idempotent) | `scripts/migrations/` |
 | Tests | `test/unit/`, `test/integration/`, helper `test/helpers/db.js` |
@@ -61,6 +66,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 
 ## Conventions and rules
 
+- **New decisions go through `createDecision`** (`src/core/decisions/decision-service.js`); new transcript sources are adapters in `src/ingestion/sources/` that call `ingestTranscript`.
 - **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker (Slack, API, AI), use `ensureDefaultSpace(workspaceId)` from `src/services/spaces.js`.
 - **Workspace isolation:** never trust a `workspace_id` from the request body or query. Use the session's (`req.session.user.workspace_id`), `requireWorkspaceAccess`, or the API key's (`req.user.workspace_id`).
 - **Joining a workspace:** only through Google sign-in (same `hd` domain, or an invite link). Never trust the email's domain, only Google's `hd` claim. See `signInWithGoogle` in `src/auth/google-signin.js`.
@@ -78,6 +84,6 @@ The full plan and target module layout are in `docs/ARCHITECTURE.md`. Phases:
 0. **Stabilize:** default spaces, security fixes, cleanup, tests and CI. *(done)*
 1. **Restructure:** single decision write path (`core/decisions`), `app.js`/`server.js` split, Slack optional. (`workspaces`/`users` collections were added in Phase 2.)
 2. **Google sign-in:** Google OIDC with domain workspaces. Magic link, passwords and Slack login are removed. *(done)*
-3. **Google Meet auto-capture:** "Connect Google", Meet transcript and Gemini notes poller, auto-save pipeline.
+3. **Google Meet auto-capture:** "Connect Google", Meet transcript and Gemini notes poller, auto-save pipeline. *(done; see `docs/integrations/google-meet.md`)*
 4. **Slack input-only:** "Connect Slack" from Settings, events mapped to workspaces.
 5. **Docs and cleanup.**

@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Automatic decision capture from Google Meet
+- **Settings → Google Meet → Connect.** Separate consent for `meetings.space.readonly` and `drive.meet.readonly` with offline access. The refresh token is stored encrypted in `google_connections`, and the connected account must match the signed-in user
+- **Poller** (`jobs/meet-poller.js`, every 5 min): finds meetings that ended, reads transcripts (speaker-labelled) and Gemini notes, and saves every extracted decision automatically, marked AI-captured with confidence, meeting title and a link to the transcript/notes
+- **Privacy defaults:** 1:1 meetings skipped, title keyword exclusions, choice of destination space
+- **Reliability:** each meeting is processed once (`ingestions`, unique per meeting) even with several connected participants; late transcripts retried for 6h; failed extractions retried up to 3 times; revoked Google access shown in Settings with a Reconnect link
+- **Summary email** to the connected user with the captured decisions; "Check for new meetings now" button; recent meetings list in Settings
+- **Dashboard:** "✨ AI-captured" badge and "Google Meet: <meeting>" link on decision cards
+- **New modules:** `core/decisions/decision-service.js` (single write path with atomic per-workspace ids, `counters`), `ingestion/pipeline.js`, `ingestion/sources/google-meet.js`, `integrations/google/{connections,meet-client,routes}.js`
+- **Docs:** `docs/integrations/google-meet.md`
+
 ### Added - Sign in with Google
 - **Google is the only way to sign in.** "Continue with Google" on `/auth/login` (OpenID Connect with state, nonce and ID-token verification; the session ID is regenerated on login)
 - **Domain workspaces:** a company's Google Workspace domain (the `hd` claim) is its Corteza workspace. The first person creates it and becomes admin; colleagues on the same domain join automatically. Consumer accounts (gmail.com) get a personal workspace

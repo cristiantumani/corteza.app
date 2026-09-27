@@ -95,6 +95,7 @@
         <div class="flex gap-1 flex-wrap">
           ${decision.space_name ? `<span class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
           <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(decision.type)}</span>
+          ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="Captured automatically${decision.confidence != null ? ` (${Math.round(decision.confidence * 100)}% confidence)` : ''}">✨ AI-captured</span>` : ''}
         </div>
         <span class="flex items-center gap-1 ${status.color} font-bold text-xs">
           <span class="w-2 h-2 rounded-full ${status.dotColor}"></span>
@@ -105,6 +106,8 @@
       <h5 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors mb-2 line-clamp-2">${escapeHtml(decision.text.split('\n')[0])}</h5>
 
       <p class="text-sm text-on-surface-variant mb-6 line-clamp-2">${escapeHtml(getTruncatedText(decision.text))}</p>
+
+      ${getSourceLine(decision)}
 
       <div class="flex items-center justify-between pt-4 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
@@ -160,6 +163,18 @@
     });
 
     return card;
+  }
+
+  // "From: <meeting>" for decisions captured from a meeting (link to the transcript/notes if we have one)
+  function getSourceLine(decision) {
+    const details = decision.source_details;
+    if (!details || !details.title) return '';
+    const label = details.type === 'google_meet' ? 'Google Meet' : 'Source';
+    const safeUrl = details.url && /^https:\/\//.test(details.url) ? details.url : null;
+    const title = safeUrl
+      ? `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" data-action="source" class="text-primary hover:underline">${escapeHtml(details.title)}</a>`
+      : escapeHtml(details.title);
+    return `<p class="text-xs text-on-surface-variant -mt-4 mb-6">${label}: ${title}</p>`;
   }
 
   function getStatusInfo(decision) {
@@ -219,6 +234,11 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // For attribute values (escapeHtml leaves quotes as-is)
+  function escapeAttr(text) {
+    return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   // Update header with user info

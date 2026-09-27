@@ -181,6 +181,12 @@ async function connectToMongoDB() {
     );
     await workspaceMembersCollection.createIndex({ email: 1, removed_at: 1 });
 
+    // Google Meet capture (integrations/google/connections, ingestion/pipeline)
+    await db.collection('google_connections').createIndex({ workspace_id: 1, user_id: 1 }, { unique: true });
+    await db.collection('google_connections').createIndex({ status: 1 });
+    await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, external_id: 1 }, { unique: true });
+    await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, updated_at: -1 });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {

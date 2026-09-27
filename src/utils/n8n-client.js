@@ -253,7 +253,45 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
   return { success: true, email_id: result.id };
 }
 
+/**
+ * Tells the user which decisions Corteza captured automatically from a meeting
+ * @param {Object} params - { email, meeting_title, meeting_url, decisions: [{ id, text, type }] }
+ */
+async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, decisions }) {
+  const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const count = decisions.length;
+
+  const result = await sendEmail({
+    to: email,
+    subject: `${count} decision${count === 1 ? '' : 's'} captured from "${meeting_title}"`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${count} decision${count === 1 ? '' : 's'} captured</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
+          From ${meeting_url ? `<a href="${escapeHtml(meeting_url)}" style="color: #3953bd;">${escapeHtml(meeting_title)}</a>` : `<strong>${escapeHtml(meeting_title)}</strong>`}.
+          They're already saved in Corteza; edit or delete any that aren't right.
+        </p>
+        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
+          ${decisions.map(d => `<li style="margin-bottom: 8px;">${escapeHtml(d.text)} <span style="color: #888;">(${escapeHtml(d.type)})</span></li>`).join('')}
+        </ul>
+        <a href="${dashboardUrl}/dashboard"
+           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Review in Corteza →
+        </a>
+        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
+          You get this because you connected Google Meet to Corteza. Manage it in Settings → Integrations.
+        </p>
+      </div>
+    `
+  });
+
+  console.log(`✅ Meeting capture email sent to ${email}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
+  sendMeetingCaptureEmail,
   sendEmail,
   escapeHtml,
   sendMagicLinkEmail,
