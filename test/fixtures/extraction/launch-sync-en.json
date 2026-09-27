@@ -1,0 +1,57 @@
+{
+  "name": "Launch sync (English, synthetic)",
+  "title": "Q4 launch sync",
+  "date": "2026-09-21",
+  "participants": [
+    "Ana Ruiz",
+    "Bob Chen",
+    "Carla Diaz",
+    "Dan Park"
+  ],
+  "transcript": "Ana Ruiz: Morning all. Quick recap of where we are with the Q4 launch.\nBob Chen: Engineering is mostly on track. The billing integration is the one thing I'm worried about, Stripe's new invoicing API is still in beta and it's been flaky in staging.\nAna Ruiz: How flaky?\nBob Chen: A few timeouts a day. If it doesn't stabilise we could slip a week.\nCarla Diaz: Marketing had the 15th of October in all the drafts. Are we keeping that?\nAna Ruiz: Let's decide now. I'd rather launch on the 22nd and not rush billing. Everyone ok with the 22nd?\nDan Park: Fine by me.\nBob Chen: Yes, the 22nd gives us room.\nAna Ruiz: Great, so we're moving the launch to October 22nd instead of the 15th.\nCarla Diaz: Then I'll update the press kit and the landing page dates by Wednesday.\nAna Ruiz: Thanks. Bob, can you get a fallback plan for billing, like manual invoices for the first month, written up by Friday?\nBob Chen: Sure, I'll have it by Friday.\nDan Park: One thing nobody has answered: who is on call for support during launch week? Last time it was unclear.\nAna Ruiz: Good point, I don't know yet. Let's figure that out next week.\nCarla Diaz: Also, by the way, the new logo files are in the shared drive, the designer explained the grid system they used, it's based on an eight pixel baseline.\nAna Ruiz: Nice. And we agreed last month to only launch in the US first, that still stands, no EU until Q1.\nDan Park: Makes sense.\nAna Ruiz: Ok, that's it, thanks everyone.",
+  "expected": [
+    {
+      "type": "decision",
+      "match": [
+        "22"
+      ],
+      "rationale_match": [
+        "billing"
+      ]
+    },
+    {
+      "type": "decision",
+      "match": [
+        "US"
+      ]
+    },
+    {
+      "type": "action_item",
+      "match": [
+        "press kit"
+      ],
+      "owner": "Carla Diaz",
+      "due_date": "2026-09-23"
+    },
+    {
+      "type": "action_item",
+      "match": [
+        "fallback"
+      ],
+      "owner": "Bob Chen",
+      "due_date": "2026-09-25"
+    },
+    {
+      "type": "open_question",
+      "match": [
+        "support"
+      ]
+    },
+    {
+      "type": "risk",
+      "match": [
+        "billing"
+      ]
+    }
+  ]
+}

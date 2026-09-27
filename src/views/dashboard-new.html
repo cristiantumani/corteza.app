@@ -176,6 +176,9 @@
                 <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     <option value="">All Types</option>
                     <option value="decision">Decision</option>
+                    <option value="action_item">Action item</option>
+                    <option value="open_question">Open question</option>
+                    <option value="risk">Risk</option>
                     <option value="explanation">Explanation</option>
                     <option value="context">Context</option>
                     <option value="learning">Learning</option>
@@ -237,10 +240,12 @@
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         >
           <option value="decision">Decision</option>
+          <option value="action_item">Action item</option>
+          <option value="open_question">Open question</option>
+          <option value="risk">Risk</option>
           <option value="explanation">Explanation</option>
           <option value="context">Context</option>
           <option value="learning">Learning</option>
-          <option value="risk">Risk</option>
           <option value="assumption">Assumption</option>
         </select>
       </div>
@@ -321,6 +326,11 @@
       <div class="content" id="detail-decision-text"></div>
     </div>
 
+    <div class="detail-section" id="detail-rationale-section" style="display: none;">
+      <h3>Why</h3>
+      <div class="content" id="detail-rationale"></div>
+    </div>
+
     <div class="detail-grid">
       <div class="detail-item">
         <label>Type</label>
@@ -333,6 +343,14 @@
       <div class="detail-item">
         <label>Date</label>
         <div class="value" id="detail-date"></div>
+      </div>
+      <div class="detail-item" id="detail-owner-container" style="display: none;">
+        <label>Owner</label>
+        <div class="value" id="detail-owner"></div>
+      </div>
+      <div class="detail-item" id="detail-due-container" style="display: none;">
+        <label>Due</label>
+        <div class="value" id="detail-due"></div>
       </div>
       <div class="detail-item" id="detail-confidence-container" style="display: none;">
         <label>AI Confidence</label>
@@ -377,6 +395,9 @@
         <label for="edit-decision-type">Type *</label>
         <select id="edit-decision-type" required>
           <option value="decision">Decision</option>
+          <option value="action_item">Action item</option>
+          <option value="open_question">Open question</option>
+          <option value="risk">Risk</option>
           <option value="explanation">Explanation</option>
           <option value="context">Context</option>
         </select>

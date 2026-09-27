@@ -657,18 +657,46 @@
       }
     }
 
+    /** Display names for decision types (src/core/decisions/types.js) */
+    const TYPE_TITLES = {
+      decision: 'Decision',
+      action_item: 'Action item',
+      open_question: 'Open question',
+      risk: 'Risk',
+      explanation: 'Explanation',
+      context: 'Context',
+      learning: 'Learning',
+      assumption: 'Assumption'
+    };
+
+    /** Shows a detail field with text, or hides it when there's no value (missing elements are ignored) */
+    function showDetailField(containerId, valueId, value) {
+      const container = document.getElementById(containerId);
+      const valueElement = document.getElementById(valueId);
+      if (!container || !valueElement) return;
+      container.style.display = value ? '' : 'none';
+      valueElement.textContent = value || '';
+    }
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
 
-      // Set title
-      document.getElementById('detail-title').textContent = `Decision #${decision.id}`;
+      // Title names the item's type: "Context #92", "Action item #93"
+      const typeLabel = TYPE_TITLES[decision.type] || 'Decision';
+      document.getElementById('detail-title').textContent = `${typeLabel} #${decision.id}`;
 
       // Set decision text
       document.getElementById('detail-decision-text').textContent = decision.text;
 
       // Set type with badge
-      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${decision.type}">${decision.type}</span>`;
+      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${escapeHtml(decision.type)}">${escapeHtml(typeLabel)}</span>`;
+
+      // Why, owner and due date (AI extraction v2); hidden when missing
+      showDetailField('detail-rationale-section', 'detail-rationale', decision.rationale);
+      showDetailField('detail-owner-container', 'detail-owner', decision.owner_name);
+      showDetailField('detail-due-container', 'detail-due',
+        decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);
 
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;
@@ -2759,7 +2787,7 @@
         const confidence = suggestion.confidence_score || 0;
         const confidencePercent = Math.round(confidence * 100);
         const confidenceColor = confidence >= 0.8 ? '#10B981' : confidence >= 0.6 ? '#F59E0B' : '#EF4444';
-        const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
+        const typeEmoji = { decision: '✅', action_item: '☑️', open_question: '❓', risk: '⚠️', explanation: '💡', context: '📌' };
 
         const card = document.createElement('div');
         card.id = `suggestion-${suggestion.suggestion_id}`;
@@ -3169,6 +3197,8 @@
 
       const typeColors = {
         'decision': 'bg-blue-100 text-blue-800',
+        'action_item': 'bg-indigo-100 text-indigo-800',
+        'open_question': 'bg-orange-100 text-orange-800',
         'explanation': 'bg-green-100 text-green-800',
         'context': 'bg-purple-100 text-purple-800',
         'learning': 'bg-yellow-100 text-yellow-800',
