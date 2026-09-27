@@ -32,6 +32,25 @@ async function listConferenceRecords(client, { endedAfter }) {
   });
 }
 
+/**
+ * Conference records that started within [from, to)
+ * @returns {Promise<Object[]>}
+ */
+async function listConferenceRecordsBetween(client, { from, to }) {
+  return collectPages(client, `${MEET_API}/conferenceRecords`, 'conferenceRecords', {
+    filter: `start_time>="${from.toISOString()}" AND start_time<"${to.toISOString()}"`
+  });
+}
+
+/**
+ * One conference record by name ("conferenceRecords/<id>"). Only succeeds for
+ * meetings the connected user can access.
+ */
+async function getConferenceRecord(client, name) {
+  const { data } = await client.request({ url: `${MEET_API}/${name}` });
+  return data;
+}
+
 /** @returns {Promise<Object[]>} participants with signedinUser/anonymousUser/phoneUser */
 async function listParticipants(client, conferenceRecordName) {
   return collectPages(client, `${MEET_API}/${conferenceRecordName}/participants`, 'participants');
@@ -89,6 +108,8 @@ function isRevokedError(error) {
 
 module.exports = {
   listConferenceRecords,
+  listConferenceRecordsBetween,
+  getConferenceRecord,
   listParticipants,
   listTranscripts,
   listTranscriptEntries,

@@ -113,12 +113,47 @@ async function loadMeeting(client, record) {
 
   meeting.text = sections.join('\n\n');
   meeting.state = meeting.text ? 'ready' : (stillGenerating ? 'pending' : 'none');
-  if (!meeting.title) {
-    meeting.title = meeting.occurredAt
-      ? `Google Meet on ${meeting.occurredAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-      : 'Google Meet';
-  }
+  meeting.title = meeting.title || fallbackTitle(meeting.occurredAt);
   return meeting;
+}
+
+/**
+ * Lightweight summary of a meeting for listing (no transcript text is downloaded)
+ * @returns {Promise<{ externalId, title, url, occurredAt, endedAt, participantCount, hasTranscript, hasNotes, state }>}
+ *   state: 'ready' | 'pending' (still being generated) | 'none' (nothing recorded)
+ */
+async function describeMeeting(client, record) {
+  const [participants, transcripts, smartNotes] = await Promise.all([
+    meet.listParticipants(client, record.name),
+    meet.listTranscripts(client, record.name),
+    meet.listSmartNotes(client, record.name)
+  ]);
+
+  const readyTranscripts = transcripts.filter(t => t.state === 'FILE_GENERATED');
+  const readyNotes = smartNotes.filter(n => n.state === 'FILE_GENERATED');
+  const meeting = {
+    externalId: record.name,
+    title: null,
+    url: null,
+    occurredAt: record.startTime ? new Date(record.startTime) : null,
+    endedAt: record.endTime ? new Date(record.endTime) : null,
+    participantCount: participants.length,
+    hasTranscript: readyTranscripts.length > 0,
+    hasNotes: readyNotes.length > 0,
+    state: readyTranscripts.length || readyNotes.length ? 'ready'
+      : (transcripts.length || smartNotes.length ? 'pending' : 'none')
+  };
+
+  const doc = readyTranscripts[0]?.docsDestination || readyNotes[0]?.docsDestination;
+  if (doc) await addDocInfo(client, meeting, doc);
+  meeting.title = meeting.title || fallbackTitle(meeting.occurredAt);
+  return meeting;
+}
+
+function fallbackTitle(occurredAt) {
+  return occurredAt
+    ? `Google Meet on ${occurredAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+    : 'Google Meet';
 }
 
 /** Fills in title and link from the first Meet-created Doc we can read */
@@ -137,6 +172,7 @@ async function addDocInfo(client, meeting, docsDestination) {
 
 module.exports = {
   loadMeeting,
+  describeMeeting,
   participantName,
   cleanMeetingTitle,
   formatTranscriptEntries,

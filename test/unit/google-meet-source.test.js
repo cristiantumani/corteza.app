@@ -135,3 +135,25 @@ test('connect URL asks for Meet + Drive-Meet scopes with offline access', () => 
   assert.deepEqual(connections.missingScopes(['openid', 'https://www.googleapis.com/auth/meetings.space.readonly']),
     ['https://www.googleapis.com/auth/drive.meet.readonly']);
 });
+
+test('describeMeeting summarises availability without downloading transcript text', async () => {
+  let entriesFetched = false;
+  const restore = stubMeet({
+    listParticipants: async () => participants,
+    listTranscripts: async () => [{ name: 't1', state: 'FILE_GENERATED', docsDestination: { document: 'doc-1' } }],
+    listSmartNotes: async () => [],
+    listTranscriptEntries: async () => { entriesFetched = true; return []; },
+    getDriveFile: async (client, fileId) => ({ id: fileId, name: 'Board review - 2026/08/12 15:00 CEST - Transcript', webViewLink: 'https://docs.google.com/document/d/doc-1' })
+  });
+  try {
+    const meeting = await source.describeMeeting({}, record);
+    assert.equal(meeting.state, 'ready');
+    assert.equal(meeting.hasTranscript, true);
+    assert.equal(meeting.hasNotes, false);
+    assert.equal(meeting.title, 'Board review');
+    assert.equal(meeting.participantCount, 3);
+    assert.equal(entriesFetched, false);
+  } finally {
+    restore();
+  }
+});

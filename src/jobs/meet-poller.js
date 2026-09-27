@@ -163,6 +163,8 @@ async function runMeetPoller() {
     for (const connection of active) {
       await runForConnection(connection);
     }
+    // Finish "Import past meetings" jobs interrupted by a restart
+    await require('../ingestion/meet-import').resumeStaleImports();
   } catch (error) {
     console.error('❌ Meet poller run failed:', error.message);
   }
