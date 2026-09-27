@@ -24,37 +24,13 @@
     </div>
   </div>
 
-  <!-- Login required: email capture form (hidden by default) -->
+  <!-- Login required (hidden by default) -->
   <div id="login-required" class="login-message" style="display: none;">
     <p class="login-intro">Log team decisions from anywhere in Chrome.</p>
-    <form id="email-capture-form">
-      <div class="form-group">
-        <label for="email-input">Email</label>
-        <input
-          type="email"
-          id="email-input"
-          placeholder="your@email.com"
-          required
-        />
-      </div>
-      <div class="form-group">
-        <label for="workspace-input">Team name</label>
-        <input
-          type="text"
-          id="workspace-input"
-          placeholder="e.g. acme"
-          required
-        />
-      </div>
-      <button type="submit" class="btn-primary" id="email-submit-btn">
-        Send me a login link →
-      </button>
-      <div id="email-sent-msg" class="message success" style="display: none;">
-        ✓ Check your email for a login link!
-      </div>
-      <div id="email-error-msg" class="message error" style="display: none;"></div>
-    </form>
-    <p class="login-alt">Already have an account? <a href="#" id="login-link">Open dashboard</a></p>
+    <button type="button" class="btn-primary" id="google-signin-btn">
+      Sign in with Google →
+    </button>
+    <p class="login-alt">Opens Corteza in a new tab. Come back here once you're signed in.</p>
   </div>
 
   <!-- Form (shown when authenticated) -->

@@ -9,6 +9,7 @@
 - **Automatic capture from meetings** *(in progress)*: reads Google Meet transcripts and Gemini notes and saves the decisions in them. Today you can upload a transcript (`.txt`, `.md`, `.vtt`, `.srt`, `.pdf`, `.docx`) or send one to the API.
 - **Manual capture:** the Chrome extension (`Cmd/Ctrl+Shift+M`) and the dashboard's Log Decision form.
 - **Slack input:** `/decision` and transcript uploads in Slack.
+- **Sign in with Google:** your company's Google Workspace domain is your Corteza workspace, and colleagues join automatically.
 - **Organize and find:** spaces (public, shared, private), semantic search, AI analytics, Jira linking, and a weekly digest email.
 
 ## Run locally
@@ -17,7 +18,7 @@ Requirements: Node.js 20.19+ (see `.nvmrc`) and a MongoDB database (Atlas or loc
 
 ```bash
 npm install
-cp .env.example .env      # fill in MONGODB_URI, SESSION_SECRET, ENCRYPTION_KEY, Slack vars, and optionally AI keys
+cp .env.example .env      # fill in MONGODB_URI, SESSION_SECRET, ENCRYPTION_KEY, GOOGLE_CLIENT_ID/SECRET, Slack vars, optional AI keys
 npm start                 # http://localhost:3000
 ```
 

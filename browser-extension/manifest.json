@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Corteza Team Memory",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Log team decisions, context, and learnings from anywhere on the web",
   "permissions": ["storage"],
   "host_permissions": [

@@ -51,6 +51,11 @@ function validateEnvironment() {
     console.warn('⚠️  Partial Jira configuration detected. All three variables required: JIRA_URL, JIRA_EMAIL, JIRA_API_TOKEN');
   }
 
+  // Google sign-in is the only way to log in to the dashboard
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.warn('⚠️  GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set. Nobody can sign in to the dashboard.');
+  }
+
   // Check optional Claude AI config
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn('⚠️  ANTHROPIC_API_KEY not set. AI decision extraction will be disabled.');
@@ -86,6 +91,17 @@ module.exports = {
     email: process.env.JIRA_EMAIL,
     apiToken: process.env.JIRA_API_TOKEN,
     isConfigured: !!(process.env.JIRA_URL && process.env.JIRA_EMAIL && process.env.JIRA_API_TOKEN)
+  },
+  app: {
+    // Public URL of the app, used for OAuth redirect URIs and links in emails
+    baseUrl: (process.env.BASE_URL
+      || (process.env.APP_BASE_URL ? `https://${process.env.APP_BASE_URL.replace(/^https?:\/\//, '')}` : 'https://app.corteza.app')
+    ).replace(/\/$/, '')
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    isConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
   },
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY,

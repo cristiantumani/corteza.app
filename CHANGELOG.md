@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Sign in with Google
+- **Google is the only way to sign in.** "Continue with Google" on `/auth/login` (OpenID Connect with state, nonce and ID-token verification; the session ID is regenerated on login)
+- **Domain workspaces:** a company's Google Workspace domain (the `hd` claim) is its Corteza workspace. The first person creates it and becomes admin; colleagues on the same domain join automatically. Consumer accounts (gmail.com) get a personal workspace
+- **Existing users are linked by email.** An admin of an existing workspace claims their Google domain on first sign-in. `scripts/migrations/002-link-workspace-to-google.js` links workspaces created through Slack or magic links
+- **Invites** go through Google (`/auth/google?invite=<id>`); invites addressed to an email only work for that Google account
+- New `workspaces` and `users` collections; new code in `src/auth`, `src/core/{workspaces,users,invites}` and `src/integrations/google`
+- Chrome extension 1.1.0: "Sign in with Google" replaces the email login form
+
+### Removed
+- Magic-link email login, passwords (login, reset, Settings "change password", invite sign-up), Slack `/login` sign-in (the command now links to the web sign-in), one-time login tokens, and the `bcrypt` dependency
+
+### Fixed
+- Completing onboarding overwrote the member's workspace `role` (admin/member) with the job title from the form. The job title is now stored as `role_title`; `scripts/migrations/003-repair-member-roles.js` repairs affected members
+- The dashboard's admin flag (`/auth/me`) and admin-only settings endpoints only checked Slack admin status, so admins of workspaces without Slack were never treated as admins. They now check `workspace_admins` first
+
 ### 🔒 Security
 - Magic links can no longer be used to join an existing workspace. Anyone could type another team's workspace name and get admin access; now joining an existing workspace needs an invite. Slack `/login` users join as members, not admins
 - One-time login tokens are stored hashed in MongoDB (`login_tokens`, auto-expiring) instead of in memory, so they survive restarts and work across instances. Password-reset links can no longer be used to log in
