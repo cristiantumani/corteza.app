@@ -163,7 +163,7 @@ async function loadSpaces(workspaceId) {
   try {
     console.log('🔍 Loading spaces for workspace:', workspaceId);
     const response = await fetch(
-      `${currentApiUrl}/api/spaces?workspace_id=${workspaceId}`,
+      `${currentApiUrl}/api/spaces?workspace_id=${workspaceId}&writable=true`,
       {
         method: 'GET',
         credentials: 'include',

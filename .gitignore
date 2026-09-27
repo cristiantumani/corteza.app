@@ -51,3 +51,8 @@ temp/
 # AI/Development artifacts
 .claude/
 *.code-workspace
+
+# Browser extension builds and signing keys (never commit)
+*.pem
+*.crx
+browser-extension/*.zip

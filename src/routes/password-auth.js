@@ -75,12 +75,13 @@ router.post('/auth/login-with-password', async (req, res) => {
     }
 
     // Generate login token
-    const token = generateLoginToken(
+    const token = await generateLoginToken(
       member.user_id,
       member.user_name,
       member.workspace_id,
-      member.workspace_name || normalizedWorkspace,
-      member.email
+      member.workspace_name || member.workspace_id,
+      member.email,
+      'password'
     );
 
     // Return redirect URL with token

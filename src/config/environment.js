@@ -71,7 +71,7 @@ module.exports = {
   port: process.env.PORT || 3000,
   mongodb: {
     uri: process.env.MONGODB_URI,
-    dbName: 'decision-logger'
+    dbName: process.env.DB_NAME || 'decision-logger'
   },
   slack: {
     token: process.env.SLACK_BOT_TOKEN, // For single-workspace mode (optional if using OAuth)

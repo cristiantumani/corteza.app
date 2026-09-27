@@ -91,12 +91,14 @@ router.post('/auth/forgot-password', async (req, res) => {
     const member = memberships[0];
 
     // Generate one-time token for password reset
-    const token = generateLoginToken(
+    const token = await generateLoginToken(
       member.user_id,
       member.user_name,
       member.workspace_id,
       member.workspace_name,
-      member.email
+      member.email,
+      'password_reset',
+      15 * 60 * 1000
     );
 
     // Build reset link
@@ -157,9 +159,9 @@ router.post('/auth/reset-password', async (req, res) => {
 
     // Validate and consume token
     const { consumeToken } = require('./dashboard-auth');
-    const userData = consumeToken(token);
+    const userData = await consumeToken(token);
 
-    if (!userData) {
+    if (!userData || userData.origin !== 'password_reset') {
       return res.status(401).json({
         success: false,
         error: 'Invalid or expired reset token. Please request a new password reset link.'

@@ -246,12 +246,13 @@
       </div>
 
       <div class="detail-item">
-        <label>📁 Space</label>
-        <div class="current-space-display" style="background: #F6F8FA; border: 1px solid #E1E4E8; border-radius: 8px; padding: 10px; font-size: 14px;">
-          <span id="log-memory-current-space" style="font-weight: 600;">Loading...</span>
-        </div>
+        <label>📁 Space *</label>
+        <select
+          id="log-memory-space"
+          style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
+        ></select>
         <small style="color: #616061; font-size: 12px; margin-top: 4px; display: block;">
-          To log decisions in a different space, switch spaces from the header first.
+          Defaults to the space you're viewing. Only spaces you can add decisions to are listed.
         </small>
       </div>
 
@@ -508,7 +509,7 @@
     // Initialize workspace ID
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
-<script src="/scripts/dashboard.js?v=15"></script>
+<script src="/scripts/dashboard.js?v=16"></script>
 <script src="/scripts/dashboard-new.js?v=5"></script>
 <script>
     // Additional UI enhancements for new design

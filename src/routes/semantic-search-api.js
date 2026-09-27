@@ -195,7 +195,7 @@ async function handleSemanticSearch(req, res) {
       success: false,
       error: error.message || 'Semantic search failed',
       hint: error.message?.includes('index') ?
-        'Vector search index not set up. See setup-vector-search.md' : undefined
+        'Vector search index not set up. See docs/setup-vector-search.md' : undefined
     });
   }
 }

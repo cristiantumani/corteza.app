@@ -376,7 +376,7 @@ async function semanticSearch(query, options = {}) {
     if (error.message.includes('index') || error.code === 291) {
       throw new Error(
         'Vector search index not found. Please create the index in MongoDB Atlas. ' +
-        'See setup-vector-search.md for instructions.'
+        'See docs/setup-vector-search.md for instructions.'
       );
     }
 

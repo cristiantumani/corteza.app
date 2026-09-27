@@ -738,10 +738,15 @@
     }
 
     // Log Memory Modal Functions
+    // Spaces the current user can add decisions to (see can_create in GET /api/spaces)
+    function getWritableSpaces() {
+      return currentUserSpaces.filter(s => s.can_create === true);
+    }
+
     function openLogMemoryModal() {
-      // ENFORCE: Must have a space selected
-      if (!currentSpaceId) {
-        alert('Please select a space first');
+      const writableSpaces = getWritableSpaces();
+      if (writableSpaces.length === 0) {
+        alert("You don't have access to a space you can add decisions to. Ask a workspace admin to add you to one.");
         return;
       }
 
@@ -753,12 +758,19 @@
       document.getElementById('log-memory-epic').value = '';
       document.getElementById('log-memory-alternatives').value = '';
 
-      // Display current space (read-only)
-      const currentSpace = currentUserSpaces.find(s => s.space_id === currentSpaceId);
-      const spaceDisplay = document.getElementById('log-memory-current-space');
-      if (spaceDisplay && currentSpace) {
-        spaceDisplay.textContent = `${currentSpace.settings?.icon || '📁'} ${currentSpace.name}`;
-      }
+      // Space picker: current space if writable, otherwise the default space, otherwise the first one
+      const spaceSelect = document.getElementById('log-memory-space');
+      spaceSelect.innerHTML = '';
+      writableSpaces.forEach(space => {
+        const option = document.createElement('option');
+        option.value = space.space_id;
+        option.textContent = `${space.settings?.icon || '📁'} ${space.name}`;
+        spaceSelect.appendChild(option);
+      });
+      const preselected = writableSpaces.find(s => s.space_id === currentSpaceId)
+        || writableSpaces.find(s => s.is_default)
+        || writableSpaces[0];
+      spaceSelect.value = preselected.space_id;
 
       // Show modal
       document.getElementById('log-memory-modal').classList.add('active');
@@ -782,10 +794,9 @@
         return;
       }
 
-      // ENFORCE: Use current space
-      if (!currentSpaceId) {
-        alert('No space selected. Please select a space from the header.');
-        closeLogMemoryModal();
+      const spaceId = document.getElementById('log-memory-space').value;
+      if (!spaceId) {
+        alert('Please choose a space');
         return;
       }
 
@@ -796,7 +807,7 @@
           body: JSON.stringify({
             text,
             type,
-            space_id: currentSpaceId,  // USE CURRENT SPACE
+            space_id: spaceId,
             category: category || null,
             tags: tags || null,
             epic_key: epicKey || null,
@@ -813,13 +824,16 @@
           closeLogMemoryModal();
 
           // Show success message
-          alert('✅ Memory saved successfully!');
+          const savedSpace = currentUserSpaces.find(s => s.space_id === spaceId);
+          showNotification(spaceId === currentSpaceId
+            ? '✅ Decision saved'
+            : `✅ Decision saved to ${savedSpace ? savedSpace.name : 'another space'}`);
 
           // Refresh the dashboard
           fetchStats();
           fetchDecisions();
         } else {
-          alert(`❌ Failed to save memory: ${data.error || 'Unknown error'}`);
+          alert(`❌ Failed to save decision: ${data.message || data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error saving memory:', error);
@@ -1210,6 +1224,20 @@
       // Hide loading indicator
       const loadingIndicator = document.getElementById('loading-indicator');
       if (loadingIndicator) loadingIndicator.style.display = 'none';
+
+      // New dashboard (dashboard-new.html): every workspace gets a default space from
+      // GET /api/spaces, so an empty list means spaces failed to load
+      const mainContent = document.getElementById('main-content');
+      if (mainContent && !document.getElementById('chat-view-container')) {
+        mainContent.innerHTML = `
+          <div class="max-w-xl mx-auto mt-24 text-center">
+            <div style="font-size: 56px; margin-bottom: 16px;">📁</div>
+            <h2 class="text-2xl font-bold mb-2">We couldn't load your spaces</h2>
+            <p class="text-on-surface-variant mb-6">Decisions are organized in spaces. Refresh the page to try again. If this keeps happening, contact support.</p>
+            <button type="button" class="modal-btn modal-btn-primary" onclick="window.location.reload()">Refresh</button>
+          </div>`;
+        return;
+      }
 
       // Hide all decision-related UI elements
       const statsChat = document.getElementById('stats-chat');

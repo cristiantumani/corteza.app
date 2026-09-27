@@ -1,6 +1,7 @@
 const { MongoClient } = require('mongodb');
 const config = require('./environment');
 
+let mongoClient = null;
 let db = null;
 let decisionsCollection = null;
 let aiSuggestionsCollection = null;
@@ -19,8 +20,8 @@ let workspaceMembersCollection = null;
  */
 async function connectToMongoDB() {
   try {
-    // Log outbound IP for debugging MongoDB allowlist issues
-    try {
+    // Log outbound IP for debugging MongoDB allowlist issues (skipped in tests)
+    if (process.env.NODE_ENV !== 'test') try {
       const https = require('https');
       https.get('https://api.ipify.org?format=json', (resp) => {
         let data = '';
@@ -39,6 +40,7 @@ async function connectToMongoDB() {
 
     const client = new MongoClient(config.mongodb.uri);
     await client.connect();
+    mongoClient = client;
     console.log('✅ Connected to MongoDB!');
 
     db = client.db(config.mongodb.dbName);
@@ -153,6 +155,21 @@ async function connectToMongoDB() {
 
     // Weekly digest: one run per workspace per week (claimed with a unique insert)
     await db.collection('digest_runs').createIndex({ workspace_id: 1, week_start: 1 }, { unique: true });
+
+    // One default space per workspace (services/spaces.js). Kept separate so existing
+    // duplicate defaults (if any) log a warning instead of blocking startup.
+    try {
+      await workspaceSpacesCollection.createIndex(
+        { workspace_id: 1 },
+        { name: 'one_default_space_per_workspace', unique: true, partialFilterExpression: { is_default: true } }
+      );
+    } catch (indexError) {
+      console.warn('⚠️  Could not create unique default-space index (duplicate defaults?):', indexError.message);
+    }
+
+    // One-time login tokens: expire automatically (services/login-tokens.js)
+    await db.collection('login_tokens').createIndex({ token_hash: 1 }, { unique: true });
+    await db.collection('login_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
@@ -283,8 +300,20 @@ function getWorkspaceMembersCollection() {
   return workspaceMembersCollection;
 }
 
+/**
+ * Closes the MongoDB connection (used by tests and scripts)
+ */
+async function closeMongoDB() {
+  if (mongoClient) {
+    await mongoClient.close();
+    mongoClient = null;
+    db = null;
+  }
+}
+
 module.exports = {
   connectToMongoDB,
+  closeMongoDB,
   getDecisionsCollection,
   getDatabase,
   getAISuggestionsCollection,

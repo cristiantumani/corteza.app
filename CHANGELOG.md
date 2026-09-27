@@ -9,6 +9,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### 🔒 Security
+- Magic links can no longer be used to join an existing workspace. Anyone could type another team's workspace name and get admin access; now joining an existing workspace needs an invite. Slack `/login` users join as members, not admins
+- One-time login tokens are stored hashed in MongoDB (`login_tokens`, auto-expiring) instead of in memory, so they survive restarts and work across instances. Password-reset links can no longer be used to log in
+- `GET /api/spaces` only lists spaces of the caller's own workspace
+- Removed the committed extension signing key and build files; `*.pem`/`*.crx` are now gitignored
+
+### Fixed
+- Logging a decision failed with "No space selected" when a workspace had no spaces. Every workspace now gets a default "General" space automatically
+- Decisions from Slack (`/decision`, AI approvals) were saved without a space and never showed in the dashboard. They now go to the default space; `scripts/migrations/001-backfill-default-spaces.js` fixes existing ones
+- Admins could pick private spaces they can't post to. The Log Decision form now has a space picker listing only writable spaces (`can_create`, `?writable=true`), also used by the extension
+- Password login crashed when a member had no `workspace_name`
+- AI analytics queries for epics and rejection reasons ignored the `null` check (duplicate `$ne` keys)
+
+### Removed
+- Obsidian plugin, Obsidian import (`/api/v1/import/obsidian*`) and export (`/api/export/obsidian`), and the `archiver` dependency
+- Old dashboard/settings pages (`/dashboard-old`, `/settings-old`, backups, minimal dashboard), `index.js.old/.backup`, one-off root scripts, unmounted test-login routes
+
+### Changed
+- Outdated docs moved to `docs/archive/`; new `CLAUDE.md` and `docs/ARCHITECTURE.md` describe the current system and the Google Workspace refocus plan
+- Added `npm test` (node:test), `npm run lint` (ESLint) and GitHub Actions CI with a MongoDB service; `package-lock.json` regenerated so `npm ci` works
 - `/api/extract-decisions` now only runs against the caller's own workspace, so another workspace's approved/rejected examples can no longer be pulled into the AI prompt
 - Approving or rejecting an AI suggestion from the dashboard now checks that it belongs to the caller's workspace
 
@@ -18,7 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - File upload accepts `.md` and `.vtt`/`.srt` caption files (Google Meet, Zoom and Teams transcripts)
 
 ### Changed
-- `N8N_AUTOMATIONS_GUIDE.md`: Drive workflow now uses an API key instead of a copied session cookie, and exports Google Docs as text
+- `docs/integrations/n8n-google-drive.md` (was `N8N_AUTOMATIONS_GUIDE.md`): Drive workflow now uses an API key instead of a copied session cookie, and exports Google Docs as text
 - `docs/n8n-email-setup.md` marked deprecated (emails are sent via Resend)
 - Upload no longer offers legacy `.doc`, which the parser never supported
 
