@@ -156,6 +156,18 @@ async function startImport(connection, meetingIds, spaceId, deps = {}) {
   return job;
 }
 
+/** What the user sees when a meeting can't be imported (includes Google's reason) */
+function importErrorMessage(error, step) {
+  const status = error.response?.status;
+  if (status !== 401 && status !== 403 && status !== 404) return String(error.message).slice(0, 200);
+
+  const what = error.meetSource === 'notes' ? 'the Gemini notes'
+    : error.meetSource === 'transcript' ? 'the transcript'
+      : step === 'meeting' ? 'this meeting' : 'this meeting’s transcript or notes';
+  const reason = error.response?.data?.error?.message;
+  return `Google didn’t let Corteza read ${what}${reason ? `: ${String(reason).slice(0, 160)}` : ` (${status})`}`;
+}
+
 /**
  * Processes the queued meetings of an import job (safe to call again: leased and resumable)
  */
@@ -191,8 +203,10 @@ async function runImport(importId, deps = {}) {
     if (item.status !== 'queued') continue;
 
     let result;
+    let step = 'meeting';
     try {
       const record = await getRecord(client, item.meeting_id);
+      step = 'content';
       const meeting = await loadMeeting(client, record);
       if (meeting.state !== 'ready') {
         result = { status: meeting.state === 'pending' ? 'not_ready' : 'no_transcript', title: meeting.title, decisions_created: 0 };
@@ -218,13 +232,9 @@ async function runImport(importId, deps = {}) {
         };
       }
     } catch (error) {
-      const status = error.response?.status;
-      result = {
-        status: 'failed',
-        title: item.title,
-        decisions_created: 0,
-        error: status === 403 || status === 404 ? 'You don’t have access to this meeting.' : String(error.message).slice(0, 200)
-      };
+      const detail = meetClient.describeGoogleError(error);
+      console.error(`❌ Meet import ${importId}: ${item.meeting_id} failed reading the ${error.meetSource || step}: ${detail}`);
+      result = { status: 'failed', title: item.title, decisions_created: 0, error: importErrorMessage(error, step) };
     }
 
     await imports().updateOne({ import_id: importId }, {
@@ -274,6 +284,7 @@ module.exports = {
   startImport,
   runImport,
   getImport,
+  importErrorMessage,
   resumeStaleImports,
   MAX_RANGE_DAYS,
   MAX_MEETINGS_PER_IMPORT

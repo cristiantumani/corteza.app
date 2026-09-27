@@ -100,6 +100,18 @@ async function exportDocText(client, fileId) {
   return typeof data === 'string' ? data : String(data || '');
 }
 
+/**
+ * Short description of a failed Google API call for logs and the UI,
+ * e.g. "403 PERMISSION_DENIED: The caller does not have permission"
+ */
+function describeGoogleError(error) {
+  const status = error?.response?.status;
+  const body = error?.response?.data;
+  const detail = typeof body === 'string' ? body : body?.error?.message || body?.error_description || error?.message;
+  const reason = body?.error?.status || body?.error?.errors?.[0]?.reason;
+  return [status, reason].filter(Boolean).join(' ') + (detail ? `${status || reason ? ': ' : ''}${String(detail).slice(0, 200)}` : '');
+}
+
 /** True if Google says the refresh token is no longer valid (revoked, expired, password change) */
 function isRevokedError(error) {
   const code = error?.response?.data?.error || error?.message || '';
@@ -116,5 +128,6 @@ module.exports = {
   listSmartNotes,
   getDriveFile,
   exportDocText,
+  describeGoogleError,
   isRevokedError
 };
