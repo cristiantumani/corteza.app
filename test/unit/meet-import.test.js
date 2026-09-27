@@ -22,3 +22,11 @@ test('invalid, reversed, future and too-long ranges are rejected', () => {
   assert.match(parseRange('2026-10-01', '2026-10-05', NOW).error, /future/);
   assert.match(parseRange('2026-01-01', '2026-09-01', NOW).error, new RegExp(`${MAX_RANGE_DAYS} days`));
 });
+
+test('import errors say what Google refused and why', () => {
+  const { importErrorMessage } = require('../../src/ingestion/meet-import');
+  const refusal = (extra = {}) => Object.assign(new Error('403'), { response: { status: 403, data: { error: { message: 'The caller does not have permission' } } } }, extra);
+  assert.equal(importErrorMessage(refusal({ meetSource: 'notes' }), 'content'), 'Google didn’t let Corteza read the Gemini notes: The caller does not have permission');
+  assert.equal(importErrorMessage(refusal(), 'meeting'), 'Google didn’t let Corteza read this meeting: The caller does not have permission');
+  assert.equal(importErrorMessage(new Error('boom'), 'content'), 'boom');
+});

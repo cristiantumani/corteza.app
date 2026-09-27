@@ -165,6 +165,7 @@
   };
 
   let foundMeetings = [];
+  let importTitles = {}; // meeting id → title shown in the list, for the progress view
 
   function isoDate(date) {
     return date.toISOString().slice(0, 10);
@@ -346,6 +347,7 @@
   async function startImport() {
     const ids = selectedMeetingIds();
     if (ids.length === 0) return;
+    importTitles = Object.fromEntries(foundMeetings.map(meeting => [meeting.id, meeting.title]));
     const button = document.getElementById('gm-import-start');
     button.disabled = true;
 
@@ -376,7 +378,7 @@
 
       const items = job.items.map(item => `
         <li class="flex justify-between gap-4 py-1">
-          <span class="text-on-surface">${escapeHtml(item.title || 'Meeting')}</span>
+          <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || 'Meeting')}</span>
           <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${item.decisions_created} decision${item.decisions_created === 1 ? '' : 's'}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
         </li>`).join('');
 

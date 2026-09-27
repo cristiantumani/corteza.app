@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Google Meet access errors
+- A meeting whose transcript or notes Google refuses no longer blocks automatic capture of the user's other meetings
+- Meetings are captured from whichever source is readable (transcript, transcript Doc, or Gemini notes)
+- Import errors now say what Google refused and why, and show the meeting title; the reason is also logged
+- Titles like "1:1 Ana / Bob: 2026/09/01 15:30 GMT-03:00" are cleaned to "1:1 Ana / Bob"
+
 ### Added - Import past Google Meet meetings
 - **Settings → Google Meet → Import past meetings:** pick a month or date range (up to 92 days, with presets), see every meeting in that period with participants, whether a transcript or Gemini notes exist, and whether it was already imported
 - **Choose what to import:** tick meetings (or "Select all available"), choose the space, and import up to 50 at a time. Runs in the background with a progress bar and per-meeting results

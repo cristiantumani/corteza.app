@@ -54,6 +54,7 @@ jobs/meet-poller.js           every MEET_POLL_INTERVAL_MINUTES (default 5), per 
   - Jobs interrupted by a restart are resumed by the poller (`resumeStaleImports`).
 - **Connection:** `integrations/google/connections.js` asks for consent separately from sign-in (incremental consent, `access_type=offline`), checks the connected account matches the signed-in user, and stores the refresh token encrypted (`utils/encryption.js`) in `google_connections`.
 - **Late transcripts:** Meet generates transcripts a few minutes after a meeting ends. Meetings still generating are retried on later polls; after 6 hours without a transcript they're recorded as skipped (`no_transcript`).
+- **Access refused:** if Google refuses one source (for example the Gemini notes), the meeting is still captured from the other one. If the transcript entries are refused, the transcript Doc is exported from Drive instead. If nothing can be read, the poller logs Google's reason and moves on to the next meeting (it's retried on later polls), and imports show the reason next to the meeting.
 - **Failures:** a failed extraction is retried up to 3 times, at least 10 minutes apart. A revoked or expired Google grant (`invalid_grant`) marks the connection `revoked`, and Settings asks the user to reconnect.
 - **Environment:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BASE_URL`; optional `MEET_CAPTURE_ENABLED=false` and `MEET_POLL_INTERVAL_MINUTES`.
 

@@ -183,6 +183,28 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.equal(extract.calls.length, 1);
   });
 
+  test('poller: a meeting Google refuses does not block the others', async () => {
+    const connection = await connections.getConnection('WPOLL', 'U1');
+    const extract = fakeExtract([{ decision_text: 'Move standup to 10am', decision_type: 'decision', confidence: 0.9 }]);
+    const endTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const result = await poller.runForConnection(connection, {
+      getClient: () => ({}),
+      listConferenceRecords: async () => [{ name: 'conferenceRecords/refused', endTime }, { name: 'conferenceRecords/readable', endTime }],
+      loadMeeting: async (client, record) => {
+        if (record.name === 'conferenceRecords/refused') {
+          throw Object.assign(new Error('403'), { response: { status: 403, data: { error: { message: 'The caller does not have permission' } } } });
+        }
+        return { externalId: record.name, state: 'ready', title: 'Standup review', text: LONG_TEXT, participantCount: 4, participants: ['Ana', 'Bob'], endedAt: new Date(endTime) };
+      },
+      ingest: transcript => pipeline.ingestTranscript(transcript, { extract }),
+      notify: async () => {}
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.decisionsCaptured, 1);
+    assert.deepEqual(result.results.map(r => r.status).sort(), ['completed', 'failed']);
+    assert.equal(await pipeline.isHandled('WPOLL', 'google_meet', 'conferenceRecords/refused'), false, 'retried on a later poll');
+  });
+
   test('poller: a held lease blocks a second concurrent run; revoked tokens mark the connection', async () => {
     const connection = await connections.getConnection('WPOLL', 'U1');
     await db.collection('google_connections').updateOne({ _id: connection._id }, { $set: { lease_until: new Date(Date.now() + 60000) } });

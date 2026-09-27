@@ -20,12 +20,13 @@ function participantName(participant) {
 /**
  * "Weekly sync - 2026/09/27 10:00 CEST - Transcript" → "Weekly sync"
  * "Weekly sync – Notes by Gemini" → "Weekly sync"
+ * "1:1 Ana / Bob: 2026/09/01 15:30 GMT-03:00" → "1:1 Ana / Bob"
  */
 function cleanMeetingTitle(docName) {
   if (!docName) return null;
   return docName
     .replace(/\s*[-–—]\s*(Transcript|Transcripción|Notes by Gemini|Notas de Gemini)\s*$/i, '')
-    .replace(/\s*[-–—]\s*\d{4}\/\d{2}\/\d{2}\s+\d{1,2}:\d{2}(\s*[A-Z]{2,5}([+-]\d{1,2})?)?\s*$/, '')
+    .replace(/\s*[-–—:]\s*\d{4}\/\d{2}\/\d{2}\s+\d{1,2}:\d{2}(\s*[A-Z]{2,5}([+-]\d{1,2}(:\d{2})?)?)?\s*$/, '')
     .trim() || null;
 }
 
@@ -95,26 +96,70 @@ async function loadMeeting(client, record) {
   }
 
   const sections = [];
+  const failures = []; // sources Google refused; the meeting still works if another source can be read
 
   for (const transcript of readyTranscripts) {
-    const entries = await meet.listTranscriptEntries(client, transcript.name);
-    const text = formatTranscriptEntries(entries, namesByParticipant);
-    if (text) sections.push(`Transcript:\n${text}`);
     await addDocInfo(client, meeting, transcript.docsDestination);
+    try {
+      const text = await readTranscript(client, transcript, namesByParticipant);
+      if (text) sections.push(`Transcript:\n${text}`);
+    } catch (error) {
+      failures.push({ source: 'transcript', error });
+    }
   }
 
   for (const note of readyNotes) {
     const fileId = documentId(note.docsDestination);
     if (!fileId) continue;
-    const text = (await meet.exportDocText(client, fileId)).trim();
-    if (text) sections.push(`Meeting notes (Gemini):\n${text}`);
     await addDocInfo(client, meeting, note.docsDestination);
+    try {
+      const text = (await meet.exportDocText(client, fileId)).trim();
+      if (text) sections.push(`Meeting notes (Gemini):\n${text}`);
+    } catch (error) {
+      failures.push({ source: 'notes', error });
+    }
+  }
+
+  meeting.title = meeting.title || fallbackTitle(meeting.occurredAt);
+  for (const { source, error } of failures) {
+    console.warn(`⚠️  Could not read the ${source} of ${record.name} ("${meeting.title}"): ${meet.describeGoogleError(error)}`);
+  }
+  if (sections.length === 0 && failures.length > 0) {
+    // Nothing readable: surface the first refusal to the caller
+    const { source, error } = failures[0];
+    error.meetSource = source;
+    throw error;
   }
 
   meeting.text = sections.join('\n\n');
   meeting.state = meeting.text ? 'ready' : (stillGenerating ? 'pending' : 'none');
-  meeting.title = meeting.title || fallbackTitle(meeting.occurredAt);
   return meeting;
+}
+
+/**
+ * Transcript text: the Meet API's speaker-labelled entries, or the transcript
+ * Doc exported from Drive when the entries can't be read (or are empty)
+ */
+async function readTranscript(client, transcript, namesByParticipant) {
+  let entriesError = null;
+  try {
+    const entries = await meet.listTranscriptEntries(client, transcript.name);
+    const text = formatTranscriptEntries(entries, namesByParticipant);
+    if (text) return text;
+  } catch (error) {
+    entriesError = error;
+  }
+
+  const fileId = documentId(transcript.docsDestination);
+  if (!fileId) {
+    if (entriesError) throw entriesError;
+    return '';
+  }
+  try {
+    return (await meet.exportDocText(client, fileId)).trim();
+  } catch (error) {
+    throw entriesError || error;
+  }
 }
 
 /**

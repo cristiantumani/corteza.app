@@ -15,6 +15,7 @@ test('meeting titles are cleaned from Meet Doc names', () => {
   assert.equal(source.cleanMeetingTitle('Weekly sync - 2026/09/27 10:00 CEST - Transcript'), 'Weekly sync');
   assert.equal(source.cleanMeetingTitle('Q4 planning – Notes by Gemini'), 'Q4 planning');
   assert.equal(source.cleanMeetingTitle('Roadmap review - 2026/09/27 09:05 GMT+2 - Transcript'), 'Roadmap review');
+  assert.equal(source.cleanMeetingTitle('1:1 Ana / Bob: 2026/09/01 15:30 GMT-03:00'), '1:1 Ana / Bob');
   assert.equal(source.cleanMeetingTitle('Just a title'), 'Just a title');
   assert.equal(source.cleanMeetingTitle(null), null);
 });
@@ -156,4 +157,65 @@ test('describeMeeting summarises availability without downloading transcript tex
   } finally {
     restore();
   }
+});
+
+const forbidden = message => Object.assign(new Error('Request failed with status code 403'), {
+  response: { status: 403, data: { error: { code: 403, status: 'PERMISSION_DENIED', message } } }
+});
+
+test('loadMeeting keeps the transcript when Google refuses the Gemini notes', async () => {
+  const restore = stubMeet({
+    listParticipants: async () => participants,
+    listTranscripts: async () => [{ name: 'conferenceRecords/abc/transcripts/t1', state: 'FILE_GENERATED', docsDestination: { document: 'doc-t' } }],
+    listSmartNotes: async () => [{ name: 'conferenceRecords/abc/smartNotes/n1', state: 'FILE_GENERATED', docsDestination: { document: 'doc-n' } }],
+    listTranscriptEntries: async () => [{ participant: participants[0].name, text: 'We ship Friday.' }],
+    getDriveFile: async () => ({ name: 'Launch - Transcript', webViewLink: 'https://docs.google.com/document/d/doc-t' }),
+    exportDocText: async () => { throw forbidden('The caller does not have permission'); }
+  });
+  try {
+    const meeting = await source.loadMeeting({}, record);
+    assert.equal(meeting.state, 'ready');
+    assert.equal(meeting.text, 'Transcript:\nAna: We ship Friday.');
+    assert.equal(meeting.title, 'Launch');
+  } finally {
+    restore();
+  }
+});
+
+test('loadMeeting reads the transcript Doc when the transcript entries are refused', async () => {
+  const restore = stubMeet({
+    listParticipants: async () => participants,
+    listTranscripts: async () => [{ name: 'conferenceRecords/abc/transcripts/t1', state: 'FILE_GENERATED', docsDestination: { document: 'doc-t' } }],
+    listSmartNotes: async () => [],
+    listTranscriptEntries: async () => { throw forbidden('denied'); },
+    getDriveFile: async () => ({ name: 'Launch - Transcript' }),
+    exportDocText: async (client, fileId) => (fileId === 'doc-t' ? 'Ana: We ship Friday.\n' : '')
+  });
+  try {
+    const meeting = await source.loadMeeting({}, record);
+    assert.equal(meeting.state, 'ready');
+    assert.equal(meeting.text, 'Transcript:\nAna: We ship Friday.');
+  } finally {
+    restore();
+  }
+});
+
+test('loadMeeting throws the refusal, tagged with its source, when nothing can be read', async () => {
+  const restore = stubMeet({
+    listParticipants: async () => participants,
+    listTranscripts: async () => [],
+    listSmartNotes: async () => [{ name: 'conferenceRecords/abc/smartNotes/n1', state: 'FILE_GENERATED', docsDestination: { document: 'doc-n' } }],
+    getDriveFile: async () => ({ name: 'Launch - Notes by Gemini' }),
+    exportDocText: async () => { throw forbidden('The caller does not have permission'); }
+  });
+  try {
+    await assert.rejects(source.loadMeeting({}, record), error => error.meetSource === 'notes' && error.response.status === 403);
+  } finally {
+    restore();
+  }
+});
+
+test('Google errors are described with status, reason and message', () => {
+  assert.equal(meetClient.describeGoogleError(forbidden('The caller does not have permission')), '403 PERMISSION_DENIED: The caller does not have permission');
+  assert.equal(meetClient.describeGoogleError(new Error('socket hang up')), 'socket hang up');
 });

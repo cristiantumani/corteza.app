@@ -72,7 +72,16 @@ async function pollConnection(connection, deps = {}) {
     const source = 'google_meet';
     if (await pipeline.isHandled(connection.workspace_id, source, record.name)) continue;
 
-    const meeting = await loadMeeting(client, record);
+    let meeting;
+    try {
+      meeting = await loadMeeting(client, record);
+    } catch (error) {
+      if (meetClient.isRevokedError(error)) throw error;
+      // One meeting Google won't let us read must not block the others; it's retried on later polls
+      console.error(`❌ Could not load ${record.name} for ${connection.google_email}: ${meetClient.describeGoogleError(error)}`);
+      results.push({ title: null, status: 'failed', reason: 'no_access' });
+      continue;
+    }
     const base = { workspaceId: connection.workspace_id, source, externalId: record.name, title: meeting.title };
 
     const reason = skipReason(meeting, connection.settings);
