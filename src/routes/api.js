@@ -746,7 +746,7 @@ async function getContentAnalysis(workspace_id) {
     {
       $match: {
         ...baseFilter,
-        epic_key: { $ne: null, $ne: '' }
+        epic_key: { $nin: [null, ''] }
       }
     },
     { $group: { _id: '$epic_key', count: { $sum: 1 } } },
@@ -885,7 +885,7 @@ async function getAIAnalytics(req, res) {
         $match: {
           ...baseFilter,
           action: 'rejected',
-          rejection_reason: { $ne: null, $ne: '' }
+          rejection_reason: { $nin: [null, ''] }
         }
       },
       { $group: { _id: '$rejection_reason', count: { $sum: 1 } } },

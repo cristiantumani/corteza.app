@@ -135,6 +135,7 @@ function sanitizeTranscriptText(text) {
   let sanitized = text.replace(/\s+/g, ' ');
 
   // Remove control characters except newlines and tabs
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // Trim

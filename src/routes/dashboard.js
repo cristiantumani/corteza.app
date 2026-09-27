@@ -7,21 +7,9 @@ const dashboardHTML = fs.readFileSync(
   'utf8'
 );
 
-// Load old dashboard HTML (kept as backup)
-const dashboardOldHTML = fs.readFileSync(
-  path.join(__dirname, '../views/dashboard.html'),
-  'utf8'
-);
-
 // Load AI analytics HTML once at startup
 const aiAnalyticsHTML = fs.readFileSync(
   path.join(__dirname, '../views/ai-analytics.html'),
-  'utf8'
-);
-
-// Load settings HTML once at startup
-const settingsHTML = fs.readFileSync(
-  path.join(__dirname, '../views/settings.html'),
   'utf8'
 );
 
@@ -88,36 +76,6 @@ function serveSettings(req, res) {
 }
 
 /**
- * GET /settings-old - Serves the old settings page HTML (backup)
- */
-function serveSettingsOld(req, res) {
-  // Get user info from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-  const userId = req.session?.user?.user_id || '';
-
-  // Replace placeholders with actual values
-  let html = settingsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-  html = html.replace(/<USER_ID>/g, userId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-}
-
-/**
- * GET /dashboard-old - Serves the old dashboard HTML (backup/legacy)
- */
-function serveDashboardOld(req, res) {
-  // Get workspace_id from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = dashboardOldHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-}
-
-/**
  * GET /ai-search - Serves the AI search interface HTML
  */
 function serveAISearch(req, res) {
@@ -155,11 +113,9 @@ function redirectToDashboard(req, res) {
 
 module.exports = {
   serveDashboard,
-  serveDashboardOld,
   serveAIAnalytics,
   serveAISearch,
   serveSettings,
-  serveSettingsOld,
   serveSpaceSelector,
   redirectToDashboard
 };

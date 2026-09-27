@@ -48,12 +48,13 @@ async function handleSendMagicLink(req, res) {
     const displayName = user_name || normalizedEmail.split('@')[0];
 
     // Generate one-time login token (reuse existing logic)
-    const token = generateLoginToken(
+    const token = await generateLoginToken(
       userId,
       displayName,
       workspaceId,
       normalizedWorkspace,
-      normalizedEmail // Pass email for session storage
+      normalizedEmail, // Pass email for session storage
+      'email'
     );
 
     // Build magic link

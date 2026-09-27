@@ -9,9 +9,8 @@ const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats,
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveDashboardOld, serveAIAnalytics, serveAISearch, serveSettings, serveSettingsOld, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
-const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo, exportObsidian } = require('./routes/gdpr');
-const { importFromObsidian, saveDirectFromObsidian } = require('./routes/obsidian-import');
+const { serveDashboard, serveAIAnalytics, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
+const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { extractFromApi } = require('./routes/extract-api');
 const { handleMe, handleLogout } = require('./routes/auth');
 const { handleLoginPage, handleTokenLogin, handleOnboardingPage } = require('./routes/dashboard-auth');
@@ -171,11 +170,9 @@ async function startApp() {
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/select-space', requireAuthBrowser, serveSpaceSelector); // Space selector for multi-space users
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard); // New Tailwind/Material Design dashboard
-  expressApp.get('/dashboard-old', requireAuthBrowser, serveDashboardOld); // Old dashboard (backup)
   expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
   expressApp.get('/ai-search', requireAuthBrowser, serveAISearch); // AI search interface
   expressApp.get('/settings', requireAuthBrowser, serveSettings);
-  expressApp.get('/settings-old', requireAuthBrowser, serveSettingsOld); // Old settings page (backup)
 
   // Feedback route (early registration to avoid conflicts, with rate limiting)
   expressApp.post('/api/feedback', apiRateLimiter, require('express').json(), requireAuth, submitFeedback);
@@ -204,17 +201,12 @@ async function startApp() {
   // Transcript extraction for automations, e.g. Google Drive via n8n (requires API key authentication)
   expressApp.post('/api/v1/extract', aiRateLimiter, require('express').json({ limit: '1mb' }), requireApiKey, extractFromApi);
 
-  // Obsidian integration (requires API key authentication)
-  expressApp.post('/api/v1/import/obsidian', aiRateLimiter, require('express').json(), requireApiKey, importFromObsidian);
-  expressApp.post('/api/v1/import/obsidian/direct', apiRateLimiter, require('express').json(), requireApiKey, saveDirectFromObsidian);
 
   // Protected routes - GDPR (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/gdpr/info', apiRateLimiter, requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);
   expressApp.get('/api/gdpr/export', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportWorkspaceData);
   expressApp.delete('/api/gdpr/delete-all', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteAllWorkspaceData);
 
-  // Obsidian export (requires authentication + workspace access)
-  expressApp.get('/api/export/obsidian', apiRateLimiter, requireAuth, requireWorkspaceAccess, exportObsidian);
 
   // Protected routes - Settings (requires authentication + workspace admin)
   expressApp.get('/api/settings', apiRateLimiter, requireAuth, getSettings);

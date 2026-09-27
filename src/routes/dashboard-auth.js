@@ -1,234 +1,169 @@
 const crypto = require('crypto');
 const { getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
-
-/**
- * In-memory store for one-time login tokens
- * In production, use Redis or database
- */
-const loginTokens = new Map();
-
-// Clean up expired tokens every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, data] of loginTokens.entries()) {
-    if (now - data.created_at > 5 * 60 * 1000) { // 5 minutes
-      loginTokens.delete(token);
-    }
-  }
-}, 5 * 60 * 1000);
+const { createLoginToken, peekLoginToken, consumeLoginToken } = require('../services/login-tokens');
+const { ensureDefaultSpace } = require('../services/spaces');
 
 /**
  * Generates a one-time login token for dashboard access
- * Called from /login Slack command and email auth
+ * Called from /login Slack command, email magic links and password login
+ * @param {string} origin - 'slack' | 'email' | 'password' | 'password_reset'
+ * @param {number} [ttlMs] - Token lifetime (default 5 minutes)
+ * @returns {Promise<string>}
  */
-function generateLoginToken(userId, userName, workspaceId, workspaceName, email = null) {
-  const token = crypto.randomBytes(32).toString('hex');
-
-  loginTokens.set(token, {
+async function generateLoginToken(userId, userName, workspaceId, workspaceName, email = null, origin = 'email', ttlMs) {
+  return createLoginToken({
     user_id: userId,
     user_name: userName,
     workspace_id: workspaceId,
     workspace_name: workspaceName,
-    email: email, // Store email for session creation
-    created_at: Date.now()
-  });
+    email: email,
+    origin
+  }, ttlMs);
+}
 
-  return token;
+function tokenErrorPage(res, status, title, message) {
+  return res.status(status).send(`
+      <html>
+        <body style="font-family: sans-serif; padding: 50px; text-align: center;">
+          <h1>${title}</h1>
+          <p>${message}</p>
+          <p><a href="/auth/login">Back to login</a></p>
+        </body>
+      </html>
+    `);
+}
+
+/**
+ * Finds the user's membership, creating it when allowed.
+ *
+ * - Existing member: returned as is.
+ * - Brand-new workspace (no members yet): the user becomes its first admin.
+ * - Existing workspace, Slack /login: Slack already verified the user belongs to
+ *   that Slack team, so they join as a regular member.
+ * - Existing workspace, email magic link: refused. Anyone can type a workspace
+ *   name, so joining an existing workspace requires an invite (/invite/:id).
+ *
+ * @returns {Promise<{member: Object|null, created: boolean}>}
+ */
+async function resolveMembership(userData) {
+  const membersCollection = getWorkspaceMembersCollection();
+
+  const member = await membersCollection.findOne({
+    user_id: userData.user_id,
+    workspace_id: userData.workspace_id,
+    email: userData.email,
+    removed_at: null
+  });
+  if (member) return { member, created: false };
+
+  const workspaceHasMembers = await membersCollection.countDocuments({
+    workspace_id: userData.workspace_id,
+    removed_at: null
+  }) > 0;
+
+  if (workspaceHasMembers && userData.origin !== 'slack') {
+    return { member: null, created: false };
+  }
+
+  const role = workspaceHasMembers ? 'member' : 'admin';
+  const newMember = {
+    membership_id: `mem_${crypto.randomBytes(12).toString('hex')}`,
+    workspace_id: userData.workspace_id,
+    workspace_name: userData.workspace_name,
+    user_id: userData.user_id,
+    user_name: userData.user_name,
+    email: userData.email,
+    role,
+    joined_via: userData.origin === 'slack' ? 'slack' : 'email',
+    joined_at: new Date().toISOString(),
+    removed_at: null,
+    onboarding_completed: false
+  };
+  await membersCollection.insertOne(newMember);
+
+  if (role === 'admin') {
+    await getWorkspaceAdminsCollection().insertOne({
+      workspace_id: userData.workspace_id,
+      user_id: userData.user_id,
+      user_name: userData.user_name,
+      email: userData.email,
+      role: 'admin',
+      created_at: new Date().toISOString(),
+      deactivated_at: null
+    });
+    // New workspace: give it its default space right away
+    await ensureDefaultSpace(userData.workspace_id, userData.user_id, userData.user_name);
+  }
+
+  console.log(`✅ Created ${role} membership for ${userData.email || userData.user_id} in ${userData.workspace_id}`);
+  return { member: newMember, created: true };
+}
+
+function redirectPage(res, path, message) {
+  return res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head><meta charset="UTF-8"><title>Redirecting...</title></head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5;">
+              <p>${message}</p>
+              <script>setTimeout(() => window.location.href = '${path}', 100);</script>
+            </body>
+          </html>
+        `);
 }
 
 /**
  * Handles dashboard login with one-time token
  * GET /auth/token?token=xxx
  */
-function handleTokenLogin(req, res) {
-  const token = req.query.token;
+async function handleTokenLogin(req, res) {
+  try {
+    const userData = await consumeLoginToken(req.query.token);
 
-  if (!token) {
-    return res.status(400).send(`
-      <html>
-        <body style="font-family: sans-serif; padding: 50px; text-align: center;">
-          <h1>Missing Token</h1>
-          <p>Please use the login link from Slack.</p>
-          <p>Type <code>/login</code> in your Slack workspace to get a login link.</p>
-        </body>
-      </html>
-    `);
-  }
-
-  const userData = loginTokens.get(token);
-
-  if (!userData) {
-    return res.status(401).send(`
-      <html>
-        <body style="font-family: sans-serif; padding: 50px; text-align: center;">
-          <h1>Invalid or Expired Token</h1>
-          <p>This login link is invalid or has expired (tokens expire after 5 minutes).</p>
-          <p>Type <code>/login</code> in your Slack workspace to get a new login link.</p>
-        </body>
-      </html>
-    `);
-  }
-
-  // Delete token (one-time use)
-  loginTokens.delete(token);
-
-  // Create session
-  req.session.user = {
-    user_id: userData.user_id,
-    user_name: userData.user_name,
-    workspace_id: userData.workspace_id,
-    workspace_name: userData.workspace_name,
-    email: userData.email || null, // Include email for workspace operations
-    authenticated_at: new Date().toISOString()
-  };
-
-  // Save session and check if onboarding is needed
-  req.session.save(async (err) => {
-    if (err) {
-      console.error('❌ Failed to save session:', err);
-      return res.status(500).send('<html><body>Failed to create session</body></html>');
+    if (!userData || userData.origin === 'password_reset') {
+      return tokenErrorPage(res, 401, 'Invalid or Expired Link',
+        'This login link is invalid, was already used, or has expired (links expire after 5 minutes).');
     }
 
-    console.log(`✅ User logged in via token: ${userData.user_name} from workspace ${userData.workspace_name}`);
+    const { member, created } = await resolveMembership(userData);
 
-    // Check if user needs onboarding
-    try {
-      const membersCollection = getWorkspaceMembersCollection();
-      let member = await membersCollection.findOne({
-        user_id: userData.user_id,
-        workspace_id: userData.workspace_id,
-        email: userData.email,
-        removed_at: null
-      });
-
-      // If member doesn't exist, create the record (new user from email auth)
-      if (!member) {
-        console.log('📝 Creating new workspace_members record for email auth user');
-
-        const membershipId = `mem_${crypto.randomBytes(12).toString('hex')}`;
-
-        const newMember = {
-          membership_id: membershipId,
-          workspace_id: userData.workspace_id,
-          workspace_name: userData.workspace_name,
-          user_id: userData.user_id,
-          user_name: userData.user_name,
-          email: userData.email,
-          role: 'admin', // First user in workspace is admin
-          joined_via: 'email',
-          joined_at: new Date().toISOString(),
-          removed_at: null,
-          onboarding_completed: false
-        };
-
-        await membersCollection.insertOne(newMember);
-
-        // Also create workspace_admins record
-        const adminsCollection = getWorkspaceAdminsCollection();
-
-        await adminsCollection.insertOne({
-          workspace_id: userData.workspace_id,
-          user_id: userData.user_id,
-          user_name: userData.user_name,
-          email: userData.email,
-          role: 'admin',
-          created_at: new Date().toISOString(),
-          deactivated_at: null
-        });
-
-        console.log(`✅ Created workspace_members and workspace_admins for ${userData.email}`);
-
-        // Wait for session to propagate to MongoDB before redirecting
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        // Redirect new user to onboarding (client-side to preserve session)
-        return res.send(`
-          <!DOCTYPE html>
-          <html>
-            <head><meta charset="UTF-8"><title>Redirecting...</title></head>
-            <body>
-              <p>Setting up your account...</p>
-              <script>setTimeout(() => window.location.href = '/auth/onboarding', 100);</script>
-            </body>
-          </html>
-        `);
-      }
-
-      // Existing member - check if onboarding completed
-      if (!member.onboarding_completed) {
-        console.log('🎯 Redirecting to onboarding for existing user without completed onboarding');
-
-        // Wait for session to propagate to MongoDB before redirecting
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        // Client-side redirect to preserve session
-        return res.send(`
-          <!DOCTYPE html>
-          <html>
-            <head><meta charset="UTF-8"><title>Redirecting...</title></head>
-            <body>
-              <p>Loading...</p>
-              <script>setTimeout(() => window.location.href = '/auth/onboarding', 100);</script>
-            </body>
-          </html>
-        `);
-      }
-    } catch (error) {
-      console.error('Failed to check/create workspace member:', error);
-      // Continue to dashboard on error
+    if (!member) {
+      console.log(`🚫 Refused magic-link join of existing workspace ${userData.workspace_id} by ${userData.email}`);
+      return tokenErrorPage(res, 403, 'You are not a member of this workspace',
+        'A workspace with this name already exists. Ask one of its admins to send you an invite link.');
     }
 
-    // Wait for session to propagate to MongoDB before redirecting
-    // This prevents race condition where dashboard loads before session is available
-    console.log('⏳ Waiting for session to propagate to MongoDB...');
-    await new Promise(resolve => setTimeout(resolve, 150));
-    console.log('✅ Session should be available now');
+    // Create session only after membership is confirmed
+    req.session.user = {
+      user_id: userData.user_id,
+      user_name: userData.user_name,
+      workspace_id: userData.workspace_id,
+      workspace_name: userData.workspace_name,
+      email: userData.email || null,
+      authenticated_at: new Date().toISOString()
+    };
 
-    // Use client-side redirect instead of server-side to ensure cookie is set
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Redirecting...</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              margin: 0;
-              background: #f5f5f5;
-            }
-            .loader {
-              text-align: center;
-            }
-            .spinner {
-              font-size: 48px;
-              animation: spin 1s linear infinite;
-            }
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="loader">
-            <div class="spinner">⏳</div>
-            <p>Loading dashboard...</p>
-          </div>
-          <script>
-            // Give browser time to process Set-Cookie header
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 100);
-          </script>
-        </body>
-      </html>
-    `);
-  });
+    req.session.save(async (err) => {
+      if (err) {
+        console.error('❌ Failed to save session:', err);
+        return res.status(500).send('<html><body>Failed to create session</body></html>');
+      }
+
+      console.log(`✅ User logged in via token: ${userData.user_name} from workspace ${userData.workspace_name}`);
+
+      // Wait for session to propagate to MongoDB before redirecting
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Client-side redirect so the browser processes the Set-Cookie header first
+      if (created || !member.onboarding_completed) {
+        return redirectPage(res, '/auth/onboarding', 'Setting up your account...');
+      }
+      return redirectPage(res, '/dashboard', 'Loading dashboard...');
+    });
+  } catch (error) {
+    console.error('❌ Token login failed:', error);
+    return tokenErrorPage(res, 500, 'Something went wrong', 'Please request a new login link.');
+  }
 }
 
 /**
@@ -642,22 +577,17 @@ async function handleOnboardingPage(req, res) {
 }
 
 /**
- * Validates a token and returns user data (for password reset)
+ * Validates a token and returns user data without using it up (for password reset)
  */
 function validateToken(token) {
-  const userData = loginTokens.get(token);
-  return userData || null;
+  return peekLoginToken(token);
 }
 
 /**
  * Consumes a token (deletes it after use)
  */
 function consumeToken(token) {
-  const userData = loginTokens.get(token);
-  if (userData) {
-    loginTokens.delete(token);
-  }
-  return userData || null;
+  return consumeLoginToken(token);
 }
 
 module.exports = {

@@ -13,6 +13,7 @@ const {
   validateTranscriptContent
 } = require('../middleware/ai-validation');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
+const { ensureDefaultSpace } = require('../services/spaces');
 
 /**
  * CREDIT OPTIMIZATION: Generate hash for transcript content
@@ -600,8 +601,15 @@ async function handleApproveAction({ ack, body, client }) {
     );
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
 
+    // Slack approvals have no space picker: use the workspace's default space
+
+    const defaultSpace = await ensureDefaultSpace(workspace_id);
+
+
     const decision = {
       workspace_id: workspace_id,
+      space_id: defaultSpace.space_id,
+      space_name: defaultSpace.name,
       id: nextId,
       text: suggestion.decision_text,
       type: suggestion.decision_type,
@@ -1055,8 +1063,15 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
     }
     alternativesText += `AI-extracted and edited by ${userName}`;
 
+    // Slack approvals have no space picker: use the workspace's default space
+
+    const defaultSpace = await ensureDefaultSpace(workspace_id);
+
+
     const decision = {
       workspace_id: workspace_id,
+      space_id: defaultSpace.space_id,
+      space_name: defaultSpace.name,
       id: nextId,
       text: editedData.decision_text,
       type: editedData.decision_type,
@@ -1445,8 +1460,15 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
     const nextId = lastDecision ? lastDecision.id + 1 : 1;
     console.log('>>> Next decision ID:', nextId);
 
+    // Slack approvals have no space picker: use the workspace's default space
+
+    const defaultSpace = await ensureDefaultSpace(workspace_id);
+
+
     const decision = {
       workspace_id: workspace_id,
+      space_id: defaultSpace.space_id,
+      space_name: defaultSpace.name,
       id: nextId,
       text: suggestion.decision_text,
       type: suggestion.decision_type,

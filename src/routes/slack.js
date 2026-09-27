@@ -3,6 +3,7 @@ const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { validateEpicKey, validateTags } = require('../middleware/validation');
 const { generateLoginToken } = require('./dashboard-auth');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
+const { ensureDefaultSpace } = require('../services/spaces');
 
 /**
  * /decision command handler - Opens modal to log a decision
@@ -172,9 +173,14 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
       }
     }
 
+    // Slack has no space picker: save to the workspace's default space so it shows in the dashboard
+    const defaultSpace = await ensureDefaultSpace(workspace_id);
+
     // Save decision to database
     const decision = {
       workspace_id: workspace_id,
+      space_id: defaultSpace.space_id,
+      space_name: defaultSpace.name,
       id: nextId,
       text: metadata.decision_text,
       type: decisionType,
@@ -496,7 +502,7 @@ async function handleLoginCommand({ command, ack, respond }) {
     const workspaceDomain = command.team_domain;
 
     // Generate one-time login token
-    const token = generateLoginToken(userId, userName, workspaceId, workspaceDomain);
+    const token = await generateLoginToken(userId, userName, workspaceId, workspaceDomain, null, 'slack');
 
     // Build login URL
     const baseUrl = process.env.APP_BASE_URL

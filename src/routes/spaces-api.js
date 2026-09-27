@@ -14,6 +14,7 @@ const {
   removeSpaceMember
 } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
+const { ensureDefaultSpace } = require('../services/spaces');
 
 const router = express.Router();
 
@@ -51,6 +52,14 @@ router.get('/api/spaces', async (req, res) => {
     }
 
     const userId = req.session.user.user_id;
+
+    // Only list spaces of the user's own workspace
+    if (workspace_id !== req.session.user.workspace_id) {
+      return res.status(403).json({ error: 'Access denied to this workspace' });
+    }
+
+    // Every workspace has a default space (older/new workspaces may not have one yet)
+    await ensureDefaultSpace(workspace_id, userId, req.session.user.user_name);
 
     // Get Slack client (optional for test workspaces - returns null if unavailable)
     const client = await getSlackClientSafe(workspace_id);
@@ -118,11 +127,17 @@ router.get('/api/spaces', async (req, res) => {
         decision_count: decisionCount,
         is_creator: isCreator,  // Who created it (may not be member)
         user_role: userRole,    // Actual role in space (null if not member)
-        can_modify: userIsAdmin || isCreator || userRole === 'admin'  // Admins + creator + space admins can manage
+        can_modify: userIsAdmin || isCreator || userRole === 'admin',  // Admins + creator + space admins can manage
+        can_create: ['owner', 'admin', 'member'].includes(userRole)     // Same rule as canCreateInSpace()
       };
     }));
 
-    res.json({ success: true, spaces: spacesWithMetadata });
+    // ?writable=true: only spaces the user can add decisions to (e.g. the browser extension picker)
+    const result = req.query.writable === 'true'
+      ? spacesWithMetadata.filter(space => space.can_create)
+      : spacesWithMetadata;
+
+    res.json({ success: true, spaces: result });
   } catch (error) {
     console.error('❌ Error listing spaces:', error);
     console.error('Error details:', error.message);
