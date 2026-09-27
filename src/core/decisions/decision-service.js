@@ -50,16 +50,20 @@ async function nextDecisionId(workspaceId) {
  * @param {Object} params.source - { type: 'google_meet'|'slack'|'dashboard'|'extension'|'api'|'upload', external_id?, title?, url? }
  * @param {'ai'|'manual'} [params.capture='manual']
  * @param {number|null} [params.confidence] - AI confidence 0–1
+ * @param {Date|string|null} [params.decidedAt] - when it was decided (e.g. the meeting's start); defaults to now.
+ *   Stored as `timestamp`, which the dashboard, search date filters and digest use. `created_at` is always now.
  * @returns {Promise<Object>} The saved decision
  */
 async function createDecision({
   workspaceId, spaceId, spaceName = null, text, type = 'decision', tags = [], epicKey = null,
-  alternatives = null, author, source, capture = 'manual', confidence = null
+  alternatives = null, author, source, capture = 'manual', confidence = null, decidedAt = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createDecision requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createDecision requires text');
 
   const now = new Date();
+  const decided = decidedAt ? new Date(decidedAt) : null;
+  const timestamp = decided && !isNaN(decided) && decided <= now ? decided : now;
   const decision = {
     workspace_id: workspaceId,
     space_id: spaceId,
@@ -76,7 +80,7 @@ async function createDecision({
     source_details: source ? { ...source } : null,
     capture,
     confidence: typeof confidence === 'number' ? confidence : null,
-    timestamp: now.toISOString(),
+    timestamp: timestamp.toISOString(),
     created_at: now
   };
 

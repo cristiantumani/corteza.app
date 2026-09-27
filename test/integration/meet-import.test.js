@@ -130,6 +130,8 @@ describe('Google Meet: import past meetings', { skip }, () => {
     const decisions = await db.collection('decisions').find({ workspace_id: 'WIMP' }).toArray();
     assert.deepEqual(decisions.map(d => d.text).sort(), ['Decision from Cris / Ana', 'Decision from Q3 planning']);
     assert.ok(decisions.every(d => d.capture === 'ai' && d.space_id));
+    const planning = decisions.find(d => d.text === 'Decision from Q3 planning');
+    assert.equal(planning.timestamp, '2026-08-10T09:00:00.000Z', 'dated by the meeting, not the import');
 
     // Nobody else can read this job
     assert.equal(await meetImport.getImport('WIMP', 'U2', job.import_id), null);
