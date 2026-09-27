@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const { setupTestDatabase, skip } = require('../helpers/db');
 
+// Background jobs log while the test runner reads results from stdout; mixed
+// output can break the runner ("Unable to deserialize cloned data")
+console.log = () => {};
+console.warn = () => {};
+console.error = () => {};
+
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
 process.env.GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
