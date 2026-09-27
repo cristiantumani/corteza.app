@@ -657,18 +657,31 @@
       }
     }
 
+    /** Display names for decision types (src/core/decisions/types.js) */
+    const TYPE_TITLES = {
+      decision: 'Decision',
+      action_item: 'Action item',
+      open_question: 'Open question',
+      risk: 'Risk',
+      explanation: 'Explanation',
+      context: 'Context',
+      learning: 'Learning',
+      assumption: 'Assumption'
+    };
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
 
-      // Set title
-      document.getElementById('detail-title').textContent = `Decision #${decision.id}`;
+      // Title names the item's type: "Context #92", "Action item #93"
+      const typeLabel = TYPE_TITLES[decision.type] || 'Decision';
+      document.getElementById('detail-title').textContent = `${typeLabel} #${decision.id}`;
 
       // Set decision text
       document.getElementById('detail-decision-text').textContent = decision.text;
 
       // Set type with badge
-      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${decision.type}">${decision.type}</span>`;
+      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${escapeHtml(decision.type)}">${escapeHtml(typeLabel)}</span>`;
 
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;
