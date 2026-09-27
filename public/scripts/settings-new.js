@@ -170,59 +170,6 @@
   };
 
   // ========================================
-  // PASSWORD RESET
-  // ========================================
-
-  window.resetPassword = async function() {
-    const currentPassword = document.getElementById('current-password').value;
-    const newPassword = document.getElementById('new-password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('Please fill in all password fields');
-      return;
-    }
-
-    if (newPassword.length < 12) {
-      alert('New password must be at least 12 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alert('New passwords do not match');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password');
-      }
-
-      showNotification('Password updated successfully!');
-
-      // Clear fields
-      document.getElementById('current-password').value = '';
-      document.getElementById('new-password').value = '';
-      document.getElementById('confirm-password').value = '';
-
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      alert('Failed to reset password: ' + error.message);
-    }
-  };
-
-  // ========================================
   // SPACES
   // ========================================
 

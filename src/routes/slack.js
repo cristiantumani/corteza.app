@@ -1,7 +1,7 @@
 const { getDecisionsCollection } = require('../config/database');
 const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { validateEpicKey, validateTags } = require('../middleware/validation');
-const { generateLoginToken } = require('./dashboard-auth');
+const config = require('../config/environment');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 const { ensureDefaultSpace } = require('../services/spaces');
 
@@ -436,11 +436,7 @@ async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, comma
   // Get workspace stats
   const totalDecisions = await decisionsCollection.countDocuments({ workspace_id: workspace_id });
 
-  // Build dashboard URL (use APP_BASE_URL if available, otherwise localhost)
-  const baseUrl = process.env.APP_BASE_URL
-    ? `https://${process.env.APP_BASE_URL}`
-    : `http://localhost:${process.env.PORT || 3000}`;
-  const dashboardUrl = `${baseUrl}/dashboard?workspace_id=${workspace_id}`;
+  const dashboardUrl = `${config.app.baseUrl}/dashboard`;
 
   const blocks = [
     {
@@ -488,43 +484,15 @@ async function handleWorkspaceInfo(say, workspace_id, decisionsCollection, comma
 }
 
 /**
- * Handles /login command - generates dashboard login link
- * POST /login
+ * Handles /login command - points to the web sign-in page.
+ * Slack is only an input source: people sign in to the dashboard with Google.
  */
-async function handleLoginCommand({ command, ack, respond }) {
+async function handleLoginCommand({ ack, respond }) {
   await ack();
-
-  try {
-    // Get user and workspace info from command
-    const userId = command.user_id;
-    const userName = command.user_name;
-    const workspaceId = command.team_id;
-    const workspaceDomain = command.team_domain;
-
-    // Generate one-time login token
-    const token = await generateLoginToken(userId, userName, workspaceId, workspaceDomain, null, 'slack');
-
-    // Build login URL
-    const baseUrl = process.env.APP_BASE_URL
-      ? `https://${process.env.APP_BASE_URL}`
-      : 'http://localhost:3000';
-    const loginUrl = `${baseUrl}/auth/token?token=${token}`;
-
-    // Send ephemeral message with login link
-    await respond({
-      response_type: 'ephemeral', // Only visible to user who ran command
-      text: `🔐 *Dashboard Login Link*\n\nClick the link below to access your dashboard:\n\n<${loginUrl}|Login to Dashboard>\n\n_This link expires in 5 minutes and can only be used once._`
-    });
-
-    console.log(`✅ Generated login token for ${userName} (${workspaceId})`);
-
-  } catch (error) {
-    console.error('❌ Error generating login token:', error);
-    await respond({
-      response_type: 'ephemeral',
-      text: '❌ Failed to generate login link. Please try again.'
-    });
-  }
+  await respond({
+    response_type: 'ephemeral',
+    text: `🔐 Sign in to the Corteza dashboard with your Google account:\n<${config.app.baseUrl}/auth/login|Open Corteza>`
+  });
 }
 
 module.exports = {

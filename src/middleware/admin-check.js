@@ -66,11 +66,13 @@ async function requireWorkspaceAdmin(req, res, next) {
       });
     }
 
-    // Get Slack client for this workspace
+    // Get Slack client for this workspace (null for workspaces without Slack)
     const client = await getSlackClient(workspaceId);
 
-    // Check if user is admin
-    const isAdmin = await isWorkspaceAdmin(client, userId, workspaceId);
+    // Corteza admins (workspace_admins), with Slack admin status as a fallback.
+    // Required lazily: services/permissions requires this module.
+    const { isAdmin: isCortezaAdmin } = require('../services/permissions');
+    const isAdmin = await isCortezaAdmin(client, workspaceId, userId);
 
     if (!isAdmin) {
       console.log(`⚠️  Non-admin user ${userId} attempted to access admin endpoint in ${workspaceId}`);

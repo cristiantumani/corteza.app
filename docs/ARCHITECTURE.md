@@ -19,8 +19,8 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
 | Integration API (`/api/v1/*`) | `src/routes/extract-api.js`, `api.js#getDecisionById` | API key (`src/middleware/api-key-auth.js`) |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |
-| Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`, `/login`), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
-| Login | `/auth/login` page; magic link (`email-auth.js`), password (`password-auth.js`), Slack `/login`, all ending at `/auth/token` (`dashboard-auth.js`) | one-time tokens (`src/services/login-tokens.js`) |
+| Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`; `/login` only links to the web sign-in), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
+| Sign-in | `/auth/login` page → `/auth/google` → Google → `/auth/google/callback` (`src/auth/routes.js`) | Google OpenID Connect (`src/integrations/google/oauth.js`) |
 | Jobs | `src/jobs/weekly-digest.js` (opt-in), `src/jobs/reengagement.js` | n/a |
 
 ### Key flows
@@ -41,17 +41,25 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 **Slack `/decision`:**
 modal → insert into `decisions`, in the workspace's **default space** (`ensureDefaultSpace`).
 
-**Login (token):**
-`/auth/token` → `consumeLoginToken` → `resolveMembership`, then:
-- **New workspace:** the first user becomes admin and a default space is created.
-- **Slack `/login`:** joins as a member.
-- **Email magic link to an existing workspace:** refused, because joining needs an invite.
+**Sign in with Google** (the only way to log in):
+1. `/auth/google` stores a random `state` and `nonce` in the session and redirects to Google (scopes `openid email profile`).
+2. `/auth/google/callback` checks `state`, exchanges the code, and verifies the ID token (signature, audience, expiry, `nonce`) with `google-auth-library`.
+3. `signInWithGoogle` (`src/auth/google-signin.js`) picks the workspace:
+   - **Invite link** (`/auth/google?invite=<id>`): joins the invite's workspace with its role and space. An invite addressed to an email only works for that account.
+   - **Existing membership** (matched by email): the last workspace used, else the one owning the user's Google domain. An admin of a workspace without a domain claims theirs, so colleagues auto-join.
+   - **Google Workspace account whose domain has a workspace:** joins as a member.
+   - **New Google Workspace domain:** creates the workspace (plus default space) and becomes admin.
+   - **Consumer account (gmail.com):** gets a personal workspace.
 
-Only after that is the session created.
+   Only Google's `hd` claim counts as the domain, never the email's domain.
+4. The session is regenerated (new ID) and the user goes to onboarding (new workspace creator), the page they were trying to open, or the dashboard.
+
+Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
 ### Workspaces, spaces, permissions
 
-- **`workspace_id`:** a Slack team ID (`T…`) for Slack-installed workspaces, or `W<NAME>` for email-created ones. There is no `workspaces` collection yet; a workspace is implied by its `workspace_members` rows.
+- **`workspace_id`:** `ws_…` for workspaces created through Google sign-in. Older ones keep their IDs: a Slack team ID (`T…`) or `W<NAME>` from the removed magic-link login.
+- **`workspaces`** holds one row per workspace (`name`, unique `google_domain`, `slack_team_id`). Older workspaces get a row the first time they're linked to Google. **`users`** holds one row per Google account (`google_sub`, `email`). Memberships keep their own `user_id`, and the session always uses the membership's.
 - **Default space:** every workspace has exactly one public default space, "General". `ensureDefaultSpace()` creates it lazily, including on every `GET /api/spaces`, and a partial unique index enforces one per workspace.
 - **Spaces** are `public`, `shared` or `private`. Space roles are owner, admin, member and viewer. Rules are in `src/services/permissions.js`. `GET /api/spaces` returns `can_create` per space, and `?writable=true` returns only spaces the user can post to.
 - **Workspace admins** live in `workspace_admins`. `isAdmin` still falls back to Slack admin status; Phase 1 removes that.
@@ -66,7 +74,8 @@ Only after that is the session created.
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |
 | `workspace_settings` | Per-workspace settings, such as encrypted Jira credentials |
 | `api_keys` | Integration API keys |
-| `login_tokens` | One-time login tokens (hashed, TTL index) |
+| `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |
+| `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
 | `feedback` | User feedback from the dashboard |
@@ -75,13 +84,15 @@ Only after that is the session created.
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `JIRA_*`, `DB_NAME`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `JIRA_*`, `DB_NAME`.
 
 ### Migrations
 
 Run manually, and they're safe to re-run. Each script starts as a dry run and needs `--apply` to write.
 
 - `scripts/migrations/001-backfill-default-spaces.js`: creates missing default spaces and moves decisions without a space into them.
+- `scripts/migrations/002-link-workspace-to-google.js`: links an older workspace to a Google domain and sets a member's email to their Google account, so their first Google sign-in lands in it. `--list` shows workspaces and members.
+- `scripts/migrations/003-repair-member-roles.js`: restores `workspace_members.role` (admin/member) that the old onboarding overwrote with a job title.
 
 ---
 
@@ -130,8 +141,7 @@ src/
 
 ### Data model changes
 
-- **`workspaces` (new):** `{ workspace_id, name, google_domain (unique), slack_team_id (unique), created_at }`
-- **`users` (new):** `{ user_id, email (unique), google_sub (unique), name }`
+- **`workspaces`, `users`:** done in Phase 2 (see above).
 - **`google_connections` (new):** `{ user_id, workspace_id, scopes, refresh_token_encrypted, last_polled_at, settings, status }`
 - **`ingestions` (new):** unique `(workspace_id, source, external_id)`, with status and `decisions_created`. Replaces the dedup role of `meeting_transcripts`.
 - **`decisions`:** standardized `source { type, external_id, title, url }`, `capture: ai|manual`, `confidence`, a required `space_id`, and `deleted_at` for soft delete.
@@ -144,8 +154,8 @@ Existing `workspace_id` and `user_id` values are kept as opaque strings; migrati
 | Phase | Outcome |
 |---|---|
 | 0 | Default spaces, workspace-takeover fix, DB-backed login tokens, Obsidian and dead code removed, tests, lint, CI, these docs *(done)* |
-| 1 | `core/decisions` single write path and counters, `app.js`/`server.js` split, Slack optional, `workspaces`/`users` collections, DB-only admin checks, scheduler |
-| 2 | Google OIDC sign-in with domain workspaces; magic link, passwords and Slack `/login` removed; extension uses Google sign-in |
+| 1 | `core/decisions` single write path and counters, `app.js`/`server.js` split, Slack optional, DB-only admin checks, scheduler |
+| 2 | Google OIDC sign-in with domain workspaces; magic link, passwords and Slack `/login` removed; extension uses Google sign-in *(done)* |
 | 3 | "Connect Google" (Meet and Drive-Meet scopes), Meet poller, ingestion pipeline with auto-save, privacy defaults (skip 1:1s, keyword exclusions), summary email, AI-captured badge with edit and delete |
 | 4 | "Connect Slack" install flow mapped to a workspace; `/decision` and uploads through the pipeline; no Slack identity |
 | 5 | Split docs (DATA_MODEL, INGESTION, AUTH, GOOGLE, SLACK, DEPLOY, ADRs), remove unused dependencies and collections |

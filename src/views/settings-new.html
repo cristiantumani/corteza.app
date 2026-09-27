@@ -192,32 +192,22 @@
                     </button>
                 </section>
 
-                <!-- Section 2: Password & Security -->
+                <!-- Section 2: Account (Google sign-in) -->
                 <section class="col-span-12 md:col-span-4 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col h-full">
                     <div class="mb-6">
                         <div class="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined">lock_reset</span>
+                            <span class="material-symbols-outlined">account_circle</span>
                         </div>
-                        <h3 class="text-2xl font-bold text-on-surface mb-1">Security</h3>
-                        <p class="text-sm text-on-surface-variant">Update your credentials to maintain account integrity.</p>
+                        <h3 class="text-2xl font-bold text-on-surface mb-1">Account</h3>
+                        <p class="text-sm text-on-surface-variant">You sign in to Corteza with your Google account. Password and 2-step verification are managed by Google.</p>
                     </div>
-                    <div class="space-y-4 flex-1">
-                        <div>
-                            <label class="block text-xs text-on-surface-variant mb-1">Current Password</label>
-                            <input id="current-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="••••••••" type="password">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-on-surface-variant mb-1">New Password</label>
-                            <input id="new-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="Min. 12 characters" type="password">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-on-surface-variant mb-1">Confirm New Password</label>
-                            <input id="confirm-password" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary transition-all" placeholder="••••••••" type="password">
-                        </div>
-                    </div>
-                    <button onclick="resetPassword()" class="mt-8 w-full border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                        Reset Password
-                    </button>
+                    <div class="flex-1"></div>
+                    <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" class="mt-8 w-full text-center border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                        Google account security
+                    </a>
+                    <a href="/auth/logout" class="mt-3 w-full text-center text-on-surface-variant font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
+                        Sign out
+                    </a>
                 </section>
 
                 <!-- Section 3: Manage Spaces -->

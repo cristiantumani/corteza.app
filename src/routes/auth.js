@@ -1,11 +1,10 @@
 /**
- * Authentication using one-time login tokens from /login Slack command
- * Token-based auth is handled in dashboard-auth.js
- * This file only handles /auth/me and /auth/logout
+ * Session info and logout: GET /auth/me, GET /auth/logout.
+ * Sign-in itself (Google) is in src/auth/routes.js.
  */
 
 const { getSlackClient } = require('../config/slack-client');
-const { isWorkspaceAdmin } = require('../middleware/admin-check');
+const { isAdmin } = require('../services/permissions');
 
 /**
  * Returns current authenticated user info
@@ -34,7 +33,8 @@ async function handleMe(req, res) {
     const workspaceId = req.session.user.workspace_id;
     const userId = req.session.user.user_id;
     const client = await getSlackClient(workspaceId);
-    is_admin = await isWorkspaceAdmin(client, userId, workspaceId);
+    // Corteza admins (workspace_admins), with Slack admin status as a fallback
+    is_admin = await isAdmin(client, workspaceId, userId);
   } catch (error) {
     console.error('❌ Error checking admin status in /auth/me:', error.message);
     // Continue without admin status on error

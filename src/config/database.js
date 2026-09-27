@@ -167,9 +167,19 @@ async function connectToMongoDB() {
       console.warn('⚠️  Could not create unique default-space index (duplicate defaults?):', indexError.message);
     }
 
-    // One-time login tokens: expire automatically (services/login-tokens.js)
-    await db.collection('login_tokens').createIndex({ token_hash: 1 }, { unique: true });
-    await db.collection('login_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+    // Workspaces and users (core/workspaces, core/users). One workspace per Google domain.
+    await db.collection('workspaces').createIndex({ workspace_id: 1 }, { unique: true });
+    await db.collection('workspaces').createIndex(
+      { google_domain: 1 },
+      { unique: true, partialFilterExpression: { google_domain: { $type: 'string' } } }
+    );
+    await db.collection('users').createIndex({ user_id: 1 }, { unique: true });
+    await db.collection('users').createIndex({ email: 1 }, { unique: true });
+    await db.collection('users').createIndex(
+      { google_sub: 1 },
+      { unique: true, partialFilterExpression: { google_sub: { $type: 'string' } } }
+    );
+    await workspaceMembersCollection.createIndex({ email: 1, removed_at: 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
