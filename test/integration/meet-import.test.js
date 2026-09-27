@@ -123,7 +123,7 @@ describe('Google Meet: import past meetings', { skip }, () => {
     assert.equal(byId['conferenceRecords/done'].status, 'already_imported');
     assert.equal(byId['conferenceRecords/pending'].status, 'not_ready');
     assert.equal(byId['conferenceRecords/forbidden'].status, 'failed');
-    assert.match(byId['conferenceRecords/forbidden'].error, /didn’t let Corteza read this meeting/);
+    assert.equal(byId['conferenceRecords/forbidden'].error, 'You don’t have access to this meeting.');
     assert.equal(finished.decisions_created, 2);
     assert.equal(extractCalls, 2);
 

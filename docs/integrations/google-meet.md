@@ -64,5 +64,6 @@ jobs/meet-poller.js           every MEET_POLL_INTERVAL_MINUTES (default 5), per 
 - **OAuth consent screen → Data access**, add:
   - `https://www.googleapis.com/auth/meetings.space.readonly`
   - `https://www.googleapis.com/auth/drive.meet.readonly`
+  - `https://www.googleapis.com/auth/drive.readonly`: Gemini notes Docs aren't covered by `drive.meet.readonly` (Google answers "The user has not granted the app … read access to the file"). Corteza only opens the Docs the Meet API links to. Connections made before this scope was added see a "Reconnect" prompt in Settings; until then they capture from transcripts only.
 - **OAuth client → Authorized redirect URIs:** `${BASE_URL}/integrations/google/callback` (in addition to the sign-in callback).
 - **Testing mode:** only listed test users can connect. Publishing to all users requires Google's verification of these scopes, which can take several weeks.

@@ -122,11 +122,12 @@ test('extraction text starts with meeting title, date and participants', () => {
   assert.equal(text, 'Meeting: Launch sync\nDate: 2026-09-27\nParticipants: Ana, Bob\n\nAna: Ship Friday.');
 });
 
-test('connect URL asks for Meet + Drive-Meet scopes with offline access', () => {
+test('connect URL asks for Meet + Drive scopes with offline access', () => {
   const url = new URL(connections.buildConnectUrl({ state: 's', nonce: 'n', loginHint: 'ana@acme.com' }));
   const scopes = url.searchParams.get('scope').split(' ');
   assert.ok(scopes.includes('https://www.googleapis.com/auth/meetings.space.readonly'));
   assert.ok(scopes.includes('https://www.googleapis.com/auth/drive.meet.readonly'));
+  assert.ok(scopes.includes('https://www.googleapis.com/auth/drive.readonly'), 'Gemini notes need Drive read access');
   assert.ok(scopes.includes('openid'));
   assert.equal(url.searchParams.get('access_type'), 'offline');
   assert.equal(url.searchParams.get('prompt'), 'consent');
@@ -134,7 +135,10 @@ test('connect URL asks for Meet + Drive-Meet scopes with offline access', () => 
   assert.equal(url.searchParams.get('login_hint'), 'ana@acme.com');
 
   assert.deepEqual(connections.missingScopes(['openid', 'https://www.googleapis.com/auth/meetings.space.readonly']),
-    ['https://www.googleapis.com/auth/drive.meet.readonly']);
+    ['https://www.googleapis.com/auth/drive.meet.readonly', 'https://www.googleapis.com/auth/drive.readonly']);
+  // Connections made before Drive read access was added are asked to reconnect
+  assert.equal(connections.needsReconsent({ scopes: ['https://www.googleapis.com/auth/meetings.space.readonly', 'https://www.googleapis.com/auth/drive.meet.readonly'] }), true);
+  assert.equal(connections.needsReconsent({ scopes: connections.MEET_SCOPES }), false);
 });
 
 test('describeMeeting summarises availability without downloading transcript text', async () => {
@@ -218,4 +222,7 @@ test('loadMeeting throws the refusal, tagged with its source, when nothing can b
 test('Google errors are described with status, reason and message', () => {
   assert.equal(meetClient.describeGoogleError(forbidden('The caller does not have permission')), '403 PERMISSION_DENIED: The caller does not have permission');
   assert.equal(meetClient.describeGoogleError(new Error('socket hang up')), 'socket hang up');
+  // Drive export errors arrive as a JSON string (responseType: 'text')
+  const textError = Object.assign(new Error('403'), { response: { status: 403, data: JSON.stringify({ error: { code: 403, message: 'No read access to the file.', errors: [{ reason: 'appNotAuthorizedToFile' }] } }) } });
+  assert.equal(meetClient.describeGoogleError(textError), '403 appNotAuthorizedToFile: No read access to the file.');
 });

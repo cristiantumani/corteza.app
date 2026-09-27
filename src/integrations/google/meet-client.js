@@ -106,8 +106,11 @@ async function exportDocText(client, fileId) {
  */
 function describeGoogleError(error) {
   const status = error?.response?.status;
-  const body = error?.response?.data;
-  const detail = typeof body === 'string' ? body : body?.error?.message || body?.error_description || error?.message;
+  let body = error?.response?.data;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { /* not JSON: keep the text */ }
+  }
+  const detail = typeof body === 'string' ? body.replace(/\s+/g, ' ') : body?.error?.message || body?.error_description || error?.message;
   const reason = body?.error?.status || body?.error?.errors?.[0]?.reason;
   return [status, reason].filter(Boolean).join(' ') + (detail ? `${status || reason ? ': ' : ''}${String(detail).slice(0, 200)}` : '');
 }

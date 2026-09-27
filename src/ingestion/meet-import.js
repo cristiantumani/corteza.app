@@ -156,16 +156,22 @@ async function startImport(connection, meetingIds, spaceId, deps = {}) {
   return job;
 }
 
-/** What the user sees when a meeting can't be imported (includes Google's reason) */
-function importErrorMessage(error, step) {
+/**
+ * What the user sees when a meeting can't be imported. Plain language only:
+ * Google's technical reason is logged, not shown.
+ */
+function importErrorMessage(error, step, { needsReconsent = false } = {}) {
   const status = error.response?.status;
-  if (status !== 401 && status !== 403 && status !== 404) return String(error.message).slice(0, 200);
-
-  const what = error.meetSource === 'notes' ? 'the Gemini notes'
-    : error.meetSource === 'transcript' ? 'the transcript'
-      : step === 'meeting' ? 'this meeting' : 'this meeting’s transcript or notes';
-  const reason = error.response?.data?.error?.message;
-  return `Google didn’t let Corteza read ${what}${reason ? `: ${String(reason).slice(0, 160)}` : ` (${status})`}`;
+  if (status === 401 || status === 403 || status === 404) {
+    if (error.meetSource === 'notes') {
+      return needsReconsent
+        ? 'To import Gemini notes, reconnect Google Meet above and allow Drive access, then import again.'
+        : 'Google doesn’t let Corteza read this meeting’s Gemini notes.';
+    }
+    if (error.meetSource === 'transcript') return 'Google doesn’t let Corteza read this meeting’s transcript.';
+    return step === 'meeting' ? 'You don’t have access to this meeting.' : 'Google doesn’t let Corteza read this meeting’s transcript or notes.';
+  }
+  return 'Something went wrong reading this meeting. Try importing it again later.';
 }
 
 /**
@@ -228,13 +234,14 @@ async function runImport(importId, deps = {}) {
           status: outcome.status === 'duplicate' ? 'already_imported' : outcome.status,
           title: meeting.title,
           decisions_created: outcome.decisions.length,
-          error: outcome.error || null
+          error: outcome.status === 'failed' ? 'Corteza couldn’t extract decisions right now. Try importing it again later.' : null
         };
+        if (outcome.error) console.error(`❌ Meet import ${importId}: extraction failed for ${item.meeting_id}: ${outcome.error}`);
       }
     } catch (error) {
       const detail = meetClient.describeGoogleError(error);
       console.error(`❌ Meet import ${importId}: ${item.meeting_id} failed reading the ${error.meetSource || step}: ${detail}`);
-      result = { status: 'failed', title: item.title, decisions_created: 0, error: importErrorMessage(error, step) };
+      result = { status: 'failed', title: item.title, decisions_created: 0, error: importErrorMessage(error, step, { needsReconsent: connections.needsReconsent(connection) }) };
     }
 
     await imports().updateOne({ import_id: importId }, {
