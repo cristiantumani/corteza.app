@@ -5,6 +5,7 @@ const config = require('../config/environment');
 const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace, canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
 const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
+const { DECISION_TYPES } = require('../core/decisions/types');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -188,7 +189,7 @@ async function updateDecision(req, res) {
           sanitizedUpdates.text = updates.text.trim();
         }
 
-        if (updates.type && ['decision', 'explanation', 'context'].includes(updates.type)) {
+        if (updates.type && DECISION_TYPES.includes(updates.type)) {
           sanitizedUpdates.type = updates.type;
         }
 
@@ -1360,7 +1361,7 @@ async function createMemory(req, res) {
       return;
     }
 
-    if (!type || !['decision', 'explanation', 'context', 'learning', 'risk', 'assumption'].includes(type)) {
+    if (!type || !DECISION_TYPES.includes(type)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Validation error', message: 'Valid type is required' }));
       return;

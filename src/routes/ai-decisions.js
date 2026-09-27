@@ -420,7 +420,7 @@ async function processTranscript(transcriptContent, metadata) {
  * @param {string} channelId - Slack channel ID
  */
 async function postSuggestionsToSlack(client, suggestions, channelId) {
-  const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
+  const typeEmoji = { decision: '✅', action_item: '☑️', open_question: '❓', risk: '⚠️', explanation: '💡', context: '📌' };
 
   // Slack has a 50-block limit per message, so we need to split into chunks
   // Each suggestion uses ~5 blocks (section + actions + divider)

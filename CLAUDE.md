@@ -24,6 +24,7 @@ npm test                  # unit tests; integration tests run when TEST_MONGODB_
 npm run lint              # ESLint (warnings allowed, errors fail CI)
 npm run build:css         # rebuild public/styles/tailwind.min.css after changing Tailwind classes
 TEST_MONGODB_URI=mongodb://localhost:27017 npm test   # run everything against a local MongoDB
+node scripts/eval-extraction.js   # extraction quality eval (calls Claude, costs money); run before/after prompt or model changes
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB service on every PR.
@@ -51,6 +52,10 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
+| Decision types (decision, action_item, open_question, risk, …) | `src/core/decisions/types.js` |
+| Extraction eval (labeled transcripts, scoring) | `scripts/eval-extraction.js`, `scripts/eval/score.js`, `test/fixtures/extraction/` |
+| Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
+| Google verification / launch checklist | `docs/launch/google-verification.md` |
 | Embeddings / semantic search | `src/services/embeddings.js`, `src/services/semantic-search.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
@@ -88,3 +93,5 @@ The full plan and target module layout are in `docs/ARCHITECTURE.md`. Phases:
 3. **Google Meet auto-capture:** "Connect Google", Meet transcript and Gemini notes poller, auto-save pipeline. *(done; see `docs/integrations/google-meet.md`)*
 4. **Slack input-only:** "Connect Slack" from Settings, events mapped to workspaces.
 5. **Docs and cleanup.**
+
+**Next (approved Sept 2026): `docs/ROADMAP.md`.** It covers ready-to-sell work (Google verification, extraction v2, decision lifecycle, onboarding, billing) and follow-through (action items, owners, nudges, cross-meeting progress detection, pre-meeting briefs). Read it before starting new product work.

@@ -77,7 +77,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 | Collection | Purpose |
 |---|---|
-| `decisions` | Decisions and other memories (`id` per workspace, `space_id`, `type`, `text`, `tags`, `embedding`, `source`) |
+| `decisions` | Decisions and other memories: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote` |
 | `workspace_spaces`, `space_members` | Spaces and explicit space membership |
 | `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links |
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |

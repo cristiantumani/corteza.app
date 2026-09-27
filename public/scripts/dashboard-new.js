@@ -9,6 +9,13 @@
   // Store decisions for rendering
   let allDecisionsForRender = [];
 
+  const TYPE_LABELS = {
+    decision: 'decision',
+    action_item: 'action item',
+    open_question: 'open question',
+    risk: 'risk'
+  };
+
   // Override renderDecisions to use new card design
   // Wait a tick to ensure dashboard.js has exposed window.renderDecisions
   setTimeout(() => {
@@ -94,7 +101,7 @@
       <div class="flex items-start justify-between mb-4">
         <div class="flex gap-1 flex-wrap">
           ${decision.space_name ? `<span class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
-          <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(decision.type)}</span>
+          <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(TYPE_LABELS[decision.type] || decision.type)}</span>
           ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="Captured automatically${decision.confidence != null ? ` (${Math.round(decision.confidence * 100)}% confidence)` : ''}">✨ AI-captured</span>` : ''}
         </div>
         <span class="flex items-center gap-1 ${status.color} font-bold text-xs">
@@ -107,6 +114,7 @@
 
       <p class="text-sm text-on-surface-variant mb-6 line-clamp-2">${escapeHtml(getTruncatedText(decision.text))}</p>
 
+      ${getOwnerLine(decision)}
       ${getSourceLine(decision)}
 
       <div class="flex items-center justify-between pt-4 border-t border-outline-variant/50">
@@ -175,6 +183,17 @@
       ? `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" data-action="source" class="text-primary hover:underline">${escapeHtml(details.title)}</a>`
       : escapeHtml(details.title);
     return `<p class="text-xs text-on-surface-variant -mt-4 mb-6">${label}: ${title}</p>`;
+  }
+
+  /** "Owner: Ana · Due Oct 3" for items that have them (AI extraction v2) */
+  function getOwnerLine(decision) {
+    const parts = [];
+    if (decision.owner_name) parts.push(`Owner: ${escapeHtml(decision.owner_name)}`);
+    if (decision.due_date) {
+      const due = new Date(`${decision.due_date}T00:00:00`);
+      if (!isNaN(due)) parts.push(`Due ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
+    }
+    return parts.length ? `<p class="text-xs text-on-surface-variant -mt-4 mb-2">${parts.join(' · ')}</p>` : '';
   }
 
   function getStatusInfo(decision) {

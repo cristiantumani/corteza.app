@@ -73,7 +73,11 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     const space = await spaces.ensureDefaultSpace('WPIPE');
     const extract = fakeExtract([
       { decision_text: 'Move launch to Friday', decision_type: 'decision', tags: ['launch'], confidence: 0.92, context: 'Ana proposed it' },
-      { decision_text: 'Budget is capped at 10k', decision_type: 'context', tags: [], confidence: 0.8 }
+      { decision_text: 'Budget is capped at 10k', decision_type: 'context', tags: [], confidence: 0.8 },
+      {
+        decision_text: 'Bob sends the launch checklist', decision_type: 'action_item', confidence: 0.9,
+        owner_name: 'Bob', due_date: '2026-10-02', rationale: 'Support needs it before launch', evidence_quote: 'I will send the checklist by Friday'
+      }
     ]);
     const transcript = {
       workspaceId: 'WPIPE', source: 'google_meet', externalId: 'conferenceRecords/1', title: 'Launch sync',
@@ -84,11 +88,18 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
 
     const first = await pipeline.ingestTranscript(transcript, { extract });
     assert.equal(first.status, 'completed');
-    assert.equal(first.decisions.length, 2);
+    assert.equal(first.decisions.length, 3);
     assert.match(extract.calls[0].text, /^Meeting: Launch sync\nDate: 2026-09-27\nParticipants: Ana, Bob, Carla/);
 
     const saved = await db.collection('decisions').find({ workspace_id: 'WPIPE' }).sort({ id: 1 }).toArray();
-    assert.deepEqual(saved.map(d => d.id), [1, 2]);
+    assert.deepEqual(saved.map(d => d.id), [1, 2, 3]);
+    const action = saved[2];
+    assert.equal(action.type, 'action_item');
+    assert.equal(action.owner_name, 'Bob');
+    assert.equal(action.due_date, '2026-10-02');
+    assert.equal(action.rationale, 'Support needs it before launch');
+    assert.equal(action.evidence_quote, 'I will send the checklist by Friday');
+    assert.match(action.alternatives, /Why: Support needs it before launch/);
     assert.equal(saved[0].capture, 'ai');
     assert.equal(saved[0].confidence, 0.92);
     assert.equal(saved[0].space_id, space.space_id);
@@ -101,11 +112,11 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     const again = await pipeline.ingestTranscript(transcript, { extract });
     assert.equal(again.status, 'duplicate');
     assert.equal(extract.calls.length, 1, 'extraction is not repeated');
-    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WPIPE' }), 2);
+    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WPIPE' }), 3);
 
     const ingestion = await db.collection('ingestions').findOne({ external_id: 'conferenceRecords/1' });
     assert.equal(ingestion.status, 'completed');
-    assert.deepEqual(ingestion.decision_ids, [1, 2]);
+    assert.deepEqual(ingestion.decision_ids, [1, 2, 3]);
   });
 
   test('failed extraction is recorded and retried later, not immediately', async () => {

@@ -1,0 +1,14 @@
+{
+  "name": "Planificación comercial (Spanish, synthetic)",
+  "title": "Planificación comercial semanal",
+  "date": "2026-09-22",
+  "participants": ["Cristian Tumani", "Jaime López", "Sofía Pérez"],
+  "transcript": "Cristian Tumani: Buenas, arrancamos. Primero el tema del precio del plan anual.\nJaime López: Los números de septiembre muestran que el 30% de los clientes nuevos eligen anual cuando hay descuento.\nSofía Pérez: Propongo subir el descuento anual del 15% al 20% para empujar más.\nCristian Tumani: Lo hablamos la semana pasada y los márgenes aguantan. Vamos con el 20% a partir del 1 de octubre.\nJaime López: De acuerdo.\nSofía Pérez: Perfecto. Yo actualizo la página de precios y aviso a soporte antes del 30 de septiembre.\nCristian Tumani: Jaime, ¿podés preparar el reporte de churn por país para la reunión del lunes?\nJaime López: Sí, lo tengo para el lunes.\nSofía Pérez: Una duda que no resolvimos: ¿los clientes actuales en plan anual reciben el nuevo descuento al renovar o no?\nCristian Tumani: No lo sé todavía, lo vemos con finanzas.\nJaime López: Ojo que si el equipo de Chile no llega al 40% del objetivo este mes, el forecast del trimestre no cierra.\nCristian Tumani: Sí, eso me preocupa. Por cierto, les cuento que el CRM ahora sincroniza cada quince minutos, antes era cada hora.\nSofía Pérez: Genial.\nCristian Tumani: Listo, gracias a todos.",
+  "expected": [
+    { "type": "decision", "match": ["20"] },
+    { "type": "action_item", "match": ["precios"], "owner": "Sofía Pérez", "due_date": "2026-09-30" },
+    { "type": "action_item", "match": ["churn"], "owner": "Jaime López", "due_date": "2026-09-28" },
+    { "type": "open_question", "match": ["renov"] },
+    { "type": "risk", "match": ["Chile"] }
+  ]
+}

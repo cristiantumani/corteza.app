@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Extraction v2 (roadmap A2)
+- **New item types:** meetings now yield `decision`, `action_item`, `open_question` and `risk`. Background explanations and "context" are no longer captured as decisions
+- **Richer items:** each item carries `owner_name`, `due_date` (relative dates resolved from the meeting date), `rationale`, a verbatim `evidence_quote` and `supersedes_hint`. The dashboard shows the owner and due date
+- **Model:** the default is `claude-opus-5` (override with `CLAUDE_MODEL`)
+  - Responses are streamed
+  - Temperature is only sent to older models that still accept it
+  - Refusals are detected, and server-side refusal fallbacks are enabled for models that support them
+  - `CLAUDE_MAX_TOKENS` now defaults to 16000
+- **Extraction eval:** `node scripts/eval-extraction.js` scores the extraction on labeled transcripts in `test/fixtures/extraction/` (precision and recall per type, owner and due-date accuracy)
+- Decision types now live in one place, `src/core/decisions/types.js`, used by API validation, filters and the decision service
+- Added `docs/ROADMAP.md` (the approved plan to reach paying customers) and `docs/launch/google-verification.md`
+
 ### Fixed - Meeting decisions are dated by the meeting
 - Decisions captured from a meeting get the meeting's date (`timestamp`), not the date Corteza processed it. This matters for imports of past meetings, and for search date filters and the weekly digest. `created_at` keeps the save time
 - `createDecision` takes an optional `decidedAt`

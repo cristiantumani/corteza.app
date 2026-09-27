@@ -21,8 +21,8 @@ function validateQueryParams(query) {
   }
 
   // Type filter (must be one of the allowed types)
-  const allowedTypes = ['decision', 'explanation', 'context'];
-  if (query.type && allowedTypes.includes(query.type.toLowerCase())) {
+  const { DECISION_TYPES } = require('../core/decisions/types');
+  if (query.type && DECISION_TYPES.includes(query.type.toLowerCase())) {
     validated.type = query.type.toLowerCase();
   }
 

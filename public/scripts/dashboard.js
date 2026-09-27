@@ -2759,7 +2759,7 @@
         const confidence = suggestion.confidence_score || 0;
         const confidencePercent = Math.round(confidence * 100);
         const confidenceColor = confidence >= 0.8 ? '#10B981' : confidence >= 0.6 ? '#F59E0B' : '#EF4444';
-        const typeEmoji = { decision: '✅', explanation: '💡', context: '📌' };
+        const typeEmoji = { decision: '✅', action_item: '☑️', open_question: '❓', risk: '⚠️', explanation: '💡', context: '📌' };
 
         const card = document.createElement('div');
         card.id = `suggestion-${suggestion.suggestion_id}`;
@@ -3169,6 +3169,8 @@
 
       const typeColors = {
         'decision': 'bg-blue-100 text-blue-800',
+        'action_item': 'bg-indigo-100 text-indigo-800',
+        'open_question': 'bg-orange-100 text-orange-800',
         'explanation': 'bg-green-100 text-green-800',
         'context': 'bg-purple-100 text-purple-800',
         'learning': 'bg-yellow-100 text-yellow-800',

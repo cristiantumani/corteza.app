@@ -119,38 +119,56 @@ ${transcriptText}`;
 }
 
 /**
- * System message for Claude API (cached for efficiency)
+ * System message for extraction (v2). Cached by the API across requests.
  *
- * CREDIT OPTIMIZATION: Reduced from ~1800 to ~800 tokens (~55% reduction)
- * - Removed verbose examples and redundant explanations
- * - Consolidated extraction rules into concise format
- * - Kept essential instructions only
- * - System message is cached by Claude, so this optimization saves tokens on every request
+ * Output: a JSON array of items. Types:
+ * - decision: a choice the group committed to
+ * - action_item: a person committed to do something (owner / due date when stated)
+ * - open_question: raised and left unresolved, needs a decision later
+ * - risk: a concern or blocker that could change the outcome
+ * Each item carries evidence (a verbatim quote) so people can trust auto-saved data.
+ * Legacy fields (decision_text, decision_type, context) keep older callers working.
  */
 const DECISION_EXTRACTION_SYSTEM_MESSAGE = [
   {
     type: 'text',
-    text: `Extract decisions/explanations/context from meeting transcripts as JSON.
+    text: `You extract the outcomes of a meeting from its transcript and/or meeting notes so a team can track them afterwards. People will see every item you return without reviewing it first, so only return items that are clearly supported by what was said.
 
-EXTRACT:
-- decision: Explicit commitments ("We decided...", "We'll use...", "Agreed to...")
-- explanation: Technical how-it-works ("This works by...", "The process is...")
-- context: Background/constraints ("Budget approved for Q2", "Can't do X because Y")
+Item types:
+- decision: a choice the participants committed to ("we'll launch on the 15th", "we're dropping plan B"). Not proposals that were still being debated, and not status updates.
+- action_item: a specific person or team committed to do something ("Ana will send the pricing deck by Friday"). Use the name as spoken for the owner.
+- open_question: a question that was raised, matters for the work, and was explicitly left unresolved.
+- risk: a concern, dependency or blocker raised that could affect a decision or deadline.
 
-SKIP: Vague discussions, unanswered questions, uncommitted speculation.
+Do not return background explanations, how-things-work descriptions, small talk, or hypotheticals. When the same outcome is mentioned several times, return it once with the clearest wording. Meeting notes may already list "next steps"; treat them as evidence, but still apply these rules.
 
-OUTPUT: JSON array only, no other text.
-[{"decision_text":"concise 1-2 sentence statement","decision_type":"decision|explanation|context","epic_key":"ABC-123 or null","tags":["2-5 lowercase keywords"],"confidence":0.0-1.0,"context":"surrounding text ~200 chars"}]
+Fields for each item:
+- decision_type: "decision" | "action_item" | "open_question" | "risk"
+- decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the language of the transcript
+- owner_name: the person responsible, as named in the meeting, or null
+- due_date: "YYYY-MM-DD" if a deadline was stated; resolve relative dates ("next Friday") from the meeting date given in the header; otherwise null
+- rationale: why, if a reason was given, otherwise null
+- evidence_quote: a short verbatim quote (under 200 characters) from the transcript or notes that supports the item
+- supersedes_hint: if the speakers say this changes or reverses an earlier decision, a short description of what it replaces, otherwise null
+- epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null
+- tags: 2-5 lowercase keywords
+- confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
 
-Return [] if nothing found. Be comprehensive but conservative with confidence (0.9+ only when certain).`,
+Respond with only a JSON array of items, with no other text. Respond with [] if there are no outcomes.`,
     cache_control: { type: 'ephemeral' }
   }
 ];
 
+/** Models before these no longer accept sampling parameters (temperature) */
+const SAMPLING_MODELS = /^claude-(3|[a-z]+-4-[0-6](\b|-))/;
+/** Models that support server-side refusal fallbacks */
+const FALLBACK_MODELS = /^claude-(opus-5|fable-5)/;
+
 /**
- * Calls Claude API with retry logic
+ * Calls Claude for extraction. Streams (long transcripts can take a while) and
+ * returns the final message. The SDK retries 429/5xx itself.
  * @param {string} prompt - The prompt to send
- * @returns {Promise<Object>} Claude API response
+ * @returns {Promise<Object>} Claude API response (Message)
  */
 async function callClaudeAPI(prompt) {
   if (!isClaudeConfigured()) {
@@ -159,52 +177,55 @@ async function callClaudeAPI(prompt) {
 
   const anthropic = new Anthropic({
     apiKey: config.claude.apiKey,
-    timeout: 60000 // 60 second timeout
+    timeout: 5 * 60 * 1000,
+    maxRetries: 2
   });
+  const model = config.claude.model;
+  const request = {
+    model,
+    max_tokens: config.claude.maxTokens,
+    system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
+    messages: [{ role: 'user', content: prompt }]
+  };
+  if (SAMPLING_MODELS.test(model)) request.temperature = 0.2;
 
+  console.log(`🤖 Calling Claude API (${model})...`);
   try {
-    console.log('🤖 Calling Claude API...');
+    let response;
+    if (FALLBACK_MODELS.test(model)) {
+      try {
+        // On a safety decline, the API re-runs the request on a fallback model
+        response = await anthropic.beta.messages.stream({
+          ...request,
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default'
+        }).finalMessage();
+      } catch (error) {
+        if (!(error instanceof Anthropic.BadRequestError)) throw error;
+        console.warn('⚠️  Claude request with fallbacks was rejected, retrying without:', error.message);
+        response = await anthropic.messages.stream(request).finalMessage();
+      }
+    } else {
+      response = await anthropic.messages.stream(request).finalMessage();
+    }
 
-    const response = await anthropic.messages.create({
-      model: config.claude.model,
-      max_tokens: config.claude.maxTokens,
-      temperature: 0.2, // Lower temperature for more consistent extraction
-      system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
-
+    if (response.stop_reason === 'refusal') {
+      throw new Error(`Claude declined to process this transcript${response.stop_details?.category ? ` (${response.stop_details.category})` : ''}`);
+    }
+    if (response.stop_reason === 'max_tokens') {
+      console.warn('⚠️  Claude response hit max_tokens; the item list may be incomplete. Raise CLAUDE_MAX_TOKENS.');
+    }
     console.log('✅ Claude API response received');
     return response;
   } catch (error) {
-    // Handle rate limiting
-    if (error.status === 429) {
-      console.log('⚠️  Claude API rate limit, retrying in 5s...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      // Retry once with same configuration (system message will be cached)
-      const retryResponse = await anthropic.messages.create({
-        model: config.claude.model,
-        max_tokens: config.claude.maxTokens,
-        temperature: 0.2,
-        system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      });
-      return retryResponse;
-    }
-
-    // Log and re-throw other errors
     console.error('❌ Claude API error:', error.message);
     throw error;
   }
+}
+
+/** Text of a Claude response (skips thinking and other non-text blocks) */
+function responseText(response) {
+  return (response.content || []).filter(block => block.type === 'text').map(block => block.text).join('\n');
 }
 
 /**
@@ -239,7 +260,7 @@ function parseDecisionResponse(claudeResponse) {
     }
 
     // Validate and filter each decision
-    const validDecisions = decisions.filter(d => {
+    const validDecisions = decisions.map(normalizeItem).filter(d => {
       const isValid = validateAISuggestion(d);
       if (!isValid) {
         console.log(`⚠️  Skipping invalid suggestion:`, d);
@@ -254,6 +275,30 @@ function parseDecisionResponse(claudeResponse) {
     console.error('Response was:', claudeResponse.substring(0, 500));
     return [];
   }
+}
+
+/** Trims an optional string field to a max length, or null */
+function optionalText(value, max) {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+}
+
+/**
+ * Normalizes one extracted item (v2 fields, plus legacy fields older callers read)
+ * @param {Object} item
+ * @returns {Object}
+ */
+function normalizeItem(item) {
+  if (!item || typeof item !== 'object') return item;
+  const evidence = optionalText(item.evidence_quote, 300);
+  return {
+    ...item,
+    owner_name: optionalText(item.owner_name, 100),
+    due_date: typeof item.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.due_date) ? item.due_date : null,
+    rationale: optionalText(item.rationale, 500),
+    evidence_quote: evidence,
+    supersedes_hint: optionalText(item.supersedes_hint, 300),
+    context: item.context || evidence || ''
+  };
 }
 
 /**
@@ -324,11 +369,7 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id) {
   // Call Claude API
   const response = await callClaudeAPI(prompt);
 
-  // Extract text from response
-  const responseText = response.content[0].text;
-
-  // Parse the response
-  const decisions = parseDecisionResponse(responseText);
+  const decisions = parseDecisionResponse(responseText(response));
 
   const processingTime = Date.now() - startTime;
 
@@ -348,5 +389,8 @@ module.exports = {
   buildDecisionExtractionPrompt,
   callClaudeAPI,
   parseDecisionResponse,
-  parseLeadingJsonArray
+  parseLeadingJsonArray,
+  normalizeItem,
+  responseText,
+  SAMPLING_MODELS
 };
