@@ -669,6 +669,15 @@
       assumption: 'Assumption'
     };
 
+    /** Shows a detail field with text, or hides it when there's no value (missing elements are ignored) */
+    function showDetailField(containerId, valueId, value) {
+      const container = document.getElementById(containerId);
+      const valueElement = document.getElementById(valueId);
+      if (!container || !valueElement) return;
+      container.style.display = value ? '' : 'none';
+      valueElement.textContent = value || '';
+    }
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
@@ -682,6 +691,12 @@
 
       // Set type with badge
       document.getElementById('detail-type').innerHTML = `<span class="badge badge-${escapeHtml(decision.type)}">${escapeHtml(typeLabel)}</span>`;
+
+      // Why, owner and due date (AI extraction v2); hidden when missing
+      showDetailField('detail-rationale-section', 'detail-rationale', decision.rationale);
+      showDetailField('detail-owner-container', 'detail-owner', decision.owner_name);
+      showDetailField('detail-due-container', 'detail-due',
+        decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);
 
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;

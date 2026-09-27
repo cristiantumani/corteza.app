@@ -4,7 +4,15 @@
  * An extracted item matches an expected one when the type is the same and every
  * `match` keyword appears in its text (case- and accent-insensitive). Each
  * expected item can be matched once. Precision and recall are reported per type.
+ *
+ * Also checked:
+ * - rationale_match: keywords the item's rationale should contain (context behind it)
+ * - decisions phrased as outcomes ("Se decide…", "Launch moves to…"), not narration
+ *   of the conversation ("Se propuso…", "Ana proposed…")
  */
+
+/** Decision texts that narrate the conversation instead of stating the outcome */
+const NARRATION = /\b(se propuso|se propone|se hablo|se discutio|se planteo|propuso|planteo|it was proposed|proposed|suggested|discussed|talked about)\b/;
 
 function normalize(text) {
   return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -51,6 +59,15 @@ function summarize(results) {
   let ownerCorrect = 0;
   let dueChecks = 0;
   let dueCorrect = 0;
+  let rationaleChecks = 0;
+  let rationaleCorrect = 0;
+  let decisionsTotal = 0;
+  let decisionsNarrated = 0;
+  const countPhrasing = item => {
+    if (item.decision_type !== 'decision') return;
+    decisionsTotal++;
+    if (NARRATION.test(normalize(item.decision_text))) decisionsNarrated++;
+  };
 
   for (const { matched, missed, extra } of results) {
     for (const { expected, item } of matched) {
@@ -65,9 +82,18 @@ function summarize(results) {
         dueChecks++;
         if ((item.due_date || null) === expected.due_date) dueCorrect++;
       }
+      if (expected.rationale_match) {
+        rationaleChecks++;
+        const rationale = normalize(item.rationale);
+        if (expected.rationale_match.every(keyword => rationale.includes(normalize(keyword)))) rationaleCorrect++;
+      }
+      countPhrasing(item);
     }
     for (const exp of missed) bump(exp.type, 'expected');
-    for (const item of extra) bump(item.decision_type, 'extracted');
+    for (const item of extra) {
+      bump(item.decision_type, 'extracted');
+      countPhrasing(item);
+    }
   }
 
   for (const stats of Object.values(byType)) {
@@ -77,8 +103,10 @@ function summarize(results) {
   return {
     byType,
     ownerAccuracy: ownerChecks ? ownerCorrect / ownerChecks : null,
-    dueDateAccuracy: dueChecks ? dueCorrect / dueChecks : null
+    dueDateAccuracy: dueChecks ? dueCorrect / dueChecks : null,
+    rationaleAccuracy: rationaleChecks ? rationaleCorrect / rationaleChecks : null,
+    decisionsAsOutcomes: decisionsTotal ? (decisionsTotal - decisionsNarrated) / decisionsTotal : null
   };
 }
 
-module.exports = { scoreFixture, summarize, normalize };
+module.exports = { scoreFixture, summarize, normalize, NARRATION };

@@ -13,7 +13,8 @@
  * Fixture format (test/fixtures/extraction/*.json):
  *   { "name", "title", "date": "YYYY-MM-DD", "participants": [..], "transcript": "...",
  *     "expected": [{ "type": "decision|action_item|open_question|risk", "match": ["keyword", ..],
- *                    "owner"?: "Ana", "due_date"?: "YYYY-MM-DD" | null }] }
+ *                    "owner"?: "Ana", "due_date"?: "YYYY-MM-DD" | null,
+ *                    "rationale_match"?: ["keyword", ..] }] }
  * Only add real transcripts with the participants' consent, and never commit them to a public repo.
  */
 require('dotenv').config({ quiet: true });
@@ -61,7 +62,8 @@ async function main() {
   for (const [type, stats] of Object.entries(summary.byType)) {
     console.log(`${type.padEnd(16)}${percent(stats.precision)}     ${percent(stats.recall)}   (${stats.matched} / ${stats.extracted} / ${stats.expected})`);
   }
-  console.log(`\nOwner accuracy: ${percent(summary.ownerAccuracy)}   Due date accuracy: ${percent(summary.dueDateAccuracy)}`);
+  console.log(`\nOwner accuracy: ${percent(summary.ownerAccuracy)}   Due date accuracy: ${percent(summary.dueDateAccuracy)}   Rationale (context) accuracy: ${percent(summary.rationaleAccuracy)}`);
+  console.log(`Decisions phrased as outcomes (not "se propuso…"): ${percent(summary.decisionsAsOutcomes)}`);
 
   const minPrecision = argValue('--min-precision');
   const decisionPrecision = summary.byType.decision?.precision ?? null;

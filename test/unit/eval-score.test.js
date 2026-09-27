@@ -25,3 +25,17 @@ test('items match expected ones by type and keywords, once each', () => {
   assert.equal(summary.ownerAccuracy, 1, 'accent-insensitive owner match');
   assert.equal(summary.dueDateAccuracy, 1);
 });
+
+test('rationale context and outcome phrasing are measured', () => {
+  const extracted = [
+    { decision_type: 'decision', decision_text: 'Se decide comenzar una investigación técnica sobre IA y Excel', rationale: 'A raíz de la nueva estrategia presentada' },
+    { decision_type: 'decision', decision_text: 'Se propuso subir el descuento anual al 20%', rationale: null }
+  ];
+  const expected = [
+    { type: 'decision', match: ['investigacion', 'excel'], rationale_match: ['estrategia'] },
+    { type: 'decision', match: ['20'], rationale_match: ['anual'] }
+  ];
+  const summary = summarize([scoreFixture(extracted, expected)]);
+  assert.equal(summary.rationaleAccuracy, 0.5);
+  assert.equal(summary.decisionsAsOutcomes, 0.5, '"Se propuso…" counts as narration');
+});

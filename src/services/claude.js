@@ -144,10 +144,10 @@ Do not return background explanations, how-things-work descriptions, small talk,
 
 Fields for each item:
 - decision_type: "decision" | "action_item" | "open_question" | "risk"
-- decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the language of the transcript
+- decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the language of the transcript. State the outcome itself, the way it would read in a decision log, not a narration of the conversation. Write "Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel", not "Se propuso iniciar una investigación…" or "Cristian propuso…"; write "Launch moves to October 22", not "The team discussed moving the launch". Who proposed or said what belongs in evidence_quote. For action items, name the owner and the task ("Ana envía el deck de precios antes del viernes"). If something was only proposed and not agreed, it is not a decision.
 - owner_name: the person responsible, as named in the meeting, or null
 - due_date: "YYYY-MM-DD" if a deadline was stated; resolve relative dates ("next Friday") from the meeting date given in the header; otherwise null
-- rationale: why, if a reason was given, otherwise null
+- rationale: why this was decided or needed, in one or two sentences. Include context from anywhere in the meeting that led to it, such as a strategy, goal, problem or constraint presented earlier ("A raíz de la nueva estrategia presentada…"), even if it was not said in the same sentence. null if the meeting gives no reason.
 - evidence_quote: a short verbatim quote (under 200 characters) from the transcript or notes that supports the item
 - supersedes_hint: if the speakers say this changes or reverses an earlier decision, a short description of what it replaces, otherwise null
 - epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null

@@ -161,7 +161,6 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
         epicKey: extracted.epic_key,
         alternatives: [
           `Captured automatically from "${transcript.title || 'a meeting'}".`,
-          extracted.rationale ? `Why: ${extracted.rationale}` : null,
           extracted.evidence_quote ? `Quote: "${extracted.evidence_quote}"` : (extracted.context ? `Context: ${extracted.context}` : null),
           extracted.supersedes_hint ? `Replaces: ${extracted.supersedes_hint}` : null
         ].filter(Boolean).join('\n\n'),

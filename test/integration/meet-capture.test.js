@@ -99,7 +99,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.equal(action.due_date, '2026-10-02');
     assert.equal(action.rationale, 'Support needs it before launch');
     assert.equal(action.evidence_quote, 'I will send the checklist by Friday');
-    assert.match(action.alternatives, /Why: Support needs it before launch/);
+    assert.match(action.alternatives, /Quote: "I will send the checklist by Friday"/);
     assert.equal(saved[0].capture, 'ai');
     assert.equal(saved[0].confidence, 0.92);
     assert.equal(saved[0].space_id, space.space_id);

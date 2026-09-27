@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Temperature is only sent to older models that still accept it
   - Refusals are detected, and server-side refusal fallbacks are enabled for models that support them
   - `CLAUDE_MAX_TOKENS` now defaults to 16000
+- **Decisions read as outcomes:** "Se decide comenzar…", not "Se propuso…". The `rationale` captures the context from the whole meeting that led to each item, such as a strategy presented earlier. The decision detail view shows **Why**, **Owner** and **Due**, and its title names the type ("Context #92")
 - **Extraction eval:** `node scripts/eval-extraction.js` scores the extraction on labeled transcripts in `test/fixtures/extraction/` (precision and recall per type, owner and due-date accuracy)
 - Decision types now live in one place, `src/core/decisions/types.js`, used by API validation, filters and the decision service
 - Added `docs/ROADMAP.md` (the approved plan to reach paying customers) and `docs/launch/google-verification.md`
