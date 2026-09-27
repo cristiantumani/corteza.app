@@ -229,8 +229,8 @@ function parseDecisionResponse(claudeResponse) {
       }
     }
 
-    // Parse JSON
-    const decisions = JSON.parse(jsonString.trim());
+    // Parse JSON (Claude sometimes adds an explanation after the array)
+    const decisions = parseLeadingJsonArray(jsonString.trim());
 
     // Validate structure
     if (!Array.isArray(decisions)) {
@@ -253,6 +253,38 @@ function parseDecisionResponse(claudeResponse) {
     console.error('❌ Failed to parse Claude response:', error.message);
     console.error('Response was:', claudeResponse.substring(0, 500));
     return [];
+  }
+}
+
+/**
+ * Parses JSON text, or the first complete JSON array in it when Claude added
+ * prose before or after (e.g. "[]\n\nThe transcript appears to be...")
+ * @param {string} text
+ * @returns {*} parsed value
+ */
+function parseLeadingJsonArray(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const start = text.indexOf('[');
+    if (start === -1) throw error;
+    let depth = 0;
+    let inString = false;
+    for (let i = start; i < text.length; i++) {
+      const char = text[i];
+      if (inString) {
+        if (char === '\\') i++;
+        else if (char === '"') inString = false;
+      } else if (char === '"') {
+        inString = true;
+      } else if (char === '[' || char === '{') {
+        depth++;
+      } else if (char === ']' || char === '}') {
+        depth--;
+        if (depth === 0) return JSON.parse(text.slice(start, i + 1));
+      }
+    }
+    throw error;
   }
 }
 
@@ -315,5 +347,6 @@ module.exports = {
   isClaudeConfigured,
   buildDecisionExtractionPrompt,
   callClaudeAPI,
-  parseDecisionResponse
+  parseDecisionResponse,
+  parseLeadingJsonArray
 };
