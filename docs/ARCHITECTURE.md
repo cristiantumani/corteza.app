@@ -106,6 +106,7 @@ Run manually, and they're safe to re-run. Each script starts as a dry run and ne
 - `scripts/migrations/001-backfill-default-spaces.js`: creates missing default spaces and moves decisions without a space into them.
 - `scripts/migrations/002-link-workspace-to-google.js`: links an older workspace to a Google domain and sets a member's email to their Google account, so their first Google sign-in lands in it. `--list` shows workspaces and members.
 - `scripts/migrations/003-repair-member-roles.js`: restores `workspace_members.role` (admin/member) that the old onboarding overwrote with a job title.
+- `scripts/migrations/004-date-meeting-decisions.js`: sets `timestamp` of AI-captured decisions to their meeting's start (`source_details.occurred_at`) instead of when they were saved.
 
 ---
 

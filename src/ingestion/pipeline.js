@@ -172,7 +172,8 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
           occurred_at: transcript.occurredAt ? new Date(transcript.occurredAt).toISOString() : null
         },
         capture: 'ai',
-        confidence: extracted.confidence
+        confidence: extracted.confidence,
+        decidedAt: transcript.occurredAt || null
       }));
     }
 

@@ -49,6 +49,20 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.deepEqual(ids.sort((a, b) => a - b), [42, 43, 44]);
   });
 
+  test('decisions are dated when they were decided; created_at is when they were saved', async () => {
+    const base = { workspaceId: 'WDATE', spaceId: 'S1', text: 'Adopt X', author: { user_id: 'U1', name: 'Ana' } };
+    const past = await decisionService.createDecision({ ...base, decidedAt: '2026-08-10T09:00:00.000Z' });
+    assert.equal(past.timestamp, '2026-08-10T09:00:00.000Z');
+    assert.ok(past.created_at > new Date('2026-08-11'));
+
+    const future = await decisionService.createDecision({ ...base, decidedAt: new Date(Date.now() + 86400000) });
+    const invalid = await decisionService.createDecision({ ...base, decidedAt: 'not a date' });
+    const none = await decisionService.createDecision(base);
+    for (const decision of [future, invalid, none]) {
+      assert.equal(decision.timestamp, decision.created_at.toISOString(), 'falls back to now');
+    }
+  });
+
   test('a transcript is extracted once and every decision is saved as AI-captured', async () => {
     const space = await spaces.ensureDefaultSpace('WPIPE');
     const extract = fakeExtract([
