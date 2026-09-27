@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Meeting decisions are dated by the meeting
+- Decisions captured from a meeting get the meeting's date (`timestamp`), not the date Corteza processed it. This matters for imports of past meetings, and for search date filters and the weekly digest. `created_at` keeps the save time
+- `createDecision` takes an optional `decidedAt`
+- Migration `004-date-meeting-decisions.js` re-dates decisions captured before this fix
+
 ### Changed - Gemini notes and import messages
 - **Gemini notes can be read:** Google Meet connect now also asks for Drive read access (`drive.readonly`), because `drive.meet.readonly` doesn't cover Gemini notes Docs. Existing connections see a "Reconnect" prompt in Settings
 - **Import messages are plain language** ("Google doesn’t let Corteza read this meeting’s Gemini notes."); Google's technical reason and extraction errors are logged server-side only
