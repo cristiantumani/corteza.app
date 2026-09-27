@@ -105,7 +105,7 @@ module.exports = {
   },
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY,
-    model: process.env.CLAUDE_MODEL || 'claude-opus-5',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-5', // pilot default; compare others with scripts/eval-extraction.js
     maxTokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '16000'),
     isConfigured: !!process.env.ANTHROPIC_API_KEY
   },

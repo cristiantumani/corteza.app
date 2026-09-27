@@ -59,11 +59,12 @@ A1. **Google verification.** This is the critical path, so it starts on day 1.
 - Reduce scopes where possible. Check whether `drive.readonly` can be dropped for Gemini notes: the Meet API `smartNotes` resource may become readable through `drive.meet.readonly`. Keep the rest.
 - Submit restricted-scope verification: brand verification, a demo video, and the privacy policy.
 - Do the **CASA Tier 2** security assessment: roughly $500–1,000, 6–12 weeks, and renewed every year.
+  - **Deferred (budget decision, Sept 2026):** pay for CASA only once there is revenue or funding, or when we need more than the 100 test users that Testing mode allows. Until then, do the free steps (brand verification, privacy policy, demo video) and run pilots with test users.
 - **Pilot path while verification runs:** the pilot customer's Workspace admin marks Corteza as a **trusted app** under Admin console → Security → API controls. That lets their users connect before we're verified. We confirm this works with Ninja Excel first.
 - Write a privacy policy and a DPA, and add a data-retention setting.
 
 A2. **Extraction v2.** Quality is the product.
-- **Model:** switch the default to the current Sonnet model through `CLAUDE_MODEL`.
+- **Model:** default to `claude-sonnet-5` for the pilot period, for cost. Re-evaluate `claude-opus-5-5` with the eval once there are paying customers.
 - **New schema:** `decision | action_item | open_question | risk`, with these fields:
   - `owner_name`
   - `due_date`

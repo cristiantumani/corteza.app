@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed - Extraction v2 (roadmap A2)
 - **New item types:** meetings now yield `decision`, `action_item`, `open_question` and `risk`. Background explanations and "context" are no longer captured as decisions
 - **Richer items:** each item carries `owner_name`, `due_date` (relative dates resolved from the meeting date), `rationale`, a verbatim `evidence_quote` and `supersedes_hint`. The dashboard shows the owner and due date
-- **Model:** the default is `claude-opus-5` (override with `CLAUDE_MODEL`)
+- **Model:** the default is `claude-sonnet-5` for the pilot period (about $0.06 per 1-hour meeting). Override it with `CLAUDE_MODEL`, and compare models with the eval first
   - Responses are streamed
   - Temperature is only sent to older models that still accept it
   - Refusals are detected, and server-side refusal fallbacks are enabled for models that support them
