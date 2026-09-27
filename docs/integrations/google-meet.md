@@ -17,6 +17,21 @@ A few minutes after a meeting ends and Google has finished the transcript, its d
 - **Check for new meetings now:** runs a check immediately, handy for testing.
 - **Disconnect:** revokes Corteza's Google access. Decisions already captured stay.
 
+### Import past meetings
+
+For meetings that happened before you connected (for example, all of August 2026):
+
+1. In **Settings → Google Meet → Import past meetings**, pick a **month** or a **from/to** period (up to 92 days), or a preset such as "Last 30 days", then click **Find meetings**.
+2. Corteza lists your meetings in that period with their date, title, number of participants, whether Google has a **transcript** and/or **Gemini notes**, and whether they were **already imported**.
+3. Tick the meetings you want (or **Select all available**), choose the space, and click **Import selected**. You can import up to 50 at a time.
+4. A progress bar shows each meeting as it's processed, and the result shows how many decisions were captured.
+
+A few details:
+- Meetings already imported are listed but can't be selected, so nothing is captured twice.
+- Meetings that were never recorded can't be selected either.
+- Meetings the automatic capture skipped (for example 1:1s) can be imported, because you chose them yourself.
+- Imports don't send summary emails.
+
 **Which meetings are captured:** the Meet API gives each person the meetings they can access. Transcripts and Gemini notes are owned by the meeting organizer, so capture works best when the organizer has connected Google Meet. If several participants have connected, each meeting is still processed once.
 
 ## How it works (for developers)
@@ -32,6 +47,11 @@ jobs/meet-poller.js           every MEET_POLL_INTERVAL_MINUTES (default 5), per 
   utils/n8n-client.sendMeetingCaptureEmail   summary to the connected user
 ```
 
+- **Import past meetings:** `ingestion/meet-import.js`.
+  - `findMeetings` lists conference records in a date range and summarises each one with `describeMeeting` (no transcript download), plus its status from `ingestions`.
+  - `startImport` stores a job in `meet_imports` and runs it in the background; the UI polls `GET /api/integrations/google/imports/:id`.
+  - Imports call `ingestTranscript(..., { manual: true })`, which re-processes skipped or failed meetings but never completed ones.
+  - Jobs interrupted by a restart are resumed by the poller (`resumeStaleImports`).
 - **Connection:** `integrations/google/connections.js` asks for consent separately from sign-in (incremental consent, `access_type=offline`), checks the connected account matches the signed-in user, and stores the refresh token encrypted (`utils/encryption.js`) in `google_connections`.
 - **Late transcripts:** Meet generates transcripts a few minutes after a meeting ends. Meetings still generating are retried on later polls; after 6 hours without a transcript they're recorded as skipped (`no_transcript`).
 - **Failures:** a failed extraction is retried up to 3 times, at least 10 minutes apart. A revoked or expired Google grant (`invalid_grant`) marks the connection `revoked`, and Settings asks the user to reconnect.

@@ -14,6 +14,11 @@ const connections = require('./connections');
  *   PUT  /api/integrations/google/settings  { space_id, skip_one_on_one, exclude_keywords }
  *   POST /api/integrations/google/sync      check for new meetings now
  *   POST /api/integrations/google/disconnect
+ *
+ * Import past meetings (src/ingestion/meet-import.js):
+ *   GET  /api/integrations/google/meetings?from=YYYY-MM-DD&to=YYYY-MM-DD
+ *   POST /api/integrations/google/imports    { meeting_ids: [...], space_id }
+ *   GET  /api/integrations/google/imports/:id
  */
 const router = express.Router();
 
@@ -167,6 +172,72 @@ router.post('/api/integrations/google/sync', apiRateLimiter, requireSession, asy
   } catch (error) {
     console.error('❌ Google Meet sync failed:', error);
     res.status(500).json({ success: false, error: 'Checking Google Meet failed' });
+  }
+});
+
+/** The signed-in user's active connection, or sends an error response and returns null */
+async function activeConnection(req, res) {
+  const { workspace_id, user_id } = req.session.user;
+  const connection = await connections.getConnection(workspace_id, user_id);
+  if (!connection) {
+    res.status(404).json({ success: false, error: 'Google Meet is not connected' });
+    return null;
+  }
+  if (connection.status !== 'active') {
+    res.status(409).json({ success: false, error: 'Google access stopped working. Reconnect Google Meet.' });
+    return null;
+  }
+  return connection;
+}
+
+router.get('/api/integrations/google/meetings', apiRateLimiter, requireSession, async (req, res) => {
+  try {
+    const { parseRange, findMeetings } = require('../../ingestion/meet-import');
+    const range = parseRange(req.query.from, req.query.to);
+    if (range.error) return res.status(400).json({ success: false, error: range.error });
+
+    const connection = await activeConnection(req, res);
+    if (!connection) return;
+
+    const { meetings, truncated } = await findMeetings(connection, range);
+    res.json({ success: true, meetings, truncated });
+  } catch (error) {
+    console.error('❌ Listing Google Meet meetings failed:', error.message);
+    res.status(502).json({ success: false, error: 'Could not load meetings from Google. Please try again.' });
+  }
+});
+
+router.post('/api/integrations/google/imports', apiRateLimiter, express.json(), requireSession, async (req, res) => {
+  try {
+    const { startImport } = require('../../ingestion/meet-import');
+    const connection = await activeConnection(req, res);
+    if (!connection) return;
+
+    const { meeting_ids, space_id } = req.body || {};
+    const { workspace_id, user_id } = req.session.user;
+    if (space_id && !await canCreateInSpace(null, workspace_id, space_id, user_id)) {
+      return res.status(403).json({ success: false, error: 'You cannot add decisions to that space' });
+    }
+
+    const job = await startImport(connection, meeting_ids, space_id || null);
+    if (job.error) return res.status(400).json({ success: false, error: job.error });
+    res.status(202).json({ success: true, import_id: job.import_id, total: job.total });
+  } catch (error) {
+    console.error('❌ Starting Google Meet import failed:', error);
+    res.status(500).json({ success: false, error: 'Could not start the import' });
+  }
+});
+
+router.get('/api/integrations/google/imports/:importId', apiRateLimiter, requireSession, async (req, res) => {
+  try {
+    const { getImport } = require('../../ingestion/meet-import');
+    const { workspace_id, user_id } = req.session.user;
+    const job = await getImport(workspace_id, user_id, req.params.importId);
+    if (!job) return res.status(404).json({ success: false, error: 'Import not found' });
+    res.json({ success: true, import: job });
+  } catch (error) {
+    console.error('❌ Loading Google Meet import failed:', error);
+    res.status(500).json({ success: false, error: 'Could not load the import' });
   }
 });
 

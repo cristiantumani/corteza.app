@@ -186,6 +186,8 @@ async function connectToMongoDB() {
     await db.collection('google_connections').createIndex({ status: 1 });
     await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, external_id: 1 }, { unique: true });
     await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, updated_at: -1 });
+    await db.collection('meet_imports').createIndex({ import_id: 1 }, { unique: true });
+    await db.collection('meet_imports').createIndex({ status: 1, lease_until: 1 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };

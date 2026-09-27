@@ -40,9 +40,12 @@ function ingestions() {
 
 /**
  * Claims a transcript for processing
+ * @param {Transcript} transcript
+ * @param {boolean} [manual] - a person chose this meeting (import): also re-process
+ *   meetings that were skipped automatically or failed, but never completed ones
  * @returns {Promise<Object|null>} the ingestion document, or null if already handled/in progress
  */
-async function claim(transcript) {
+async function claim(transcript, manual = false) {
   const key = { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId };
   const now = new Date();
 
@@ -62,10 +65,13 @@ async function claim(transcript) {
     if (error.code !== 11000) throw error;
   }
 
-  // Already known: retry only if a previous attempt failed a while ago
+  // Already known: automatic runs retry only if a previous attempt failed a while ago
+  const retryable = manual
+    ? { status: { $in: ['skipped', 'failed'] } }
+    : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } };
   return ingestions().findOneAndUpdate(
-    { ...key, status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } },
-    { $set: { status: 'processing', updated_at: now }, $inc: { attempts: 1 } },
+    { ...key, ...retryable },
+    { $set: { status: 'processing', updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
     { returnDocument: 'after' }
   );
 }
@@ -92,6 +98,18 @@ async function recordSkipped(transcript, reason) {
   );
 }
 
+/**
+ * Ingestion status for many external items at once
+ * @returns {Promise<Map<string, Object>>} external_id → ingestion document
+ */
+async function getStatuses(workspaceId, source, externalIds) {
+  const docs = await ingestions()
+    .find({ workspace_id: workspaceId, source, external_id: { $in: externalIds } })
+    .project({ external_id: 1, status: 1, skip_reason: 1, decisions_created: 1, _id: 0 })
+    .toArray();
+  return new Map(docs.map(doc => [doc.external_id, doc]));
+}
+
 /** Has this external item been handled already (processed, skipped, or given up on)? */
 async function isHandled(workspaceId, source, externalId) {
   const doc = await ingestions().findOne({ workspace_id: workspaceId, source, external_id: externalId });
@@ -112,10 +130,11 @@ function buildExtractionText(transcript) {
  * @param {Transcript} transcript
  * @param {Object} [options]
  * @param {Function} [options.extract] - (text, workspaceId) => { decisions } (defaults to Claude)
+ * @param {boolean} [options.manual] - chosen by a person (see claim)
  * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], error?: string }>}
  */
-async function ingestTranscript(transcript, { extract } = {}) {
-  const ingestion = await claim(transcript);
+async function ingestTranscript(transcript, { extract, manual = false } = {}) {
+  const ingestion = await claim(transcript, manual);
   if (!ingestion) return { status: 'duplicate', decisions: [] };
 
   const key = { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId };
@@ -183,6 +202,7 @@ module.exports = {
   ingestTranscript,
   recordSkipped,
   isHandled,
+  getStatuses,
   buildExtractionText,
   MAX_ATTEMPTS
 };

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Import past Google Meet meetings
+- **Settings → Google Meet → Import past meetings:** pick a month or date range (up to 92 days, with presets), see every meeting in that period with participants, whether a transcript or Gemini notes exist, and whether it was already imported
+- **Choose what to import:** tick meetings (or "Select all available"), choose the space, and import up to 50 at a time. Runs in the background with a progress bar and per-meeting results
+- **Manual imports override the automatic skip rules** (1:1s, title keywords); completed meetings are never imported twice; interrupted imports resume automatically
+- New `ingestion/meet-import.js`, `meet_imports` collection, Meet client range listing and a lightweight `describeMeeting`
+
 ### Added - Automatic decision capture from Google Meet
 - **Settings → Google Meet → Connect.** Separate consent for `meetings.space.readonly` and `drive.meet.readonly` with offline access. The refresh token is stored encrypted in `google_connections`, and the connected account must match the signed-in user
 - **Poller** (`jobs/meet-poller.js`, every 5 min): finds meetings that ended, reads transcripts (speaker-labelled) and Gemini notes, and saves every extracted decision automatically, marked AI-captured with confidence, meeting title and a link to the transcript/notes

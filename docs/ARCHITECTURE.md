@@ -45,6 +45,8 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 4. The skip rules run: 1:1s, excluded titles, meetings with no transcript.
 5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). The connected user gets a summary email.
 
+**Import past meetings:** Settings → Google Meet → pick a period → `GET /api/integrations/google/meetings` lists the meetings (`ingestion/meet-import.findMeetings`) → the user ticks some → `POST /api/integrations/google/imports` starts a background job (`meet_imports`) that runs each meeting through the same pipeline with `manual: true` → the UI polls for progress.
+
 **Slack `/decision`:**
 modal → insert into `decisions`, in the workspace's **default space** (`ensureDefaultSpace`).
 
@@ -88,6 +90,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters |
 | `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
+| `meet_imports` | "Import past meetings" jobs: chosen meetings with per-meeting status/decisions, progress, lease for resume |
 | `feedback` | User feedback from the dashboard |
 | `digest_runs` | Weekly digest claims (one per workspace per week) |
 | `extension_installs` | Chrome extension installs and activation |

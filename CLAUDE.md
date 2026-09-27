@@ -49,6 +49,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js` |
 | Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
+| Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | Embeddings / semantic search | `src/services/embeddings.js`, `src/services/semantic-search.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
