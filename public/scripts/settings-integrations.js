@@ -109,6 +109,11 @@
         <span>Last checked: ${escapeHtml(formatTime(data.last_polled_at))}</span>
         <span>${data.decisions_captured} decisions from ${data.meetings_processed} meetings</span>
       </div>
+      ${!needsReconnect && data.needs_reconsent ? `
+        <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+          Corteza can now read Gemini notes too. Reconnect once and allow Google Drive access to capture meetings that only have notes.
+          <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
+        </div>` : ''}
       ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">Last check failed: ${escapeHtml(data.last_error)}</p>` : ''}
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

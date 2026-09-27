@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Gemini notes and import messages
+- **Gemini notes can be read:** Google Meet connect now also asks for Drive read access (`drive.readonly`), because `drive.meet.readonly` doesn't cover Gemini notes Docs. Existing connections see a "Reconnect" prompt in Settings
+- **Import messages are plain language** ("Google doesn’t let Corteza read this meeting’s Gemini notes."); Google's technical reason and extraction errors are logged server-side only
+- Drive export errors are logged as one readable line instead of raw JSON
+
 ### Fixed - Google Meet access errors
 - A meeting whose transcript or notes Google refuses no longer blocks automatic capture of the user's other meetings
 - Meetings are captured from whichever source is readable (transcript, transcript Doc, or Gemini notes)

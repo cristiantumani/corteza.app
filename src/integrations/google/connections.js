@@ -15,7 +15,11 @@ const CONNECT_CALLBACK_PATH = '/integrations/google/callback';
 
 const MEET_SCOPES = [
   'https://www.googleapis.com/auth/meetings.space.readonly', // conference records, participants, transcripts
-  'https://www.googleapis.com/auth/drive.meet.readonly' // Docs that Meet creates: transcripts and Gemini notes
+  'https://www.googleapis.com/auth/drive.meet.readonly', // Docs that Meet creates: transcripts
+  // Gemini notes Docs aren't covered by drive.meet.readonly (Google returns
+  // "The user has not granted the app … read access to the file"), so reading
+  // them needs Drive read access. Corteza only opens Docs the Meet API links to.
+  'https://www.googleapis.com/auth/drive.readonly'
 ];
 // Also ask for identity so we can check the connected account is the signed-in user
 const CONNECT_SCOPES = ['openid', 'email', ...MEET_SCOPES];
@@ -76,6 +80,11 @@ async function exchangeConnectCode({ code, nonce }) {
     email: (claims.email || '').toLowerCase(),
     grantedScopes
   };
+}
+
+/** True if a connection was made before a scope was added and should be reconnected */
+function needsReconsent(connection) {
+  return missingScopes(connection?.scopes || []).length > 0;
 }
 
 /** Scopes from MEET_SCOPES the user did not grant (they can untick boxes on the consent screen) */
@@ -200,6 +209,7 @@ module.exports = {
   buildConnectUrl,
   exchangeConnectCode,
   missingScopes,
+  needsReconsent,
   saveConnection,
   getConnection,
   listActiveConnections,

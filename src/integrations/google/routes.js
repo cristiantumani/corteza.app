@@ -106,6 +106,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       configured: google.isGoogleConfigured(),
       connected: true,
       status: connection.status,
+      needs_reconsent: connections.needsReconsent(connection),
       google_email: connection.google_email,
       connected_at: connection.connected_at,
       last_polled_at: connection.last_polled_at,
