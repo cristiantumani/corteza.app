@@ -136,6 +136,9 @@ async function startApp() {
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 
+  // Connect Google Meet (automatic decision capture)
+  expressApp.use(require('./integrations/google/routes'));
+
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/auth/login');
@@ -300,6 +303,7 @@ async function startApp() {
   // Start re-engagement job for inactive extension installs
   require('./jobs/reengagement').startReengagementJob();
   require('./jobs/weekly-digest').startWeeklyDigestJob();
+  require('./jobs/meet-poller').startMeetPollerJob();
 }
 
 // Start the application

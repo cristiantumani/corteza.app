@@ -6,7 +6,7 @@
 
 ## What it does
 
-- **Automatic capture from meetings** *(in progress)*: reads Google Meet transcripts and Gemini notes and saves the decisions in them. Today you can upload a transcript (`.txt`, `.md`, `.vtt`, `.srt`, `.pdf`, `.docx`) or send one to the API.
+- **Automatic capture from meetings:** connect Google Meet in Settings and Corteza saves the decisions from your meetings' transcripts and Gemini notes (see [`docs/integrations/google-meet.md`](docs/integrations/google-meet.md)). You can also upload a transcript (`.txt`, `.md`, `.vtt`, `.srt`, `.pdf`, `.docx`) or send one to the API.
 - **Manual capture:** the Chrome extension (`Cmd/Ctrl+Shift+M`) and the dashboard's Log Decision form.
 - **Slack input:** `/decision` and transcript uploads in Slack.
 - **Sign in with Google:** your company's Google Workspace domain is your Corteza workspace, and colleagues join automatically.

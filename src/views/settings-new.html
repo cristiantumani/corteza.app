@@ -172,6 +172,18 @@
         <div class="max-w-[1200px] mx-auto p-8">
             <div class="grid grid-cols-12 gap-6">
 
+                <!-- Integrations: Google Meet automatic capture (public/scripts/settings-integrations.js) -->
+                <section id="integrations" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Google Meet</h3>
+                            <p class="text-sm text-on-surface-variant">Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves the decisions automatically.</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl">videocam</span>
+                    </div>
+                    <div id="google-meet-body" class="text-sm text-on-surface-variant">Loading…</div>
+                </section>
+
                 <!-- Section 1: API Keys -->
                 <section class="col-span-12 md:col-span-8 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
@@ -427,6 +439,7 @@
     <script>
         var WORKSPACE_ID = '<WORKSPACE_ID>';
     </script>
-    <script src="/scripts/settings-new.js?v=1"></script>
+    <script src="/scripts/settings-new.js?v=2"></script>
+    <script src="/scripts/settings-integrations.js?v=1"></script>
 </body>
 </html>

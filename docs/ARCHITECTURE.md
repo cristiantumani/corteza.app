@@ -38,6 +38,13 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 **Transcript via automation:**
 `POST /api/v1/extract` (API key) → same pipeline, into the key owner's space or the default space → a pending banner in the dashboard.
 
+**Google Meet auto-capture** (see `docs/integrations/google-meet.md`):
+1. A user connects Google Meet in Settings, which stores an encrypted refresh token in `google_connections`.
+2. Every 5 minutes, `jobs/meet-poller.js` lists conference records that ended in the last 6 hours for each connection (with a lease so only one poller works on it).
+3. `ingestion/sources/google-meet.js` loads the transcript entries and Gemini notes.
+4. The skip rules run: 1:1s, excluded titles, meetings with no transcript.
+5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). The connected user gets a summary email.
+
 **Slack `/decision`:**
 modal → insert into `decisions`, in the workspace's **default space** (`ensureDefaultSpace`).
 
@@ -78,13 +85,16 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
+| `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters |
+| `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` |
+| `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
 | `feedback` | User feedback from the dashboard |
 | `digest_runs` | Weekly digest claims (one per workspace per week) |
 | `extension_installs` | Chrome extension installs and activation |
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `JIRA_*`, `DB_NAME`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `JIRA_*`, `DB_NAME`.
 
 ### Migrations
 
@@ -142,9 +152,8 @@ src/
 ### Data model changes
 
 - **`workspaces`, `users`:** done in Phase 2 (see above).
-- **`google_connections` (new):** `{ user_id, workspace_id, scopes, refresh_token_encrypted, last_polled_at, settings, status }`
-- **`ingestions` (new):** unique `(workspace_id, source, external_id)`, with status and `decisions_created`. Replaces the dedup role of `meeting_transcripts`.
-- **`decisions`:** standardized `source { type, external_id, title, url }`, `capture: ai|manual`, `confidence`, a required `space_id`, and `deleted_at` for soft delete.
+- **`google_connections`, `ingestions`, `counters`:** done in Phase 3 (see above).
+- **`decisions`:** `createDecision` already writes `source` (string), `source_details { type, external_id, title, url }`, `capture: ai|manual` and `confidence`. Still to do: move the older write sites onto it, and add `deleted_at` for soft delete.
 - **`counters`:** atomic per-workspace decision IDs.
 
 Existing `workspace_id` and `user_id` values are kept as opaque strings; migrations only add rows.
@@ -156,6 +165,6 @@ Existing `workspace_id` and `user_id` values are kept as opaque strings; migrati
 | 0 | Default spaces, workspace-takeover fix, DB-backed login tokens, Obsidian and dead code removed, tests, lint, CI, these docs *(done)* |
 | 1 | `core/decisions` single write path and counters, `app.js`/`server.js` split, Slack optional, DB-only admin checks, scheduler |
 | 2 | Google OIDC sign-in with domain workspaces; magic link, passwords and Slack `/login` removed; extension uses Google sign-in *(done)* |
-| 3 | "Connect Google" (Meet and Drive-Meet scopes), Meet poller, ingestion pipeline with auto-save, privacy defaults (skip 1:1s, keyword exclusions), summary email, AI-captured badge with edit and delete |
+| 3 | "Connect Google" (Meet and Drive-Meet scopes), Meet poller, ingestion pipeline with auto-save, privacy defaults (skip 1:1s, keyword exclusions), summary email, AI-captured badge with edit and delete *(done)* |
 | 4 | "Connect Slack" install flow mapped to a workspace; `/decision` and uploads through the pipeline; no Slack identity |
 | 5 | Split docs (DATA_MODEL, INGESTION, AUTH, GOOGLE, SLACK, DEPLOY, ADRs), remove unused dependencies and collections |
