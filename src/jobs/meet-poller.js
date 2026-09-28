@@ -113,7 +113,8 @@ async function pollConnection(connection, deps = {}) {
       url: meeting.url,
       spaceId: space.space_id,
       spaceName: space.name,
-      author: { user_id: connection.user_id, name: connection.user_name }
+      author: { user_id: connection.user_id, name: connection.user_name },
+      language: (connection.settings && connection.settings.language) || null
     });
     results.push({ title: meeting.title, url: meeting.url, status: outcome.status, decisions: outcome.decisions, actionItems: outcome.actionItems || [] });
   }

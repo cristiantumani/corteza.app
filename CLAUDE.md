@@ -53,6 +53,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
+| Language outcomes are written in (detected from the spoken transcript, or fixed in Settings → Google Meet) | `src/core/language/detect.js`, `outputLanguage` in `src/services/claude.js`; translate saved ones: `scripts/migrations/006-translate-outcomes.js` |
 | Decision types (decision, action_item, open_question, risk, …), outcome counts and labels | `src/core/decisions/types.js` (`countByType`, `describeOutcomes`), `public/scripts/outcome-labels.js` |
 | Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`, `due-date-requests.js`) |
 | Action items page and API (`/actions`, `/api/action-items`, `/api/people`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js`; inside a decision's detail: `public/scripts/decision-actions.js` |

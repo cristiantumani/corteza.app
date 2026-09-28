@@ -4,6 +4,7 @@ const { apiRateLimiter } = require('../../middleware/auth');
 const { canCreateInSpace } = require('../../services/permissions');
 const google = require('./oauth');
 const connections = require('./connections');
+const { LANGUAGE_CODES } = require('../../core/language/detect');
 
 /**
  * "Connect Google Meet" routes
@@ -130,7 +131,7 @@ router.put('/api/integrations/google/settings', apiRateLimiter, express.json(), 
       return res.status(404).json({ success: false, error: 'Google Meet is not connected' });
     }
 
-    const { space_id, skip_one_on_one, exclude_keywords } = req.body || {};
+    const { space_id, skip_one_on_one, exclude_keywords, language } = req.body || {};
     if (space_id && !await canCreateInSpace(null, workspace_id, space_id, user_id)) {
       return res.status(403).json({ success: false, error: 'You cannot add decisions to that space' });
     }
@@ -143,7 +144,9 @@ router.put('/api/integrations/google/settings', apiRateLimiter, express.json(), 
     await connections.updateSettings(workspace_id, user_id, {
       space_id: space_id || null,
       skip_one_on_one: skip_one_on_one !== false,
-      exclude_keywords: keywords
+      exclude_keywords: keywords,
+      // Language outcomes are written in: 'auto' (the one spoken in each meeting) or a fixed one
+      language: LANGUAGE_CODES.includes(language) ? language : 'auto'
     });
     res.json({ success: true });
   } catch (error) {

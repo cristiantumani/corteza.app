@@ -30,7 +30,8 @@ const INITIAL_BACKFILL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_SETTINGS = {
   space_id: null, // null = workspace default space
   skip_one_on_one: true, // skip meetings with 2 or fewer participants
-  exclude_keywords: [] // skip meetings whose title contains any of these
+  exclude_keywords: [], // skip meetings whose title contains any of these
+  language: 'auto' // language outcomes are written in: 'auto' (spoken in the meeting) | 'es' | 'en' | 'pt'
 };
 
 function collection() {
