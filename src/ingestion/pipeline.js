@@ -36,6 +36,7 @@ const MIN_WORDS = 50;
  * @property {string} spaceId - where decisions are saved
  * @property {string|null} [spaceName]
  * @property {Object} author - { user_id, name }: who captured decisions are attributed to
+ * @property {string|null} [language] - 'es' | 'en' | 'pt' to write outcomes in; otherwise the language spoken in the meeting
  */
 
 function ingestions() {
@@ -152,7 +153,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     }
 
     const extractDecisions = extract || require('../services/claude').extractDecisionsFromTranscript;
-    const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId);
+    const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId, { language: transcript.language || null });
 
     const source = {
       type: transcript.source,

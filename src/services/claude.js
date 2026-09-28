@@ -2,6 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
 const { getAIFeedbackCollection } = require('../config/database');
+const { LANGUAGE_CODES, detectLanguage, spokenText, languageName } = require('../core/language/detect');
 
 /**
  * Checks if Claude API is configured
@@ -87,7 +88,7 @@ async function getRejectedExamples(workspace_id, limit = 2) {
  * @param {Array} rejectedExamples - Recent rejected decision examples from this workspace
  * @returns {string} The formatted prompt
  */
-function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], rejectedExamples = []) {
+function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], rejectedExamples = [], language = null) {
   let examplesSection = '';
 
   // Add few-shot learning examples if available (compact format to save tokens)
@@ -113,9 +114,21 @@ function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], re
   }
 
   // CREDIT OPTIMIZATION: Removed redundant "Analyze..." instruction (already in system message)
+  const languageLine = languageName(language) ? `OUTPUT LANGUAGE: ${languageName(language)}\n` : '';
   return `${examplesSection}
-TRANSCRIPT:
+${languageLine}TRANSCRIPT:
 ${transcriptText}`;
+}
+
+/**
+ * Language to save outcomes in: the one chosen in settings, else the one spoken in the meeting
+ * @param {string} text - extraction text
+ * @param {string|null} [preferred] - 'es' | 'en' | 'pt' | 'auto' | null
+ * @returns {string|null} language code, or null to let Claude follow the meeting
+ */
+function outputLanguage(text, preferred) {
+  if (LANGUAGE_CODES.includes(preferred)) return preferred;
+  return detectLanguage(spokenText(text));
 }
 
 /**
@@ -144,7 +157,7 @@ Do not return background explanations, how-things-work descriptions, small talk,
 
 Fields for each item:
 - decision_type: "decision" | "action_item" | "open_question" | "risk"
-- decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the language of the transcript. State the outcome itself, the way it would read in a decision log, not a narration of the conversation. Write "Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel", not "Se propuso iniciar una investigación…" or "Cristian propuso…"; write "Launch moves to October 22", not "The team discussed moving the launch". Who proposed or said what belongs in evidence_quote. For action items, name the owner and the task ("Ana envía el deck de precios antes del viernes"). If something was only proposed and not agreed, it is not a decision.
+- decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the output language (see "Language" below). State the outcome itself, the way it would read in a decision log, not a narration of the conversation. Write "Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel", not "Se propuso iniciar una investigación…" or "Cristian propuso…"; write "Launch moves to October 22", not "The team discussed moving the launch". Who proposed or said what belongs in evidence_quote. For action items, name the owner and the task ("Ana envía el deck de precios antes del viernes"). If something was only proposed and not agreed, it is not a decision.
 - owner_names: the people responsible, as named in the meeting (for example ["Martín Marchant", "Felipe Silva"]); [] if nobody was named
 - due_date: "YYYY-MM-DD" if a deadline was stated; resolve relative dates ("next Friday") from the meeting date given in the header; otherwise null
 - rationale: why this was decided or needed, in one or two sentences. Include context from anywhere in the meeting that led to it, such as a strategy, goal, problem or constraint presented earlier ("A raíz de la nueva estrategia presentada…"), even if it was not said in the same sentence. null if the meeting gives no reason.
@@ -154,6 +167,8 @@ Fields for each item:
 - epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null
 - tags: 2-5 lowercase keywords
 - confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
+
+Language: write decision_text, rationale and tags in the OUTPUT LANGUAGE given before the transcript. If none is given, use the language the participants spoke. Meeting notes (for example Gemini notes) may be in another language than the conversation; still write in the output language. Keep evidence_quote verbatim, in its original language.
 
 Respond with only a JSON array of items, with no other text. Respond with [] if there are no outcomes.`,
     cache_control: { type: 'ephemeral' }
@@ -344,9 +359,12 @@ function parseLeadingJsonArray(text) {
  * Extracts decisions from meeting transcript using Claude API with few-shot learning
  * @param {string} transcriptText - The meeting transcript content
  * @param {string} workspace_id - Workspace ID for fetching relevant feedback examples
- * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean }
+ * @param {Object} [options]
+ * @param {string} [options.language] - 'es' | 'en' | 'pt' to force the language outcomes are written in;
+ *   otherwise the language spoken in the meeting (detected from the transcript, not the notes)
+ * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean, language }
  */
-async function extractDecisionsFromTranscript(transcriptText, workspace_id) {
+async function extractDecisionsFromTranscript(transcriptText, workspace_id, options = {}) {
   const startTime = Date.now();
 
   // Sanitize the transcript text
@@ -371,7 +389,9 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id) {
   }
 
   // Build the prompt with examples
-  const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples);
+  const language = outputLanguage(sanitized, options.language);
+  if (language) console.log(`🌐 Outcomes will be written in ${languageName(language)}`);
+  const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language);
 
   // Call Claude API
   const response = await callClaudeAPI(prompt);
@@ -384,6 +404,7 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id) {
 
   return {
     decisions,
+    language,
     processingTime,
     model: response.model,
     usedExamples: approvedExamples.length > 0 || rejectedExamples.length > 0
@@ -394,6 +415,7 @@ module.exports = {
   extractDecisionsFromTranscript,
   isClaudeConfigured,
   buildDecisionExtractionPrompt,
+  outputLanguage,
   callClaudeAPI,
   parseDecisionResponse,
   parseLeadingJsonArray,

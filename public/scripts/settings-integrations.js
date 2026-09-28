@@ -130,6 +130,13 @@
           <span class="block text-xs mb-1">Skip meetings whose title contains (comma separated)</span>
           <input id="gm-exclude" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3" placeholder="e.g. 1:1, interview, personal" value="${escapeHtml((settings.exclude_keywords || []).join(', '))}">
         </label>
+        <label class="block">
+          <span class="block text-xs mb-1">Write outcomes in</span>
+          <select id="gm-language" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3">
+            ${[['auto', 'The language spoken in each meeting'], ['es', 'Español'], ['en', 'English'], ['pt', 'Português']]
+              .map(([value, label]) => `<option value="${value}" ${(settings.language || 'auto') === value ? 'selected' : ''}>${label}</option>`).join('')}
+          </select>
+        </label>
         <label class="flex items-center gap-3 mt-5">
           <input id="gm-skip-1on1" type="checkbox" ${settings.skip_one_on_one !== false ? 'checked' : ''}>
           <span>Skip 1:1 meetings (2 people or fewer)</span>
@@ -433,7 +440,8 @@
     const payload = {
       space_id: document.getElementById('gm-space').value || null,
       skip_one_on_one: document.getElementById('gm-skip-1on1').checked,
-      exclude_keywords: document.getElementById('gm-exclude').value
+      exclude_keywords: document.getElementById('gm-exclude').value,
+      language: document.getElementById('gm-language').value
     };
     const response = await fetch('/api/integrations/google/settings', {
       method: 'PUT',

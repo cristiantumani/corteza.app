@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Outcomes are saved in the meeting's language
+- **Why they came out in English:** a meeting held in Spanish could be saved in English. Gemini notes come in the Google account's language, and the extraction prompt didn't say which language to write in
+- **What changes:** Corteza now detects the language spoken in the transcript, not the notes. It tells Claude to write the text, why and tags in that language; evidence quotes stay verbatim
+- **New setting:** Settings → Google Meet → **Write outcomes in** fixes the language for every capture: the language spoken in each meeting (default), Español, English or Português
+- **Existing outcomes:** `scripts/migrations/006-translate-outcomes.js --workspace <id> --to es` rewrites them (text, why, tags and action items) in one language. It's a dry run unless you pass `--apply`
+
 ### Changed - Search: fewer, better sources; open a source in full; leave unrelated ones out
 - **The answer works again:** search answers were falling back to a canned list ("Looking at our decisions about…") because the Claude call sent a temperature the current model rejects. Claude now answers in the question's language, and only from sources that help answer it
 - **Sources used vs. other matches:** Claude says which sources it used, and only those appear under Evidence Sources. The rest are under "Other matches not used in the answer". The header reads "Based on N sources"

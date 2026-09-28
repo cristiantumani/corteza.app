@@ -100,7 +100,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
-| `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
+| `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords, `language`: 'auto' or a fixed 'es'/'en'/'pt' for the outcomes' language), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
 | `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` (all outcomes), `outcomes_by_type` (e.g. `{ decision: 3, risk: 1 }`, from `countByType`), `action_items_created` |
 | `search_feedback` | Search → "Is this related to your question?": one row per `workspace_id` + `user_id` + `query` + `decision_id`, with `relevant` (true/false). Kept to tune search later |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
