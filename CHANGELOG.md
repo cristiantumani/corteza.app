@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Add action items to a decision by hand
+- **"+ Add action item" in a decision's detail:** write what needs to be done, pick one or more owners from the workspace members and add an optional due date. The item is linked to the decision and appears in Action items and in each owner's "My action items" on Home
+- **Who can add:** anyone who can add decisions to the decision's space
+- **Decision owner:** now picked from the workspace members (saved as `owner_user_id` + `owner_name`). A name the AI heard that isn't a member stays until you pick someone
+- **API:**
+  - `POST /api/action-items` takes `{ decision_id, text, owner_user_ids, due_date }`
+  - `GET /api/people` lists the workspace members to pick from
+  - `PUT /api/decisions/:id` accepts `owner_user_id`
+
+### Added - Edit outcomes in place
+- **Click to edit:** in an outcome's detail, click a field to edit it right there. Editable fields are the content, why, type, owner, due date, tags, meeting context and Jira epic. Enter saves (Ctrl/⌘+Enter in multi-line fields), and so does clicking away. Esc cancels
+- **Empty fields:** empty fields you can edit show "+ Add why", "+ Add owner", "+ Add due date" and "+ Add tags"
+- **Permissions:** only the author or an admin can edit, as with the Edit button. For everyone else the detail stays read-only. The Edit button still opens the full form (space, category)
+- **API:** `PUT /api/decisions/:id` also accepts `rationale`, `owner_name` and `due_date` (YYYY-MM-DD, or null to clear), and returns the saved values
+
 ### Changed - "Outcomes" is the umbrella term
 - **Outcomes, not decisions:** everything Corteza captures from a meeting is now an *outcome*. A decision is one type, next to action items, open questions and risks. "Decisions" now means only decisions
 - **Counts by type:** Home, Settings and the capture email say "11 decisions, 2 open questions and 4 action items" instead of counting everything as decisions. Ingestions, import jobs and Google connections store `outcomes_by_type`. Data from before this change shows as "N outcomes"

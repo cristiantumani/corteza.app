@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { outcomeGroup, countByType, describeOutcomes } = require('../../src/core/decisions/types');
 const { validateQueryParams } = require('../../src/middleware/validation');
+const { isValidDueDate } = require('../../src/routes/api');
 
 test('extracted types are their own group; notes from older captures are "other"', () => {
   assert.equal(outcomeGroup('decision'), 'decision');
@@ -30,4 +31,11 @@ test('the decisions list accepts one type or several separated by commas', () =>
   assert.equal(validateQueryParams({ type: 'risk,bogus' }).type, 'risk');
   assert.equal(validateQueryParams({ type: 'bogus' }).type, undefined);
   assert.equal(validateQueryParams({ type: ['risk'] }).type, undefined, 'repeated params are ignored');
+});
+
+test('due dates edited in place must be real YYYY-MM-DD dates', () => {
+  assert.equal(isValidDueDate('2026-10-29'), true);
+  assert.equal(isValidDueDate('2026-02-30'), false);
+  assert.equal(isValidDueDate('29/10/2026'), false);
+  assert.equal(isValidDueDate(20261029), false);
 });

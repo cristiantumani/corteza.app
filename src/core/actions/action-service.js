@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { getDatabase } = require('../../config/database');
-const { resolveOwners } = require('./owners');
+const { resolveOwners, ownersFromUserIds } = require('./owners');
 
 /**
  * Action items ("pendientes"): commitments that come out of a meeting, with
@@ -36,6 +36,7 @@ function validDate(value) {
  * @param {string|null} [params.spaceName]
  * @param {string} params.text
  * @param {string[]} [params.ownerNames] - names as said in the meeting; matched to members
+ * @param {string[]} [params.ownerUserIds] - members picked by hand (used instead of ownerNames when given)
  * @param {string|null} [params.dueDate] - 'YYYY-MM-DD'
  * @param {number|null} [params.decisionId]
  * @param {Object|null} [params.source] - { type, external_id, title, url, occurred_at }
@@ -48,13 +49,15 @@ function validDate(value) {
  * @returns {Promise<Object>} the saved item
  */
 async function createActionItem({
-  workspaceId, spaceId, spaceName = null, text, ownerNames = [], dueDate = null, decisionId = null,
+  workspaceId, spaceId, spaceName = null, text, ownerNames = [], ownerUserIds = null, dueDate = null, decisionId = null,
   source = null, rationale = null, evidenceQuote = null, capture = 'manual', confidence = null, author = null, members
 }) {
   if (!workspaceId || !spaceId) throw new Error('createActionItem requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createActionItem requires text');
 
-  const owners = await resolveOwners(workspaceId, ownerNames, members);
+  const owners = Array.isArray(ownerUserIds)
+    ? await ownersFromUserIds(workspaceId, ownerUserIds, members)
+    : await resolveOwners(workspaceId, ownerNames, members);
   const now = new Date();
   const item = {
     item_id: `act_${crypto.randomBytes(10).toString('hex')}`,

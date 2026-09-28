@@ -85,7 +85,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 | Collection | Purpose |
 |---|---|
-| `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote` |
+| `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote`. The owner can be a member (`owner_user_id` + `owner_name`) or a name typed or heard in the meeting (`owner_name` only) |
 | `workspace_spaces`, `space_members` | Spaces and explicit space membership |
 | `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links |
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |

@@ -66,4 +66,25 @@ async function resolveOwners(workspaceId, names, members) {
   return owners;
 }
 
-module.exports = { normalizeName, matchMember, resolveOwners };
+/**
+ * Owners picked from the member list (manual entry): user_ids → owners; ids that
+ * aren't active members of the workspace are dropped
+ * @param {string} workspaceId
+ * @param {string[]} userIds
+ * @param {Object[]} [members] - workspace members, if already loaded
+ * @returns {Promise<Array<{name: string, user_id: string, email: string|null}>>}
+ */
+async function ownersFromUserIds(workspaceId, userIds, members) {
+  const unique = [...new Set((userIds || []).filter(id => typeof id === 'string' && id))].slice(0, 10);
+  if (unique.length === 0) return [];
+  const list = members || await getWorkspaceMembersCollection()
+    .find({ workspace_id: workspaceId, removed_at: null, user_id: { $in: unique } })
+    .project({ user_id: 1, user_name: 1, email: 1 })
+    .toArray();
+  return unique
+    .map(id => list.find(member => member.user_id === id))
+    .filter(Boolean)
+    .map(member => ({ name: member.user_name || member.email, user_id: member.user_id, email: member.email || null }));
+}
+
+module.exports = { normalizeName, matchMember, resolveOwners, ownersFromUserIds };

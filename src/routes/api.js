@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getDecisionsCollection, getWorkspaceSpacesCollection, getDatabase } = require('../config/database');
+const { getDecisionsCollection, getWorkspaceSpacesCollection, getWorkspaceMembersCollection, getDatabase } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
 const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace, canAccessSpace } = require('../services/permissions');
@@ -160,6 +160,13 @@ async function getDecisions(req, res) {
 /**
  * PUT /api/decisions/:id - Update a decision by ID
  */
+/** A real calendar date written as YYYY-MM-DD */
+function isValidDueDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !isNaN(date) && date.toISOString().slice(0, 10) === value;
+}
+
 async function updateDecision(req, res) {
   try {
     const idString = parsePathId(req.url);
@@ -182,7 +189,6 @@ async function updateDecision(req, res) {
         const updates = JSON.parse(body);
 
         // Validate and sanitize updates
-        const allowedFields = ['text', 'type', 'category', 'epic_key', 'tags', 'alternatives'];
         const sanitizedUpdates = {};
 
         if (updates.text && typeof updates.text === 'string' && updates.text.trim().length > 0) {
@@ -222,7 +228,40 @@ async function updateDecision(req, res) {
           sanitizedUpdates.alternatives = updates.alternatives === null ? null : String(updates.alternatives).trim();
         }
 
-        if (Object.keys(sanitizedUpdates).length === 0) {
+        // Why / owner / due date (AI extraction v2 fields); null or '' clears them
+        const optionalText = (value, max) => {
+          if (value === null || value === '') return null;
+          if (typeof value !== 'string') return undefined;
+          return value.trim().slice(0, max) || null;
+        };
+        if (updates.rationale !== undefined) {
+          const rationale = optionalText(updates.rationale, 2000);
+          if (rationale !== undefined) sanitizedUpdates.rationale = rationale;
+        }
+        if (updates.owner_name !== undefined) {
+          const ownerName = optionalText(updates.owner_name, 200);
+          if (ownerName !== undefined) {
+            sanitizedUpdates.owner_name = ownerName;
+            sanitizedUpdates.owner_user_id = null; // a typed name isn't linked to a member
+          }
+        }
+        // Owner picked from the members list; resolved to a name after the permission check
+        const ownerUserId = updates.owner_user_id === null || typeof updates.owner_user_id === 'string'
+          ? updates.owner_user_id
+          : undefined;
+        if (ownerUserId === null || ownerUserId === '') {
+          sanitizedUpdates.owner_user_id = null;
+          sanitizedUpdates.owner_name = null;
+        }
+        if (updates.due_date !== undefined) {
+          if (updates.due_date === null || updates.due_date === '') {
+            sanitizedUpdates.due_date = null;
+          } else if (isValidDueDate(updates.due_date)) {
+            sanitizedUpdates.due_date = updates.due_date;
+          }
+        }
+
+        if (Object.keys(sanitizedUpdates).length === 0 && !ownerUserId) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'No valid fields to update' }));
           return;
@@ -273,6 +312,20 @@ async function updateDecision(req, res) {
           return;
         }
 
+        if (ownerUserId) {
+          const member = await getWorkspaceMembersCollection().findOne(
+            { workspace_id: req.authenticatedWorkspaceId, user_id: ownerUserId, removed_at: null },
+            { projection: { user_id: 1, user_name: 1, email: 1 } }
+          );
+          if (!member) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'That person is not a member of this workspace' }));
+            return;
+          }
+          sanitizedUpdates.owner_user_id = member.user_id;
+          sanitizedUpdates.owner_name = member.user_name || member.email;
+        }
+
         const result = await decisionsCollection.updateOne(
           updateFilter,
           { $set: sanitizedUpdates }
@@ -286,7 +339,9 @@ async function updateDecision(req, res) {
 
         console.log(`✏️  Updated decision #${id}`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, updated: id }));
+        // The saved values, so the page shows what was stored (e.g. tags lowercased, epic key uppercased)
+        const saved = Object.fromEntries(Object.entries(sanitizedUpdates).filter(([key]) => key !== 'updated_at'));
+        res.end(JSON.stringify({ success: true, updated: id, decision: { id, ...saved } }));
       } catch (error) {
         console.error('Update parse error:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -1471,5 +1526,6 @@ module.exports = {
   submitFeedback,
   extractDecisionsFromText,
   checkAdminStatus,
-  createMemory
+  createMemory,
+  isValidDueDate
 };

@@ -266,6 +266,9 @@
   // Refresh whenever the list reloads (space change, new captures, edits)
   document.addEventListener('corteza:decisions-loaded', event => loadOpenItems(event.detail));
 
+  // An action item was added by hand (decision detail): it may be mine
+  document.addEventListener('corteza:action-items-changed', () => loadMyActions());
+
   document.addEventListener('DOMContentLoaded', () => {
     loadCapture();
     loadMyActions();
