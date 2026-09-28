@@ -31,7 +31,10 @@ const STOP_WORDS = new Set([
   'respecto', 'acerca', 'decidido', 'decidimos', 'decidio', 'decidió', 'decisiones', 'decision',
   'decisión', 'acordado', 'acordamos', 'acordaron', 'acuerdo', 'acuerdos', 'hablamos', 'dijimos',
   'quedamos', 'ultimo', 'último', 'ultima', 'última', 'ultimos', 'últimos', 'muestrame',
-  'muéstrame', 'dime', 'busca', 'equipo', 'todo', 'todos', 'toda', 'todas'
+  'muéstrame', 'dime', 'busca', 'equipo', 'todo', 'todos', 'toda', 'todas', 'tengo', 'tienes',
+  'hacer', 'hago', 'hace', 'hacemos', 'debo', 'debe', 'debemos', 'deberia', 'debería', 'puedo',
+  'podemos', 'necesito', 'necesitamos', 'quiero', 'saber', 'sabemos', 'respecto', 'relacion', 'relación',
+  'need', 'needs', 'want', 'know', 'regarding'
 ].map(normalize));
 
 /**

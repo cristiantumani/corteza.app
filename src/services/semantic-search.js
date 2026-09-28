@@ -330,7 +330,7 @@ async function semanticSearch(query, options = {}) {
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 3; // v3: JSON answer with the sources used (Sep 2026)
+const CACHE_VERSION = 4; // v4: sources may be in another language; latest outcomes as candidates
 
 /**
  * Answers the question from the search results with Claude, and says which results it used.
@@ -346,9 +346,10 @@ const CACHE_VERSION = 3; // v3: JSON answer with the sources used (Sep 2026)
  */
 async function generateConversationalResponse(query, results, conversationHistory = []) {
   const allIds = results.all.map(r => r.id);
-  if (!config.claude.isConfigured || results.all.length === 0) {
-    return { text: formatResultsSimple(query, results), usedIds: allIds.slice(0, 3) };
-  }
+  // Without Claude, only real matches can be listed (not the latest outcomes added as candidates)
+  const matchedOnly = { ...results, all: results.all.filter(r => r.matched !== false) };
+  const fallback = () => ({ text: formatResultsSimple(query, matchedOnly), usedIds: matchedOnly.all.slice(0, 3).map(r => r.id) });
+  if (!config.claude.isConfigured || results.all.length === 0) return fallback();
 
   const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}`;
   const cached = responseCache.get(cacheKey);
@@ -371,6 +372,7 @@ ${sources}
 
 Instructions:
 - Answer in the same language as the question.
+- Sources may be written in another language than the question ("directorio" = "board", "octubre" = "October").
 - Use only sources that actually help answer the question. Ignore the others, even if they share words with it.
 - Start with the direct answer, then the why and context. Mention sources by number, like "(#74)". 60 to 150 words, plain text, no headings or lists unless steps are needed.
 - If no source answers the question, say so briefly and suggest what to search instead. Don't invent anything that isn't in the sources.
@@ -398,7 +400,7 @@ Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources 
     return parsed;
   } catch (error) {
     console.error('❌ Error generating conversational response:', error.message);
-    return { text: formatResultsSimple(query, results), usedIds: allIds.slice(0, 3) };
+    return fallback();
   }
 }
 
@@ -408,7 +410,7 @@ function describeSource(r) {
   const lines = [`#${r.id} (${r.type || 'decision'}, ${date}${r.source_details && r.source_details.title ? `, meeting "${r.source_details.title}"` : ''}): ${r.text}`];
   if (r.rationale) lines.push(`  Why: ${r.rationale}`);
   if (r.owner_name) lines.push(`  Accountable: ${r.owner_name}`);
-  if (typeof r.alternatives === 'string' && r.alternatives) lines.push(`  Notes: ${r.alternatives.slice(0, 600)}`);
+  if (typeof r.alternatives === 'string' && r.alternatives) lines.push(`  Notes: ${r.alternatives.slice(0, r.matched === false ? 200 : 600)}`);
   if (Array.isArray(r.tags) && r.tags.length) lines.push(`  Tags: ${r.tags.join(', ')}`);
   return lines.join('\n');
 }
@@ -592,12 +594,60 @@ async function hybridSearch(query, options = {}) {
     results = await keywordSearch(query, options);
   }
 
+  // Few or no matches (semantic search off, or the question and the sources are in different
+  // languages: "directorio en octubre" vs "Board meeting on October 22"): let Claude read the
+  // space's latest outcomes too and pick the ones that answer the question
+  if (results.all.length < MIN_MATCHES_BEFORE_SCAN && config.claude.isConfigured) {
+    const matchedIds = new Set(results.all.map(r => r.id));
+    const recent = (await recentOutcomes(options)).filter(r => !matchedIds.has(r.id));
+    console.log(`   📚 Only ${results.all.length} match(es): adding the ${recent.length} latest outcomes for Claude to choose from`);
+    results = {
+      ...results,
+      all: [...results.all.map(r => ({ ...r, matched: true })), ...recent.map(r => ({ ...r, score: 0, matched: false }))]
+    };
+    searchMethod = `${searchMethod}+recent_scan`;
+  } else {
+    results = { ...results, all: results.all.map(r => ({ ...r, matched: true })) };
+  }
+
   return {
     results,
     searchMethod,
     query,
     options
   };
+}
+
+// Below this many matches, the latest outcomes of the space are added for Claude to choose from
+const MIN_MATCHES_BEFORE_SCAN = 3;
+const RECENT_SCAN_LIMIT = 60;
+
+/**
+ * The space's latest outcomes (candidates when search finds too little)
+ * @param {Object} options - { workspace_id, space_id, excludeIds }
+ * @returns {Promise<Object[]>}
+ */
+async function recentOutcomes({ workspace_id, space_id, excludeIds = [] }) {
+  const filter = { workspace_id, space_id };
+  if (excludeIds.length) filter.id = { $nin: excludeIds };
+  return getDecisionsCollection()
+    .find(filter, { projection: RESULT_PROJECTION })
+    .sort({ timestamp: -1 })
+    .limit(RECENT_SCAN_LIMIT)
+    .toArray();
+}
+
+/**
+ * Sources to show on the page: the ones the answer used (in its order), then the other
+ * search matches; outcomes that were only read as candidates are left out unless used
+ * @param {Object[]} all - results.all, with `matched` from hybridSearch
+ * @param {number[]} usedIds
+ * @returns {Object[]}
+ */
+function visibleSources(all, usedIds) {
+  const used = usedIds.map(id => all.find(r => r.id === id)).filter(Boolean);
+  const others = all.filter(r => r.matched !== false && !usedIds.includes(r.id));
+  return [...used, ...others];
 }
 
 /**
@@ -678,6 +728,8 @@ async function keywordSearch(query, options = {}) {
 
 module.exports = {
   parseAnswer,
+  visibleSources,
+  recentOutcomes,
   describeSource,
   semanticSearch,
   generateConversationalResponse,
