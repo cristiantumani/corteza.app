@@ -58,3 +58,14 @@ test('temperature is only sent to models that still accept it', () => {
     assert.ok(!SAMPLING_MODELS.test(model), model);
   }
 });
+
+test('owners become a list and decision_ref an index; a single owner_name still works', () => {
+  const { normalizeItem } = require('../../src/services/claude');
+  const both = normalizeItem({ decision_text: 'x', decision_type: 'action_item', owner_names: ['Martín', ' Felipe ', ''], decision_ref: 0 });
+  assert.deepEqual(both.owner_names, ['Martín', 'Felipe']);
+  assert.equal(both.owner_name, 'Martín');
+  assert.equal(both.decision_ref, 0);
+  const legacy = normalizeItem({ decision_text: 'x', owner_name: 'Ana', decision_ref: 'first' });
+  assert.deepEqual(legacy.owner_names, ['Ana']);
+  assert.equal(legacy.decision_ref, null);
+});

@@ -45,6 +45,8 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 4. The skip rules run: 1:1s, excluded titles, meetings with no transcript.
 5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). The connected user gets a summary email.
 
+**Action items:** the pipeline saves decisions (and open questions and risks) through `createDecision`, then the action items through `core/actions/action-service.createActionItem`. Action items are linked to their decision through `decision_ref` → `decision_id`, and spoken owner names are matched to members (`core/actions/owners.js`). For recent meetings, owners of undated items are emailed for a date (`core/actions/due-date-requests.js`). The page and API are in `src/http/action-items.js` (`/actions`, `GET/PATCH /api/action-items`).
+
 **Import past meetings:** Settings → Google Meet → pick a period → `GET /api/integrations/google/meetings` lists the meetings (`ingestion/meet-import.findMeetings`) → the user ticks some → `POST /api/integrations/google/imports` starts a background job (`meet_imports`) that runs each meeting through the same pipeline with `manual: true` → the UI polls for progress.
 
 **Slack `/decision`:**
@@ -90,6 +92,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters |
 | `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
+| `action_items` | Action items ("pendientes") from meetings: `owners` [{ name, user_id, email }], `owner_ids`, `due_date`, `status` open/done/cancelled, `decision_id` (the decision it carries out), `source`, `evidence_quote`, `due_date_requested_at` (`core/actions`) |
 | `meet_imports` | "Import past meetings" jobs: chosen meetings with per-meeting status/decisions, progress, lease for resume |
 | `feedback` | User feedback from the dashboard |
 | `digest_runs` | Weekly digest claims (one per workspace per week) |
@@ -106,6 +109,7 @@ Run manually, and they're safe to re-run. Each script starts as a dry run and ne
 - `scripts/migrations/001-backfill-default-spaces.js`: creates missing default spaces and moves decisions without a space into them.
 - `scripts/migrations/002-link-workspace-to-google.js`: links an older workspace to a Google domain and sets a member's email to their Google account, so their first Google sign-in lands in it. `--list` shows workspaces and members.
 - `scripts/migrations/003-repair-member-roles.js`: restores `workspace_members.role` (admin/member) that the old onboarding overwrote with a job title.
+- `scripts/migrations/005-move-action-items.js`: moves action items that extraction v2 briefly saved as decisions (`type: 'action_item'`) into `action_items`.
 - `scripts/migrations/004-date-meeting-decisions.js`: sets `timestamp` of AI-captured decisions to their meeting's start (`source_details.occurred_at`) instead of when they were saved.
 
 ---

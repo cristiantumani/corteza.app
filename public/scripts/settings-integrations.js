@@ -7,6 +7,13 @@
 
   const body = () => document.getElementById('google-meet-body');
 
+  /** "3 decisions, 2 action items" */
+  function countLabel(decisions = 0, actionItems = 0) {
+    const parts = [`${decisions} decision${decisions === 1 ? '' : 's'}`];
+    if (actionItems) parts.push(`${actionItems} action item${actionItems === 1 ? '' : 's'}`);
+    return parts.join(', ');
+  }
+
   const SKIP_REASONS = {
     one_on_one: '1:1 meeting (skipped)',
     excluded_title: 'Excluded by title',
@@ -384,14 +391,14 @@
       const items = job.items.map(item => `
         <li class="flex justify-between gap-4 py-1">
           <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || 'Meeting')}</span>
-          <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${item.decisions_created} decision${item.decisions_created === 1 ? '' : 's'}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
+          <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
         </li>`).join('');
 
       const running = job.status === 'running';
       progress.innerHTML = `
         <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant">
           <p class="font-bold text-on-surface mb-2">
-            ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${job.decisions_created} decision${job.decisions_created === 1 ? '' : 's'} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
+            ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${countLabel(job.decisions_created, job.action_items_created)} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
           </p>
           <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden mb-3"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
           <ul>${items}</ul>
