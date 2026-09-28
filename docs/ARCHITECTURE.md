@@ -10,6 +10,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 - **AI:** Anthropic Claude for decision extraction and conversational search, and OpenAI `text-embedding-3-small` for semantic-search embeddings.
 - **Search** (`POST /api/semantic-search`, `services/semantic-search.js`):
   - Uses vector search when `OPENAI_API_KEY` is set. Otherwise, or when vector search finds nothing, it falls back to keyword search (`core/search/relevance.js`: English and Spanish stop words, accents ignored, word-start matches, about half of the keywords required).
+  - With fewer than 3 matches (semantic search off, or question and sources in different languages), the space's 60 latest outcomes are added as candidates (`recentOutcomes`). Claude picks the ones that answer, and only those are shown (`visibleSources`).
   - Claude answers in the question's language and returns `used_ids`, the sources it used.
   - `exclude_ids` answers again without sources the user marked as unrelated (`POST /api/search-feedback`).
   - Results never include `embedding`.

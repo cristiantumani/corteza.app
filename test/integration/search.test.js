@@ -56,6 +56,12 @@ describe('Search: keyword relevance, excluded sources, feedback', { skip }, () =
     assert.deepEqual(without.all.map(r => r.id), [2], 'sources marked unrelated are left out');
   });
 
+  test('the latest outcomes of a space can be read as candidates, without embeddings or excluded ones', async () => {
+    const recent = await search.recentOutcomes({ workspace_id: 'WSRCH', space_id: 'sp1', excludeIds: [4] });
+    assert.deepEqual(recent.map(r => r.id), [3, 2, 1], 'newest first, only this space, #4 excluded');
+    assert.ok(recent.every(r => r.embedding === undefined));
+  });
+
   test('feedback on a source is saved once per user, question and source', async () => {
     const send = body => fetch(`${base}/api/search-feedback`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)

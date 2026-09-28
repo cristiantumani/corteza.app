@@ -37,3 +37,18 @@ test('the answer and the sources it used are read from Claude\'s JSON', () => {
   assert.equal(parseAnswer('{"answer": ""}', [1]), null);
   assert.deepEqual(parseAnswer('{"answer": "Nothing covers this."}', [1]), { text: 'Nothing covers this.', usedIds: [] });
 });
+
+test('the page shows used sources first, then other matches, but not unused candidates', () => {
+  const { visibleSources } = require('../../src/services/semantic-search');
+  const all = [
+    { id: 1, matched: true }, { id: 2, matched: true },
+    { id: 74, matched: false }, { id: 80, matched: false }, { id: 3 }
+  ];
+  assert.deepEqual(visibleSources(all, [74, 2]).map(r => r.id), [74, 2, 1, 3]);
+  assert.deepEqual(visibleSources(all, []).map(r => r.id), [1, 2, 3]);
+  assert.deepEqual(visibleSources(all, [999]).map(r => r.id), [1, 2, 3], 'unknown ids are ignored');
+});
+
+test('generic verbs in questions are not keywords', () => {
+  assert.deepEqual(extractKeywords('Que tengo que hacer con Pancho Viga?'), ['pancho', 'viga']);
+});
