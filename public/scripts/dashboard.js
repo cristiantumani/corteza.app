@@ -543,10 +543,16 @@
         const r = await fetch(`/api/decisions?${p}`);
 
         if (r.status === 403) {
-          // User lost access to current space
-          console.warn('⚠️  Access denied to space, re-initializing...');
+          // No access to this space (removed from it, or an admin-only listing): drop it and
+          // fall back to another space. Never pick the same one again, or this would loop.
+          console.warn('⚠️  Access denied to space, falling back to another one');
+          const deniedSpaceId = currentSpaceId;
           localStorage.removeItem('corteza_last_space_id');
-          await initializeSpaceContext(); // Re-initialize with valid space
+          const url = new URL(window.location);
+          url.searchParams.delete('space');
+          history.replaceState({}, '', url);
+          currentUserSpaces = currentUserSpaces.filter(space => space.space_id !== deniedSpaceId);
+          await initializeSpaceContext();
           return;
         }
 
@@ -1722,11 +1728,16 @@
 
     let bootstrapSpacesUsed = false;
 
+    /** Spaces the user can open (workspace admins also list spaces they only manage) */
+    function readableSpaces(spaces) {
+      return spaces.filter(space => space.can_read !== false);
+    }
+
     async function loadSpaces() {
       if (bootstrap && bootstrap.spaces && !bootstrapSpacesUsed) {
         bootstrapSpacesUsed = true;
         allSpaces = bootstrap.spaces;
-        currentUserSpaces = bootstrap.spaces;
+        currentUserSpaces = readableSpaces(bootstrap.spaces);
         return;
       }
       try {
@@ -1739,7 +1750,7 @@
         if (response.ok && data.spaces) {
           console.log('✅ Loaded', data.spaces.length, 'spaces');
           allSpaces = data.spaces;
-          currentUserSpaces = data.spaces;
+          currentUserSpaces = readableSpaces(data.spaces);
           // Note: Space selection is now handled by initializeSpaceContext()
         } else {
           console.warn('⚠️  Failed to load spaces:', data);
@@ -1781,13 +1792,6 @@
           selectedSpaceId = savedSpaceId;
           console.log('💾 Space restored from localStorage:', selectedSpaceId);
         }
-      }
-
-      // If user has multiple spaces and no space selected yet, redirect to space selector
-      if (!selectedSpaceId && currentUserSpaces.length > 1) {
-        console.log('🔀 Multiple spaces, no selection - redirecting to space selector');
-        window.location.href = '/select-space';
-        return;
       }
 
       // Priority 3: your personal space, else the workspace default

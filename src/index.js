@@ -9,7 +9,7 @@ const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats,
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
+const { serveDashboard, serveAISearch, serveSettings, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { extractFromApi } = require('./routes/extract-api');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -172,7 +172,7 @@ async function startApp() {
   });
 
   // Protected routes - Dashboard (requires authentication, redirects to login)
-  expressApp.get('/select-space', requireAuthBrowser, serveSpaceSelector); // Space selector for multi-space users
+  expressApp.get('/select-space', redirectToDashboard); // old space selector page: Home picks your space now
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard); // New Tailwind/Material Design dashboard
   expressApp.get('/ai-analytics', (req, res) => res.redirect(301, '/dashboard')); // removed page: old bookmarks land on Home
   expressApp.get('/ai-search', requireAuthBrowser, serveAISearch); // AI search interface

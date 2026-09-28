@@ -1,17 +1,9 @@
-const fs = require('fs');
-const path = require('path');
 const { renderView } = require('../http/page-partials');
 
 // Pages loaded once at startup, with the shared sidebar and detail modal filled in
 const dashboardHTML = renderView('dashboard-new.html', { active: 'home' });
 const settingsNewHTML = renderView('settings-new.html', { active: 'settings' });
 const aiSearchHTML = renderView('ai-search.html', { active: 'search' });
-
-// Load space selector HTML once at startup
-const spaceSelectorHTML = fs.readFileSync(
-  path.join(__dirname, '../views/space-selector.html'),
-  'utf8'
-);
 
 /**
  * What the dashboard would otherwise fetch first (/auth/me and /api/spaces),
@@ -87,20 +79,6 @@ function serveAISearch(req, res) {
 }
 
 /**
- * GET /select-space - Serves the space selector page
- */
-function serveSpaceSelector(req, res) {
-  // Get workspace_id from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = spaceSelectorHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-}
-
-/**
  * GET / - Redirect to dashboard
  */
 function redirectToDashboard(req, res) {
@@ -113,6 +91,5 @@ module.exports = {
   serveDashboard,
   serveAISearch,
   serveSettings,
-  serveSpaceSelector,
   redirectToDashboard
 };
