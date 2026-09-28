@@ -1,0 +1,73 @@
+<!-- Shared app sidebar. Injected at the SIDEBAR placeholder by src/http/page-partials.js, which marks the
+     current page's link with aria-current="page". Styled here (not with Tailwind classes) so it
+     looks the same on pages built with tailwind.min.css and on pages using the Tailwind CDN. -->
+<style>
+  .corteza-sidebar {
+    position: fixed; top: 0; left: 0; z-index: 20;
+    width: 16rem; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 1.5rem 0.75rem;
+    background: #f6f3f5; border-right: 1px solid #e4e1e8;
+    font-family: 'Inter', sans-serif;
+  }
+  .corteza-sidebar a { text-decoration: none; }
+  .corteza-sidebar .sb-brand {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0 0.75rem; margin-bottom: 2rem;
+    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: #1b1b1d;
+  }
+  .corteza-sidebar .sb-brand img { width: 2rem; height: 2rem; border-radius: 0.5rem; }
+  .corteza-sidebar .sb-nav { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
+  .corteza-sidebar .sb-link {
+    display: flex; align-items: center; gap: 0.75rem;
+    height: 2.5rem; padding: 0 0.75rem; border-radius: 0.5rem;
+    font-size: 0.875rem; font-weight: 500; line-height: 1; color: #444653;
+    background: none; border: 0; width: 100%; cursor: pointer; text-align: left;
+    transition: background-color 150ms, color 150ms;
+  }
+  .corteza-sidebar .sb-link:hover { background: #ebe7ec; color: #1b1b1d; }
+  .corteza-sidebar .sb-link[aria-current="page"] { background: #e3e7fb; color: #3953bd; font-weight: 600; }
+  .corteza-sidebar .sb-link .material-symbols-outlined {
+    font-size: 1.25rem !important; width: 1.25rem; flex-shrink: 0;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  }
+  .corteza-sidebar .sb-link[aria-current="page"] .material-symbols-outlined {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  }
+  .corteza-sidebar .sb-footer {
+    display: flex; flex-direction: column; gap: 0.25rem;
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4e1e8;
+  }
+</style>
+<aside class="corteza-sidebar" aria-label="Main navigation">
+  <a class="sb-brand" href="/dashboard">
+    <img src="/favicon-96x96.png" alt="">
+    Corteza
+  </a>
+
+  <nav class="sb-nav">
+    <a class="sb-link" data-nav="home" href="/dashboard">
+      <span class="material-symbols-outlined" aria-hidden="true">home</span>Home
+    </a>
+    <a class="sb-link" data-nav="actions" href="/actions">
+      <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>Action items
+    </a>
+    <a class="sb-link" data-nav="search" href="/ai-search">
+      <span class="material-symbols-outlined" aria-hidden="true">search</span>Search
+    </a>
+    <a class="sb-link" data-nav="settings" href="/settings">
+      <span class="material-symbols-outlined" aria-hidden="true">settings</span>Settings
+    </a>
+  </nav>
+
+  <div class="sb-footer">
+    <!-- Opens the Log modal where the page has it (Home, Search); elsewhere goes to Home with ?log=1 -->
+    <a class="sb-link" href="/dashboard?log=1"
+       onclick="if (typeof window.openLogMemoryModal === 'function') { event.preventDefault(); window.openLogMemoryModal(); }">
+      <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>Log manually
+    </a>
+    <a class="sb-link" href="/auth/logout">
+      <span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out
+    </a>
+  </div>
+</aside>
