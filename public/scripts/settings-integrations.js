@@ -159,6 +159,9 @@
     document.getElementById('gm-disconnect').addEventListener('click', disconnect);
     if (!needsReconnect) setupImportSection();
 
+    // An import started earlier is still running on the server: show its progress again
+    if (!needsReconnect && data.active_import) trackImport(data.active_import.import_id);
+
     // /settings#import (from Home): jump to "Import past meetings"
     if (window.location.hash === '#import') {
       const importSection = document.getElementById('gm-import-section');
@@ -412,6 +415,7 @@
             ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${countLabel(job.decisions_created, job.action_items_created, job.outcomes_by_type)} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
           </p>
           <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden mb-3"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
+          ${running ? '<p class="text-sm text-on-surface-variant mb-3">It keeps running if you leave this page. We\'ll email you a summary when it\'s done.</p>' : ''}
           <ul>${items}</ul>
           ${running ? '' : '<a href="/dashboard" class="inline-block mt-3 text-primary font-bold">Open dashboard →</a>'}
         </div>`;

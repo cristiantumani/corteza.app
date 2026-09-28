@@ -23,6 +23,7 @@ describe('Google Meet: import past meetings', { skip }, () => {
   let connections;
   let connection;
   let extractCalls = 0;
+  const notified = []; // summary emails "sent" when an import finishes
 
   // Fake Google data for four meetings in August 2026
   const meetings = {
@@ -36,6 +37,7 @@ describe('Google Meet: import past meetings', { skip }, () => {
   }));
 
   const deps = {
+    notify: async (conn, job) => { notified.push({ email: conn.google_email, importId: job.import_id, total: job.total }); },
     getClient: () => ({}),
     listRecords: async () => records,
     describeMeeting: async (client, record) => ({
@@ -139,6 +141,11 @@ describe('Google Meet: import past meetings', { skip }, () => {
     const planning = decisions.find(d => d.text === 'Decision from Q3 planning');
     assert.equal(planning.timestamp, '2026-08-10T09:00:00.000Z', 'dated by the meeting, not the import');
 
+    // The summary email goes out once, to the person who imported
+    assert.deepEqual(notified.filter(n => n.importId === job.import_id), [{ email: 'cris@ninja.io', importId: job.import_id, total: 5 }]);
+    await meetImport.runImport(job.import_id, deps);
+    assert.equal(notified.filter(n => n.importId === job.import_id).length, 1, 'running it again sends nothing');
+
     // Nobody else can read this job
     assert.equal(await meetImport.getImport('WIMP', 'U2', job.import_id), null);
     assert.equal(await meetImport.getImport('WOTHER', 'U1', job.import_id), null);
@@ -155,5 +162,22 @@ describe('Google Meet: import past meetings', { skip }, () => {
     assert.equal(job.status, 'completed');
     assert.equal(job.done, 2);
     assert.equal(job.items[1].status, 'not_ready');
+  });
+
+  test('the running import is shown to its owner only, until it finishes', async () => {
+    await db.collection('meet_imports').insertOne({
+      import_id: 'imp_live', workspace_id: 'WIMP', user_id: 'U1', connection_id: connection._id, space_id: null,
+      status: 'running', items: [{ meeting_id: 'conferenceRecords/pending', status: 'queued', decisions_created: 0 }],
+      total: 1, done: 0, decisions_created: 0, lease_until: null, created_at: new Date(), updated_at: new Date()
+    });
+    const active = await meetImport.getActiveImport('WIMP', 'U1');
+    assert.equal(active.import_id, 'imp_live');
+    assert.equal(active.total, 1);
+    assert.equal(active.connection_id, undefined, 'internal fields are not exposed');
+    assert.equal(await meetImport.getActiveImport('WIMP', 'U2'), null);
+
+    await meetImport.runImport('imp_live', deps);
+    assert.equal(await meetImport.getActiveImport('WIMP', 'U1'), null);
+    assert.ok(notified.some(n => n.importId === 'imp_live'));
   });
 });

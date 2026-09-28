@@ -386,7 +386,56 @@ async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
   return { success: true, email_id: result.id };
 }
 
+const IMPORT_ITEM_LABELS = {
+  already_imported: 'already imported',
+  not_ready: 'transcript not ready yet',
+  no_transcript: 'no transcript or notes',
+  failed: 'couldn’t be imported'
+};
+
+/**
+ * Tells someone their "Import past meetings" job finished, with what it captured
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {Object} params.job - finished meet_imports document: { total, items, outcomes_by_type, action_items_created }
+ */
+async function sendImportSummaryEmail({ email, job }) {
+  const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const counts = { ...(job.outcomes_by_type || {}), action_item: job.action_items_created || 0 };
+  const summary = describeOutcomes(counts) || 'no outcomes';
+  const meetings = `${job.total} meeting${job.total === 1 ? '' : 's'}`;
+  const rows = (job.items || []).map(item => {
+    const result = item.status === 'completed'
+      ? (describeOutcomes({ ...(item.outcomes_by_type || {}), action_item: item.action_items_created || 0 }) || 'no outcomes')
+      : (IMPORT_ITEM_LABELS[item.status] || item.status);
+    return `<tr><td style="padding: 6px 12px 6px 0; vertical-align: top;">${escapeHtml(item.title || 'Meeting')}</td><td style="padding: 6px 0; color: ${item.status === 'failed' ? '#b3261e' : '#666'}; white-space: nowrap; vertical-align: top;">${escapeHtml(result)}</td></tr>`;
+  }).join('');
+
+  const result = await sendEmail({
+    to: email,
+    subject: `Import done: ${summary} from ${meetings}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">Your import is done</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
+          Corteza captured <strong>${escapeHtml(summary)}</strong> from ${escapeHtml(meetings)}. They're saved in your space; edit or delete any that aren't right.
+        </p>
+        <table style="border-collapse: collapse; font-size: 14px; width: 100%; margin: 0 0 28px;">${rows}</table>
+        <a href="${dashboardUrl}/dashboard"
+           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Review in Corteza →
+        </a>
+      </div>
+    `
+  });
+
+  console.log(`✅ Import summary email sent to ${email}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
+  sendImportSummaryEmail,
   sendBetaWelcomeEmail,
   sendDueDateRequestEmail,
   sendMeetingCaptureEmail,
