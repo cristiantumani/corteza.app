@@ -1,5 +1,5 @@
 const express = require('express');
-const path = require('path');
+const { renderView } = require('./page-partials');
 const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
 const { getUserAccessibleSpaces, isAdmin, canCreateInSpace } = require('../services/permissions');
 const { getDecisionsCollection, getWorkspaceMembersCollection } = require('../config/database');
@@ -25,8 +25,10 @@ function requireSession(req, res, next) {
   next();
 }
 
+const actionsHTML = renderView('actions.html', { active: 'actions' });
+
 router.get('/actions', requireAuthBrowser, (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'views', 'actions.html'));
+  res.type('html').send(actionsHTML);
 });
 
 router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res) => {

@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - One sidebar on every page
+- **What was wrong:** Home, Action items, Search and Settings each had their own copy of the sidebar, with a different logo, spacing, icons and order. An old style also hid the icons on Home and Search
+- **Now:** one sidebar (`src/views/partials/sidebar.html`) is injected into every page, and only the current page's link changes. The logo, spacing and order are the same everywhere, every link has its icon, and **Log manually** and **Log out** sit together at the bottom
+
 ### Added - Private beta: approve testers from the signup email
 - **Who can create a workspace:** with `BETA_REQUIRED=true`, Google sign-in only creates a new workspace for approved people (an email, or a whole Google domain). Anyone else goes to the early access form with their email filled in, and nothing is saved for them. Existing members, invited people and colleagues joining their company's workspace sign in as before
 - **Approve from the email:** the team's "new early access request" email has an **Approve** link (signed with `BETA_APPROVAL_SECRET`). It opens a confirmation page; approving sends the tester a welcome email inviting them to sign in with Google

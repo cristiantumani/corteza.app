@@ -42,48 +42,7 @@
 </div>
 
 <!-- Sidebar Navigation -->
-<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-low border-r border-outline-variant flex flex-col py-8 px-4 gap-4 shadow-sm z-20">
-    <div class="flex items-center gap-2 px-4 mb-8">
-        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
-        </div>
-        <div>
-            <h1 class="text-2xl font-extrabold tracking-tight text-primary leading-none">Corteza</h1>
-            <p class="text-xs text-on-surface-variant opacity-70 uppercase tracking-widest">Decision Intelligence</p>
-        </div>
-    </div>
-
-    <nav class="flex-1 flex flex-col gap-1">
-        <a class="flex items-center gap-4 text-primary font-bold border-r-4 border-primary bg-primary-container/10 px-4 py-2 rounded-l-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/dashboard">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
-            <span class="text-sm font-medium">Home</span>
-        </a>
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/actions">
-            <span class="material-symbols-outlined">task_alt</span>
-            <span class="text-sm font-medium">Action items</span>
-        </a>
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="#" onclick="navigateToSearch(event)">
-            <span class="material-symbols-outlined">search</span>
-            <span class="text-sm font-medium">Search</span>
-        </a>
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200 active:scale-95" href="/settings">
-            <span class="material-symbols-outlined">settings</span>
-            <span class="text-sm font-medium">Settings</span>
-        </a>
-    </nav>
-
-    <button onclick="openLogMemoryModal()" class="border border-outline-variant text-on-surface-variant font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container transition-all mb-8 text-sm">
-        <span class="material-symbols-outlined text-base">edit_note</span>
-        Log manually
-    </button>
-
-    <div class="mt-auto flex flex-col gap-1 border-t border-outline-variant pt-4">
-        <a class="flex items-center gap-4 text-on-surface-variant font-medium px-4 py-2 rounded-lg hover:bg-surface-container transition-all duration-200" href="/auth/logout">
-            <span class="material-symbols-outlined">logout</span>
-            <span class="text-sm font-medium">Log Out</span>
-        </a>
-    </div>
-</aside>
+<!-- SIDEBAR -->
 
 <!-- Top Header -->
 <header class="fixed top-0 right-0 left-64 h-16 z-10 bg-surface border-b border-outline-variant flex items-center justify-between px-6 shadow-sm">
@@ -452,7 +411,7 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/dashboard.js?v=21"></script>
+<script src="/scripts/dashboard.js?v=22"></script>
 <script src="/scripts/dashboard-new.js?v=9"></script>
 <script src="/scripts/people.js?v=1"></script>
 <script src="/scripts/decision-actions.js?v=1"></script>

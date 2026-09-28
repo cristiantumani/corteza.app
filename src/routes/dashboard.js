@@ -1,31 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const { renderView } = require('../http/page-partials');
 
-// Outcome detail modal shared by Home and Search (views/partials/detail-modal.html)
-const detailModalHTML = fs.readFileSync(path.join(__dirname, '../views/partials/detail-modal.html'), 'utf8');
-
-/** Puts shared partials into a page template (once, at startup) */
-function withPartials(html) {
-  return html.replace('<!-- DETAIL_MODAL -->', () => detailModalHTML);
-}
-
-// Load new dashboard HTML (now the main dashboard)
-const dashboardHTML = withPartials(fs.readFileSync(
-  path.join(__dirname, '../views/dashboard-new.html'),
-  'utf8'
-));
-
-// Load new settings HTML (Material Design 3)
-const settingsNewHTML = fs.readFileSync(
-  path.join(__dirname, '../views/settings-new.html'),
-  'utf8'
-);
-
-// Load AI search HTML once at startup
-const aiSearchHTML = withPartials(fs.readFileSync(
-  path.join(__dirname, '../views/ai-search.html'),
-  'utf8'
-));
+// Pages loaded once at startup, with the shared sidebar and detail modal filled in
+const dashboardHTML = renderView('dashboard-new.html', { active: 'home' });
+const settingsNewHTML = renderView('settings-new.html', { active: 'settings' });
+const aiSearchHTML = renderView('ai-search.html', { active: 'search' });
 
 // Load space selector HTML once at startup
 const spaceSelectorHTML = fs.readFileSync(

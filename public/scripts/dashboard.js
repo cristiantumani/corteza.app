@@ -3047,16 +3047,6 @@
       approvedSuggestions.clear();
     }
 
-    // Navigation with space context preservation
-    window.navigateToSearch = function(event) {
-      event.preventDefault();
-      const urlParams = new URLSearchParams();
-      if (currentSpaceId) {
-        urlParams.set('space', currentSpaceId);
-      }
-      window.location.href = `/ai-search?${urlParams}`;
-    };
-
     // Handle browser back/forward buttons
     window.addEventListener('popstate', async (event) => {
       if (event.state && event.state.space) {
