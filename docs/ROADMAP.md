@@ -178,7 +178,7 @@ C4. **Decision health analytics for leaders.**
   - reversed decisions
   - decisions that keep coming back
   - meetings with no outcomes (meeting ROI)
-- Builds on `ai-analytics`, and the weekly digest v2 focuses on these numbers.
+- A new page (the old AI Analytics page was removed in Sept 2026 to simplify the product). The weekly digest v2 focuses on these numbers.
 
 ### Phase D: Distribution (in parallel from Phase B)
 

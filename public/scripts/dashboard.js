@@ -80,12 +80,6 @@
         }
       }
 
-      // Update AI analytics link with workspace_id
-      const analyticsLink = document.querySelector('a[href*="ai-analytics"]');
-      if (analyticsLink) {
-        analyticsLink.href = `/ai-analytics?workspace_id=${WORKSPACE_ID}`;
-      }
-
       // Update context bar (works in both minimal and classic mode)
       const contextWorkspace = document.getElementById('context-workspace');
       if (contextWorkspace) {
