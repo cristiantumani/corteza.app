@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link rel="stylesheet" href="/styles/dashboard.css">
@@ -72,9 +72,9 @@
         </a>
     </nav>
 
-    <button onclick="openLogMemoryModal()" class="bg-[#667EEA] text-on-primary font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 mb-8">
-        <span class="material-symbols-outlined">add</span>
-        New Decision
+    <button onclick="openLogMemoryModal()" class="border border-outline-variant text-on-surface-variant font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container transition-all mb-8 text-sm">
+        <span class="material-symbols-outlined text-base">edit_note</span>
+        Log manually
     </button>
 
     <div class="mt-auto flex flex-col gap-1 border-t border-outline-variant pt-4">
@@ -119,10 +119,10 @@
 <!-- Main Content -->
 <main class="ml-64 mt-16 p-12 min-h-screen" id="main-content">
     <div class="max-w-[1440px] mx-auto">
-        <!-- Hero Header -->
-        <div class="mb-12">
-            <h2 class="text-5xl font-bold mb-2 tracking-tight">Executive Dashboard</h2>
-            <p class="text-lg text-on-surface-variant max-w-2xl">Track your team's strategic decisions and context. Stay aligned on what matters.</p>
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-4xl font-bold mb-2 tracking-tight">Home</h2>
+            <p class="text-lg text-on-surface-variant max-w-2xl">Decisions and action items Corteza captures automatically from your Google Meet meetings.</p>
         </div>
 
         <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
@@ -134,49 +134,26 @@
             <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">Review</button>
         </div>
 
-        <!-- Action Cards -->
+        <!-- Automatic capture first; manual capture is secondary (public/scripts/home-capture.js) -->
         <div class="grid grid-cols-12 gap-6 mb-12">
-            <div class="col-span-12 lg:col-span-7">
-                <div onclick="openLogMemoryModal()" class="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] p-8 text-on-primary shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300">
-                    <div class="relative z-10 flex flex-col h-full justify-between min-h-[180px]">
-                        <div>
-                            <span class="material-symbols-outlined text-4xl mb-4" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-                            <h3 class="text-2xl font-semibold mb-2">Log Decision</h3>
-                            <p class="text-base opacity-90 max-w-sm">Capture strategic decisions, context, and learnings in your team's knowledge base.</p>
-                        </div>
-                        <div class="flex items-center gap-2 mt-6">
-                            <span class="text-sm font-medium">Start logging</span>
-                            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        </div>
-                    </div>
-                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-5">
-                <div onclick="openFileUploadModal()" class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-sm hover:border-primary transition-all duration-300 cursor-pointer h-full">
-                    <div class="flex flex-col h-full justify-between">
-                        <div>
-                            <div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary mb-4">
-                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">upload_file</span>
-                            </div>
-                            <h3 class="text-2xl font-semibold text-on-surface mb-2">Upload a File</h3>
-                            <p class="text-base text-on-surface-variant">Upload a file and let the AI extract your decisions automatically.</p>
-                        </div>
-                        <div class="mt-6">
-                            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                                <div class="w-0 group-hover:w-full h-full bg-[#667EEA] transition-all duration-700 ease-out"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <section id="capture-panel" class="col-span-12 lg:col-span-8">
+                <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading automatic capture…</div>
+            </section>
+            <section id="my-actions-panel" class="col-span-12 lg:col-span-4">
+                <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading your action items…</div>
+            </section>
         </div>
 
         <!-- Decisions Header -->
         <div class="flex items-center justify-between mb-6">
             <h4 class="text-2xl font-semibold">Recent Decisions</h4>
             <div class="flex items-center gap-4">
+                <button type="button" onclick="openLogMemoryModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Log a decision by hand">
+                    <span class="material-symbols-outlined text-base">edit_note</span> Log manually
+                </button>
+                <button type="button" onclick="openFileUploadModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Upload a transcript file">
+                    <span class="material-symbols-outlined text-base">upload_file</span> Upload transcript
+                </button>
                 <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     <option value="">All Types</option>
                     <option value="decision">Decision</option>
@@ -199,8 +176,9 @@
         <!-- Empty State -->
         <div id="empty-state" class="hidden text-center py-20">
             <div class="text-6xl mb-4">📭</div>
-            <p class="text-lg text-on-surface-variant mb-4">No decisions found</p>
-            <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Create your first decision</button>
+            <p class="text-lg text-on-surface-variant mb-2">No decisions here yet</p>
+            <p class="text-sm text-on-surface-variant mb-4">They appear automatically after your Google Meet meetings, once Google Meet is connected.</p>
+            <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Or log one manually</button>
         </div>
     </div>
 </main>
@@ -540,8 +518,9 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/dashboard.js?v=17"></script>
-<script src="/scripts/dashboard-new.js?v=6"></script>
+<script src="/scripts/dashboard.js?v=18"></script>
+<script src="/scripts/dashboard-new.js?v=7"></script>
+<script src="/scripts/home-capture.js?v=1"></script>
 <script>
     // Additional UI enhancements for new design
     document.addEventListener('DOMContentLoaded', () => {

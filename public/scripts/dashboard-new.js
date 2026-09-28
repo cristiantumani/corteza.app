@@ -114,8 +114,7 @@
 
       <p class="text-sm text-on-surface-variant mb-6 line-clamp-2">${escapeHtml(getTruncatedText(decision.text))}</p>
 
-      ${getOwnerLine(decision)}
-      ${getSourceLine(decision)}
+      ${getMetaLines(decision)}
 
       <div class="flex items-center justify-between pt-4 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
@@ -182,7 +181,7 @@
     const title = safeUrl
       ? `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" data-action="source" class="text-primary hover:underline">${escapeHtml(details.title)}</a>`
       : escapeHtml(details.title);
-    return `<p class="text-xs text-on-surface-variant -mt-4 mb-6">${label}: ${title}</p>`;
+    return `<p class="text-xs text-on-surface-variant">${label}: ${title}</p>`;
   }
 
   /** "Owner: Ana · Due Oct 3" for items that have them (AI extraction v2) */
@@ -193,7 +192,13 @@
       const due = new Date(`${decision.due_date}T00:00:00`);
       if (!isNaN(due)) parts.push(`Due ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
     }
-    return parts.length ? `<p class="text-xs text-on-surface-variant -mt-4 mb-2">${parts.join(' · ')}</p>` : '';
+    return parts.length ? `<p class="text-xs text-on-surface-variant">${parts.join(' · ')}</p>` : '';
+  }
+
+  /** Owner/due and source lines, stacked under the title */
+  function getMetaLines(decision) {
+    const lines = getOwnerLine(decision) + getSourceLine(decision);
+    return lines ? `<div class="-mt-4 mb-6 flex flex-col gap-1">${lines}</div>` : '';
   }
 
   function getStatusInfo(decision) {

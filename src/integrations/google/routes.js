@@ -98,7 +98,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       .find({ workspace_id, source: 'google_meet' })
       .sort({ updated_at: -1 })
       .limit(10)
-      .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, updated_at: 1, _id: 0 })
+      .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, action_items_created: 1, updated_at: 1, _id: 0 })
       .toArray();
 
     res.json({
