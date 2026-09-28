@@ -565,6 +565,7 @@
         allDecisions = d.decisions;
         window.allDecisions = allDecisions; // Keep window reference updated
         renderDecisions(d.decisions);
+        document.dispatchEvent(new CustomEvent('corteza:decisions-loaded', { detail: { spaceId: currentSpaceId, workspaceId: WORKSPACE_ID } }));
       } catch (err) {
         console.error('❌ Error fetching decisions:', err);
         const tbody = document.getElementById('decisions-body');
@@ -886,14 +887,18 @@
           // Show success message
           const savedSpace = currentUserSpaces.find(s => s.space_id === spaceId);
           showNotification(spaceId === currentSpaceId
-            ? '✅ Decision saved'
-            : `✅ Decision saved to ${savedSpace ? savedSpace.name : 'another space'}`);
+            ? '✅ Saved'
+            : `✅ Saved to ${savedSpace ? savedSpace.name : 'another space'}`);
+
+          // Show it: if the list is filtered to another type, show all outcomes
+          const typeFilter = document.getElementById('type-filter');
+          if (typeFilter && typeFilter.value && typeFilter.value !== type) typeFilter.value = '';
 
           // Refresh the dashboard
           fetchStats();
           fetchDecisions();
         } else {
-          alert(`❌ Failed to save decision: ${data.message || data.error || 'Unknown error'}`);
+          alert(`❌ Failed to save: ${data.message || data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error saving memory:', error);
@@ -1036,6 +1041,16 @@
 
     // Expose modal functions to window for onclick handlers and dashboard-new.js
     window.openDetailModal = openDetailModal;
+
+    // Opens an item loaded elsewhere on the page (e.g. Home's open questions panel), even if the list is filtered out
+    window.openDecision = function(decision) {
+      let index = allDecisions.findIndex(d => d.id === decision.id);
+      if (index < 0) {
+        allDecisions.push(decision);
+        index = allDecisions.length - 1;
+      }
+      openDetailModal(index);
+    };
     window.closeDetailModal = closeDetailModal;
     window.openDeleteModal = openDeleteModal;
     window.closeDeleteModal = closeDeleteModal;

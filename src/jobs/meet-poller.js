@@ -5,6 +5,7 @@ const meetClient = require('../integrations/google/meet-client');
 const googleMeetSource = require('../ingestion/sources/google-meet');
 const pipeline = require('../ingestion/pipeline');
 const { ensureDefaultSpace } = require('../services/spaces');
+const { countByType } = require('../core/decisions/types');
 
 /**
  * Google Meet poller: finds meetings that ended for each connected user and
@@ -49,7 +50,7 @@ function skipReason(meeting, settings = {}) {
  * Polls one connection (the caller holds its lease)
  * @param {Object} connection
  * @param {Object} [deps] - injectable for tests
- * @returns {Promise<{ meetingsProcessed: number, decisionsCaptured: number, results: Object[] }>}
+ * @returns {Promise<{ meetingsProcessed: number, decisionsCaptured: number, outcomesByType: Object, results: Object[] }>}
  */
 async function pollConnection(connection, deps = {}) {
   const {
@@ -119,16 +120,17 @@ async function pollConnection(connection, deps = {}) {
 
   const captured = results.filter(r => r.status === 'completed');
   const decisionsCaptured = captured.reduce((sum, r) => sum + r.decisions.length, 0);
+  const outcomesByType = countByType(captured.flatMap(r => r.decisions));
 
   for (const result of captured.filter(r => r.decisions.length > 0 || r.actionItems.length > 0)) {
     notify(connection, result).catch(error => console.error('❌ Meet summary email failed:', error.message));
   }
 
-  return { meetingsProcessed: captured.length, decisionsCaptured, results };
+  return { meetingsProcessed: captured.length, decisionsCaptured, outcomesByType, results };
 }
 
 /**
- * Emails the connected user a summary of the decisions captured from a meeting
+ * Emails the connected user a summary of the outcomes captured from a meeting
  */
 async function notifyCaptured(connection, result) {
   if (!process.env.RESEND_API_KEY || !connection.google_email) return;
@@ -158,7 +160,8 @@ async function runForConnection(connection, deps = {}) {
     await connections.finishPoll(leased._id, {
       cursor: startedAt,
       meetingsProcessed: summary.meetingsProcessed,
-      decisionsCaptured: summary.decisionsCaptured
+      decisionsCaptured: summary.decisionsCaptured,
+      outcomesByType: summary.outcomesByType
     });
     return summary;
   } catch (error) {

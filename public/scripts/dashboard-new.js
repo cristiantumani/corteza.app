@@ -9,6 +9,12 @@
   // Store decisions for rendering
   let allDecisionsForRender = [];
 
+  // "decisions" → "decision" for counts of one
+  const SINGULAR = {
+    outcomes: 'outcome', decisions: 'decision', 'open questions': 'open question', risks: 'risk',
+    'action items': 'action item', explanations: 'explanation', learnings: 'learning'
+  };
+
   const TYPE_LABELS = {
     decision: 'decision',
     action_item: 'action item',
@@ -48,11 +54,19 @@
 
     if (!container) return;
 
-    // Update count
+    // Title and count follow the type filter: "Recent decisions · 12 decisions", "Recent outcomes · 20 outcomes"
+    const typeFilter = document.getElementById('type-filter');
+    const filterLabel = typeFilter && typeFilter.value
+      ? typeFilter.options[typeFilter.selectedIndex].text.replace(/ \(.*\)$/, '').toLowerCase()
+      : 'outcomes';
+    const titleElement = document.getElementById('outcomes-title');
+    if (titleElement) titleElement.textContent = `Recent ${filterLabel}`;
     const count = decisions.length;
     if (countElement) {
-      countElement.textContent = `${count} decision${count !== 1 ? 's' : ''}`;
+      countElement.textContent = `${count} ${count === 1 ? SINGULAR[filterLabel] || filterLabel : filterLabel}`;
     }
+    const emptyTitle = document.getElementById('empty-state-title');
+    if (emptyTitle) emptyTitle.textContent = `No ${filterLabel} here yet`;
 
     // Clear container
     container.innerHTML = '';

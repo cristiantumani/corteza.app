@@ -1,5 +1,5 @@
 /**
- * Settings → Google Meet integration (automatic decision capture).
+ * Settings → Google Meet integration (automatic capture of meeting outcomes).
  * Talks to /api/integrations/google* (src/integrations/google/routes.js).
  */
 (function() {
@@ -7,11 +7,9 @@
 
   const body = () => document.getElementById('google-meet-body');
 
-  /** "3 decisions, 2 action items" */
-  function countLabel(decisions = 0, actionItems = 0) {
-    const parts = [`${decisions} decision${decisions === 1 ? '' : 's'}`];
-    if (actionItems) parts.push(`${actionItems} action item${actionItems === 1 ? '' : 's'}`);
-    return parts.join(', ');
+  /** "3 decisions, 1 risk and 2 action items" (outcome-labels.js) */
+  function countLabel(total = 0, actionItems = 0, byType = null) {
+    return window.CortezaOutcomes.describe(byType, total, actionItems);
   }
 
   const SKIP_REASONS = {
@@ -75,7 +73,7 @@
     body().innerHTML = `
       <ul class="list-disc pl-5 space-y-1 mb-6">
         <li>Works with meetings where <strong>transcription</strong> or <strong>Gemini "Take notes for me"</strong> is on.</li>
-        <li>Decisions are saved automatically and marked <em>AI-captured</em>. You can edit or delete them.</li>
+        <li>Outcomes (decisions, action items, open questions and risks) are saved automatically and marked <em>AI-captured</em>. You can edit or delete them.</li>
         <li>1:1 meetings are skipped by default. You can exclude meetings by title.</li>
       </ul>
       <a href="/integrations/google/connect" class="inline-flex items-center gap-2 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
@@ -96,7 +94,7 @@
 
     const recent = (data.recent_meetings || []).map(m => {
       const status = m.status === 'completed'
-        ? `${m.decisions_created} decision${m.decisions_created === 1 ? '' : 's'}`
+        ? countLabel(m.decisions_created, m.action_items_created, m.outcomes_by_type)
         : m.status === 'skipped' ? (SKIP_REASONS[m.skip_reason] || 'Skipped')
           : m.status === 'failed' ? 'Failed (will retry)' : 'Processing';
       return `<li class="flex justify-between gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || 'Meeting')}</span><span class="whitespace-nowrap">${escapeHtml(status)}</span></li>`;
@@ -114,7 +112,7 @@
           ${needsReconnect ? 'Needs reconnecting' : 'Connected'} as ${escapeHtml(data.google_email)}
         </span>
         <span>Last checked: ${escapeHtml(formatTime(data.last_polled_at))}</span>
-        <span>${data.decisions_captured} decisions from ${data.meetings_processed} meetings</span>
+        <span>${data.decisions_captured} outcome${data.decisions_captured === 1 ? '' : 's'} from ${data.meetings_processed} meeting${data.meetings_processed === 1 ? '' : 's'}</span>
       </div>
       ${!needsReconnect && data.needs_reconsent ? `
         <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
@@ -125,7 +123,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <label class="block">
-          <span class="block text-xs mb-1">Save decisions to</span>
+          <span class="block text-xs mb-1">Save outcomes to</span>
           <select id="gm-space" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
         </label>
         <label class="block">
@@ -144,7 +142,7 @@
         <button id="gm-disconnect" class="text-error font-bold py-3 px-6 rounded-lg hover:bg-error/10 transition-all">Disconnect</button>
       </div>
 
-      ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">Recent meetings</h4><ul>${recent}</ul>` : '<p>No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, decisions show up here within a few minutes.</p>'}
+      ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">Recent meetings</h4><ul>${recent}</ul>` : '<p>No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, its outcomes show up here within a few minutes.</p>'}
 
       ${needsReconnect ? '' : renderImportSection(spaceOptions)}
     `;
@@ -195,7 +193,7 @@
     return `
       <div id="gm-import-section" class="mt-8 pt-6 border-t border-outline-variant">
         <h4 class="text-lg font-bold text-on-surface mb-1">Import past meetings</h4>
-        <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture decisions from.</p>
+        <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture outcomes from.</p>
 
         <div class="flex flex-wrap items-end gap-4 mb-4">
           <label class="block">
@@ -222,7 +220,7 @@
         <div id="gm-import-results"></div>
         <div id="gm-import-actions" class="hidden flex flex-wrap items-end gap-4 mt-4">
           <label class="block">
-            <span class="block text-xs mb-1">Save decisions to</span>
+            <span class="block text-xs mb-1">Save outcomes to</span>
             <select id="gm-import-space" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
           </label>
           <button id="gm-import-start" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all disabled:opacity-50" disabled>Import selected (0)</button>
@@ -290,7 +288,7 @@
   }
 
   function statusLabel(meeting) {
-    if (meeting.status === 'completed') return `Imported · ${meeting.decisions_created} decision${meeting.decisions_created === 1 ? '' : 's'}`;
+    if (meeting.status === 'completed') return `Imported · ${countLabel(meeting.decisions_created, 0, meeting.outcomes_by_type)}`;
     if (meeting.status === 'skipped') return `Skipped automatically${SKIP_REASONS[meeting.skip_reason] ? ` (${SKIP_REASONS[meeting.skip_reason].replace(' (skipped)', '')})` : ''}`;
     if (meeting.status === 'failed') return 'Failed earlier';
     if (meeting.status === 'processing') return 'Processing…';
@@ -397,14 +395,14 @@
       const items = job.items.map(item => `
         <li class="flex justify-between gap-4 py-1">
           <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || 'Meeting')}</span>
-          <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
+          <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created, item.outcomes_by_type)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
         </li>`).join('');
 
       const running = job.status === 'running';
       progress.innerHTML = `
         <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant">
           <p class="font-bold text-on-surface mb-2">
-            ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${countLabel(job.decisions_created, job.action_items_created)} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
+            ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${countLabel(job.decisions_created, job.action_items_created, job.outcomes_by_type)} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
           </p>
           <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden mb-3"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
           <ul>${items}</ul>
@@ -455,7 +453,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Check failed');
       const waiting = (data.results || []).filter(r => r.status === 'waiting').length;
-      alert(`Captured ${data.decisions_captured} decision(s) from ${data.meetings_processed} meeting(s).` +
+      alert(`Captured ${countLabel(data.decisions_captured, data.action_items_captured, data.outcomes_by_type)} from ${data.meetings_processed} meeting(s).` +
         (waiting ? ` ${waiting} meeting(s) are still waiting for Google to finish the transcript.` : ''));
     } catch (error) {
       alert(error.message);
@@ -464,7 +462,7 @@
   }
 
   async function disconnect() {
-    if (!confirm('Disconnect Google Meet? Corteza will stop capturing decisions from your meetings. Decisions already captured stay.')) return;
+    if (!confirm('Disconnect Google Meet? Corteza will stop capturing outcomes from your meetings. Outcomes already captured stay.')) return;
     const response = await fetch('/api/integrations/google/disconnect', { method: 'POST' });
     if (!response.ok) alert('Failed to disconnect');
     loadGoogleIntegration();

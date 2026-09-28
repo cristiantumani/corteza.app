@@ -100,7 +100,7 @@ async function getDecisions(req, res) {
     }
 
     if (validated.type) {
-      filter.type = validated.type;
+      filter.type = Array.isArray(validated.type) ? { $in: validated.type } : validated.type;
     }
     if (validated.category) {
       filter.category = validated.category;

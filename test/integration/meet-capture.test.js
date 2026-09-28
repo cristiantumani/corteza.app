@@ -223,7 +223,10 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
 
     const saved = await connections.getConnection('WPOLL', 'U1');
     assert.equal(saved.decisions_captured, 1);
+    assert.deepEqual(saved.outcomes_by_type, { decision: 1 });
     assert.equal(saved.meetings_processed, 1);
+    const ingestion = await db.collection('ingestions').findOne({ workspace_id: 'WPOLL', external_id: 'conferenceRecords/ready' });
+    assert.deepEqual(ingestion.outcomes_by_type, { decision: 1 });
     assert.equal(saved.lease_until, null);
     assert.ok(saved.last_polled_at);
 

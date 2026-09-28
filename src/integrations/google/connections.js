@@ -162,10 +162,14 @@ async function acquireLease(connectionId, ms = 5 * 60 * 1000) {
 /**
  * Records the result of a poll and releases the lease
  */
-async function finishPoll(connectionId, { cursor, error, meetingsProcessed = 0, decisionsCaptured = 0 }) {
+async function finishPoll(connectionId, { cursor, error, meetingsProcessed = 0, decisionsCaptured = 0, outcomesByType = {} }) {
   const update = {
     $set: { last_polled_at: new Date(), lease_until: null, last_error: error || null },
-    $inc: { meetings_processed: meetingsProcessed, decisions_captured: decisionsCaptured }
+    $inc: {
+      meetings_processed: meetingsProcessed,
+      decisions_captured: decisionsCaptured, // all outcomes (decisions, open questions, risks, …)
+      ...Object.fromEntries(Object.entries(outcomesByType).map(([type, count]) => [`outcomes_by_type.${type}`, count]))
+    }
   };
   if (cursor) update.$set.poll_cursor = cursor;
   if (error && error.revoked) {

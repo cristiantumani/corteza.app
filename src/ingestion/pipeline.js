@@ -1,5 +1,6 @@
 const { getDatabase } = require('../config/database');
 const { createDecision } = require('../core/decisions/decision-service');
+const { countByType } = require('../core/decisions/types');
 const { createActionItem } = require('../core/actions/action-service');
 const { requestMissingDueDates } = require('../core/actions/due-date-requests');
 const { getWorkspaceMembersCollection } = require('../config/database');
@@ -108,7 +109,7 @@ async function recordSkipped(transcript, reason) {
 async function getStatuses(workspaceId, source, externalIds) {
   const docs = await ingestions()
     .find({ workspace_id: workspaceId, source, external_id: { $in: externalIds } })
-    .project({ external_id: 1, status: 1, skip_reason: 1, decisions_created: 1, _id: 0 })
+    .project({ external_id: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, _id: 0 })
     .toArray();
   return new Map(docs.map(doc => [doc.external_id, doc]));
 }
@@ -225,6 +226,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
         status: 'completed',
         word_count: wordCount,
         decisions_created: decisions.length,
+        outcomes_by_type: countByType(decisions),
         decision_ids: decisions.map(d => d.id),
         action_items_created: actionItems.length,
         model: result.model || null,
@@ -234,7 +236,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
       $unset: { error: '' }
     });
 
-    console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} decision(s), ${actionItems.length} action item(s)`);
+    console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} outcome(s), ${actionItems.length} action item(s)`);
 
     try {
       await requestDueDates(actionItems, transcript);

@@ -96,7 +96,7 @@
         <!-- Search Input -->
         <div class="relative flex-1 max-w-xl">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-60">search</span>
-            <input id="search" oninput="applyFilters()" class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search decisions..." type="text">
+            <input id="search" oninput="applyFilters()" class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search outcomes..." type="text">
         </div>
     </div>
 
@@ -122,7 +122,7 @@
         <!-- Header -->
         <div class="mb-8">
             <h2 class="text-4xl font-bold mb-2 tracking-tight">Home</h2>
-            <p class="text-lg text-on-surface-variant max-w-2xl">Decisions and action items Corteza captures automatically from your Google Meet meetings.</p>
+            <p class="text-lg text-on-surface-variant max-w-2xl">The outcomes of your Google Meet meetings, captured automatically: decisions, action items, open questions and risks.</p>
         </div>
 
         <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
@@ -139,32 +139,35 @@
             <section id="capture-panel" class="col-span-12 lg:col-span-8">
                 <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading automatic capture…</div>
             </section>
-            <section id="my-actions-panel" class="col-span-12 lg:col-span-4">
-                <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading your action items…</div>
-            </section>
+            <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                <section id="my-actions-panel">
+                    <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading your action items…</div>
+                </section>
+                <section id="open-items-panel" class="hidden"></section>
+            </div>
         </div>
 
-        <!-- Decisions Header -->
+        <!-- Outcomes list: decisions by default; "All outcomes" also shows open questions, risks and notes -->
         <div class="flex items-center justify-between mb-6">
-            <h4 class="text-2xl font-semibold">Recent Decisions</h4>
+            <h4 class="text-2xl font-semibold" id="outcomes-title">Recent decisions</h4>
             <div class="flex items-center gap-4">
-                <button type="button" onclick="openLogMemoryModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Log a decision by hand">
+                <button type="button" onclick="openLogMemoryModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Log a decision or other outcome by hand">
                     <span class="material-symbols-outlined text-base">edit_note</span> Log manually
                 </button>
                 <button type="button" onclick="openFileUploadModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Upload a transcript file">
                     <span class="material-symbols-outlined text-base">upload_file</span> Upload transcript
                 </button>
                 <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                    <option value="">All Types</option>
-                    <option value="decision">Decision</option>
-                    <option value="action_item">Action item</option>
-                    <option value="open_question">Open question</option>
-                    <option value="risk">Risk</option>
-                    <option value="explanation">Explanation</option>
+                    <option value="">All outcomes</option>
+                    <option value="decision" selected>Decisions</option>
+                    <option value="open_question">Open questions</option>
+                    <option value="risk">Risks</option>
+                    <option value="action_item">Action items (older)</option>
                     <option value="context">Context</option>
-                    <option value="learning">Learning</option>
+                    <option value="explanation">Explanations</option>
+                    <option value="learning">Learnings</option>
                 </select>
-                <span class="text-sm text-on-surface-variant" id="decisions-count">0 decisions</span>
+                <span class="text-sm text-on-surface-variant" id="decisions-count"></span>
             </div>
         </div>
 
@@ -176,7 +179,7 @@
         <!-- Empty State -->
         <div id="empty-state" class="hidden text-center py-20">
             <div class="text-6xl mb-4">📭</div>
-            <p class="text-lg text-on-surface-variant mb-2">No decisions here yet</p>
+            <p class="text-lg text-on-surface-variant mb-2" id="empty-state-title">Nothing here yet</p>
             <p class="text-sm text-on-surface-variant mb-4">They appear automatically after your Google Meet meetings, once Google Meet is connected.</p>
             <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Or log one manually</button>
         </div>
@@ -443,7 +446,7 @@
     </div>
 
     <div class="detail-section">
-      <p style="color: #616061; margin-bottom: 16px;">Upload a meeting transcript, document, or notes file. Our AI will automatically extract decisions and key points for you to review.</p>
+      <p style="color: #616061; margin-bottom: 16px;">Upload a meeting transcript, document, or notes file. Corteza extracts the outcomes (decisions, action items, open questions and risks) for you to review.</p>
 
       <div style="border: 2px dashed #E1E4E8; border-radius: 12px; padding: 32px; text-align: center; background: #F6F8FA; cursor: pointer;" id="file-drop-zone">
         <span class="material-symbols-outlined" style="font-size: 48px; color: #667EEA; margin-bottom: 12px;">cloud_upload</span>
@@ -480,7 +483,7 @@
     <div class="modal-buttons">
       <button class="modal-btn modal-btn-cancel" onclick="closeFileUploadModal()">Cancel</button>
       <button id="upload-submit-btn" class="modal-btn modal-btn-primary" onclick="submitFileUpload()" disabled>
-        Extract Decisions
+        Extract outcomes
       </button>
     </div>
   </div>
@@ -490,7 +493,7 @@
 <div class="modal-overlay" id="ai-suggestions-modal">
   <div class="modal detail-modal" style="max-width: 900px;">
     <div class="detail-header">
-      <h2>🤖 AI Extracted Decisions</h2>
+      <h2>🤖 Extracted outcomes</h2>
       <button class="close-btn" onclick="closeAISuggestionsModal()">✕ Close</button>
     </div>
 
@@ -503,7 +506,7 @@
 
       <div id="no-suggestions" style="display: none; text-align: center; padding: 48px;">
         <span class="material-symbols-outlined" style="font-size: 64px; color: #E1E4E8; margin-bottom: 16px;">search_off</span>
-        <p style="font-size: 16px; color: #616061;">No clear decisions found in this file. Try uploading a different document.</p>
+        <p style="font-size: 16px; color: #616061;">No clear outcomes found in this file. Try uploading a different document.</p>
       </div>
     </div>
 
@@ -518,9 +521,10 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/dashboard.js?v=18"></script>
-<script src="/scripts/dashboard-new.js?v=7"></script>
-<script src="/scripts/home-capture.js?v=1"></script>
+<script src="/scripts/dashboard.js?v=19"></script>
+<script src="/scripts/dashboard-new.js?v=8"></script>
+<script src="/scripts/outcome-labels.js?v=1"></script>
+<script src="/scripts/home-capture.js?v=2"></script>
 <script>
     // Additional UI enhancements for new design
     document.addEventListener('DOMContentLoaded', () => {
