@@ -132,7 +132,7 @@ async function getDecisions(req, res) {
     const decisionsCollection = getDecisionsCollection();
     const [decisions, total] = await Promise.all([
       decisionsCollection
-        .find(filter)
+        .find(filter, { projection: { embedding: 0 } }) // embeddings are large and only used server-side
         .sort({ timestamp: -1 })
         .skip(skip)
         .limit(limit)

@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Performance - Faster Home and Search
+- **Smaller decision lists:** decision lists no longer include `embedding` vectors. Each vector is about 1,500 numbers per decision, so about 50 decisions came to more than 1 MB, re-downloaded every 30 seconds
+- **One fewer round trip on load:** Home and Search come with the user and their spaces preloaded. The page shows as soon as decisions arrive, and stats no longer block it
+- **Fewer queries for spaces:** `GET /api/spaces` uses a fixed number of queries (one aggregate for counts, one for memberships) instead of 2 per space
+- **Assets:** gzip compression. Static files are served before the session middleware, so each asset no longer reads the session from MongoDB, and are cached for 10 minutes
+- **Slack lookups:** installation lookups are cached per workspace, and the cache is cleared on install or uninstall
+
 ### Added - Action items ("pendientes") with owners and due dates (roadmap B1/B2)
 - **Separate from decisions:** action items live in a new `action_items` collection with several owners, a due date and a status (open, done, cancelled). Each is linked to the decision it carries out, for example "Se decide comenzar la investigación" → "Investigación técnica", owned by Martín and Felipe
 - **Owners are real people:** names spoken in the meeting are matched to workspace members, ignoring accents; unmatched names are kept

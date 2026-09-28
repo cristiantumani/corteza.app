@@ -9,6 +9,12 @@ const config = require('./environment');
 
 let installationStore = null;
 
+// Installation lookups per workspace, cached so hot paths (/auth/me, /api/spaces,
+// /api/decisions) don't query Mongo for Slack on every request. Most workspaces
+// have no Slack installation, so "none" is cached too.
+const CLIENT_CACHE_MS = 5 * 60 * 1000;
+const clientCache = new Map();
+
 /**
  * Initialize the installation store
  * @returns {Promise<MongoInstallationStore>}
@@ -27,6 +33,20 @@ async function getInstallationStore() {
  * @returns {Promise<WebClient|null>} Authenticated Slack Web API client or null if not available
  */
 async function getSlackClient(workspaceId) {
+  const cached = clientCache.get(workspaceId);
+  if (cached && cached.expires > Date.now()) return cached.client;
+  const client = await loadSlackClient(workspaceId);
+  clientCache.set(workspaceId, { client, expires: Date.now() + CLIENT_CACHE_MS });
+  return client;
+}
+
+/** Forgets cached clients (e.g. after a Slack install or uninstall) */
+function clearSlackClientCache(workspaceId) {
+  if (workspaceId) clientCache.delete(workspaceId);
+  else clientCache.clear();
+}
+
+async function loadSlackClient(workspaceId) {
   // If using OAuth, fetch installation from store
   if (config.slack.useOAuth) {
     try {
@@ -62,5 +82,6 @@ async function getSlackClient(workspaceId) {
 }
 
 module.exports = {
-  getSlackClient
+  getSlackClient,
+  clearSlackClientCache
 };

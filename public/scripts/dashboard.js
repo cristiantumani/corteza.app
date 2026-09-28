@@ -8,14 +8,23 @@
     let allSpaces = [];
     let currentUserSpaces = [];
 
+    // Data the server preloaded into the page (routes/dashboard.js): { user, spaces }.
+    // Used once, for the first load; later refreshes fetch from the API.
+    const bootstrap = window.__CORTEZA_BOOTSTRAP__ || null;
+    window.__CORTEZA_BOOTSTRAP__ = null;
+
     // Check authentication status on page load
     async function checkAuth() {
       try {
-        console.log('🔐 Checking authentication...');
-        const response = await fetch('/auth/me');
-        console.log('🔐 Auth response status:', response.status);
-
-        const data = await response.json();
+        let data;
+        if (bootstrap && bootstrap.user) {
+          data = { authenticated: true, user: bootstrap.user };
+        } else {
+          console.log('🔐 Checking authentication...');
+          const response = await fetch('/auth/me');
+          console.log('🔐 Auth response status:', response.status);
+          data = await response.json();
+        }
         console.log('🔐 Auth response data:', { authenticated: data.authenticated, user: data.user });
 
         if (!data.authenticated) {
@@ -1670,7 +1679,15 @@
       }
     }
 
+    let bootstrapSpacesUsed = false;
+
     async function loadSpaces() {
+      if (bootstrap && bootstrap.spaces && !bootstrapSpacesUsed) {
+        bootstrapSpacesUsed = true;
+        allSpaces = bootstrap.spaces;
+        currentUserSpaces = bootstrap.spaces;
+        return;
+      }
       try {
         console.log('🔍 Loading spaces for workspace:', WORKSPACE_ID);
         const response = await fetch(`/api/spaces?workspace_id=${WORKSPACE_ID}`);
@@ -2368,6 +2385,15 @@
       try {
         console.log('🚀 Dashboard init starting...');
 
+        // Stats only need the workspace: start them now, don't block the page on them
+        fetchStats().catch(() => {});
+
+        // With preloaded data nothing below waits on the network, so let the page's
+        // other scripts (dashboard-new.js overrides rendering) load first
+        if (document.readyState === 'loading') {
+          await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
+        }
+
         // Parallelize auth and spaces loading for better performance
         const [authenticated] = await Promise.all([
           checkAuth(),
@@ -2392,9 +2418,9 @@
         // User has spaces - load data first, then show UI
         console.log('📁 Current space:', currentSpaceId);
 
-        console.log('📥 Loading initial data (stats + decisions)...');
-        // Load initial data before showing UI (prevents flash)
-        await Promise.all([fetchStats(), fetchDecisions()]);
+        console.log('📥 Loading initial decisions...');
+        // Decisions are what the page shows first; stats fill in when they arrive
+        await fetchDecisions();
         console.log('✅ Initial data loaded');
         fetchPendingSuggestions();
 
