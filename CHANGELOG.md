@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - "Outcomes" is the umbrella term
+- **Outcomes, not decisions:** everything Corteza captures from a meeting is now an *outcome*. A decision is one type, next to action items, open questions and risks. "Decisions" now means only decisions
+- **Counts by type:** Home, Settings and the capture email say "11 decisions, 2 open questions and 4 action items" instead of counting everything as decisions. Ingestions, import jobs and Google connections store `outcomes_by_type`. Data from before this change shows as "N outcomes"
+- **Home:**
+  - The list shows **Recent decisions** by default. "All outcomes" and the other types are in the filter
+  - A new **Open questions & risks** panel sits under My action items. Clicking an item opens it
+- **Capture email:** grouped under Decisions, Open questions, Risks and Action items. The subject reads e.g. "3 decisions and 2 action items captured from …"
+- **API:** `GET /api/decisions?type=open_question,risk` accepts several types
+
 ### Changed - Home puts automatic capture first
 - **"Executive Dashboard" removed:** the Home page now opens with Google Meet capture instead of manual logging
 - **Not connected:** a "Capture decisions automatically" card explains the 3 steps and links to Connect Google Meet

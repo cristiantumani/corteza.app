@@ -98,7 +98,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       .find({ workspace_id, source: 'google_meet' })
       .sort({ updated_at: -1 })
       .limit(10)
-      .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, action_items_created: 1, updated_at: 1, _id: 0 })
+      .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, action_items_created: 1, updated_at: 1, _id: 0 })
       .toArray();
 
     res.json({
@@ -113,6 +113,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       last_error: connection.last_error,
       meetings_processed: connection.meetings_processed || 0,
       decisions_captured: connection.decisions_captured || 0,
+      outcomes_by_type: connection.outcomes_by_type || null,
       settings: connection.settings,
       recent_meetings: recent
     });
@@ -168,6 +169,8 @@ router.post('/api/integrations/google/sync', apiRateLimiter, requireSession, asy
       success: true,
       meetings_processed: summary.meetingsProcessed,
       decisions_captured: summary.decisionsCaptured,
+      outcomes_by_type: summary.outcomesByType || {},
+      action_items_captured: summary.results.reduce((sum, r) => sum + (r.actionItems ? r.actionItems.length : 0), 0),
       results: summary.results.map(r => ({ title: r.title, status: r.status, reason: r.reason || null, decisions: r.decisions ? r.decisions.length : 0 }))
     });
   } catch (error) {

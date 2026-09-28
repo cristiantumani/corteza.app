@@ -5,6 +5,7 @@ const meetClient = require('../integrations/google/meet-client');
 const googleMeetSource = require('./sources/google-meet');
 const pipeline = require('./pipeline');
 const { ensureDefaultSpace } = require('../services/spaces');
+const { countByType } = require('../core/decisions/types');
 
 /**
  * Importing past Google Meet meetings ("Settings → Google Meet → Import past meetings").
@@ -101,7 +102,8 @@ async function findMeetings(connection, { from, to }, deps = {}) {
       availability: meeting.state, // 'ready' | 'pending' | 'none'
       status: ingestion ? ingestion.status : 'new', // new | completed | skipped | failed | processing
       skip_reason: ingestion?.skip_reason || null,
-      decisions_created: ingestion?.decisions_created || 0
+      decisions_created: ingestion?.decisions_created || 0,
+      outcomes_by_type: ingestion?.outcomes_by_type || null
     };
   });
 
@@ -234,8 +236,9 @@ async function runImport(importId, deps = {}) {
           status: outcome.status === 'duplicate' ? 'already_imported' : outcome.status,
           title: meeting.title,
           decisions_created: outcome.decisions.length,
+          outcomes_by_type: countByType(outcome.decisions),
           action_items_created: (outcome.actionItems || []).length,
-          error: outcome.status === 'failed' ? 'Corteza couldn’t extract decisions right now. Try importing it again later.' : null
+          error: outcome.status === 'failed' ? 'Corteza couldn’t extract outcomes right now. Try importing it again later.' : null
         };
         if (outcome.error) console.error(`❌ Meet import ${importId}: extraction failed for ${item.meeting_id}: ${outcome.error}`);
       }
@@ -250,12 +253,18 @@ async function runImport(importId, deps = {}) {
         [`items.${index}.status`]: result.status,
         [`items.${index}.title`]: result.title,
         [`items.${index}.decisions_created`]: result.decisions_created,
+        [`items.${index}.outcomes_by_type`]: result.outcomes_by_type || {},
         [`items.${index}.action_items_created`]: result.action_items_created || 0,
         [`items.${index}.error`]: result.error || null,
         lease_until: new Date(Date.now() + LEASE_MS),
         updated_at: now()
       },
-      $inc: { done: 1, decisions_created: result.decisions_created, action_items_created: result.action_items_created || 0 }
+      $inc: {
+        done: 1,
+        decisions_created: result.decisions_created,
+        action_items_created: result.action_items_created || 0,
+        ...Object.fromEntries(Object.entries(result.outcomes_by_type || {}).map(([type, count]) => [`outcomes_by_type.${type}`, count]))
+      }
     });
   }
 
@@ -263,7 +272,7 @@ async function runImport(importId, deps = {}) {
     $set: { status: 'completed', lease_until: null, completed_at: now(), updated_at: now() }
   });
   const finished = await imports().findOne({ import_id: importId });
-  console.log(`📥 Meet import ${importId} finished: ${finished.decisions_created} decision(s) from ${finished.total} meeting(s)`);
+  console.log(`📥 Meet import ${importId} finished: ${finished.decisions_created} outcome(s) from ${finished.total} meeting(s)`);
   return finished;
 }
 

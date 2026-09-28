@@ -4,9 +4,11 @@
  * - #capture-panel: connect Google Meet (if not connected), or capture status,
  *   "Check now", "Import past meetings" and the latest processed meetings.
  * - #my-actions-panel: the signed-in user's open action items.
+ * - #open-items-panel: the latest open questions and risks in the current space.
  *
  * APIs: GET /api/integrations/google, POST /api/integrations/google/sync,
- *       GET /api/action-items?owner=me&status=open
+ *       GET /api/action-items?owner=me&status=open, GET /api/decisions?type=open_question,risk
+ * Counts use the "outcomes" wording from outcome-labels.js.
  * Manual capture (Log manually / Upload) stays available as secondary actions.
  */
 (function() {
@@ -37,11 +39,11 @@
     return `${count} ${word}${count === 1 ? '' : 's'}`;
   }
 
+  const describe = (byType, total, actionItems) => window.CortezaOutcomes.describe(byType, total, actionItems);
+
   function meetingOutcome(meeting) {
     if (meeting.status === 'completed') {
-      const parts = [plural(meeting.decisions_created || 0, 'decision')];
-      if (meeting.action_items_created) parts.push(plural(meeting.action_items_created, 'action item'));
-      return parts.join(', ');
+      return describe(meeting.outcomes_by_type || null, meeting.decisions_created || 0, meeting.action_items_created || 0);
     }
     if (meeting.status === 'skipped') return SKIP_REASONS[meeting.skip_reason] || 'Skipped';
     if (meeting.status === 'failed') return 'Failed, will retry';
@@ -67,6 +69,15 @@
           <span class="material-symbols-outlined">link</span> Connect Google Meet
         </a>
       </div>`;
+  }
+
+  /** "43 outcomes" for the whole connection; per type when the connection has counted them since the start */
+  function capturedTotals(data) {
+    const total = data.decisions_captured || 0;
+    const byType = data.outcomes_by_type;
+    const countedByType = byType ? Object.values(byType).reduce((sum, count) => sum + count, 0) : 0;
+    if (byType && countedByType === total && total > 0) return describe(byType, total, 0);
+    return plural(total, 'outcome');
   }
 
   function renderConnected(data) {
@@ -98,7 +109,7 @@
               <span class="w-2.5 h-2.5 rounded-full ${needsReconnect ? 'bg-error' : 'bg-tertiary'}"></span>
               <h3 class="text-lg font-semibold text-on-surface">${needsReconnect ? 'Automatic capture paused' : 'Capturing automatically from Google Meet'}</h3>
             </div>
-            <p class="text-sm text-on-surface-variant">${escapeHtml(data.google_email || '')} · last checked ${escapeHtml(timeAgo(data.last_polled_at))} · ${plural(data.decisions_captured || 0, 'decision')} from ${plural(data.meetings_processed || 0, 'meeting')}</p>
+            <p class="text-sm text-on-surface-variant">${escapeHtml(data.google_email || '')} · last checked ${escapeHtml(timeAgo(data.last_polled_at))} · ${escapeHtml(capturedTotals(data))} from ${plural(data.meetings_processed || 0, 'meeting')}</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button id="capture-sync" type="button" class="border border-outline-variant text-on-surface font-semibold text-sm py-2 px-4 rounded-lg hover:bg-surface-container-low transition-all" ${needsReconnect ? 'disabled' : ''}>
@@ -134,7 +145,7 @@
       if (!response.ok) throw new Error(data.error || 'Checking Google Meet failed');
       await loadCapture();
       const message = data.meetings_processed
-        ? `Captured ${plural(data.decisions_captured, 'decision')} from ${plural(data.meetings_processed, 'new meeting')}.`
+        ? `Captured ${describe(data.outcomes_by_type || null, data.decisions_captured, data.action_items_captured || 0)} from ${plural(data.meetings_processed, 'new meeting')}.`
         : 'No new meetings with transcripts or notes yet.';
       const refreshed = document.getElementById('capture-sync-result');
       if (refreshed) {
@@ -204,6 +215,56 @@
       container.innerHTML = `<div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Couldn't load your action items.</div>`;
     }
   }
+
+  const OPEN_ITEM_TYPES = {
+    open_question: { label: 'Open question', icon: 'help', color: 'text-primary' },
+    risk: { label: 'Risk', icon: 'warning', color: 'text-error' }
+  };
+
+  /** Latest open questions and risks in the space the Home shows; hidden when there are none */
+  async function loadOpenItems({ spaceId, workspaceId }) {
+    const container = document.getElementById('open-items-panel');
+    if (!container || !spaceId) return;
+    try {
+      const params = new URLSearchParams({ workspace_id: workspaceId, space_id: spaceId, type: 'open_question,risk', limit: '5' });
+      const response = await fetch(`/api/decisions?${params}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to load');
+      const data = await response.json();
+      const items = data.decisions || [];
+      const total = data.pagination ? data.pagination.total : items.length;
+      if (items.length === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <div class="rounded-xl bg-surface-container-lowest border border-outline-variant p-6 shadow-sm flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-on-surface">Open questions &amp; risks</h3>
+            <span class="text-sm text-on-surface-variant">${total}</span>
+          </div>
+          <ul class="flex flex-col gap-2 text-sm">${items.map(item => {
+            const type = OPEN_ITEM_TYPES[item.type] || OPEN_ITEM_TYPES.open_question;
+            return `
+            <li class="flex gap-2">
+              <span class="material-symbols-outlined text-base ${type.color}" title="${type.label}">${type.icon}</span>
+              <button type="button" data-open-item="${escapeHtml(item.id)}" class="text-left text-on-surface hover:text-primary line-clamp-2">${escapeHtml(item.text)}</button>
+            </li>`;
+          }).join('')}</ul>
+        </div>`;
+      container.querySelectorAll('[data-open-item]').forEach(button => {
+        button.addEventListener('click', () => {
+          const item = items.find(i => String(i.id) === button.dataset.openItem);
+          if (item && typeof window.openDecision === 'function') window.openDecision(item);
+        });
+      });
+    } catch (error) {
+      container.classList.add('hidden');
+    }
+  }
+
+  // Refresh whenever the list reloads (space change, new captures, edits)
+  document.addEventListener('corteza:decisions-loaded', event => loadOpenItems(event.detail));
 
   document.addEventListener('DOMContentLoaded', () => {
     loadCapture();

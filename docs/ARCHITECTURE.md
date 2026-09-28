@@ -85,7 +85,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 | Collection | Purpose |
 |---|---|
-| `decisions` | Decisions and other memories: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote` |
+| `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote` |
 | `workspace_spaces`, `space_members` | Spaces and explicit space membership |
 | `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links |
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |
@@ -95,11 +95,11 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
-| `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters |
-| `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` |
+| `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
+| `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` (all outcomes), `outcomes_by_type` (e.g. `{ decision: 3, risk: 1 }`, from `countByType`), `action_items_created` |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
 | `action_items` | Action items ("pendientes") from meetings: `owners` [{ name, user_id, email }], `owner_ids`, `due_date`, `status` open/done/cancelled, `decision_id` (the decision it carries out), `source`, `evidence_quote`, `due_date_requested_at` (`core/actions`) |
-| `meet_imports` | "Import past meetings" jobs: chosen meetings with per-meeting status/decisions, progress, lease for resume |
+| `meet_imports` | "Import past meetings" jobs: chosen meetings with per-meeting status and outcome counts (`outcomes_by_type`), totals, progress, lease for resume |
 | `feedback` | User feedback from the dashboard |
 | `digest_runs` | Weekly digest claims (one per workspace per week) |
 | `extension_installs` | Chrome extension installs and activation |

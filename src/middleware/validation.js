@@ -20,10 +20,12 @@ function validateQueryParams(query) {
     validated.limit = 50;
   }
 
-  // Type filter (must be one of the allowed types)
+  // Type filter: one type, or several separated by commas ("open_question,risk"); unknown types are ignored
   const { DECISION_TYPES } = require('../core/decisions/types');
-  if (query.type && DECISION_TYPES.includes(query.type.toLowerCase())) {
-    validated.type = query.type.toLowerCase();
+  if (typeof query.type === 'string') {
+    const types = [...new Set(query.type.toLowerCase().split(','))].filter(type => DECISION_TYPES.includes(type));
+    if (types.length === 1) validated.type = types[0];
+    else if (types.length > 1) validated.type = types;
   }
 
   // Category filter (must be one of the allowed categories)

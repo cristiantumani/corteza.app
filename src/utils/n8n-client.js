@@ -4,6 +4,7 @@
 
 // Use native fetch (Node 18+) or fall back to node-fetch v2
 const fetch = globalThis.fetch || require('node-fetch');
+const { OUTCOME_LABELS, outcomeGroup, countByType, describeOutcomes } = require('../core/decisions/types');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -254,13 +255,24 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
 }
 
 /**
- * Tells the user which decisions Corteza captured automatically from a meeting
+ * Tells the user which outcomes (decisions, open questions, risks, action items)
+ * Corteza captured automatically from a meeting
  * @param {Object} params - { email, meeting_title, meeting_url, decisions: [{ id, text, type }],
  *   action_items?: [{ text, owners: [name], due_date }] }
  */
 async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, decisions, action_items = [] }) {
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
-  const count = decisions.length;
+  const summary = describeOutcomes({ ...countByType(decisions), action_item: action_items.length });
+  const outcomesHtml = Object.keys(OUTCOME_LABELS).map(group => {
+    const items = decisions.filter(d => outcomeGroup(d.type) === group);
+    if (items.length === 0) return '';
+    const heading = group === 'other' ? 'Other' : OUTCOME_LABELS[group][1].replace(/^./, c => c.toUpperCase());
+    return `
+        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 8px;">${heading}</h2>
+        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
+          ${items.map(d => `<li style="margin-bottom: 8px;">${escapeHtml(d.text)}${group === 'other' ? ` <span style="color: #888;">(${escapeHtml(d.type)})</span>` : ''}</li>`).join('')}
+        </ul>`;
+  }).join('');
   const actionsHtml = action_items.length === 0 ? '' : `
         <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 8px;">Action items</h2>
         <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
@@ -269,18 +281,16 @@ async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, deci
 
   const result = await sendEmail({
     to: email,
-    subject: `${count} decision${count === 1 ? '' : 's'}${action_items.length ? ` and ${action_items.length} action item${action_items.length === 1 ? '' : 's'}` : ''} captured from "${meeting_title}"`,
+    subject: `${summary} captured from "${meeting_title}"`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${count} decision${count === 1 ? '' : 's'} captured</h1>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${escapeHtml(summary.replace(/^./, c => c.toUpperCase()))} captured</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
           From ${meeting_url ? `<a href="${escapeHtml(meeting_url)}" style="color: #3953bd;">${escapeHtml(meeting_title)}</a>` : `<strong>${escapeHtml(meeting_title)}</strong>`}.
           They're already saved in Corteza; edit or delete any that aren't right.
         </p>
-        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
-          ${decisions.map(d => `<li style="margin-bottom: 8px;">${escapeHtml(d.text)} <span style="color: #888;">(${escapeHtml(d.type)})</span></li>`).join('')}
-        </ul>
+        ${outcomesHtml}
         ${actionsHtml}
         <a href="${dashboardUrl}/dashboard"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
