@@ -163,6 +163,24 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     };
     const extractedItems = result.decisions || [];
 
+    // Due dates belong to action items, not to decisions: a dated commitment the AI
+    // attached to a decision (with no action item of its own) becomes a linked action item
+    const linkedIndexes = new Set(extractedItems
+      .filter(item => item.decision_type === 'action_item' && Number.isInteger(item.decision_ref))
+      .map(item => item.decision_ref));
+    const datedFollowUps = extractedItems
+      .map((item, index) => ({ item, index }))
+      .filter(({ item, index }) => item.decision_type !== 'action_item' && item.due_date && !linkedIndexes.has(index))
+      .map(({ item, index }) => ({
+        decision_type: 'action_item',
+        decision_text: item.decision_text,
+        owner_names: item.owner_names || (item.owner_name ? [item.owner_name] : []),
+        due_date: item.due_date,
+        decision_ref: index,
+        evidence_quote: item.evidence_quote || null,
+        confidence: item.confidence
+      }));
+
     // Decisions (and open questions, risks) first, so action items can link to them
     const decisions = [];
     const decisionIdByIndex = new Map();
@@ -181,8 +199,8 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
           extracted.evidence_quote ? `Quote: "${extracted.evidence_quote}"` : (extracted.context ? `Context: ${extracted.context}` : null),
           extracted.supersedes_hint ? `Replaces: ${extracted.supersedes_hint}` : null
         ].filter(Boolean).join('\n\n'),
-        ownerName: extracted.owner_name || null,
-        dueDate: extracted.due_date || null,
+        // Accountable person; when there's a date, the owner goes to the linked action item instead
+        ownerName: extracted.due_date ? null : (extracted.owner_name || (extracted.owner_names || [])[0] || null),
         rationale: extracted.rationale || null,
         evidenceQuote: extracted.evidence_quote || null,
         author: transcript.author,
@@ -196,7 +214,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     }
 
     // Action items ("pendientes"): owners matched to workspace members
-    const extractedActions = extractedItems.filter(item => item.decision_type === 'action_item');
+    const extractedActions = [...extractedItems.filter(item => item.decision_type === 'action_item'), ...datedFollowUps];
     const members = extractedActions.length === 0 ? [] : await getWorkspaceMembersCollection()
       .find({ workspace_id: transcript.workspaceId, removed_at: null })
       .project({ user_id: 1, user_name: 1, email: 1 })
