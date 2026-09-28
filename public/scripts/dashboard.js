@@ -790,12 +790,37 @@
         document.getElementById('detail-tags-section').style.display = 'none';
       }
 
+      // Click a field to edit it in place (public/scripts/inline-edit.js)
+      if (window.CortezaInlineEdit) {
+        window.CortezaInlineEdit.attach({
+          decision,
+          canModify,
+          workspaceId: WORKSPACE_ID,
+          onSaved: () => {
+            detailChanged = true;
+            openDetailModal(index);
+            showNotification('✅ Saved');
+          }
+        });
+      }
+
       // Show modal
       document.getElementById('detail-modal').classList.add('active');
     }
 
+    // Set when a field was edited in place; the list is refreshed when the modal closes
+    // (not while it's open, so currentDecisionIndex keeps pointing at the same item)
+    let detailChanged = false;
+
     function closeDetailModal() {
-      document.getElementById('detail-modal').classList.remove('active');
+      const modal = document.getElementById('detail-modal');
+      if (!modal.classList.contains('active')) return;
+      modal.classList.remove('active');
+      if (detailChanged) {
+        detailChanged = false;
+        fetchStats();
+        fetchDecisions();
+      }
     }
 
     // Log Memory Modal Functions
@@ -921,8 +946,8 @@
       document.getElementById('edit-tags').value = decision.tags ? decision.tags.join(', ') : '';
       document.getElementById('edit-alternatives').value = decision.alternatives || '';
 
-      // Close detail modal and open edit modal
-      closeDetailModal();
+      // Swap the detail modal for the edit modal (without refreshing the list: closeEditModal reopens it by index)
+      document.getElementById('detail-modal').classList.remove('active');
       document.getElementById('edit-modal').classList.add('active');
     }
 

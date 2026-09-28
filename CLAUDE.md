@@ -66,7 +66,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | API-key integrations (`/api/v1/*`) | `src/routes/extract-api.js`, `src/middleware/api-key-auth.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
-| Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` |
+| Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
 | Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet) |
 | Chrome extension | `browser-extension/` |
 | DB migrations (manual, idempotent) | `scripts/migrations/` |
