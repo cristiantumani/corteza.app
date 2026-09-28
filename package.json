@@ -25,6 +25,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@slack/bolt": "^4.6.0",
+    "compression": "^1.8.2",
     "connect-mongo": "^6.0.0",
     "dotenv": "^17.2.3",
     "express-rate-limit": "^8.2.1",

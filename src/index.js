@@ -112,15 +112,20 @@ async function startApp() {
   // This prevents IP spoofing attacks on rate limiters
   expressApp.set('trust proxy', 1);
 
-  // Add session middleware to all routes
-  const sessionMiddleware = createSessionMiddleware();
-  expressApp.use(sessionMiddleware);
+  // Compress responses (HTML, JSON, JS, CSS)
+  expressApp.use(require('compression')());
 
   // Add security headers to all responses
   expressApp.use(addSecurityHeaders);
 
-  // Serve static files (favicon, logo, etc.)
-  expressApp.use(require('express').static('public'));
+  // Serve static files (favicon, logo, scripts, styles) before the session middleware,
+  // so assets don't load the session from MongoDB. Browsers reuse them for 10 minutes
+  // (page to page navigation), then revalidate with the ETag; bump ?v= for instant updates.
+  expressApp.use(require('express').static('public', { maxAge: '10m' }));
+
+  // Add session middleware to all other routes
+  const sessionMiddleware = createSessionMiddleware();
+  expressApp.use(sessionMiddleware);
 
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);

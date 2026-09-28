@@ -45,6 +45,12 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 4. The skip rules run: 1:1s, excluded titles, meetings with no transcript.
 5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). The connected user gets a summary email.
 
+**Page load (Home and Search):**
+- `routes/dashboard.js` renders the page with the user and their spaces already embedded (`window.__CORTEZA_BOOTSTRAP__`, built by `core/spaces/list-spaces.js`). The browser then only fetches decisions; stats load in parallel without blocking.
+- Responses are gzip-compressed.
+- Static assets are served before the session middleware, so they never read the session from MongoDB, and are cached for 10 minutes.
+- Slack installation lookups are cached per workspace for 5 minutes (`config/slack-client.js`).
+
 **Action items:** the pipeline saves decisions (and open questions and risks) through `createDecision`, then the action items through `core/actions/action-service.createActionItem`. Action items are linked to their decision through `decision_ref` → `decision_id`, and spoken owner names are matched to members (`core/actions/owners.js`). For recent meetings, owners of undated items are emailed for a date (`core/actions/due-date-requests.js`). The page and API are in `src/http/action-items.js` (`/actions`, `GET/PATCH /api/action-items`).
 
 **Import past meetings:** Settings → Google Meet → pick a period → `GET /api/integrations/google/meetings` lists the meetings (`ingestion/meet-import.findMeetings`) → the user ticks some → `POST /api/integrations/google/imports` starts a background job (`meet_imports`) that runs each meeting through the same pipeline with `manual: true` → the UI polls for progress.

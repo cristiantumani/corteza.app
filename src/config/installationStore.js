@@ -73,6 +73,7 @@ class MongoInstallationStore {
     );
 
     console.log(`✅ Stored installation for workspace: ${installation.team.name} (${teamId})`);
+    require('./slack-client').clearSlackClientCache(teamId);
     return;
   }
 
@@ -119,6 +120,7 @@ class MongoInstallationStore {
 
     await this.collection.deleteOne(dbQuery);
     console.log(`🗑️  Deleted installation for team ${teamId}`);
+    require('./slack-client').clearSlackClientCache(teamId);
     return;
   }
 }

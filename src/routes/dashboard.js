@@ -32,17 +32,53 @@ const spaceSelectorHTML = fs.readFileSync(
 );
 
 /**
+ * What the dashboard would otherwise fetch first (/auth/me and /api/spaces),
+ * computed while serving the page so the browser skips a round trip.
+ * @returns {Promise<Object|null>} { user, spaces } or null if it can't be computed
+ */
+async function dashboardBootstrap(sessionUser) {
+  try {
+    const { getSlackClient } = require('../config/slack-client');
+    const { isAdmin } = require('../services/permissions');
+    const { listSpacesForUser } = require('../core/spaces/list-spaces');
+    const { workspace_id: workspaceId, user_id: userId, user_name: userName } = sessionUser;
+    const client = await getSlackClient(workspaceId).catch(() => null);
+    const isAdminUser = await isAdmin(client, workspaceId, userId);
+    const spaces = await listSpacesForUser({ workspaceId, userId, userName, isAdminUser });
+    return { user: { ...sessionUser, is_admin: isAdminUser }, spaces };
+  } catch (error) {
+    console.error('⚠️  Dashboard bootstrap failed, the page will fetch it instead:', error.message);
+    return null;
+  }
+}
+
+/** JSON that is safe inside a <script> tag */
+function scriptJson(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+}
+
+/**
+ * Sends a page that runs dashboard.js, with the workspace id and preloaded data filled in
+ */
+async function sendPreloadedPage(req, res, template) {
+  const workspaceId = req.session?.user?.workspace_id || '';
+  let html = template.replace(/<WORKSPACE_ID>/g, workspaceId);
+
+  const bootstrap = req.session?.user ? await dashboardBootstrap(req.session.user) : null;
+  if (bootstrap) {
+    // Function replacement: "$" sequences in the data must not be treated as replace patterns
+    html = html.replace('<!-- BOOTSTRAP -->', () => `<script>window.__CORTEZA_BOOTSTRAP__ = ${scriptJson(bootstrap)};</script>`);
+  }
+
+  res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+  res.end(html);
+}
+
+/**
  * GET /dashboard - Serves the new Tailwind/Material Design dashboard
  */
 function serveDashboard(req, res) {
-  // Get workspace_id from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = dashboardHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
+  return sendPreloadedPage(req, res, dashboardHTML);
 }
 
 /**
@@ -79,14 +115,7 @@ function serveSettings(req, res) {
  * GET /ai-search - Serves the AI search interface HTML
  */
 function serveAISearch(req, res) {
-  // Get workspace_id from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = aiSearchHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
+  return sendPreloadedPage(req, res, aiSearchHTML);
 }
 
 /**
@@ -112,6 +141,7 @@ function redirectToDashboard(req, res) {
 }
 
 module.exports = {
+  scriptJson,
   serveDashboard,
   serveAIAnalytics,
   serveAISearch,

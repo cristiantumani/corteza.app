@@ -8,13 +8,12 @@ const {
 const {
   isAdmin,
   canAccessSpace,
-  getUserAccessibleSpaces,
   canModifySpace,
   addSpaceMember,
   removeSpaceMember
 } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
-const { ensureDefaultSpace } = require('../services/spaces');
+const { listSpacesForUser } = require('../core/spaces/list-spaces');
 
 const router = express.Router();
 
@@ -58,79 +57,15 @@ router.get('/api/spaces', async (req, res) => {
       return res.status(403).json({ error: 'Access denied to this workspace' });
     }
 
-    // Every workspace has a default space (older/new workspaces may not have one yet)
-    await ensureDefaultSpace(workspace_id, userId, req.session.user.user_name);
-
     // Get Slack client (optional for test workspaces - returns null if unavailable)
     const client = await getSlackClientSafe(workspace_id);
-
-    // Check if user is workspace admin
     const userIsAdmin = await isAdmin(client, workspace_id, userId);
-
-    // Fetch space details
-    const spacesCollection = getWorkspaceSpacesCollection();
-    let spaces;
-
-    if (userIsAdmin) {
-      // Admins can SEE all spaces (for management), even if they can't access content
-      spaces = await spacesCollection.find({
-        workspace_id: workspace_id,
-        archived: false
-      }).sort({ is_default: -1, created_at: 1 }).toArray();
-    } else {
-      // Regular users only see accessible spaces
-      const accessibleSpaceIds = await getUserAccessibleSpaces(client, workspace_id, userId);
-
-      if (accessibleSpaceIds.length === 0) {
-        return res.json({ success: true, spaces: [] });
-      }
-
-      spaces = await spacesCollection.find({
-        workspace_id: workspace_id,
-        space_id: { $in: accessibleSpaceIds },
-        archived: false
-      }).sort({ is_default: -1, created_at: 1 }).toArray();
-    }
-
-    // Get decision counts for each space
-    const decisionsCollection = getDecisionsCollection();
-
-    const spacesWithMetadata = await Promise.all(spaces.map(async (space) => {
-      // Count decisions in this space
-      const decisionCount = await decisionsCollection.countDocuments({
-        workspace_id: workspace_id,
-        space_id: space.space_id
-      });
-
-      // Check if user is creator (for display purposes)
-      const isCreator = space.created_by === userId;
-
-      // Determine user's role in this space
-      let userRole = null;
-      const membersCollection = getSpaceMembersCollection();
-
-      if (space.visibility === 'public') {
-        // Public spaces: everyone in workspace is auto-member
-        userRole = 'member';
-      } else if (space.visibility === 'private' || space.visibility === 'shared') {
-        // Private/Shared: check explicit membership (even creator needs to be added)
-        const membership = await membersCollection.findOne({
-          space_id: space.space_id,
-          user_id: userId,
-          removed_at: null
-        });
-        userRole = membership?.role || null;
-      }
-
-      return {
-        ...space,
-        decision_count: decisionCount,
-        is_creator: isCreator,  // Who created it (may not be member)
-        user_role: userRole,    // Actual role in space (null if not member)
-        can_modify: userIsAdmin || isCreator || userRole === 'admin',  // Admins + creator + space admins can manage
-        can_create: ['owner', 'admin', 'member'].includes(userRole)     // Same rule as canCreateInSpace()
-      };
-    }));
+    const spacesWithMetadata = await listSpacesForUser({
+      workspaceId: workspace_id,
+      userId,
+      userName: req.session.user.user_name,
+      isAdminUser: userIsAdmin
+    });
 
     // ?writable=true: only spaces the user can add decisions to (e.g. the browser extension picker)
     const result = req.query.writable === 'true'

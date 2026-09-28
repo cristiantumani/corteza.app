@@ -38,6 +38,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | HTTP routes (handlers) | `src/routes/*.js` |
 | Business logic services | `src/services/*.js` |
 | Space helpers (default space) | `src/services/spaces.js` (`ensureDefaultSpace`) |
+| Spaces a user sees, with counts and roles (API and page preload) | `src/core/spaces/list-spaces.js` (`listSpacesForUser`) |
 | Space/admin permission rules | `src/services/permissions.js` |
 | Google sign-in routes (login page, OAuth callback, onboarding) | `src/auth/routes.js` |
 | Which workspace a Google user lands in | `src/auth/google-signin.js` (`signInWithGoogle`) |
@@ -82,6 +83,11 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 - **User IDs:** memberships keep their own `user_id` (legacy Slack/email IDs). The session uses the membership's `user_id`, and decisions reference it.
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.
 - **Secrets:** per-workspace credentials are encrypted with `src/utils/encryption.js`. Never commit keys; `*.pem` and `*.crx` are gitignored.
+- **Performance:**
+  - Never send `embedding` to the browser; project it out.
+  - Keep static assets ahead of the session middleware.
+  - Avoid a query per item: use one aggregate or one `$in` query, as `core/spaces/list-spaces.js` does.
+  - Pages that run `dashboard.js` get the user and spaces preloaded (`routes/dashboard.js` → `window.__CORTEZA_BOOTSTRAP__`). Keep them working without the preload.
 - **Style:** CommonJS, async/await, JSDoc comments on exported functions, and the existing emoji-prefixed `console.log` style for server logs. Match the surrounding code.
 - **Tests:** new services get unit tests. Anything that touches MongoDB goes in `test/integration/` using `setupTestDatabase()`, which gives each file its own throwaway database.
 - **Docs:** when you change architecture, data shape or env vars, update `docs/ARCHITECTURE.md`, `.env.example` and this file in the same PR.
