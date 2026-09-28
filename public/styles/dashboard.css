@@ -2118,3 +2118,48 @@
   display: inline-block;
   white-space: nowrap;
 }
+
+    /* Click-to-edit fields in the detail modal (public/scripts/inline-edit.js) */
+    .inline-editable {
+      cursor: text;
+      border-radius: 6px;
+      outline: 1px dashed transparent;
+      outline-offset: 2px;
+      transition: outline-color 0.15s, background-color 0.15s;
+    }
+
+    .inline-editable:hover,
+    .inline-editable:focus-visible {
+      outline-color: rgba(57, 83, 189, 0.45);
+      background-color: rgba(57, 83, 189, 0.05);
+    }
+
+    .inline-edit-prompt {
+      color: #3953bd;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .inline-edit-input {
+      width: 100%;
+      font: inherit;
+      font-weight: 400;
+      color: #1a1a1a;
+      background: #fff;
+      border: 1px solid #3953bd;
+      border-radius: 6px;
+      padding: 8px 10px;
+      box-shadow: 0 0 0 3px rgba(57, 83, 189, 0.15);
+      outline: none;
+      resize: vertical;
+    }
+
+    .inline-edit-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .inline-edit-hint.inline-edit-error {
+      color: #ba1a1a;
+    }

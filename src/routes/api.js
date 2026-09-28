@@ -160,6 +160,13 @@ async function getDecisions(req, res) {
 /**
  * PUT /api/decisions/:id - Update a decision by ID
  */
+/** A real calendar date written as YYYY-MM-DD */
+function isValidDueDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !isNaN(date) && date.toISOString().slice(0, 10) === value;
+}
+
 async function updateDecision(req, res) {
   try {
     const idString = parsePathId(req.url);
@@ -182,7 +189,6 @@ async function updateDecision(req, res) {
         const updates = JSON.parse(body);
 
         // Validate and sanitize updates
-        const allowedFields = ['text', 'type', 'category', 'epic_key', 'tags', 'alternatives'];
         const sanitizedUpdates = {};
 
         if (updates.text && typeof updates.text === 'string' && updates.text.trim().length > 0) {
@@ -220,6 +226,28 @@ async function updateDecision(req, res) {
 
         if (updates.alternatives !== undefined) {
           sanitizedUpdates.alternatives = updates.alternatives === null ? null : String(updates.alternatives).trim();
+        }
+
+        // Why / owner / due date (AI extraction v2 fields); null or '' clears them
+        const optionalText = (value, max) => {
+          if (value === null || value === '') return null;
+          if (typeof value !== 'string') return undefined;
+          return value.trim().slice(0, max) || null;
+        };
+        if (updates.rationale !== undefined) {
+          const rationale = optionalText(updates.rationale, 2000);
+          if (rationale !== undefined) sanitizedUpdates.rationale = rationale;
+        }
+        if (updates.owner_name !== undefined) {
+          const ownerName = optionalText(updates.owner_name, 200);
+          if (ownerName !== undefined) sanitizedUpdates.owner_name = ownerName;
+        }
+        if (updates.due_date !== undefined) {
+          if (updates.due_date === null || updates.due_date === '') {
+            sanitizedUpdates.due_date = null;
+          } else if (isValidDueDate(updates.due_date)) {
+            sanitizedUpdates.due_date = updates.due_date;
+          }
         }
 
         if (Object.keys(sanitizedUpdates).length === 0) {
@@ -286,7 +314,9 @@ async function updateDecision(req, res) {
 
         console.log(`✏️  Updated decision #${id}`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, updated: id }));
+        // The saved values, so the page shows what was stored (e.g. tags lowercased, epic key uppercased)
+        const saved = Object.fromEntries(Object.entries(sanitizedUpdates).filter(([key]) => key !== 'updated_at'));
+        res.end(JSON.stringify({ success: true, updated: id, decision: { id, ...saved } }));
       } catch (error) {
         console.error('Update parse error:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -1471,5 +1501,6 @@ module.exports = {
   submitFeedback,
   extractDecisionsFromText,
   checkAdminStatus,
-  createMemory
+  createMemory,
+  isValidDueDate
 };
