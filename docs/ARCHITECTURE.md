@@ -75,7 +75,14 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
    - **Consumer account (gmail.com):** gets a personal workspace.
 
    Only Google's `hd` claim counts as the domain, never the email's domain.
+
+   **Private beta** (`BETA_REQUIRED=true`): the last two cases (a new workspace) only happen for people on the approved list, `beta_access` (an email, or a whole Google domain; `src/core/beta/beta-access.js`). Anyone else is sent to the website's early access form (`EARLY_ACCESS_URL?email=…&from=signin`) and nothing is saved.
 4. The session is regenerated (new ID) and the user goes to onboarding (new workspace creator), the page they were trying to open, or the dashboard.
+
+**Approving beta testers:**
+1. Someone requests early access on the website. Its edge function (`Corteza_website`, `supabase/functions/trigger-webhook`) emails the team, with an **Approve** link to `/beta/approve?t=<token>`. The token is the signup (email, first name, company, 30-day expiry) signed with HMAC-SHA256 using `BETA_APPROVAL_SECRET`, which the app and the website share.
+2. `GET /beta/approve` shows a confirmation page (email scanners open links, so GET changes nothing). `POST` adds them to `beta_access` and sends the welcome email ("Sign in with Google"), once, via `approveBetaTester` (`src/core/beta/approve.js`, route in `src/http/beta.js`).
+3. Without the link: `node scripts/beta-approve.js <email|domain> [--name Ana] [--welcome]`, or `--list`.
 
 Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
@@ -99,6 +106,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `api_keys` | Integration API keys |
 | `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
+| `beta_access` | Private beta approved list: one row per `email` or Google `domain` (each unique), with `name`, `company`, `approved_at`, `approved_via` ('email_link' / 'script'), `welcome_sent_at` (`core/beta`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
 | `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords, `language`: 'auto' or a fixed 'es'/'en'/'pt' for the outcomes' language), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
@@ -113,7 +121,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `JIRA_*`, `DB_NAME`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`.
 
 ### Migrations
 

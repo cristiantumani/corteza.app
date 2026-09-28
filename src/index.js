@@ -156,6 +156,9 @@ async function startApp() {
   // Weekly digest unsubscribe (public — authorized by a signed link)
   expressApp.use(require('./routes/digest'));
 
+  // Private beta: approve a tester from the early access email (public — authorized by a signed link)
+  expressApp.use(require('./http/beta'));
+
   // Demo routes (public — no auth required)
   expressApp.get('/demo', apiRateLimiter, handleDemoEntry);
   expressApp.get('/demo/dashboard', apiRateLimiter, handleDemoDashboard);

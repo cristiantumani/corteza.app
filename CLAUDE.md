@@ -42,6 +42,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Space/admin permission rules | `src/services/permissions.js` |
 | Google sign-in routes (login page, OAuth callback, onboarding) | `src/auth/routes.js` |
 | Which workspace a Google user lands in | `src/auth/google-signin.js` (`signInWithGoogle`) |
+| Private beta: approved list, sign-in check, approve link from the early access email, welcome email | `src/core/beta/` (`beta-access.js`, `approve.js`), `src/http/beta.js`, `scripts/beta-approve.js` |
 | Google OAuth client (URLs, token verification) | `src/integrations/google/oauth.js` |
 | Workspaces (Google domain ↔ workspace) | `src/core/workspaces/workspace-service.js` |
 | Users and memberships | `src/core/users/user-service.js` |
