@@ -2472,6 +2472,12 @@
         // Load saved view preference (default to Chat View)
         loadViewPreference();
 
+        // "Log manually" from other pages links here with ?log=1
+        if (new URLSearchParams(window.location.search).get('log') === '1' && typeof openLogMemoryModal === 'function') {
+          window.history.replaceState({}, '', window.location.pathname);
+          openLogMemoryModal();
+        }
+
         console.log('✅ Dashboard initialization complete');
       } catch (error) {
         console.error('❌ Dashboard initialization failed:', error);

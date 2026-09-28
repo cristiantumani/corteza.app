@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Home puts automatic capture first
+- **"Executive Dashboard" removed:** the Home page now opens with Google Meet capture instead of manual logging
+- **Not connected:** a "Capture decisions automatically" card explains the 3 steps and links to Connect Google Meet
+- **Connected:** the Home shows:
+  - capture status (account, last check, totals)
+  - a reconnect warning when access stopped working or Gemini notes need re-consent
+  - "Check now" and "Import past meetings"
+  - the latest meetings and what came out of each
+- **My action items** on Home: open, overdue and undated counts, plus the first few items
+- **Manual capture moved down:** "Log manually" and "Upload transcript" are small buttons next to Recent Decisions. The sidebar "New Decision" is now a secondary "Log manually". From other pages it opens `/dashboard?log=1`
+- **Fix:** a decision card with an owner no longer overlaps the owner line and the meeting line
+
 ### Performance - Faster Home and Search
 - **Smaller decision lists:** decision lists no longer include `embedding` vectors. Each vector is about 1,500 numbers per decision, so about 50 decisions came to more than 1 MB, re-downloaded every 30 seconds
 - **One fewer round trip on load:** Home and Search come with the user and their spaces preloaded. The page shows as soon as decisions arrive, and stats no longer block it

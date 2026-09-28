@@ -153,6 +153,12 @@
     document.getElementById('gm-sync').addEventListener('click', syncNow);
     document.getElementById('gm-disconnect').addEventListener('click', disconnect);
     if (!needsReconnect) setupImportSection();
+
+    // /settings#import (from Home): jump to "Import past meetings"
+    if (window.location.hash === '#import') {
+      const importSection = document.getElementById('gm-import-section');
+      if (importSection) importSection.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -187,7 +193,7 @@
     const today = new Date();
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     return `
-      <div class="mt-8 pt-6 border-t border-outline-variant">
+      <div id="gm-import-section" class="mt-8 pt-6 border-t border-outline-variant">
         <h4 class="text-lg font-bold text-on-surface mb-1">Import past meetings</h4>
         <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture decisions from.</p>
 
