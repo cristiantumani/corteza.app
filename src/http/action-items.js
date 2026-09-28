@@ -14,7 +14,8 @@ const actions = require('../core/actions/action-service');
  *   PATCH /api/action-items/:itemId         { status?, due_date? }
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
  *
- * Visibility follows spaces: people see items in spaces they can access.
+ * Visibility follows spaces: people see items in spaces they can access, plus the items they own
+ * in any space (so an item from a colleague's personal space still reaches its owner).
  * Owners, whoever the item is attributed to, and admins can update it.
  * Anyone who can add decisions to a decision's space can add action items to it.
  */
@@ -39,6 +40,7 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
 
     const items = await actions.listActionItems(workspace_id, {
       spaceIds,
+      viewerId: user_id,
       ownerId: req.query.owner === 'me' ? user_id : undefined,
       status: typeof req.query.status === 'string' ? req.query.status : 'open',
       due: typeof req.query.due === 'string' ? req.query.due : undefined,
@@ -111,8 +113,9 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
   try {
     const { workspace_id, user_id } = req.session.user;
     const item = await actions.getActionItem(workspace_id, req.params.itemId);
-    const spaceIds = item ? await getUserAccessibleSpaces(null, workspace_id, user_id) : [];
-    if (!item || !spaceIds.includes(item.space_id)) {
+    const isOwner = !!item && item.owner_ids.includes(user_id);
+    const spaceIds = item && !isOwner ? await getUserAccessibleSpaces(null, workspace_id, user_id) : [];
+    if (!item || (!isOwner && !spaceIds.includes(item.space_id))) {
       return res.status(404).json({ success: false, error: 'Action item not found' });
     }
 

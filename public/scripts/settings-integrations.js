@@ -88,8 +88,8 @@
     const settings = data.settings || {};
     const needsReconnect = data.status !== 'active';
 
-    const spaceOptions = [`<option value="">Default space</option>`]
-      .concat(spaces.map(s => `<option value="${escapeHtml(s.space_id)}" ${s.space_id === settings.space_id ? 'selected' : ''}>${escapeHtml((s.settings && s.settings.icon) || '📁')} ${escapeHtml(s.name)}</option>`))
+    const spaceOptions = [`<option value="">My space</option>`]
+      .concat(spaces.filter(s => !s.is_personal).map(s => `<option value="${escapeHtml(s.space_id)}" ${s.space_id === settings.space_id ? 'selected' : ''}>${escapeHtml((s.settings && s.settings.icon) || '📁')} ${escapeHtml(s.name)}</option>`))
       .join('');
 
     const recent = (data.recent_meetings || []).map(m => {
@@ -122,7 +122,7 @@
       ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">Last check failed: ${escapeHtml(data.last_error)}</p>` : ''}
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <label class="block">
+        <label class="block" data-multi-space>
           <span class="block text-xs mb-1">Save outcomes to</span>
           <select id="gm-space" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
         </label>
@@ -226,7 +226,7 @@
 
         <div id="gm-import-results"></div>
         <div id="gm-import-actions" class="hidden flex flex-wrap items-end gap-4 mt-4">
-          <label class="block">
+          <label class="block" data-multi-space>
             <span class="block text-xs mb-1">Save outcomes to</span>
             <select id="gm-import-space" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
           </label>

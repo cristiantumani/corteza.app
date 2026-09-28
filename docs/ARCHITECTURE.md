@@ -71,7 +71,7 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
    - **Invite link** (`/auth/google?invite=<id>`): joins the invite's workspace with its role and space. An invite addressed to an email only works for that account.
    - **Existing membership** (matched by email): the last workspace used, else the one owning the user's Google domain. An admin of a workspace without a domain claims theirs, so colleagues auto-join.
    - **Google Workspace account whose domain has a workspace:** joins as a member.
-   - **New Google Workspace domain:** creates the workspace (plus default space) and becomes admin.
+   - **New Google Workspace domain:** creates the workspace and becomes admin.
    - **Consumer account (gmail.com):** gets a personal workspace.
 
    Only Google's `hd` claim counts as the domain, never the email's domain.
@@ -90,7 +90,9 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 - **`workspace_id`:** `ws_…` for workspaces created through Google sign-in. Older ones keep their IDs: a Slack team ID (`T…`) or `W<NAME>` from the removed magic-link login.
 - **`workspaces`** holds one row per workspace (`name`, unique `google_domain`, `slack_team_id`). Older workspaces get a row the first time they're linked to Google. **`users`** holds one row per Google account (`google_sub`, `email`). Memberships keep their own `user_id`, and the session always uses the membership's.
-- **Default space:** every workspace has exactly one public default space, "General". `ensureDefaultSpace()` creates it lazily, including on every `GET /api/spaces`, and a partial unique index enforces one per workspace.
+- **Personal space:** every member has one private space of their own (`personal_for: <user_id>`, name "My space"), created at sign-in and on `GET /api/spaces` by `ensurePersonalSpace()`; they're its owner in `space_members`. Their Google Meet captures, imports and Log manually go there unless they pick another space, so colleagues on the same domain don't see each other's meetings. A partial unique index enforces one per member. It can't be deleted, and admins never see a colleague's personal space. Action items are the exception: an item owned by someone is visible to (and updatable by) that owner even when it sits in a colleague's personal space.
+- **One space, no space UI:** while someone has a single space, every space control (header picker, "Searching in", space pickers in Log manually, edit and Google Meet settings, space chips on cards, Settings → Manage Spaces) is hidden: those elements carry `data-multi-space` and the page sets `body.single-space`.
+- **Default space:** "General", public, only for captures with no Corteza user behind them (Slack, API keys). `ensureDefaultSpace()` creates it when one of those needs it; a partial unique index enforces one per workspace. `scripts/migrations/007-personal-spaces.js` split the old General into personal spaces.
 - **Spaces** are `public`, `shared` or `private`. Space roles are owner, admin, member and viewer. Rules are in `src/services/permissions.js`. `GET /api/spaces` returns `can_create` per space, and `?writable=true` returns only spaces the user can post to.
 - **Workspace admins** live in `workspace_admins`. `isAdmin` still falls back to Slack admin status; Phase 1 removes that.
 
@@ -131,6 +133,8 @@ Run manually, and they're safe to re-run. Each script starts as a dry run and ne
 - `scripts/migrations/002-link-workspace-to-google.js`: links an older workspace to a Google domain and sets a member's email to their Google account, so their first Google sign-in lands in it. `--list` shows workspaces and members.
 - `scripts/migrations/003-repair-member-roles.js`: restores `workspace_members.role` (admin/member) that the old onboarding overwrote with a job title.
 - `scripts/migrations/005-move-action-items.js`: moves action items that extraction v2 briefly saved as decisions (`type: 'action_item'`) into `action_items`.
+- `scripts/migrations/007-personal-spaces.js`: creates every member's personal space and moves outcomes out of General: all of them (then archives General) when the workspace has one member, else each to the person who captured it. Meet connections that saved to General go back to the personal space.
+- `scripts/workspace-keep-only.js <email>`: leaves one person as the only member of their workspace; removes everyone else's membership, admin role, space memberships, Meet connection, sessions and account, and revokes invite links. Outcomes are kept unless `--delete-their-outcomes`. Dry run unless `--apply`.
 - `scripts/migrations/004-date-meeting-decisions.js`: sets `timestamp` of AI-captured decisions to their meeting's start (`source_details.occurred_at`) instead of when they were saved.
 
 ---
@@ -157,7 +161,7 @@ src/
   config/                # env validation, db connection, collections
   core/                  # business logic; no Express/Slack/Google imports
     decisions/           # decision-service.js — the ONLY place that writes decisions
-    workspaces/          # create/find by Google domain, default space
+    workspaces/          # create/find by Google domain
     users/               # users + memberships
     spaces/              # space rules (from services/permissions + services/spaces)
   ingestion/

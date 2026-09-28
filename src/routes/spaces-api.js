@@ -359,10 +359,10 @@ router.delete('/api/spaces/:space_id', async (req, res) => {
       return res.status(404).json({ error: 'Space not found' });
     }
 
-    // Cannot delete default space
-    if (space.is_default) {
+    // Cannot delete the default space or anyone's personal space
+    if (space.is_default || space.personal_for) {
       return res.status(400).json({
-        error: 'Cannot delete the default space'
+        error: space.personal_for ? 'Cannot delete a personal space' : 'Cannot delete the default space'
       });
     }
 

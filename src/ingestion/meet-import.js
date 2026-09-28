@@ -4,7 +4,7 @@ const connections = require('../integrations/google/connections');
 const meetClient = require('../integrations/google/meet-client');
 const googleMeetSource = require('./sources/google-meet');
 const pipeline = require('./pipeline');
-const { ensureDefaultSpace } = require('../services/spaces');
+const { ensurePersonalSpace } = require('../services/spaces');
 const { countByType } = require('../core/decisions/types');
 
 /**
@@ -111,14 +111,14 @@ async function findMeetings(connection, { from, to }, deps = {}) {
 }
 
 /**
- * Where imported decisions go: the chosen space if it still exists, else the default space
+ * Where imported decisions go: the chosen space if it still exists, else the person's personal space
  */
-async function resolveTargetSpace(workspaceId, spaceId) {
+async function resolveTargetSpace(workspaceId, spaceId, connection) {
   if (spaceId) {
     const space = await getWorkspaceSpacesCollection().findOne({ workspace_id: workspaceId, space_id: spaceId, archived: false });
     if (space) return space;
   }
-  return ensureDefaultSpace(workspaceId);
+  return ensurePersonalSpace(workspaceId, connection.user_id, connection.user_name);
 }
 
 /**
@@ -204,7 +204,7 @@ async function runImport(importId, deps = {}) {
   }
 
   const client = getClient(connection);
-  const space = await resolveTargetSpace(job.workspace_id, job.space_id);
+  const space = await resolveTargetSpace(job.workspace_id, job.space_id, connection);
 
   for (let index = 0; index < job.items.length; index++) {
     const item = job.items[index];

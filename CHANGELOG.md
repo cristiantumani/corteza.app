@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Everyone gets their own space
+- **Your own space:** the first time you sign in you get a private space ("My space"). Everything you capture goes there (Google Meet, imports, Log manually). Colleagues who sign in with the same company Google account get their own and don't see your meetings. Before, captures landed in "General", which everyone in the company could see
+- **No space controls while you have one space:** the header picker, "Searching in", the space pickers, the space chips on cards and Settings → Manage Spaces stay hidden until you belong to more than one space
+- **Action items still reach their owners:** an action item assigned to you in a colleague's meeting shows up in your Action items, and you can update it
+- **Existing workspaces:** `scripts/migrations/007-personal-spaces.js` moves outcomes out of General into each person's space. `scripts/workspace-keep-only.js <email>` leaves one person as the only member of a workspace
+
 ### Fixed - One sidebar on every page
 - **What was wrong:** Home, Action items, Search and Settings each had their own copy of the sidebar, with a different logo, spacing, icons and order. An old style also hid the icons on Home and Search
 - **Now:** one sidebar (`src/views/partials/sidebar.html`) is injected into every page, and only the current page's link changes. The logo, spacing and order are the same everywhere, every link has its icon, and **Log manually** and **Log out** sit together at the bottom

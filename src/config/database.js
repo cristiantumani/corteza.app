@@ -149,6 +149,12 @@ async function connectToMongoDB() {
     await workspaceMembersCollection.createIndex({ invited_by: 1 });
 
     // Weekly digest: one run per workspace per week (claimed with a unique insert)
+    // One personal space per member (services/spaces.js ensurePersonalSpace)
+    await workspaceSpacesCollection.createIndex(
+      { workspace_id: 1, personal_for: 1 },
+      { name: 'one_personal_space_per_member', unique: true, partialFilterExpression: { personal_for: { $type: 'string' } } }
+    );
+
     await db.collection('digest_runs').createIndex({ workspace_id: 1, week_start: 1 }, { unique: true });
 
     // One default space per workspace (services/spaces.js). Kept separate so existing
