@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getDecisionsCollection, getWorkspaceSpacesCollection, getDatabase } = require('../config/database');
+const { getDecisionsCollection, getWorkspaceSpacesCollection, getWorkspaceMembersCollection, getDatabase } = require('../config/database');
 const { validateQueryParams, validateDecisionId } = require('../middleware/validation');
 const config = require('../config/environment');
 const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace, canAccessSpace } = require('../services/permissions');
@@ -240,7 +240,18 @@ async function updateDecision(req, res) {
         }
         if (updates.owner_name !== undefined) {
           const ownerName = optionalText(updates.owner_name, 200);
-          if (ownerName !== undefined) sanitizedUpdates.owner_name = ownerName;
+          if (ownerName !== undefined) {
+            sanitizedUpdates.owner_name = ownerName;
+            sanitizedUpdates.owner_user_id = null; // a typed name isn't linked to a member
+          }
+        }
+        // Owner picked from the members list; resolved to a name after the permission check
+        const ownerUserId = updates.owner_user_id === null || typeof updates.owner_user_id === 'string'
+          ? updates.owner_user_id
+          : undefined;
+        if (ownerUserId === null || ownerUserId === '') {
+          sanitizedUpdates.owner_user_id = null;
+          sanitizedUpdates.owner_name = null;
         }
         if (updates.due_date !== undefined) {
           if (updates.due_date === null || updates.due_date === '') {
@@ -250,7 +261,7 @@ async function updateDecision(req, res) {
           }
         }
 
-        if (Object.keys(sanitizedUpdates).length === 0) {
+        if (Object.keys(sanitizedUpdates).length === 0 && !ownerUserId) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'No valid fields to update' }));
           return;
@@ -299,6 +310,20 @@ async function updateDecision(req, res) {
             message: 'You can only edit your own decisions. Admins can edit any decision.'
           }));
           return;
+        }
+
+        if (ownerUserId) {
+          const member = await getWorkspaceMembersCollection().findOne(
+            { workspace_id: req.authenticatedWorkspaceId, user_id: ownerUserId, removed_at: null },
+            { projection: { user_id: 1, user_name: 1, email: 1 } }
+          );
+          if (!member) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'That person is not a member of this workspace' }));
+            return;
+          }
+          sanitizedUpdates.owner_user_id = member.user_id;
+          sanitizedUpdates.owner_name = member.user_name || member.email;
         }
 
         const result = await decisionsCollection.updateOne(

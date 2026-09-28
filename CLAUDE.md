@@ -55,7 +55,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | Decision types (decision, action_item, open_question, risk, …), outcome counts and labels | `src/core/decisions/types.js` (`countByType`, `describeOutcomes`), `public/scripts/outcome-labels.js` |
 | Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`, `due-date-requests.js`) |
-| Action items page and API (`/actions`, `/api/action-items`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js` |
+| Action items page and API (`/actions`, `/api/action-items`, `/api/people`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js`; inside a decision's detail: `public/scripts/decision-actions.js` |
 | Extraction eval (labeled transcripts, scoring) | `scripts/eval-extraction.js`, `scripts/eval/score.js`, `test/fixtures/extraction/` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
 | Google verification / launch checklist | `docs/launch/google-verification.md` |

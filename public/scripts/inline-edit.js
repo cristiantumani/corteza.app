@@ -5,6 +5,7 @@
  * Jira epic) turns it into an input. Enter (Ctrl/⌘+Enter in text areas) or
  * clicking away saves just that field with PUT /api/decisions/:id; Esc cancels.
  * Empty optional fields show an "Add …" prompt so they can be filled in.
+ * The owner is picked from the workspace members (people.js) and saved as owner_user_id.
  *
  * dashboard.js calls CortezaInlineEdit.attach() every time it renders the modal.
  */
@@ -20,14 +21,14 @@
   /**
    * key: field in the decision and in the PUT body
    * valueId / sectionId: element that shows the value / wrapper hidden when empty
-   * input: textarea | text | date | select
+   * input: textarea | text | date | select | member
    * prompt: shown when the field is empty (optional fields only)
    */
   const FIELDS = [
     { key: 'text', valueId: 'detail-decision-text', input: 'textarea', required: true },
     { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'Add why' },
     { key: 'type', valueId: 'detail-type', input: 'select' },
-    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'text', prompt: 'Add owner' },
+    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add owner' },
     { key: 'due_date', valueId: 'detail-due', sectionId: 'detail-due-container', input: 'date', prompt: 'Add due date' },
     { key: 'tags', valueId: 'detail-tags', sectionId: 'detail-tags-section', input: 'text', prompt: 'Add tags', hint: 'Separate tags with commas' },
     { key: 'alternatives', valueId: 'detail-meeting-info', sectionId: 'detail-meeting-section', input: 'textarea' },
@@ -43,8 +44,14 @@
     return value == null ? '' : String(value);
   }
 
+  const KEEP = '__keep__'; // owner typed by hand (or by the AI) that isn't a member: leave it
+
   /** The value to send, or undefined when it didn't change */
   function newValue(field, raw, decision) {
+    if (field.input === 'member') {
+      if (raw === KEEP || raw === (decision.owner_user_id || '')) return undefined;
+      return raw || null;
+    }
     const trimmed = raw.trim();
     if (field.key === 'tags') {
       const tags = trimmed ? trimmed.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];
@@ -55,8 +62,26 @@
     return trimmed === '' ? null : trimmed;
   }
 
-  function buildInput(field, decision) {
+  /** Body sent for a field: the owner goes as owner_user_id */
+  function bodyKey(field) {
+    return field.input === 'member' ? 'owner_user_id' : field.key;
+  }
+
+  function buildInput(field, decision, people) {
     let input;
+    if (field.input === 'member') {
+      input = document.createElement('select');
+      input.add(new Option('No owner', ''));
+      if (decision.owner_name && !people.some(person => person.user_id === decision.owner_user_id)) {
+        input.add(new Option(`${decision.owner_name} (not linked to a member)`, KEEP));
+      }
+      for (const person of people) input.add(new Option(person.name, person.user_id));
+      input.className = 'inline-edit-input';
+      input.value = decision.owner_user_id && people.some(person => person.user_id === decision.owner_user_id)
+        ? decision.owner_user_id
+        : (decision.owner_name ? KEEP : '');
+      return input;
+    }
     if (field.input === 'textarea') {
       input = document.createElement('textarea');
       input.rows = field.key === 'text' ? 4 : 3;
@@ -72,16 +97,18 @@
     return input;
   }
 
-  function startEdit(field, element) {
+  async function startEdit(field, element) {
     if (!context || editing) return;
     const { decision } = context;
     editing = { field, element, originalHtml: element.innerHTML };
     element.classList.remove('inline-editable');
 
-    const input = buildInput(field, decision);
+    const people = field.input === 'member' && window.CortezaPeople ? await window.CortezaPeople.load() : [];
+    if (!editing || editing.element !== element) return; // modal changed while loading
+    const input = buildInput(field, decision, people);
     const hint = document.createElement('div');
     hint.className = 'inline-edit-hint';
-    const saveKey = field.input === 'textarea' ? 'Ctrl+Enter' : 'Enter';
+    const saveKey = field.input === 'textarea' ? 'Ctrl+Enter' : (field.input === 'member' ? 'Pick a person' : 'Enter');
     hint.textContent = `${field.hint ? `${field.hint} · ` : ''}${saveKey} to save · Esc to cancel`;
     element.replaceChildren(input, hint);
     input.focus();
@@ -110,7 +137,7 @@
       }
     });
     input.addEventListener('blur', () => finish(true));
-    if (field.input === 'select') input.addEventListener('change', () => finish(true));
+    if (field.input === 'select' || field.input === 'member') input.addEventListener('change', () => finish(true));
   }
 
   function cancelEdit() {
@@ -137,13 +164,18 @@
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ [field.key]: value })
+        body: JSON.stringify({ [bodyKey(field)]: value })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || data.error || 'Couldn’t save');
 
       const saved = data.decision || {};
-      decision[field.key] = field.key in saved ? saved[field.key] : value;
+      if (field.input === 'member') {
+        decision.owner_user_id = saved.owner_user_id || null;
+        decision.owner_name = saved.owner_name || null;
+      } else {
+        decision[field.key] = field.key in saved ? saved[field.key] : value;
+      }
       if (field.key === 'epic_key') decision.jira_data = saved.jira_data || null;
       editing = null;
       onSaved(field.key);
@@ -162,6 +194,7 @@
   function attach({ decision, canModify, workspaceId, onSaved }) {
     context = canModify ? { decision, workspaceId, onSaved } : null;
     editing = null;
+    if (canModify && window.CortezaPeople) window.CortezaPeople.load(); // ready for the owner picker
 
     for (const field of FIELDS) {
       const element = document.getElementById(field.valueId);

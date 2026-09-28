@@ -729,7 +729,13 @@
       showDetailField('detail-due-container', 'detail-due',
         decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);
 
-      loadDecisionActionItems(decision.id);
+      // Action items of this decision, plus "+ Add action item" for people who can add to its space
+      const decisionSpace = currentUserSpaces.find(s => s.space_id === decision.space_id);
+      if (window.CortezaDecisionActions) {
+        window.CortezaDecisionActions.load({ decision, canAdd: !!(decisionSpace && decisionSpace.can_create) });
+      } else {
+        loadDecisionActionItems(decision.id);
+      }
 
       // Set creator and date
       document.getElementById('detail-creator').textContent = decision.creator;

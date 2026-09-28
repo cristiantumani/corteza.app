@@ -141,4 +141,38 @@ describe('Action items: service, due date requests, API', { skip }, () => {
     sessionUser = { workspace_id: 'WOTHER', user_id: 'U1', user_name: 'Martín' };
     assert.equal((await request('PATCH', `/api/action-items/${martinsOnly.item_id}`, { status: 'done' })).status, 404, 'other workspaces cannot see it');
   });
+
+  test('API: an action item can be added to a decision by hand, with owners picked from the members', async () => {
+    await db.collection('decisions').insertMany([
+      { id: 501, workspace_id: 'WACT', space_id: space.space_id, space_name: space.name, text: 'Se decide lanzar en octubre', type: 'decision' },
+      { id: 502, workspace_id: 'WACT', space_id: privateSpaceId, text: 'Board only', type: 'decision' }
+    ]);
+    sessionUser = { workspace_id: 'WACT', user_id: 'U3', user_name: 'Ana Ruiz' };
+
+    const people = await request('GET', '/api/people');
+    assert.equal(people.status, 200);
+    assert.deepEqual(people.body.people.map(p => p.user_id).sort(), ['U1', 'U2', 'U3']);
+
+    const added = await request('POST', '/api/action-items', {
+      decision_id: 501, text: '  Preparar el anuncio  ', owner_user_ids: ['U1', 'U2', 'U9'], due_date: '2026-10-15'
+    });
+    assert.equal(added.status, 201);
+    assert.equal(added.body.item.text, 'Preparar el anuncio');
+    assert.equal(added.body.item.decision_id, 501);
+    assert.equal(added.body.item.space_id, space.space_id);
+    assert.equal(added.body.item.capture, 'manual');
+    assert.deepEqual(added.body.item.owner_ids, ['U1', 'U2'], 'people outside the workspace are dropped');
+    assert.equal(added.body.item.created_by.user_id, 'U3');
+
+    const listed = await request('GET', '/api/action-items?owner=all&status=all&decision_id=501');
+    assert.ok(listed.body.items.some(item => item.item_id === added.body.item.item_id));
+
+    assert.equal((await request('POST', '/api/action-items', { decision_id: 501, text: '   ' })).status, 400);
+    assert.equal((await request('POST', '/api/action-items', { decision_id: 501, text: 'x', due_date: 'soon' })).status, 400);
+    assert.equal((await request('POST', '/api/action-items', { decision_id: 999, text: 'x' })).status, 404);
+    assert.equal((await request('POST', '/api/action-items', { decision_id: 502, text: 'x' })).status, 403, 'not a member of the private space');
+
+    sessionUser = { workspace_id: 'WOTHER', user_id: 'U3', user_name: 'Ana' };
+    assert.equal((await request('POST', '/api/action-items', { decision_id: 501, text: 'x' })).status, 404, 'other workspaces cannot add to it');
+  });
 });

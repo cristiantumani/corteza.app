@@ -27,3 +27,13 @@ test('ambiguous or unknown names are not matched', () => {
   assert.equal(matchMember('Carla', members), null);
   assert.equal(matchMember('', members), null);
 });
+
+test('owners picked by hand keep their order and drop people who are not members', async () => {
+  const { ownersFromUserIds } = require('../../src/core/actions/owners');
+  const owners = await ownersFromUserIds('W1', ['U2', 'U9', 'U1', 'U2'], members);
+  assert.deepEqual(owners.map(owner => owner.user_id), ['U2', 'U1']);
+  assert.equal(owners[0].name, 'Felipe Silva');
+  assert.deepEqual(await ownersFromUserIds('W1', [], members), []);
+  const noName = await ownersFromUserIds('W1', ['U5'], members);
+  assert.equal(noName[0].name, 'noname@acme.com', 'falls back to the email');
+});
