@@ -190,6 +190,10 @@ async function connectToMongoDB() {
     await db.collection('action_items').createIndex({ workspace_id: 1, owner_ids: 1, status: 1 });
     await db.collection('action_items').createIndex({ workspace_id: 1, decision_id: 1 });
 
+    // Private beta approved list (core/beta): an email or a whole Google domain
+    await db.collection('beta_access').createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
+    await db.collection('beta_access').createIndex({ domain: 1 }, { unique: true, partialFilterExpression: { domain: { $type: 'string' } } });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {

@@ -4,6 +4,7 @@ const { getWorkspaceMembersCollection } = require('../config/database');
 const { authRateLimiter } = require('../middleware/auth');
 const google = require('../integrations/google/oauth');
 const { signInWithGoogle } = require('./google-signin');
+const { earlyAccessUrl } = require('../core/beta/beta-access');
 
 /**
  * Sign-in routes. Google is the only way to log in.
@@ -71,6 +72,10 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
     const identity = await google.verifySignInCode({ code: req.query.code, nonce: oauth.nonce });
     const result = await signInWithGoogle(identity, { inviteId: oauth.inviteId });
     if (result.error) return loginErrorRedirect(res, result.error);
+    if (result.notInBeta) {
+      console.log(`🚪 Sign-in without beta access: ${result.email} → early access form`);
+      return res.redirect(earlyAccessUrl(result.email));
+    }
 
     // New session ID on login (prevents session fixation)
     req.session.regenerate(err => {

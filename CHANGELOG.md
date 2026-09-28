@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Private beta: approve testers from the signup email
+- **Who can create a workspace:** with `BETA_REQUIRED=true`, Google sign-in only creates a new workspace for approved people (an email, or a whole Google domain). Anyone else goes to the early access form with their email filled in, and nothing is saved for them. Existing members, invited people and colleagues joining their company's workspace sign in as before
+- **Approve from the email:** the team's "new early access request" email has an **Approve** link (signed with `BETA_APPROVAL_SECRET`). It opens a confirmation page; approving sends the tester a welcome email inviting them to sign in with Google
+- **Script:** `node scripts/beta-approve.js <email|domain> [--welcome]` approves without the link (for signups from before the link existed, or a whole company); `--list` shows who's approved
+
 ### Removed - Analytics page
 - **Page gone:** the AI Analytics page (`/ai-analytics`) and its API (`GET /api/ai-analytics`, about 600 lines of aggregations) are removed, along with the sidebar links
 - **Unused indexes:** the three database indexes that only served it (creator, channel, tags) are no longer created. Existing ones aren't dropped

@@ -2,6 +2,7 @@ const workspaces = require('../core/workspaces/workspace-service');
 const users = require('../core/users/user-service');
 const invites = require('../core/invites/invite-service');
 const { isAdmin } = require('../services/permissions');
+const beta = require('../core/beta/beta-access');
 
 /**
  * Decides which workspace a verified Google user signs in to.
@@ -15,6 +16,9 @@ const { isAdmin } = require('../services/permissions');
  *   4. Google Workspace account with a new domain: create the workspace, become admin.
  *   5. Consumer account (gmail.com etc., no `hd`): create a personal workspace.
  *
+ * Private beta (BETA_REQUIRED=true): 4 and 5 only happen for approved people
+ * (core/beta/beta-access.js). Anyone else gets `notInBeta` and nothing is saved.
+ *
  * Only Google's `hd` claim is trusted as the domain, never the email's domain,
  * so a consumer account like someone@ninjaexcel.com (not a Workspace account)
  * can't join the ninjaexcel.com workspace.
@@ -22,7 +26,7 @@ const { isAdmin } = require('../services/permissions');
  * @param {Object} identity - verified ID token claims: { sub, email, email_verified, name, picture, hd }
  * @param {Object} [options]
  * @param {string} [options.inviteId]
- * @returns {Promise<{ sessionUser?: Object, needsOnboarding?: boolean, error?: string }>}
+ * @returns {Promise<{ sessionUser?: Object, needsOnboarding?: boolean, notInBeta?: boolean, error?: string }>}
  */
 async function signInWithGoogle(identity, { inviteId } = {}) {
   if (!identity?.email || identity.email_verified !== true) {
@@ -32,6 +36,13 @@ async function signInWithGoogle(identity, { inviteId } = {}) {
   const email = identity.email.toLowerCase();
   const domain = identity.hd ? identity.hd.toLowerCase() : null;
   const memberships = await users.findMembershipsByEmail(email);
+  const domainWorkspace = !inviteId && memberships.length === 0 && domain ? await workspaces.findByGoogleDomain(domain) : null;
+
+  // Private beta: only approved people get a new workspace (checked before anything is saved)
+  if (!inviteId && memberships.length === 0 && !domainWorkspace && !(await beta.isApproved(email, domain))) {
+    return { notInBeta: true, email };
+  }
+
   const user = await users.upsertGoogleUser(
     { sub: identity.sub, email, name: identity.name || email.split('@')[0], picture: identity.picture },
     memberships[0]?.user_id
@@ -65,9 +76,8 @@ async function signInWithGoogle(identity, { inviteId } = {}) {
 
   // 3. Known domain: join as member
   if (domain) {
-    const existing = await workspaces.findByGoogleDomain(domain);
-    if (existing) {
-      const membership = await users.addMember({ workspace: existing, user, role: 'member', joinedVia: 'google_domain' });
+    if (domainWorkspace) {
+      const membership = await users.addMember({ workspace: domainWorkspace, user, role: 'member', joinedVia: 'google_domain' });
       return finish(user, membership);
     }
 

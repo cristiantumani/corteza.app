@@ -345,7 +345,49 @@ async function sendDueDateRequestEmail({ email, name, meetingTitle, meetingUrl, 
   return { success: true, email_id: result.id };
 }
 
+/**
+ * Welcomes an approved beta tester and invites them to sign in with Google
+ * @param {Object} params
+ * @param {string} params.email - the address they requested access with
+ * @param {string} [params.name] - first name
+ * @param {string} params.login_url
+ * @param {string} [params.reply_to] - the team's address, so replies reach a person
+ */
+async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
+  const result = await sendEmail({
+    to: email,
+    subject: 'You’re in: welcome to the Corteza beta',
+    replyTo: reply_to || undefined,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #111; line-height: 1.6;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px;">Welcome to the beta${name ? `, ${escapeHtml(name)}` : ''}!</h1>
+        <p style="font-size: 15px; margin: 0 0 16px;">
+          You’re one of the first teams on Corteza. From your next meeting on, decisions stick,
+          commitments get followed until they’re done, and every meeting gets a little better.
+        </p>
+        <p style="font-size: 15px; margin: 0 0 28px;">
+          Sign in with the Google account for <strong>${escapeHtml(email)}</strong> to set up your workspace.
+          It takes a couple of minutes.
+        </p>
+        <a href="${escapeHtml(login_url)}"
+           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Sign in with Google →
+        </a>
+        <p style="font-size: 15px; margin: 32px 0 0;">
+          Questions or feedback? Just reply to this email, it reaches us directly.
+        </p>
+        <p style="font-size: 15px; margin: 16px 0 0;">The Corteza team</p>
+      </div>
+    `
+  });
+
+  console.log(`✅ Beta welcome email sent to ${email}`, result.id);
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
+  sendBetaWelcomeEmail,
   sendDueDateRequestEmail,
   sendMeetingCaptureEmail,
   sendEmail,
