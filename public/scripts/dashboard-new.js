@@ -198,18 +198,14 @@
     return `<p class="text-xs text-on-surface-variant">${label}: ${title}</p>`;
   }
 
-  /** "Owner: Ana · Due Oct 3" for items that have them (AI extraction v2) */
+  /** "Accountable: Ana" for outcomes that have someone accountable */
   function getOwnerLine(decision) {
-    const parts = [];
-    if (decision.owner_name) parts.push(`Owner: ${escapeHtml(decision.owner_name)}`);
-    if (decision.due_date) {
-      const due = new Date(`${decision.due_date}T00:00:00`);
-      if (!isNaN(due)) parts.push(`Due ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
-    }
-    return parts.length ? `<p class="text-xs text-on-surface-variant">${parts.join(' · ')}</p>` : '';
+    return decision.owner_name
+      ? `<p class="text-xs text-on-surface-variant">Accountable: ${escapeHtml(decision.owner_name)}</p>`
+      : '';
   }
 
-  /** Owner/due and source lines, stacked under the title */
+  /** Accountable and source lines, stacked under the title */
   function getMetaLines(decision) {
     const lines = getOwnerLine(decision) + getSourceLine(decision);
     return lines ? `<div class="-mt-4 mb-6 flex flex-col gap-1">${lines}</div>` : '';

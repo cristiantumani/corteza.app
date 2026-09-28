@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Decisions have someone "Accountable"; dates live in action items
+- **Accountable:** a decision's "Owner" is now **Accountable**, the person who makes sure it gets done. A short note says that tasks and their owners go in Action items. Cards read "Accountable: Ana"
+- **No due dates on decisions:** a decision no longer has a due date you can add. Older captures that have one show it read-only as "Due (older capture)"
+- **Capture:** decisions, open questions and risks are saved without a due date
+  - If the AI gave one a date and there's no linked action item, a linked action item is created with that owner and date
+  - Without a date, the owner is kept as the accountable person
+
 ### Added - Add action items to a decision by hand
 - **"+ Add action item" in a decision's detail:** write what needs to be done, pick one or more owners from the workspace members and add an optional due date. The item is linked to the decision and appears in Action items and in each owner's "My action items" on Home
 - **Who can add:** anyone who can add decisions to the decision's space

@@ -69,6 +69,38 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     }
   });
 
+  test('decisions keep who is accountable but no due date; a dated commitment becomes a linked action item', async () => {
+    const space = await spaces.ensureDefaultSpace('WACC');
+    await db.collection('workspace_members').insertOne({ workspace_id: 'WACC', user_id: 'U1', user_name: 'Paola Díaz', email: 'pao@acme.com', removed_at: null });
+    const extract = fakeExtract([
+      { decision_text: 'Paola leads the pricing review', decision_type: 'decision', confidence: 0.9, owner_names: ['Paola'], due_date: null },
+      { decision_text: 'Se revisa el forecast con Pao antes del directorio', decision_type: 'decision', confidence: 0.9, owner_names: ['Pao'], due_date: '2026-09-29' },
+      { decision_text: 'Ship the beta in October', decision_type: 'decision', confidence: 0.9, owner_names: ['Paola'], due_date: '2026-10-31' },
+      { decision_text: 'Paola prepares the beta plan', decision_type: 'action_item', confidence: 0.9, owner_names: ['Paola'], due_date: '2026-10-10', decision_ref: 2 }
+    ]);
+    const transcript = {
+      workspaceId: 'WACC', source: 'google_meet', externalId: 'conferenceRecords/acc', title: 'Weekly Ops',
+      text: LONG_TEXT, participants: ['Paola', 'Ana', 'Bob'], occurredAt: '2026-09-27T09:00:00Z',
+      spaceId: space.space_id, spaceName: space.name, author: { user_id: 'U1', name: 'Paola' }
+    };
+
+    const result = await pipeline.ingestTranscript(transcript, { extract, requestDueDates: async () => {} });
+    assert.equal(result.decisions.length, 3);
+    assert.equal(result.actionItems.length, 2, 'the beta plan, plus the dated forecast review');
+
+    const saved = await db.collection('decisions').find({ workspace_id: 'WACC' }).sort({ id: 1 }).toArray();
+    assert.deepEqual(saved.map(d => d.due_date), [null, null, null], 'decisions have no due dates');
+    assert.equal(saved[0].owner_name, 'Paola', 'accountable person kept when there is no date');
+    assert.equal(saved[1].owner_name, null, 'with a date, the owner goes to the action item');
+
+    const items = await db.collection('action_items').find({ workspace_id: 'WACC' }).toArray();
+    const forecast = items.find(item => item.text.includes('forecast'));
+    assert.equal(forecast.decision_id, saved[1].id);
+    assert.equal(forecast.due_date, '2026-09-29');
+    assert.deepEqual(forecast.owner_ids, ['U1']);
+    assert.equal(items.filter(item => item.decision_id === saved[2].id).length, 1, 'no extra item when one is already linked');
+  });
+
   test('a transcript is extracted once: decisions saved as AI-captured, action items linked with owners', async () => {
     const space = await spaces.ensureDefaultSpace('WPIPE');
     await db.collection('workspace_members').insertMany([

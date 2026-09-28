@@ -1,11 +1,12 @@
 /**
  * Click-to-edit for the outcome detail modal (#detail-modal).
  *
- * Clicking a field (content, why, type, owner, due date, tags, meeting context,
+ * Clicking a field (content, why, type, accountable person, tags, meeting context,
  * Jira epic) turns it into an input. Enter (Ctrl/⌘+Enter in text areas) or
  * clicking away saves just that field with PUT /api/decisions/:id; Esc cancels.
  * Empty optional fields show an "Add …" prompt so they can be filled in.
- * The owner is picked from the workspace members (people.js) and saved as owner_user_id.
+ * The accountable person is picked from the workspace members (people.js) and saved as
+ * owner_user_id. Due dates belong to action items (decision-actions.js), not to outcomes.
  *
  * dashboard.js calls CortezaInlineEdit.attach() every time it renders the modal.
  */
@@ -28,8 +29,7 @@
     { key: 'text', valueId: 'detail-decision-text', input: 'textarea', required: true },
     { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'Add why' },
     { key: 'type', valueId: 'detail-type', input: 'select' },
-    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add owner' },
-    { key: 'due_date', valueId: 'detail-due', sectionId: 'detail-due-container', input: 'date', prompt: 'Add due date' },
+    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add who’s accountable' },
     { key: 'tags', valueId: 'detail-tags', sectionId: 'detail-tags-section', input: 'text', prompt: 'Add tags', hint: 'Separate tags with commas' },
     { key: 'alternatives', valueId: 'detail-meeting-info', sectionId: 'detail-meeting-section', input: 'textarea' },
     { key: 'epic_key', valueId: 'detail-epic-info', sectionId: 'detail-epic-section', input: 'text', hint: 'Jira epic key, e.g. PROJ-12' }
@@ -71,7 +71,7 @@
     let input;
     if (field.input === 'member') {
       input = document.createElement('select');
-      input.add(new Option('No owner', ''));
+      input.add(new Option('Nobody', ''));
       if (decision.owner_name && !people.some(person => person.user_id === decision.owner_user_id)) {
         input.add(new Option(`${decision.owner_name} (not linked to a member)`, KEEP));
       }
