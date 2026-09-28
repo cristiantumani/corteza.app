@@ -1,4 +1,4 @@
-const { hybridSearch, generateConversationalResponse } = require('../services/semantic-search');
+const { hybridSearch, generateConversationalResponse, visibleSources } = require('../services/semantic-search');
 const { validateQueryParams } = require('../middleware/validation');
 const { canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
@@ -159,7 +159,7 @@ async function handleSemanticSearch(req, res) {
 
     // Generate conversational response (if requested)
     let conversationalResponse = null;
-    let usedIds = searchResult.results.all.map(r => r.id);
+    let usedIds = searchResult.results.all.filter(r => r.matched !== false).map(r => r.id);
     if (requestData.conversational !== false) {
       console.log('   🤖 Generating conversational response...');
       try {
@@ -180,6 +180,10 @@ async function handleSemanticSearch(req, res) {
       }
     }
 
+    // Without an AI answer, every match counts as used
+    if (requestData.conversational === false) usedIds = searchResult.results.all.filter(r => r.matched !== false).map(r => r.id);
+    const shown = visibleSources(searchResult.results.all, usedIds);
+
     // Return results
     console.log('   📤 Sending response to client...');
     return res.status(200).json({
@@ -188,14 +192,15 @@ async function handleSemanticSearch(req, res) {
       response: conversationalResponse,
       used_ids: usedIds,
       excluded_ids: searchOptions.excludeIds,
-      decisions: searchResult.results.all,
+      // Used sources first, then other matches; outcomes Claude only read as candidates are left out
+      decisions: shown,
       categorized: {
-        highlyRelevant: searchResult.results.highlyRelevant,
-        relevant: searchResult.results.relevant,
-        somewhatRelevant: searchResult.results.somewhatRelevant
+        highlyRelevant: shown.filter(r => usedIds.includes(r.id)),
+        relevant: shown.filter(r => !usedIds.includes(r.id)),
+        somewhatRelevant: []
       },
       searchMethod: searchResult.searchMethod,
-      resultsCount: searchResult.results.all.length,
+      resultsCount: shown.length,
       executedAt: new Date().toISOString()
     });
 

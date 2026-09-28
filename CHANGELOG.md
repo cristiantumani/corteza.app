@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Search found nothing when the question and the outcomes were in different languages
+- **Cross-language questions:** keyword search can't connect "directorio de octubre" with "Board meeting on October 22", so a Spanish question about English outcomes found nothing when semantic search was unavailable. With fewer than 3 matches, Claude now also reads the space's 60 latest outcomes and picks the ones that answer. Only those are shown as sources; the rest stay hidden
+- **Generic verbs ignored:** words like "tengo", "hacer", "debemos" and "necesito" no longer count as keywords
+
 ### Changed - Search: fewer, better sources; open a source in full; leave unrelated ones out
 - **The answer works again:** search answers were falling back to a canned list ("Looking at our decisions about…") because the Claude call sent a temperature the current model rejects. Claude now answers in the question's language, and only from sources that help answer it
 - **Sources used vs. other matches:** Claude says which sources it used, and only those appear under Evidence Sources. The rest are under "Other matches not used in the answer". The header reads "Based on N sources"
