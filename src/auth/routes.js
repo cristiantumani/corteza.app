@@ -1,6 +1,5 @@
 const path = require('path');
 const express = require('express');
-const { getWorkspaceMembersCollection } = require('../config/database');
 const { authRateLimiter } = require('../middleware/auth');
 const google = require('../integrations/google/oauth');
 const { signInWithGoogle } = require('./google-signin');
@@ -11,9 +10,9 @@ const { earlyAccessUrl } = require('../core/beta/beta-access');
  *
  *   GET  /auth/login               login page ("Continue with Google")
  *   GET  /auth/google              start Google sign-in (?invite=<id>&return=<path>)
- *   GET  /auth/google/callback     Google redirects back here
- *   GET  /auth/onboarding          first-run questions for a new workspace's creator
- *   POST /auth/complete-onboarding
+ *   GET  /auth/google/callback     Google redirects back here (then straight to the dashboard:
+ *                                  no onboarding questions, the early access form already asked them)
+ *   GET  /auth/onboarding          old link: redirects to the dashboard
  *
  * /auth/me and /auth/logout live in routes/auth.js.
  */
@@ -90,7 +89,7 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
           return loginErrorRedirect(res, 'Could not create your session. Please try again.');
         }
         console.log(`✅ Google sign-in: ${result.sessionUser.email} → ${result.sessionUser.workspace_id}`);
-        const destination = result.needsOnboarding ? '/auth/onboarding' : (oauth.returnTo || '/dashboard');
+        const destination = oauth.returnTo || '/dashboard';
         res.redirect(destination);
       });
     });
@@ -100,62 +99,7 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
   }
 });
 
-router.get('/auth/onboarding', async (req, res) => {
-  if (!req.session?.user) return res.redirect('/auth/login');
-
-  try {
-    const member = await getWorkspaceMembersCollection().findOne({
-      user_id: req.session.user.user_id,
-      workspace_id: req.session.user.workspace_id,
-      removed_at: null
-    });
-    if (member && member.onboarding_completed) return res.redirect('/dashboard');
-  } catch (error) {
-    console.error('Failed to check onboarding status:', error);
-  }
-
-  res.sendFile(path.join(__dirname, '../views/onboarding.html'));
-});
-
-router.post('/auth/complete-onboarding', express.json(), async (req, res) => {
-  try {
-    if (!req.session?.user) {
-      return res.status(401).json({ success: false, error: 'Authentication required' });
-    }
-
-    const { full_name, role, company_size, use_case, heard_about, early_access } = req.body || {};
-    if (!full_name || !role || !company_size || !use_case || !heard_about) {
-      return res.status(400).json({ success: false, error: 'Missing required fields' });
-    }
-
-    const { user_id, workspace_id } = req.session.user;
-    const result = await getWorkspaceMembersCollection().updateOne(
-      { user_id, workspace_id, removed_at: null },
-      {
-        $set: {
-          user_name: String(full_name).slice(0, 100),
-          full_name: String(full_name).slice(0, 100),
-          role_title: role,
-          company_size,
-          use_case,
-          heard_about,
-          early_access: early_access === true,
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString()
-        }
-      }
-    );
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    req.session.user.user_name = String(full_name).slice(0, 100);
-    res.json({ success: true, message: 'Onboarding completed successfully' });
-  } catch (error) {
-    console.error('Complete onboarding error:', error);
-    res.status(500).json({ success: false, error: 'Failed to complete onboarding. Please try again.' });
-  }
-});
+router.get('/auth/onboarding', (req, res) => res.redirect('/dashboard'));
 
 module.exports = router;
 module.exports.safeReturnPath = safeReturnPath;

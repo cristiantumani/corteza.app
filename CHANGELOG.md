@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed - Onboarding questions after sign-in
+- **Straight to Home:** the first sign-in no longer asks for your name, role, company size, use case and how you heard of Corteza. Google gives us your name, and the early access form already asked about your company, team and meetings
+- **Old links:** `/auth/onboarding` redirects to Home. The page and `POST /auth/complete-onboarding` are gone, and new memberships no longer get an `onboarding_completed` flag
+
 ### Changed - Everyone gets their own space
 - **Your own space:** the first time you sign in you get a private space ("My space"). Everything you capture goes there (Google Meet, imports, Log manually). Colleagues who sign in with the same company Google account get their own and don't see your meetings. Before, captures landed in "General", which everyone in the company could see
 - **No space controls while you have one space:** the header picker, "Searching in", the space pickers, the space chips on cards and Settings → Manage Spaces stay hidden until you belong to more than one space

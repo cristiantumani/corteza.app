@@ -86,8 +86,6 @@ async function addMember({ workspace, user, role, joinedVia, extra = {} }) {
     joined_via: joinedVia,
     joined_at: now,
     removed_at: null,
-    // Only the creator of a new workspace sees the onboarding questions
-    onboarding_completed: !(role === 'admin' && joinedVia === 'google'),
     ...extra
   };
   await getWorkspaceMembersCollection().insertOne(membership);

@@ -79,8 +79,7 @@ describe('auth routes', () => {
 
   test('successful sign-in creates a new session and honours the return path and invite', async () => {
     signInResult = {
-      sessionUser: { user_id: 'U1', workspace_id: 'W1', email: 'ana@acme.com' },
-      needsOnboarding: false
+      sessionUser: { user_id: 'U1', workspace_id: 'W1', email: 'ana@acme.com' }
     };
     const { cookie, state } = await start('?return=%2Fsettings&invite=inv_1');
     const response = await callback(cookie, { code: 'good', state });
@@ -100,11 +99,14 @@ describe('auth routes', () => {
     assert.match(replay.headers.get('location'), /^\/auth\/login\?error=/);
   });
 
-  test('new workspace creators go to onboarding', async () => {
-    signInResult = { sessionUser: { user_id: 'U2', workspace_id: 'W2' }, needsOnboarding: true };
+  test('new workspace creators go straight to the dashboard (no onboarding questions)', async () => {
+    signInResult = { sessionUser: { user_id: 'U2', workspace_id: 'W2' } };
     const { cookie, state } = await start();
     const response = await callback(cookie, { code: 'good', state });
-    assert.equal(response.headers.get('location'), '/auth/onboarding');
+    assert.equal(response.headers.get('location'), '/dashboard');
+
+    const old = await fetch(`${base}/auth/onboarding`, { redirect: 'manual' });
+    assert.equal(old.headers.get('location'), '/dashboard', 'old onboarding links land on the dashboard');
   });
 
   test('sign-in errors and Google failures go back to the login page with a message', async () => {
