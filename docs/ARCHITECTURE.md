@@ -77,7 +77,7 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
    Only Google's `hd` claim counts as the domain, never the email's domain.
 
    **Private beta** (`BETA_REQUIRED=true`): the last two cases (a new workspace) only happen for people on the approved list, `beta_access` (an email, or a whole Google domain; `src/core/beta/beta-access.js`). Anyone else is sent to the website's early access form (`EARLY_ACCESS_URL?email=…&from=signin`) and nothing is saved.
-4. The session is regenerated (new ID) and the user goes to onboarding (new workspace creator), the page they were trying to open, or the dashboard.
+4. The session is regenerated (new ID) and the user goes to the page they were trying to open, or the dashboard. There are no onboarding questions: the name comes from Google, and company, team size and meeting tool were asked on the website's early access form.
 
 **Approving beta testers:**
 1. Someone requests early access on the website. Its edge function (`Corteza_website`, `supabase/functions/trigger-webhook`) emails the team, with an **Approve** link to `/beta/approve?t=<token>`. The token is the signup (email, first name, company, 30-day expiry) signed with HMAC-SHA256 using `BETA_APPROVAL_SECRET`, which the app and the website share.

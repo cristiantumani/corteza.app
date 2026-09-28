@@ -27,7 +27,7 @@ const { ensurePersonalSpace } = require('../services/spaces');
  * @param {Object} identity - verified ID token claims: { sub, email, email_verified, name, picture, hd }
  * @param {Object} [options]
  * @param {string} [options.inviteId]
- * @returns {Promise<{ sessionUser?: Object, needsOnboarding?: boolean, notInBeta?: boolean, error?: string }>}
+ * @returns {Promise<{ sessionUser?: Object, notInBeta?: boolean, error?: string }>}
  */
 async function signInWithGoogle(identity, { inviteId } = {}) {
   if (!identity?.email || identity.email_verified !== true) {
@@ -127,8 +127,7 @@ async function finish(user, membership) {
       picture: user.picture || null,
       auth_provider: 'google',
       authenticated_at: new Date().toISOString()
-    },
-    needsOnboarding: membership.onboarding_completed === false
+    }
   };
 }
 

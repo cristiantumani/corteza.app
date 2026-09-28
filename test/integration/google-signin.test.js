@@ -31,7 +31,6 @@ describe('Google sign-in: workspace resolution', { skip }, () => {
     const result = await signInWithGoogle(identity({ sub: 'ana', email: 'Ana@Acme.com', name: 'Ana', hd: 'acme.com' }));
 
     assert.equal(result.error, undefined);
-    assert.equal(result.needsOnboarding, true);
     const { workspace_id: workspaceId, email } = result.sessionUser;
     assert.equal(email, 'ana@acme.com');
 
@@ -55,7 +54,6 @@ describe('Google sign-in: workspace resolution', { skip }, () => {
     const result = await signInWithGoogle(identity({ sub: 'bob', email: 'bob@acme.com', name: 'Bob', hd: 'acme.com' }));
 
     assert.equal(result.sessionUser.workspace_id, acme.workspace_id);
-    assert.equal(result.needsOnboarding, false);
     const member = await db.collection('workspace_members').findOne({ email: 'bob@acme.com' });
     assert.equal(member.role, 'member');
     assert.equal(await db.collection('workspace_admins').findOne({ user_id: member.user_id }), null);

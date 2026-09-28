@@ -136,7 +136,7 @@ async function startApp() {
     res.send('Route registration works!');
   });
 
-  // Authentication: Google sign-in only (login page, OAuth callback, onboarding)
+  // Authentication: Google sign-in only (login page, OAuth callback)
   expressApp.use(require('./auth/routes'));
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);

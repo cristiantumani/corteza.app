@@ -40,7 +40,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Space helpers (personal space per member, default space for Slack/API) | `src/services/spaces.js` (`ensurePersonalSpace`, `ensureDefaultSpace`) |
 | Spaces a user sees, with counts and roles (API and page preload) | `src/core/spaces/list-spaces.js` (`listSpacesForUser`) |
 | Space/admin permission rules | `src/services/permissions.js` |
-| Google sign-in routes (login page, OAuth callback, onboarding) | `src/auth/routes.js` |
+| Google sign-in routes (login page, OAuth callback; no onboarding questions) | `src/auth/routes.js` |
 | Which workspace a Google user lands in | `src/auth/google-signin.js` (`signInWithGoogle`) |
 | Private beta: approved list, sign-in check, approve link from the early access email, welcome email | `src/core/beta/` (`beta-access.js`, `approve.js`), `src/http/beta.js`, `scripts/beta-approve.js` |
 | Google OAuth client (URLs, token verification) | `src/integrations/google/oauth.js` |
