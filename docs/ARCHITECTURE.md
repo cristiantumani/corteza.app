@@ -134,7 +134,7 @@ Run manually, and they're safe to re-run. Each script starts as a dry run and ne
 - `scripts/migrations/003-repair-member-roles.js`: restores `workspace_members.role` (admin/member) that the old onboarding overwrote with a job title.
 - `scripts/migrations/005-move-action-items.js`: moves action items that extraction v2 briefly saved as decisions (`type: 'action_item'`) into `action_items`.
 - `scripts/migrations/007-personal-spaces.js`: creates every member's personal space and moves outcomes out of General: all of them (then archives General) when the workspace has one member, else each to the person who captured it. Meet connections that saved to General go back to the personal space.
-- `scripts/merge-into-personal.js <email>`: moves every other space the person's picker shows (not colleagues' personal spaces) into their personal space and archives them, so they're left with one space. Dry run unless `--apply`.
+- `scripts/cleanup-all-data.js`: empties every collection of the app database (keeps collections and indexes) so everyone starts over. Dry run unless `--apply`; `--keep a,b` keeps some collections.
 - `scripts/workspace-keep-only.js <email>`: leaves one person as the only member of their workspace; removes everyone else's membership, admin role, space memberships, Meet connection, sessions and account, and revokes invite links. Outcomes are kept unless `--delete-their-outcomes`. Dry run unless `--apply`.
 - `scripts/migrations/004-date-meeting-decisions.js`: sets `timestamp` of AI-captured decisions to their meeting's start (`source_details.occurred_at`) instead of when they were saved.
 

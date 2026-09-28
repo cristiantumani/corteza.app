@@ -1,102 +1,67 @@
-const { MongoClient } = require('mongodb');
-require('dotenv').config();
-
 /**
- * DANGER: This script deletes ALL data from the database
- * Use only for development/testing cleanup
+ * DANGER: empties the whole app database: every account, workspace, space, outcome,
+ * action item, Google Meet connection, session and setting.
+ *
+ * Every collection of the app's database (DB_NAME, default 'decision-logger') is emptied
+ * with deleteMany: the collections and their indexes stay (including an Atlas vector search
+ * index on `decisions`), so the app keeps working and people start over by signing in.
+ * Google Meet connections are deleted, so everyone reconnects from Settings → Google Meet.
+ *
+ * Usage:
+ *   node scripts/cleanup-all-data.js            # dry run: what would be deleted
+ *   node scripts/cleanup-all-data.js --apply    # delete everything
+ *   node scripts/cleanup-all-data.js --apply --keep beta_access   # keep some collections
  */
+require('dotenv').config();
+const { MongoClient } = require('mongodb');
 
-async function cleanupAllData() {
+function keepList() {
+  const index = process.argv.indexOf('--keep');
+  return index === -1 ? [] : String(process.argv[index + 1] || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+async function main() {
   const uri = process.env.MONGODB_URI;
-
   if (!uri) {
-    console.error('❌ MONGODB_URI not found in environment');
+    console.error('❌ MONGODB_URI is not set');
     process.exit(1);
   }
+  const apply = process.argv.includes('--apply');
+  const keep = keepList();
+  const dbName = process.env.DB_NAME || 'decision-logger';
 
   const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db(dbName);
+  const collections = (await db.listCollections({}, { nameOnly: true }).toArray())
+    .map(c => c.name)
+    .filter(name => !name.startsWith('system.'))
+    .sort();
 
-  try {
-    await client.connect();
-    console.log('✅ Connected to MongoDB');
-
-    const db = client.db();
-
-    // Collections to clean up
-    const collections = [
-      'decisions',
-      'workspace_members',
-      'workspace_spaces',
-      'space_members',
-      'slack_installations',
-      'feedback',
-      'api_keys',
-      'workspace_invites',
-      'extension_installs',
-      'workspace_settings',
-      'meeting_transcripts',
-      'ai_suggestions',
-      'ai_feedback',
-      'workspace_admins',
-      'sessions'
-    ];
-
-    console.log('\n🗑️  Starting cleanup...\n');
-
-    for (const collectionName of collections) {
-      try {
-        const collection = db.collection(collectionName);
-        const count = await collection.countDocuments({});
-
-        if (count > 0) {
-          const result = await collection.deleteMany({});
-          console.log(`✅ ${collectionName}: Deleted ${result.deletedCount} documents`);
-        } else {
-          console.log(`⚪ ${collectionName}: Already empty`);
-        }
-      } catch (error) {
-        if (error.message.includes('ns not found')) {
-          console.log(`⚪ ${collectionName}: Collection doesn't exist`);
-        } else {
-          console.error(`❌ ${collectionName}: Error - ${error.message}`);
-        }
-      }
+  console.log(`${apply ? '🗑️  DELETING' : '🔎 DRY RUN'}: database "${dbName}"\n`);
+  let total = 0;
+  for (const name of collections) {
+    const count = await db.collection(name).countDocuments({});
+    if (keep.includes(name)) {
+      console.log(`   ⏭️  ${name}: ${count} kept`);
+      continue;
     }
-
-    console.log('\n✅ Cleanup complete! Database is now empty.\n');
-    console.log('📝 Next steps:');
-    console.log('   1. Reinstall the Slack app (if using OAuth)');
-    console.log('   2. Create a new workspace via /auth/login');
-    console.log('   3. Create your first space in Settings\n');
-
-  } catch (error) {
-    console.error('❌ Cleanup failed:', error);
-    process.exit(1);
-  } finally {
-    await client.close();
-    console.log('🔌 Disconnected from MongoDB');
+    total += count;
+    if (apply && count > 0) await db.collection(name).deleteMany({});
+    console.log(`   ${apply ? '✅' : '•'} ${name}: ${count}${apply ? ' deleted' : ''}`);
   }
+
+  console.log(`\n${apply ? 'Deleted' : 'Would delete'} ${total} document(s) in ${collections.length - keep.length} collection(s).`);
+  if (!apply) {
+    console.log('Run again with --apply to delete them. This cannot be undone.');
+  } else {
+    console.log('\nNext: sign in at /auth/login with Google. With BETA_REQUIRED=true, request access on the');
+    console.log('website and approve yourself from the email (or run scripts/beta-approve.js first).');
+  }
+  await client.close();
 }
 
-// Confirmation prompt
-console.log('\n⚠️  WARNING: This will DELETE ALL DATA from the database!\n');
-console.log('Collections that will be cleared:');
-console.log('  - decisions');
-console.log('  - workspace_members');
-console.log('  - workspace_spaces');
-console.log('  - space_members');
-console.log('  - slack_installations');
-console.log('  - feedback');
-console.log('  - api_keys');
-console.log('  - workspace_invites');
-console.log('  - extension_installs');
-console.log('  - workspace_settings\n');
-
-// Check for --confirm flag
-if (process.argv.includes('--confirm')) {
-  cleanupAllData().catch(console.error);
-} else {
-  console.log('❌ Aborted. Run with --confirm flag to proceed:');
-  console.log('   node scripts/cleanup-all-data.js --confirm\n');
-  process.exit(0);
-}
+main().catch(error => {
+  console.error('❌ Cleanup failed:', error);
+  process.exit(1);
+});
