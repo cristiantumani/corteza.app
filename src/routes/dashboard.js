@@ -1,11 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+// Outcome detail modal shared by Home and Search (views/partials/detail-modal.html)
+const detailModalHTML = fs.readFileSync(path.join(__dirname, '../views/partials/detail-modal.html'), 'utf8');
+
+/** Puts shared partials into a page template (once, at startup) */
+function withPartials(html) {
+  return html.replace('<!-- DETAIL_MODAL -->', () => detailModalHTML);
+}
+
 // Load new dashboard HTML (now the main dashboard)
-const dashboardHTML = fs.readFileSync(
+const dashboardHTML = withPartials(fs.readFileSync(
   path.join(__dirname, '../views/dashboard-new.html'),
   'utf8'
-);
+));
 
 // Load AI analytics HTML once at startup
 const aiAnalyticsHTML = fs.readFileSync(
@@ -20,10 +28,10 @@ const settingsNewHTML = fs.readFileSync(
 );
 
 // Load AI search HTML once at startup
-const aiSearchHTML = fs.readFileSync(
+const aiSearchHTML = withPartials(fs.readFileSync(
   path.join(__dirname, '../views/ai-search.html'),
   'utf8'
-);
+));
 
 // Load space selector HTML once at startup
 const spaceSelectorHTML = fs.readFileSync(

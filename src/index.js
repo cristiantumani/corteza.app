@@ -146,6 +146,7 @@ async function startApp() {
 
   // Action items ("pendientes"): page and API
   expressApp.use(require('./http/action-items'));
+  expressApp.use(require('./http/search-feedback'));
 
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {

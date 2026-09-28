@@ -2,6 +2,16 @@ const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
+const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');
+const { SAMPLING_MODELS } = require('./claude');
+
+// Fields a search result carries (never `embedding`): enough to show the full source in Search
+const RESULT_PROJECTION = {
+  _id: 0, id: 1, text: 1, type: 1, category: 1, epic_key: 1, jira_data: 1, tags: 1, alternatives: 1,
+  rationale: 1, owner_name: 1, owner_user_id: 1, due_date: 1, evidence_quote: 1, source_details: 1,
+  capture: 1, confidence: 1, creator: 1, user_id: 1, channel_id: 1, timestamp: 1, workspace_id: 1,
+  space_id: 1, space_name: 1
+};
 
 /**
  * Detect if query has temporal context (looking for recent/latest decisions)
@@ -14,26 +24,6 @@ function hasTemporalContext(query) {
   ];
   const lowerQuery = query.toLowerCase();
   return temporalKeywords.some(keyword => lowerQuery.includes(keyword));
-}
-
-/**
- * Extract meaningful keywords from query (removes stop words, temporal keywords)
- */
-function extractKeywords(query) {
-  const stopWords = new Set([
-    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
-    'could', 'can', 'may', 'might', 'must', 'about', 'of', 'for', 'with',
-    'what', 'show', 'me', 'find', 'search', 'look', 'get', 'all', 'any',
-    'decisions', 'decision', 'we', 'made', 'have', 'latest', 'recent'
-  ]);
-
-  const words = query.toLowerCase()
-    .replace(/[^\w\s]/g, ' ') // Remove punctuation
-    .split(/\s+/)
-    .filter(word => word.length > 2 && !stopWords.has(word));
-
-  return [...new Set(words)]; // Remove duplicates
 }
 
 /**
@@ -52,45 +42,18 @@ function applyKeywordBoost(results, query) {
   console.log(`   🔑 Extracted keywords for boosting: [${keywords.join(', ')}]`);
 
   return results.map(result => {
-    const decisionText = (result.text || '').toLowerCase();
-    const tags = (result.tags || []).map(t => t.toLowerCase()).join(' ');
-    const epicKey = (result.epic_key || '').toLowerCase();
-    const searchableText = `${decisionText} ${tags} ${epicKey}`;
-
-    let keywordMatchCount = 0;
-    let exactMatchBoost = 0;
-
-    keywords.forEach(keyword => {
-      // Count how many times keyword appears
-      const regex = new RegExp(keyword, 'gi');
-      const matches = searchableText.match(regex);
-      if (matches) {
-        keywordMatchCount += matches.length;
-        // Each keyword match adds 0.05, max 0.15 total
-        exactMatchBoost += Math.min(0.15, matches.length * 0.05);
-      }
-    });
-
-    if (keywordMatchCount > 0) {
-      const originalScore = result.score;
-      const boostedScore = Math.min(1.0, result.score + exactMatchBoost);
-
-      console.log(`   🔑 Decision #${result.id}: ${originalScore.toFixed(3)} → ${boostedScore.toFixed(3)} (+${exactMatchBoost.toFixed(2)} keyword boost, ${keywordMatchCount} matches)`);
-
-      return {
-        ...result,
-        score: boostedScore,
-        keywordBoost: exactMatchBoost,
-        keywordMatches: keywordMatchCount,
-        hasKeywordMatch: true
-      };
+    const matches = matchedKeywords(result, keywords);
+    if (matches.length === 0) {
+      return { ...result, keywordMatches: 0, keywordBoost: 0, hasKeywordMatch: false };
     }
-
+    // Each matched keyword adds 0.05, max 0.15
+    const keywordBoost = Math.min(0.15, matches.length * 0.05);
     return {
       ...result,
-      keywordMatches: 0,
-      keywordBoost: 0,
-      hasKeywordMatch: false
+      score: Math.min(1.0, result.score + keywordBoost),
+      keywordBoost,
+      keywordMatches: matches.length,
+      hasKeywordMatch: matches.length >= requiredMatches(keywords.length)
     };
   });
 }
@@ -196,7 +159,8 @@ async function semanticSearch(query, options = {}) {
     dateFrom,
     dateTo,
     limit = 10,
-    minScore = 0.7
+    minScore = 0.7,
+    excludeIds = []
   } = options;
 
   if (!workspace_id) {
@@ -213,20 +177,7 @@ async function semanticSearch(query, options = {}) {
     console.log(`   🏢 Workspace ID: ${workspace_id}`);
     console.log(`   📁 Space ID: ${space_id}`);
 
-    // MongoDB connection for debugging
-    const db = getDatabase();
-    const decisionsCollection = db.collection('decisions');
-
-    // DEBUG: Check how many decisions exist in this workspace
-    const totalInWorkspace = await decisionsCollection.countDocuments({ workspace_id });
-    console.log(`   📊 Total decisions in workspace: ${totalInWorkspace}`);
-
-    // DEBUG: Check if any contain "onboard"
-    const onboardingCount = await decisionsCollection.countDocuments({
-      workspace_id,
-      text: { $regex: 'onboard', $options: 'i' }
-    });
-    console.log(`   📊 Decisions containing "onboard": ${onboardingCount}`);
+    const decisionsCollection = getDatabase().collection('decisions');
 
     const queryEmbedding = await generateQueryEmbedding(query);
 
@@ -268,7 +219,7 @@ async function semanticSearch(query, options = {}) {
           path: 'embedding',
           queryVector: queryEmbedding,
           numCandidates: Math.max(limit * 10, 100), // Over-fetch for better results
-          limit: limit * 2,  // Get more results before score filtering
+          limit: (limit + excludeIds.length) * 2,  // Get more results before score filtering
           filter: preFilter
         }
       },
@@ -282,26 +233,12 @@ async function semanticSearch(query, options = {}) {
           score: { $gte: minScore }  // Filter by minimum similarity score
         }
       },
+      ...(excludeIds.length ? [{ $match: { id: { $nin: excludeIds } } }] : []), // sources the user marked unrelated
       {
         $limit: limit
       },
       {
-        $project: {
-          _id: 0,
-          id: 1,
-          text: 1,
-          type: 1,
-          epic_key: 1,
-          jira_data: 1,
-          tags: 1,
-          alternatives: 1,
-          creator: 1,
-          user_id: 1,
-          channel_id: 1,
-          timestamp: 1,
-          workspace_id: 1,
-          score: 1
-        }
+        $project: { ...RESULT_PROJECTION, score: 1 }
       }
     ];
 
@@ -393,34 +330,27 @@ async function semanticSearch(query, options = {}) {
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 2; // v2: Conversational improvements (Feb 12, 2026)
+const CACHE_VERSION = 3; // v3: JSON answer with the sources used (Sep 2026)
 
 /**
- * Generate conversational response for search results using Claude
+ * Answers the question from the search results with Claude, and says which results it used.
  *
- * CONVERSATIONAL QUALITY: Using Sonnet for natural, human-like responses
- * - Natural language prompt (feels like talking to a teammate)
- * - Higher temperature (0.7) for varied, warm responses
- * - Includes context (alternatives, reasoning) for richer answers
- * - Response caching (5 min TTL) to reduce duplicate API calls
- * - Supports conversation history for context-aware follow-ups
+ * Claude returns JSON { "answer": "...", "used_ids": [12, 45] }: Search shows the
+ * sources it used first, and the rest as "other matches". Answers in the language of
+ * the question. Cached for 5 minutes per query + result set.
  *
- * Cost: ~$0.003 per query (Sonnet input + output)
- * Trade-off: Higher cost but MUCH better user experience
- *
- * @param {string} query - User's original query
- * @param {Array} results - Search results with scores
- * @param {Array} conversationHistory - Previous conversation turns [{query, response}]
- * @returns {Promise<string>} - Conversational response
+ * @param {string} query - User's question
+ * @param {Object} results - Search results ({ all: [...] })
+ * @param {Array} conversationHistory - Previous turns [{ role, content }] or [{ query, response }]
+ * @returns {Promise<{ text: string, usedIds: number[] }>}
  */
 async function generateConversationalResponse(query, results, conversationHistory = []) {
-  if (!config.claude.isConfigured) {
-    return formatResultsSimple(query, results);
+  const allIds = results.all.map(r => r.id);
+  if (!config.claude.isConfigured || results.all.length === 0) {
+    return { text: formatResultsSimple(query, results), usedIds: allIds.slice(0, 3) };
   }
 
-  // CREDIT OPTIMIZATION: Check cache first
-  // Include CACHE_VERSION in key to bust cache when prompt changes
-  const cacheKey = `v${CACHE_VERSION}_${query}_${results.all.map(r => r.id).join(',')}`;
+  const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}`;
   const cached = responseCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
     console.log('♻️  CREDIT SAVED: Using cached conversational response (v' + CACHE_VERSION + ')');
@@ -428,102 +358,88 @@ async function generateConversationalResponse(query, results, conversationHistor
   }
 
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
+  const sources = results.all.map(r => describeSource(r)).join('\n\n');
+  const history = formatHistory(conversationHistory);
 
-  // Format results in a natural, conversational way
-  // IMPORTANT: Always include decision IDs so users can reference them
-  const resultsContext = results.all.map(r => {
-    const daysAgo = Math.floor((Date.now() - new Date(r.timestamp).getTime()) / (24 * 60 * 60 * 1000));
-    const timeContext = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' :
-                        daysAgo < 7 ? `${daysAgo} days ago` :
-                        daysAgo < 30 ? `${Math.floor(daysAgo / 7)} weeks ago` :
-                        `${Math.floor(daysAgo / 30)} months ago`;
-
-    // Include alternatives and additional context for richer responses (with safe null checks)
-    const alternatives = (Array.isArray(r.alternatives) && r.alternatives.length > 0)
-      ? ` Alternatives considered: ${r.alternatives.join(', ')}.`
-      : '';
-
-    const tags = (Array.isArray(r.tags) && r.tags.length > 0)
-      ? ` Tags: ${r.tags.join(', ')}.`
-      : '';
-
-    return `[Decision #${r.id}, ${timeContext}] ${r.creator} logged: "${r.text}"${alternatives}${tags}`;
-  }).join('\n\n');
-
-  // Check if conversation history is provided
-  const conversationContext = conversationHistory && conversationHistory.length > 0
-    ? `\n\nPrevious conversation:\n${conversationHistory.slice(-2).map(turn =>
-        `User: ${turn.query}\nYou: ${turn.response}`
-      ).join('\n\n')}\n\n`
-    : '';
-
-  const prompt = `You are a knowledgeable team member with perfect memory of every decision, context, and explanation your team has logged. Someone asks you a question, and you recall relevant information to answer them naturally.${conversationContext}
+  const prompt = `You answer questions about a team's meeting outcomes (decisions, open questions, risks and context captured from their meetings).${history}
 
 Question: "${query}"
 
-What you remember:
+Sources (search matches; some may be unrelated to the question):
 
-${resultsContext}
+${sources}
 
-Answer their question naturally, like a teammate would in conversation. Here's how:
+Instructions:
+- Answer in the same language as the question.
+- Use only sources that actually help answer the question. Ignore the others, even if they share words with it.
+- Start with the direct answer, then the why and context. Mention sources by number, like "(#74)". 60 to 150 words, plain text, no headings or lists unless steps are needed.
+- If no source answers the question, say so briefly and suggest what to search instead. Don't invent anything that isn't in the sources.
 
-1. **Answer the question directly first** - Synthesize what you know and give a clear, direct answer. Don't start by saying "I found X decisions" - that's robotic.
-
-2. **Explain the WHY and context** - Share the reasoning, alternatives considered, trade-offs discussed. Make connections between related decisions.
-
-3. **Reference decision numbers naturally** - Weave them into your answer like: "We went with GraphQL (Decision #123) because..." or "That's covered in Decision #45 where we..."
-
-4. **Be conversational** - Use "we", "us", "our team". Sound like you're recalling from memory, not reading from a database. Show you understand the context.
-
-5. **Keep it concise** - 100-150 words. Get to the point but include the important context.
-
-DON'T do:
-- "I found 5 decisions. Decision #1: ... Decision #2: ..." (too mechanical)
-- Numbered lists unless explaining sequential steps
-- Formal sections like "Highly Relevant:" or "Summary:"
-- Generic responses - be specific to their question
-
-DO:
-- "We chose X over Y because... (Decision #123)"
-- "From what we decided last month (Decision #67), the approach is..."
-- "Looking at our product decisions, we've consistently focused on..."
-
-Answer as if you're a senior team member who was in all those meetings and knows the full story.`;
-
-  // Use Sonnet instead of Haiku for better conversational quality
-  // The cost difference is worth it for natural responses
+Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources you used]}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: config.claude.model,  // Use configured model (default: claude-sonnet-4-5-20250929)
-      max_tokens: 500,  // Increased for more natural, synthesized responses
-      temperature: 0.8,  // Higher temp for more natural, human-like, conversational responses
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+    const model = config.claude.model;
+    const request = { model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
+    if (SAMPLING_MODELS.test(model)) request.temperature = 0.3; // newer models don't take sampling parameters
+    const response = await anthropic.messages.create(request);
+    const parsed = parseAnswer(
+      (response.content || []).filter(block => block.type === 'text').map(block => block.text).join('\n'),
+      allIds
+    );
+    if (!parsed) throw new Error('Unreadable answer');
 
-    const responseText = response.content[0].text;
-
-    // Cache the response
-    responseCache.set(cacheKey, { response: responseText, timestamp: Date.now() });
-
-    // CREDIT OPTIMIZATION: Cleanup old cache entries periodically
+    responseCache.set(cacheKey, { response: parsed, timestamp: Date.now() });
     if (responseCache.size > 100) {
       const now = Date.now();
       for (const [key, value] of responseCache.entries()) {
-        if (now - value.timestamp > CACHE_TTL_MS) {
-          responseCache.delete(key);
-        }
+        if (now - value.timestamp > CACHE_TTL_MS) responseCache.delete(key);
       }
     }
-
-    return responseText;
-
+    return parsed;
   } catch (error) {
     console.error('❌ Error generating conversational response:', error.message);
-    return formatResultsSimple(query, results);
+    return { text: formatResultsSimple(query, results), usedIds: allIds.slice(0, 3) };
+  }
+}
+
+/** One source for the answer prompt: number, type, date, text, why, who, meeting */
+function describeSource(r) {
+  const date = r.timestamp ? new Date(r.timestamp).toISOString().slice(0, 10) : 'unknown date';
+  const lines = [`#${r.id} (${r.type || 'decision'}, ${date}${r.source_details && r.source_details.title ? `, meeting "${r.source_details.title}"` : ''}): ${r.text}`];
+  if (r.rationale) lines.push(`  Why: ${r.rationale}`);
+  if (r.owner_name) lines.push(`  Accountable: ${r.owner_name}`);
+  if (typeof r.alternatives === 'string' && r.alternatives) lines.push(`  Notes: ${r.alternatives.slice(0, 600)}`);
+  if (Array.isArray(r.tags) && r.tags.length) lines.push(`  Tags: ${r.tags.join(', ')}`);
+  return lines.join('\n');
+}
+
+/** The last two turns, in either shape the page sends */
+function formatHistory(conversationHistory) {
+  if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) return '';
+  const turns = conversationHistory.slice(-4).map(turn => {
+    if (turn.role) return `${turn.role === 'user' ? 'User' : 'You'}: ${String(turn.content || '').slice(0, 800)}`;
+    return `User: ${turn.query}\nYou: ${turn.response}`;
+  });
+  return `\n\nConversation so far:\n${turns.join('\n')}`;
+}
+
+/**
+ * Reads Claude's { answer, used_ids } reply; used_ids is limited to the sources given
+ * @param {string} text
+ * @param {number[]} allowedIds
+ * @returns {{ text: string, usedIds: number[] }|null}
+ */
+function parseAnswer(text, allowedIds) {
+  const match = String(text || '').match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    const data = JSON.parse(match[0]);
+    if (typeof data.answer !== 'string' || !data.answer.trim()) return null;
+    const allowed = new Set(allowedIds);
+    const usedIds = [...new Set((Array.isArray(data.used_ids) ? data.used_ids : []).map(Number))].filter(id => allowed.has(id));
+    return { text: data.answer.trim(), usedIds };
+  } catch (error) {
+    return null;
   }
 }
 
@@ -603,7 +519,7 @@ async function fetchDecisionById(decisionId, workspaceId, spaceId) {
     id: decisionId,
     workspace_id: workspaceId,
     space_id: spaceId  // SECURITY FIX: Ensure decision is in user's current space
-  });
+  }, { projection: RESULT_PROJECTION });
 
   if (!decision) {
     return null;
@@ -685,8 +601,10 @@ async function hybridSearch(query, options = {}) {
 }
 
 /**
- * Traditional keyword-based search (fallback)
- * Extracts meaningful keywords from query and searches for them
+ * Keyword search (fallback when semantic search is off or finds nothing).
+ * Candidates contain a keyword at the start of a word (accents ignored); a source counts
+ * only if it contains enough of the query's keywords (requiredMatches). Scored by the share
+ * of keywords it contains (0.5–1.0), then by date.
  */
 async function keywordSearch(query, options = {}) {
   const {
@@ -695,7 +613,8 @@ async function keywordSearch(query, options = {}) {
     type,
     dateFrom,
     dateTo,
-    limit = 10
+    limit = 10,
+    excludeIds = []
   } = options;
 
   if (!workspace_id) {
@@ -706,58 +625,60 @@ async function keywordSearch(query, options = {}) {
     throw new Error('space_id is required for search');
   }
 
-  const decisionsCollection = getDecisionsCollection();
-
-  // Extract keywords from query instead of searching for entire query string
   const keywords = extractKeywords(query);
-  console.log(`🔍 Keyword search: extracted keywords: [${keywords.join(', ')}]`);
+  console.log(`🔍 Keyword search: keywords [${keywords.join(', ')}]`);
+  const empty = { highlyRelevant: [], relevant: [], somewhatRelevant: [], all: [] };
+  if (keywords.length === 0) return empty;
 
-  // If no keywords extracted, search for the original query
-  const searchTerms = keywords.length > 0 ? keywords : [query];
-
-  // Build OR conditions for each keyword
-  const orConditions = searchTerms.flatMap(keyword => [
-    { text: { $regex: keyword, $options: 'i' } },
-    { tags: { $regex: keyword, $options: 'i' } },
-    { epic_key: { $regex: keyword, $options: 'i' } }
-  ]);
+  const orConditions = keywords.flatMap(keyword => {
+    const pattern = accentInsensitivePattern(keyword);
+    return [
+      { text: { $regex: pattern, $options: 'i' } },
+      { tags: { $regex: pattern, $options: 'i' } },
+      { rationale: { $regex: pattern, $options: 'i' } },
+      { 'source_details.title': { $regex: pattern, $options: 'i' } },
+      { epic_key: { $regex: pattern, $options: 'i' } }
+    ];
+  });
 
   const filter = {
     workspace_id,
     space_id,  // SECURITY FIX: Filter search by space
     $or: orConditions
   };
-
-  if (type) {
-    filter.type = type;
-  }
-
+  if (excludeIds.length) filter.id = { $nin: excludeIds };
+  if (type) filter.type = type;
   if (dateFrom || dateTo) {
     filter.timestamp = {};
-    if (dateFrom) {
-      filter.timestamp.$gte = dateFrom.toISOString();
-    }
-    if (dateTo) {
-      filter.timestamp.$lte = dateTo.toISOString();
-    }
+    if (dateFrom) filter.timestamp.$gte = dateFrom.toISOString();
+    if (dateTo) filter.timestamp.$lte = dateTo.toISOString();
   }
 
-  const results = await decisionsCollection
-    .find(filter)
+  const candidates = await getDecisionsCollection()
+    .find(filter, { projection: RESULT_PROJECTION })
     .sort({ timestamp: -1 })
-    .limit(limit)
+    .limit(200)
     .toArray();
 
-  // Format as categorized results (all are "relevant" for keyword search)
+  const needed = requiredMatches(keywords.length);
+  const results = candidates
+    .map(doc => ({ doc, matches: matchedKeywords(doc, keywords).length }))
+    .filter(({ matches }) => matches >= needed)
+    .sort((a, b) => b.matches - a.matches) // stable: newest first among equals
+    .slice(0, limit)
+    .map(({ doc, matches }) => ({ ...doc, score: 0.5 + 0.5 * (matches / keywords.length), keywordMatches: matches }));
+
   return {
-    highlyRelevant: [],
-    relevant: results.map(r => ({ ...r, score: 0.75 })), // Fake score for consistency
+    highlyRelevant: results.filter(r => r.score >= 0.85),
+    relevant: results.filter(r => r.score < 0.85),
     somewhatRelevant: [],
-    all: results.map(r => ({ ...r, score: 0.75 }))
+    all: results
   };
 }
 
 module.exports = {
+  parseAnswer,
+  describeSource,
   semanticSearch,
   generateConversationalResponse,
   hybridSearch,

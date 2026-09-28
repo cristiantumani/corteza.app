@@ -25,7 +25,8 @@ function parseQueryParams(url) {
  *   "type": "technical" (optional),
  *   "dateFrom": "2024-01-01" (optional),
  *   "dateTo": "2024-12-31" (optional),
- *   "limit": 10 (optional),
+ *   "limit": 8 (optional, max 20),
+ *   "exclude_ids": [12, 45] (optional: sources the user marked as unrelated),
  *   "conversational": true (optional, default true)
  * }
  *
@@ -33,7 +34,8 @@ function parseQueryParams(url) {
  * {
  *   "success": true,
  *   "query": "show me AEM decisions",
- *   "response": "I found 5 decisions about AEM...",
+ *   "response": "We moved AEM to ... (#12)",
+ *   "used_ids": [12],            (sources the answer is based on)
  *   "decisions": [...],
  *   "searchMethod": "semantic",
  *   "resultsCount": 5
@@ -48,7 +50,8 @@ async function handleSemanticSearch(req, res) {
   console.log('   - Request body:', req.body);
 
   try {
-    const requestData = req.body;
+    // Workspace comes from the session, never from the request body
+    const requestData = { ...(req.body || {}), workspace_id: req.session?.user?.workspace_id };
 
     console.log('🔍 Semantic search request received:');
     console.log(`   - Query: "${requestData.query}"`);
@@ -114,8 +117,10 @@ async function handleSemanticSearch(req, res) {
     const searchOptions = {
       workspace_id: requestData.workspace_id,
       space_id: requestData.space_id,  // SECURITY FIX: Filter search by space
-      limit: requestData.limit || 10,
-      minScore: requestData.minScore || 0.5  // Low threshold to get candidates; false positives filtered later
+      limit: Math.min(Math.max(parseInt(requestData.limit, 10) || 8, 1), 20),
+      minScore: requestData.minScore || 0.5,  // Low threshold to get candidates; false positives filtered later
+      excludeIds: (Array.isArray(requestData.exclude_ids) ? requestData.exclude_ids : [])
+        .map(Number).filter(Number.isInteger).slice(0, 50)
     };
 
     if (requestData.type) {
@@ -154,16 +159,19 @@ async function handleSemanticSearch(req, res) {
 
     // Generate conversational response (if requested)
     let conversationalResponse = null;
+    let usedIds = searchResult.results.all.map(r => r.id);
     if (requestData.conversational !== false) {
       console.log('   🤖 Generating conversational response...');
       try {
         // Pass conversation history for context-aware responses
         const conversationHistory = requestData.conversationHistory || [];
-        conversationalResponse = await generateConversationalResponse(
+        const answer = await generateConversationalResponse(
           requestData.query,
           searchResult.results,
           conversationHistory
         );
+        conversationalResponse = answer.text;
+        usedIds = answer.usedIds;
         console.log('   ✅ Conversational response generated');
       } catch (aiError) {
         console.error('⚠️ AI response generation failed, continuing without conversational response:', aiError.message);
@@ -178,6 +186,8 @@ async function handleSemanticSearch(req, res) {
       success: true,
       query: requestData.query,
       response: conversationalResponse,
+      used_ids: usedIds,
+      excluded_ids: searchOptions.excludeIds,
       decisions: searchResult.results.all,
       categorized: {
         highlyRelevant: searchResult.results.highlyRelevant,

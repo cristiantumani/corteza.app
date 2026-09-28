@@ -2208,3 +2208,37 @@
       color: #64748b;
       margin: 6px 0 0;
     }
+
+    /* Search: "Is this related to your question?" on top of a source (public/scripts/ai-search.js) */
+    .detail-relevance {
+      background: #eef1fd;
+      border: 1px solid #c9d1f7;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .detail-relevance-question { margin: 0 0 10px; color: #1a1a1a; }
+    .detail-relevance-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .detail-relevance-buttons button,
+    .detail-relevance-followup button {
+      border: 1px solid #c9d1f7;
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .detail-relevance-buttons button.is-selected {
+      background: #3953bd;
+      border-color: #3953bd;
+      color: #fff;
+    }
+
+    .detail-relevance-followup { margin-top: 10px; color: #475569; }
+    .detail-relevance-followup button { margin-left: 6px; color: #3953bd; }
+
+    .evidence-card-unrelated { opacity: 0.55; }

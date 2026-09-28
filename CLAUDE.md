@@ -59,7 +59,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Extraction eval (labeled transcripts, scoring) | `scripts/eval-extraction.js`, `scripts/eval/score.js`, `test/fixtures/extraction/` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
 | Google verification / launch checklist | `docs/launch/google-verification.md` |
-| Embeddings / semantic search | `src/services/embeddings.js`, `src/services/semantic-search.js` |
+| Embeddings / semantic search (answer + sources used, keyword fallback, source feedback) | `src/services/embeddings.js`, `src/services/semantic-search.js`, `src/core/search/relevance.js`, `src/http/search-feedback.js`, `public/scripts/ai-search.js` |
+| Outcome detail modal (shared by Home and Search) | `src/views/partials/detail-modal.html`, injected at `<!-- DETAIL_MODAL -->` by `src/routes/dashboard.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |

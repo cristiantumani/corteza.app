@@ -8,6 +8,11 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 
 - **Stack:** one Node.js process (Express + Slack Bolt) on Railway, backed by MongoDB Atlas.
 - **AI:** Anthropic Claude for decision extraction and conversational search, and OpenAI `text-embedding-3-small` for semantic-search embeddings.
+- **Search** (`POST /api/semantic-search`, `services/semantic-search.js`):
+  - Uses vector search when `OPENAI_API_KEY` is set. Otherwise, or when vector search finds nothing, it falls back to keyword search (`core/search/relevance.js`: English and Spanish stop words, accents ignored, word-start matches, about half of the keywords required).
+  - Claude answers in the question's language and returns `used_ids`, the sources it used.
+  - `exclude_ids` answers again without sources the user marked as unrelated (`POST /api/search-feedback`).
+  - Results never include `embedding`.
 - **Email:** Resend.
 - **Coupled to Slack:** Express is currently created by Bolt's `ExpressReceiver` (`src/index.js`), so the app still needs Slack env vars to start. Phase 1 removes that coupling.
 
@@ -97,6 +102,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
 | `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
 | `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` (all outcomes), `outcomes_by_type` (e.g. `{ decision: 3, risk: 1 }`, from `countByType`), `action_items_created` |
+| `search_feedback` | Search → "Is this related to your question?": one row per `workspace_id` + `user_id` + `query` + `decision_id`, with `relevant` (true/false). Kept to tune search later |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
 | `action_items` | Action items ("pendientes") from meetings: `owners` [{ name, user_id, email }], `owner_ids`, `due_date`, `status` open/done/cancelled, `decision_id` (the decision it carries out), `source`, `evidence_quote`, `due_date_requested_at` (`core/actions`) |
 | `meet_imports` | "Import past meetings" jobs: chosen meetings with per-meeting status and outcome counts (`outcomes_by_type`), totals, progress, lease for resume |
