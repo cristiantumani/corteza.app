@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Search: fewer, better sources; open a source in full; leave unrelated ones out
+- **The answer works again:** search answers were falling back to a canned list ("Looking at our decisions about…") because the Claude call sent a temperature the current model rejects. Claude now answers in the question's language, and only from sources that help answer it
+- **Sources used vs. other matches:** Claude says which sources it used, and only those appear under Evidence Sources. The rest are under "Other matches not used in the answer". The header reads "Based on N sources"
+- **Fewer, closer matches:**
+  - Keyword search ignores Spanish and English filler words ("que", "hemos", "con", "cara"…) and accents, and matches whole words ("con" no longer matches "confirm")
+  - A source must contain about half of the question's keywords
+  - Search asks for 8 sources instead of 20
+  - Results never include embeddings
+- **Open a source in full:** clicking a source opens the full outcome without leaving Search: content, why, action items, accountable person and meeting context. Home and Search now share the same detail modal
+- **"Is this related?":** each source asks whether it's related to the question. "No, not related" lets you **update the answer without it**, from the source or from a banner under the answer. The vote is saved (`search_feedback`) to tune search
+- **Security:** search takes the workspace from the session, not from the request body
+
 ### Changed - Decisions have someone "Accountable"; dates live in action items
 - **Accountable:** a decision's "Owner" is now **Accountable**, the person who makes sure it gets done. A short note says that tasks and their owners go in Action items. Cards read "Accountable: Ana"
 - **No due dates on decisions:** a decision no longer has a due date you can add. Older captures that have one show it read-only as "Due (older capture)"

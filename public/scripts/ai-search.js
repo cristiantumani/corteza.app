@@ -8,6 +8,10 @@
 
   let currentSearchResults = null;
   let conversationHistory = [];
+  let currentQuery = null;
+  let excludedIds = [];      // sources marked "not related" and left out of the current answer
+  let pendingExclusions = []; // marked "not related" since the answer was last updated
+  const feedback = new Map(); // decision id → true (related) / false (not related), for the current question
 
   // Auto-resize textarea
   const searchInput = document.getElementById('search-input');
@@ -41,9 +45,19 @@
     input.style.height = 'auto';
   };
 
-  // Main search function
-  window.performSearch = async function(query) {
+  /**
+   * Main search function
+   * @param {string} query
+   * @param {{ excludeIds?: number[], replaceLastTurn?: boolean }} [options] - answer again without some sources
+   */
+  window.performSearch = async function(query, options = {}) {
     console.log(`🔍 Performing search: "${query}"`);
+    const isUpdate = !!options.replaceLastTurn;
+    if (!isUpdate) {
+      excludedIds = [];
+      feedback.clear();
+    }
+    pendingExclusions = [];
 
     // Show loading state
     document.getElementById('empty-state').classList.add('hidden');
@@ -88,8 +102,9 @@
           workspace_id: workspaceId,
           space_id: currentSpaceId,  // ADD THIS
           conversational: true,
-          conversationHistory: conversationHistory,
-          limit: 20
+          conversationHistory: isUpdate ? conversationHistory.slice(0, -2) : conversationHistory,
+          exclude_ids: options.excludeIds || [],
+          limit: 8
         }),
         signal: controller.signal
       });
@@ -106,8 +121,11 @@
 
       // Store results
       currentSearchResults = data;
+      currentQuery = query;
+      excludedIds = data.excluded_ids || options.excludeIds || [];
 
-      // Add to conversation history
+      // Add to conversation history (an updated answer replaces the previous one)
+      if (isUpdate) conversationHistory = conversationHistory.slice(0, -2);
       conversationHistory.push({
         role: 'user',
         content: query
@@ -148,9 +166,15 @@
     // Display synthesized response
     document.getElementById('synthesized-response').textContent = data.response || 'No insights generated';
 
-    // Display metadata
+    // Display metadata: how many sources the answer is based on
     const resultsCount = document.getElementById('results-count');
-    resultsCount.textContent = `${data.resultsCount || 0} source${data.resultsCount !== 1 ? 's' : ''} analyzed`;
+    const usedCount = usedSources(data).length;
+    const total = (data.decisions || []).length;
+    resultsCount.textContent = total === 0
+      ? 'No matching sources'
+      : `Based on ${usedCount} source${usedCount !== 1 ? 's' : ''}${total > usedCount ? ` (${total - usedCount} other match${total - usedCount !== 1 ? 'es' : ''})` : ''}`
+        + (excludedIds.length ? ` · ${excludedIds.length} left out` : '');
+    renderExcludedBanner();
 
     const timestamp = document.getElementById('search-timestamp');
     const now = new Date();
@@ -286,7 +310,14 @@
     `;
   }
 
-  // Render evidence sources (right column cards)
+  /** Sources the answer used, in the order the AI listed them */
+  function usedSources(data) {
+    const decisions = data.decisions || [];
+    const ids = Array.isArray(data.used_ids) ? data.used_ids : decisions.map(d => d.id);
+    return ids.map(id => decisions.find(d => d.id === id)).filter(Boolean);
+  }
+
+  // Render evidence sources (right column cards): the ones the answer used, then other matches
   function renderEvidenceSources(decisions) {
     const container = document.getElementById('evidence-sources');
     container.innerHTML = '';
@@ -294,22 +325,35 @@
     if (decisions.length === 0) {
       container.innerHTML = `
         <div class="text-center py-8 text-on-surface-variant">
-          <p>No evidence sources available</p>
+          <p>No sources match this question</p>
         </div>
       `;
       return;
     }
 
-    decisions.forEach(decision => {
-      const card = createEvidenceCard(decision);
-      container.appendChild(card);
-    });
+    const used = usedSources(currentSearchResults || { decisions });
+    const others = decisions.filter(d => !used.includes(d));
+    used.forEach(decision => container.appendChild(createEvidenceCard(decision)));
+
+    if (others.length) {
+      const details = document.createElement('details');
+      details.className = 'evidence-others';
+      details.innerHTML = `<summary class="cursor-pointer text-sm font-semibold text-on-surface-variant py-2">Other matches not used in the answer (${others.length})</summary>`;
+      const list = document.createElement('div');
+      list.className = 'space-y-4 mt-3';
+      others.forEach(decision => list.appendChild(createEvidenceCard(decision)));
+      details.appendChild(list);
+      if (used.length === 0) details.open = true;
+      container.appendChild(details);
+    }
   }
 
   function createEvidenceCard(decision) {
     const card = document.createElement('div');
-    card.className = 'evidence-card border border-outline-variant rounded-xl p-5 cursor-pointer';
-    card.onclick = () => openDecisionDetail(decision.id);
+    const verdict = feedback.get(decision.id);
+    card.className = `evidence-card border border-outline-variant rounded-xl p-5 cursor-pointer${verdict === false ? ' evidence-card-unrelated' : ''}`;
+    card.dataset.sourceId = decision.id;
+    card.onclick = () => openSource(decision);
 
     const title = decision.text.split('\n')[0];
     const preview = getTruncatedText(decision.text, 150);
@@ -331,7 +375,9 @@
           ${decision.space_name ? `<span class="px-2 py-1 rounded-md bg-secondary-container/20 text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
           <span class="px-2 py-1 rounded-md bg-primary-container/10 text-xs font-semibold text-primary">${escapeHtml(decision.type)}</span>
         </div>
-        <span class="text-xs font-bold ${scoreColor}">${score}%</span>
+        ${verdict === false
+          ? '<span class="text-xs font-bold text-error">Not related</span>'
+          : verdict === true ? '<span class="text-xs font-bold text-tertiary">✓ Related</span>' : `<span class="text-xs font-bold ${scoreColor}">${score}%</span>`}
       </div>
 
       <h5 class="font-bold text-base mb-2 line-clamp-2">${escapeHtml(title)}</h5>
@@ -393,18 +439,93 @@
     searchInput.focus();
   };
 
-  // Open decision detail modal (uses existing dashboard.js function)
+  // Open a source in full (the shared detail modal), with "Is this related?" on top
+  function openSource(decision) {
+    if (typeof window.openDecision !== 'function') return;
+    window.openDecision(decision);
+    renderRelevance(decision);
+  }
+
+  // Breakdown items call this with an id
   window.openDecisionDetail = function(decisionId) {
-    // Find decision in current results
-    if (currentSearchResults && currentSearchResults.decisions) {
-      const index = currentSearchResults.decisions.findIndex(d => d.id === decisionId);
-      if (index !== -1 && typeof window.openDetailModal === 'function') {
-        // Store decisions in global variable for modal access
-        window.allDecisions = currentSearchResults.decisions;
-        window.openDetailModal(index);
-      }
-    }
+    const decision = currentSearchResults && (currentSearchResults.decisions || []).find(d => d.id === decisionId);
+    if (decision) openSource(decision);
   };
+
+  /** The "Is this related to your question?" block at the top of the source */
+  function renderRelevance(decision) {
+    const block = document.getElementById('detail-relevance');
+    if (!block || !currentQuery) return;
+    const verdict = feedback.get(decision.id);
+    const waiting = pendingExclusions.length > 0;
+    block.style.display = 'block';
+    block.innerHTML = `
+      <p class="detail-relevance-question">Is this related to <strong>“${escapeHtml(currentQuery)}”</strong>?</p>
+      <div class="detail-relevance-buttons">
+        <button type="button" data-relevant="yes" class="${verdict === true ? 'is-selected' : ''}">👍 Yes, related</button>
+        <button type="button" data-relevant="no" class="${verdict === false ? 'is-selected' : ''}">👎 No, not related</button>
+      </div>
+      ${verdict === false ? `
+        <div class="detail-relevance-followup">
+          ${waiting
+            ? 'It will be left out when the answer is updated. <button type="button" data-update>Update the answer without it</button>'
+            : 'It is left out of the current answer.'}
+        </div>` : ''}
+      ${verdict === true ? '<div class="detail-relevance-followup">Thanks, noted.</div>' : ''}`;
+
+    block.querySelector('[data-relevant="yes"]').onclick = () => setRelevance(decision, true);
+    block.querySelector('[data-relevant="no"]').onclick = () => setRelevance(decision, false);
+    const update = block.querySelector('[data-update]');
+    if (update) update.onclick = () => { window.closeDetailModal(); updateAnswer(); };
+  }
+
+  async function setRelevance(decision, relevant) {
+    feedback.set(decision.id, relevant);
+    const isExcluded = excludedIds.includes(decision.id) || pendingExclusions.includes(decision.id);
+    if (!relevant && !isExcluded) pendingExclusions.push(decision.id);
+    if (relevant) pendingExclusions = pendingExclusions.filter(id => id !== decision.id);
+    renderRelevance(decision);
+    refreshCard(decision);
+    renderExcludedBanner();
+
+    try {
+      await fetch('/api/search-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ query: currentQuery, decision_id: decision.id, relevant })
+      });
+    } catch (error) {
+      console.warn('Could not save search feedback:', error);
+    }
+  }
+
+  function refreshCard(decision) {
+    document.querySelectorAll(`.evidence-card[data-source-id="${decision.id}"]`).forEach(card => card.replaceWith(createEvidenceCard(decision)));
+  }
+
+  /** Under the answer: "2 sources marked not related · Update answer" */
+  function renderExcludedBanner() {
+    const banner = document.getElementById('excluded-banner');
+    if (!banner) return;
+    if (pendingExclusions.length === 0) {
+      banner.classList.add('hidden');
+      return;
+    }
+    const n = pendingExclusions.length;
+    banner.classList.remove('hidden');
+    banner.innerHTML = `
+      <span>${n} source${n !== 1 ? 's' : ''} marked as not related (${pendingExclusions.map(id => `#${id}`).join(', ')}).</span>
+      <button type="button" class="bg-white text-primary font-semibold rounded-lg px-4 py-2" id="update-answer">Update the answer without ${n === 1 ? 'it' : 'them'}</button>`;
+    document.getElementById('update-answer').onclick = updateAnswer;
+  }
+
+  /** Asks again for the same question, leaving out every source marked "not related" */
+  function updateAnswer() {
+    if (!currentQuery) return;
+    const ids = [...new Set([...excludedIds, ...pendingExclusions])];
+    performSearch(currentQuery, { excludeIds: ids, replaceLastTurn: true });
+  }
 
   // Utility functions
   function getTruncatedText(text, maxLength = 150) {

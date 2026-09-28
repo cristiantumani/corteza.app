@@ -1,0 +1,76 @@
+<!-- Outcome detail modal, shared by Home and Search (injected by src/routes/dashboard.js at DETAIL_MODAL) -->
+<!-- Decision Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal detail-modal">
+    <div class="detail-header">
+      <h2 id="detail-title">Memory Details</h2>
+      <div style="display: flex; gap: 10px;">
+        <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
+        <button class="delete-btn" onclick="deleteCurrentDecision()" style="background: #ba1a1a; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ Delete</button>
+        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+      </div>
+    </div>
+
+    <!-- Search only (public/scripts/ai-search.js): is this source related to the question? -->
+    <div class="detail-relevance" id="detail-relevance" style="display: none;"></div>
+
+    <div class="detail-section">
+      <h3>Content</h3>
+      <div class="content" id="detail-decision-text"></div>
+    </div>
+
+    <div class="detail-section" id="detail-rationale-section" style="display: none;">
+      <h3>Why</h3>
+      <div class="content" id="detail-rationale"></div>
+    </div>
+
+    <div class="detail-section" id="detail-actions-section" style="display: none;">
+      <h3>Action items</h3>
+      <div class="content" id="detail-actions"></div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Type</label>
+        <div class="value" id="detail-type"></div>
+      </div>
+      <div class="detail-item">
+        <label>Creator</label>
+        <div class="value" id="detail-creator"></div>
+      </div>
+      <div class="detail-item">
+        <label>Date</label>
+        <div class="value" id="detail-date"></div>
+      </div>
+      <div class="detail-item" id="detail-owner-container" style="display: none;">
+        <label title="Who makes sure this gets done. Tasks and their owners go in Action items.">Accountable</label>
+        <div class="value" id="detail-owner"></div>
+        <p class="detail-help">Who makes sure this gets done. Tasks and their owners go in Action items.</p>
+      </div>
+      <!-- Older captures only: decisions no longer have due dates (they belong to action items) -->
+      <div class="detail-item" id="detail-due-container" style="display: none;">
+        <label>Due (older capture)</label>
+        <div class="value" id="detail-due"></div>
+      </div>
+      <div class="detail-item" id="detail-confidence-container" style="display: none;">
+        <label>AI Confidence</label>
+        <div class="value" id="detail-confidence"></div>
+      </div>
+    </div>
+
+    <div class="detail-section" id="detail-meeting-section" style="display: none;">
+      <h3>Meeting Context</h3>
+      <div class="content" id="detail-meeting-info"></div>
+    </div>
+
+    <div class="detail-section" id="detail-epic-section" style="display: none;">
+      <h3>Jira Epic</h3>
+      <div class="content" id="detail-epic-info"></div>
+    </div>
+
+    <div class="detail-section" id="detail-tags-section" style="display: none;">
+      <h3>Tags</h3>
+      <div class="content" id="detail-tags"></div>
+    </div>
+  </div>
+</div>
