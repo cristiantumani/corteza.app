@@ -19,7 +19,7 @@ const { ensurePersonalSpace } = require('../../services/spaces');
  * @param {string} [params.userName]
  * @param {boolean} params.isAdminUser - workspace admins see every shared space (to manage them),
  *   but never a colleague's personal space
- * @returns {Promise<Object[]>} spaces with decision_count, is_creator, user_role, can_modify, can_create
+ * @returns {Promise<Object[]>} spaces with decision_count, is_creator, user_role, can_read, can_modify, can_create
  */
 async function listSpacesForUser({ workspaceId, userId, userName, isAdminUser }) {
   // Every member has a personal space (older members get it here the first time)
@@ -66,6 +66,7 @@ async function listSpacesForUser({ workspaceId, userId, userName, isAdminUser })
       decision_count: countBySpace.get(space.space_id) || 0,
       is_creator: isCreator, // who created it (may not be a member)
       user_role: userRole, // actual role in the space (null if not a member)
+      can_read: userRole !== null, // same rule as canAccessSpace(): admins may list spaces they can't open
       can_modify: isAdminUser || isCreator || userRole === 'admin', // admins, creator and space admins can manage
       can_create: ['owner', 'admin', 'member'].includes(userRole) // same rule as canCreateInSpace()
     };

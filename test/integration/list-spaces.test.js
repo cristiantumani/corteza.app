@@ -65,6 +65,8 @@ describe('listSpacesForUser', { skip }, () => {
     assert.ok(!spaces.some(space => space.personal_for === 'U1'), "Ana's personal space stays hidden from admins");
     assert.ok(spaces.some(space => space.space_id === 'sp_priv'));
     assert.equal(spaces.find(space => space.space_id === 'sp_priv').can_create, false, 'admins manage private spaces they are not members of, but cannot post');
+    assert.equal(spaces.find(space => space.space_id === 'sp_priv').can_read, false, "…nor open them, so Home never selects them");
+    assert.equal(spaces.find(space => space.space_id === 'sp_pub').can_read, true);
     assert.ok(spaces.every(space => space.can_modify));
     const { canAccessSpace } = require('../../src/services/permissions');
     const anaSpace = await db.collection('workspace_spaces').findOne({ workspace_id: 'WSP', personal_for: 'U1' });

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **No space controls while you have one space:** the header picker, "Searching in", the space pickers, the space chips on cards and Settings → Manage Spaces stay hidden until you belong to more than one space
 - **Action items still reach their owners:** an action item assigned to you in a colleague's meeting shows up in your Action items, and you can update it
 - **Existing workspaces:** `scripts/migrations/007-personal-spaces.js` moves outcomes out of General into each person's space. `scripts/workspace-keep-only.js <email>` leaves one person as the only member of a workspace
+- **Fixed: endless loop on Home.** Opening a space you can't read (an admin sees spaces they only manage, or you were removed from one) made Home re-select that same space forever. Home now skips spaces you can't open, falls back to your own space instead of sending you to the old "choose a space" page (removed; `/select-space` redirects to Home), and never retries a space it was denied
 - **Down to one space:** `scripts/merge-into-personal.js <email>` moves the other spaces you see (outcomes and action items) into your space and archives them
 
 ### Fixed - One sidebar on every page
