@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const express = require('express');
 const { setupTestDatabase, skip } = require('../helpers/db');
 
+// Services log while the test runner reads results from stdout; mixed output can
+// break the runner ("Unable to deserialize cloned data"), as in meet-import.test.js
+console.log = () => {};
+console.warn = () => {};
+console.error = () => {};
+
 /** Minimal verified Google ID token claims */
 function identity(overrides = {}) {
   return { sub: `sub-${Math.random()}`, email_verified: true, name: 'Test User', ...overrides };
@@ -106,8 +112,6 @@ describe('private beta', { skip }, () => {
     let base;
 
     before(async () => {
-      console.log = () => {}; // keep node:test output clean
-      console.error = () => {};
       const app = express();
       app.use(require('../../src/http/beta'));
       await new Promise(resolve => { server = app.listen(0, resolve); });

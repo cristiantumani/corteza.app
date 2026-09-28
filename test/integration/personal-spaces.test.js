@@ -2,6 +2,12 @@ const { describe, test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { setupTestDatabase, skip } = require('../helpers/db');
 
+// Services log while the test runner reads results from stdout; mixed output can
+// break the runner ("Unable to deserialize cloned data"), as in meet-import.test.js
+console.log = () => {};
+console.warn = () => {};
+console.error = () => {};
+
 describe('personal spaces', { skip }, () => {
   let db;
   let cleanup;
