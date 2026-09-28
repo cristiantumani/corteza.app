@@ -123,4 +123,37 @@ describe('personal spaces', { skip }, () => {
     assert.equal((await db.collection('workspace_invites').findOne({ invite_id: 'inv1' })).status, 'revoked');
     assert.equal(await db.collection('decisions').countDocuments({ workspace_id: wid, user_id: 'K2' }), 1, 'outcomes kept by default');
   });
+
+  test('merge-into-personal moves every other space the person sees into their personal space and archives it', async () => {
+    const { mergeIntoPersonal } = require('../../scripts/merge-into-personal');
+    const wid = 'WMERGE';
+    await db.collection('workspace_members').insertOne({ workspace_id: wid, user_id: 'M1', user_name: 'Cris', email: 'cris@x.com', removed_at: null });
+    await db.collection('workspace_admins').insertOne({ workspace_id: wid, user_id: 'M1', role: 'admin', deactivated_at: null });
+    await db.collection('workspace_spaces').insertMany([
+      { workspace_id: wid, space_id: 'sp_ceo', name: 'CEO Space', visibility: 'private', archived: false },
+      { workspace_id: wid, space_id: 'sp_growth', name: 'Product Growth', visibility: 'public', archived: false },
+      { workspace_id: wid, space_id: 'sp_colleague', name: 'My space', personal_for: 'OTHER', visibility: 'private', archived: false }
+    ]);
+    await db.collection('decisions').insertMany([
+      { workspace_id: wid, space_id: 'sp_ceo', id: 1, text: 'a' },
+      { workspace_id: wid, space_id: 'sp_growth', id: 2, text: 'b' },
+      { workspace_id: wid, space_id: 'sp_colleague', id: 3, text: 'not mine' }
+    ]);
+    await db.collection('action_items').insertOne({ workspace_id: wid, space_id: 'sp_growth', item_id: 'm1', text: 'x', owner_ids: [] });
+
+    const dry = await mergeIntoPersonal({ email: 'CRIS@x.com', apply: false });
+    assert.deepEqual(dry.spaces.map(s => [s.name, s.outcomes]).sort(), [['CEO Space', 1], ['Product Growth', 1]]);
+    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: wid, space_id: 'sp_ceo' }), 1, 'dry run changes nothing');
+
+    await mergeIntoPersonal({ email: 'cris@x.com', apply: true });
+    const personal = await db.collection('workspace_spaces').findOne({ workspace_id: wid, personal_for: 'M1' });
+    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: wid, space_id: personal.space_id }), 2);
+    assert.equal((await db.collection('action_items').findOne({ item_id: 'm1' })).space_id, personal.space_id);
+    assert.equal(await db.collection('workspace_spaces').countDocuments({ workspace_id: wid, space_id: { $in: ['sp_ceo', 'sp_growth'] }, archived: true }), 2);
+    assert.equal((await db.collection('decisions').findOne({ workspace_id: wid, id: 3 })).space_id, 'sp_colleague', "a colleague's personal space is never touched");
+
+    const { listSpacesForUser } = require('../../src/core/spaces/list-spaces');
+    const left = await listSpacesForUser({ workspaceId: wid, userId: 'M1', userName: 'Cris', isAdminUser: true });
+    assert.deepEqual(left.map(s => s.space_id), [personal.space_id], 'one space left, so the app hides the space controls');
+  });
 });
