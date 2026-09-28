@@ -20,6 +20,10 @@ const { countByType } = require('../core/decisions/types');
  * don't apply, and meetings skipped earlier can be imported. Completed meetings
  * are never processed twice (pipeline `ingestions`). A job interrupted by a
  * restart is picked up again by the Meet poller (resumeStaleImports).
+ *
+ * It runs on the server, so people can leave the page: Home and Settings show the
+ * running import (getActiveImport, in GET /api/integrations/google), and an email
+ * with the summary goes out when it finishes (once).
  */
 
 const MAX_RANGE_DAYS = 92;
@@ -184,7 +188,8 @@ async function runImport(importId, deps = {}) {
     getClient = connections.getAuthorizedClient,
     getRecord = meetClient.getConferenceRecord,
     loadMeeting = googleMeetSource.loadMeeting,
-    ingest = pipeline.ingestTranscript
+    ingest = pipeline.ingestTranscript,
+    notify = notifyImportDone
   } = deps;
 
   const now = () => new Date();
@@ -269,12 +274,39 @@ async function runImport(importId, deps = {}) {
     });
   }
 
-  await imports().updateOne({ import_id: importId }, {
+  // Only the run that marks it completed sends the summary email
+  const completed = await imports().updateOne({ import_id: importId, status: 'running' }, {
     $set: { status: 'completed', lease_until: null, completed_at: now(), updated_at: now() }
   });
   const finished = await imports().findOne({ import_id: importId });
   console.log(`📥 Meet import ${importId} finished: ${finished.decisions_created} outcome(s) from ${finished.total} meeting(s)`);
+  if (completed.modifiedCount === 1) {
+    await notify(connection, finished).catch(error => console.error(`❌ Import summary email for ${importId} failed:`, error.message));
+  }
   return finished;
+}
+
+/** Emails the person who started the import what it captured (skipped without Resend) */
+async function notifyImportDone(connection, job) {
+  if (!process.env.RESEND_API_KEY || !connection.google_email) return;
+  const { sendImportSummaryEmail } = require('../utils/n8n-client');
+  await sendImportSummaryEmail({ email: connection.google_email, job });
+}
+
+/**
+ * The user's import that is still running, if any (latest first), for Home and Settings
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @returns {Promise<Object|null>} { import_id, total, done, decisions_created, action_items_created, outcomes_by_type, created_at }
+ */
+async function getActiveImport(workspaceId, userId) {
+  return imports().findOne(
+    { workspace_id: workspaceId, user_id: userId, status: 'running' },
+    {
+      sort: { created_at: -1 },
+      projection: { _id: 0, import_id: 1, total: 1, done: 1, decisions_created: 1, action_items_created: 1, outcomes_by_type: 1, created_at: 1 }
+    }
+  );
 }
 
 /** An import job of this user, or null */
@@ -303,6 +335,7 @@ module.exports = {
   startImport,
   runImport,
   getImport,
+  getActiveImport,
   importErrorMessage,
   resumeStaleImports,
   MAX_RANGE_DAYS,

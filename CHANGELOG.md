@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Importing past meetings runs in the background, visibly
+- **Leave the page:** the import already ran on the server. Now Settings says so while it runs, and when you come back to Settings the progress shows up again
+- **Progress on Home:** while an import runs, Home shows "Importing past meetings: 5 of 20" with a progress bar, refreshed every 10 seconds, and reloads your outcomes and action items when it finishes
+- **Summary email:** when the import finishes you get an email with what it captured from each meeting (and which ones couldn't be imported)
+
 ### Removed - Onboarding questions after sign-in
 - **Straight to Home:** the first sign-in no longer asks for your name, role, company size, use case and how you heard of Corteza. Google gives us your name, and the early access form already asked about your company, team and meetings
 - **Old links:** `/auth/onboarding` redirects to Home. The page and `POST /auth/complete-onboarding` are gone, and new memberships no longer get an `onboarding_completed` flag

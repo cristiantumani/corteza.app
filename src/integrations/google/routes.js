@@ -11,7 +11,7 @@ const { LANGUAGE_CODES } = require('../../core/language/detect');
  *
  *   GET  /integrations/google/connect       start consent (Meet + Drive-Meet scopes, offline access)
  *   GET  /integrations/google/callback      Google redirects back here
- *   GET  /api/integrations/google           connection status for the signed-in user
+ *   GET  /api/integrations/google           connection status for the signed-in user (+ active_import: a running import, or null)
  *   PUT  /api/integrations/google/settings  { space_id, skip_one_on_one, exclude_keywords }
  *   POST /api/integrations/google/sync      check for new meetings now
  *   POST /api/integrations/google/disconnect
@@ -102,10 +102,14 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, action_items_created: 1, updated_at: 1, _id: 0 })
       .toArray();
 
+    const { getActiveImport } = require('../../ingestion/meet-import');
+    const activeImport = await getActiveImport(workspace_id, user_id);
+
     res.json({
       success: true,
       configured: google.isGoogleConfigured(),
       connected: true,
+      active_import: activeImport, // an "Import past meetings" job still running, or null
       status: connection.status,
       needs_reconsent: connections.needsReconsent(connection),
       google_email: connection.google_email,

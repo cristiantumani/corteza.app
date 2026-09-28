@@ -2,7 +2,9 @@
  * Home: automatic capture from Google Meet comes first.
  *
  * - #capture-panel: connect Google Meet (if not connected), or capture status,
- *   "Check now", "Import past meetings" and the latest processed meetings.
+ *   "Check now", "Import past meetings" and the latest processed meetings. While an
+ *   import runs on the server it shows its progress (refreshed every 10 s) and, when
+ *   it finishes, reloads the outcomes and action items.
  * - #my-actions-panel: the signed-in user's open action items.
  * - #open-items-panel: the latest open questions and risks in the current space.
  *
@@ -80,6 +82,45 @@
     return plural(total, 'outcome');
   }
 
+  /** Progress of an "Import past meetings" job still running on the server */
+  function importProgressHtml(job) {
+    if (!job) return '';
+    const percent = job.total ? Math.round((job.done / job.total) * 100) : 0;
+    const soFar = job.decisions_created || job.action_items_created
+      ? ` · ${describe(job.outcomes_by_type || null, job.decisions_created || 0, job.action_items_created || 0)} so far`
+      : '';
+    return `
+      <div class="p-3 rounded-lg bg-primary/5 border border-primary/20">
+        <div class="flex items-center justify-between gap-4 text-sm mb-2">
+          <span class="font-semibold text-on-surface">Importing past meetings: ${job.done} of ${job.total}${escapeHtml(soFar)}</span>
+          <a href="/settings#import" class="text-primary font-semibold whitespace-nowrap hover:underline">Details</a>
+        </div>
+        <div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
+        <p class="text-xs text-on-surface-variant mt-2">It keeps going in the background. We'll email you a summary when it's done.</p>
+      </div>`;
+  }
+
+  let importPoll = null;
+  let importRunning = false;
+
+  /** Keeps the import progress fresh; when the import ends, reloads what it captured */
+  function followImport(data) {
+    const running = !!(data && data.active_import);
+    if (importRunning && !running) {
+      if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
+      if (typeof window.fetchStats === 'function') window.fetchStats();
+      loadMyActions();
+      const result = document.getElementById('capture-sync-result');
+      if (result) {
+        result.textContent = 'Import finished. Your outcomes are below.';
+        result.className = 'text-sm text-tertiary';
+      }
+    }
+    importRunning = running;
+    clearTimeout(importPoll);
+    if (running) importPoll = setTimeout(loadCapture, 10000);
+  }
+
   function renderConnected(data) {
     const needsReconnect = data.status !== 'active';
     const recent = (data.recent_meetings || []).slice(0, 5);
@@ -123,6 +164,7 @@
             </a>
           </div>
         </div>
+        ${importProgressHtml(data.active_import)}
         <p id="capture-sync-result" class="hidden text-sm"></p>
         <div>
           <h4 class="text-sm font-semibold text-on-surface mb-1">Latest meetings</h4>
@@ -176,6 +218,7 @@
       }
       if (data.connected) renderConnected(data);
       else renderNotConnected();
+      followImport(data);
     } catch (error) {
       panel().innerHTML = `<div class="rounded-xl border border-outline-variant p-6 text-sm text-error">Couldn't load automatic capture status. ${escapeHtml(error.message)}</div>`;
     }
