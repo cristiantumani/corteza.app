@@ -15,12 +15,6 @@ const dashboardHTML = withPartials(fs.readFileSync(
   'utf8'
 ));
 
-// Load AI analytics HTML once at startup
-const aiAnalyticsHTML = fs.readFileSync(
-  path.join(__dirname, '../views/ai-analytics.html'),
-  'utf8'
-);
-
 // Load new settings HTML (Material Design 3)
 const settingsNewHTML = fs.readFileSync(
   path.join(__dirname, '../views/settings-new.html'),
@@ -90,20 +84,6 @@ function serveDashboard(req, res) {
 }
 
 /**
- * GET /ai-analytics - Serves the AI analytics dashboard HTML
- */
-function serveAIAnalytics(req, res) {
-  // Get workspace_id from session
-  const workspaceId = req.session?.user?.workspace_id || '';
-
-  // Replace <WORKSPACE_ID> placeholder with actual workspace_id
-  const html = aiAnalyticsHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
-
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(html);
-}
-
-/**
  * GET /settings - Serves the settings page HTML
  */
 function serveSettings(req, res) {
@@ -151,7 +131,6 @@ function redirectToDashboard(req, res) {
 module.exports = {
   scriptJson,
   serveDashboard,
-  serveAIAnalytics,
   serveAISearch,
   serveSettings,
   serveSpaceSelector,

@@ -12,8 +12,8 @@ A team decision log focused on **Google Workspace**:
 
 **Sign-in is Google only.** A company's Google Workspace domain is its Corteza workspace.
 
-Also kept: Jira linking, AI (semantic) search, AI analytics, the demo, and the weekly digest email.
-Removed: the Obsidian plugin, import and export. Don't re-add them.
+Also kept: Jira linking, AI (semantic) search, the demo, and the weekly digest email.
+Removed: the Obsidian plugin, import and export, and the AI Analytics page (Sept 2026). Don't re-add them; analytics will come back as roadmap C4.
 
 ## Commands
 

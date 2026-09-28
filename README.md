@@ -10,7 +10,7 @@
 - **Manual capture:** the Chrome extension (`Cmd/Ctrl+Shift+M`) and the dashboard's Log Decision form.
 - **Slack input:** `/decision` and transcript uploads in Slack.
 - **Sign in with Google:** your company's Google Workspace domain is your Corteza workspace, and colleagues join automatically.
-- **Organize and find:** spaces (public, shared, private), semantic search, AI analytics, Jira linking, and a weekly digest email.
+- **Organize and find:** spaces (public, shared, private), semantic search, Jira linking, and a weekly digest email.
 
 ## Run locally
 

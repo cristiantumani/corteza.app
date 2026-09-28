@@ -21,7 +21,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 
 | Entry point | Code | Auth |
 |---|---|---|
-| Dashboard pages (`/dashboard`, `/settings`, `/select-space`, `/ai-search`, `/ai-analytics`) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
+| Dashboard pages (`/dashboard`, `/settings`, `/select-space`, `/ai-search`) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
 | Integration API (`/api/v1/*`) | `src/routes/extract-api.js`, `api.js#getDecisionById` | API key (`src/middleware/api-key-auth.js`) |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |

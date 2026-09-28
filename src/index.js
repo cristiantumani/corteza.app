@@ -5,11 +5,11 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
-const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, getAIAnalytics, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
+const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
 const { requireApiKey } = require('./middleware/api-key-auth');
-const { serveDashboard, serveAIAnalytics, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
+const { serveDashboard, serveAISearch, serveSettings, serveSpaceSelector, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
 const { extractFromApi } = require('./routes/extract-api');
 const { handleMe, handleLogout } = require('./routes/auth');
@@ -171,7 +171,7 @@ async function startApp() {
   // Protected routes - Dashboard (requires authentication, redirects to login)
   expressApp.get('/select-space', requireAuthBrowser, serveSpaceSelector); // Space selector for multi-space users
   expressApp.get('/dashboard', requireAuthBrowser, serveDashboard); // New Tailwind/Material Design dashboard
-  expressApp.get('/ai-analytics', requireAuthBrowser, serveAIAnalytics);
+  expressApp.get('/ai-analytics', (req, res) => res.redirect(301, '/dashboard')); // removed page: old bookmarks land on Home
   expressApp.get('/ai-search', requireAuthBrowser, serveAISearch); // AI search interface
   expressApp.get('/settings', requireAuthBrowser, serveSettings);
 
@@ -186,7 +186,6 @@ async function startApp() {
   expressApp.put('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, updateDecision);
   expressApp.delete('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteDecision);
   expressApp.get('/api/stats', apiRateLimiter, requireAuth, requireWorkspaceAccess, getStats);
-  expressApp.get('/api/ai-analytics', apiRateLimiter, requireAuth, requireWorkspaceAccess, getAIAnalytics);
   expressApp.post('/api/semantic-search', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
   expressApp.post('/api/memory/create', apiRateLimiter, require('express').json(), requireAuth, createMemory);
