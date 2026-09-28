@@ -90,6 +90,8 @@ async function createActionItem({
  * @param {string} workspaceId
  * @param {Object} filters
  * @param {string[]} filters.spaceIds - spaces the viewer can access
+ * @param {string} [filters.viewerId] - also include items this user owns, in any space
+ *   (an action item from a colleague's private meeting still reaches its owner)
  * @param {string} [filters.ownerId] - only items owned by this user
  * @param {'open'|'done'|'cancelled'|'all'} [filters.status='open']
  * @param {'overdue'|'none'|'week'} [filters.due]
@@ -97,8 +99,12 @@ async function createActionItem({
  * @param {Date} [filters.now]
  * @returns {Promise<Object[]>}
  */
-async function listActionItems(workspaceId, { spaceIds, ownerId, status = 'open', due, decisionId, now = new Date() } = {}) {
+async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, status = 'open', due, decisionId, now = new Date() } = {}) {
   const query = { workspace_id: workspaceId, space_id: { $in: spaceIds || [] } };
+  if (viewerId) {
+    delete query.space_id;
+    query.$or = [{ space_id: { $in: spaceIds || [] } }, { owner_ids: viewerId }];
+  }
   if (ownerId) query.owner_ids = ownerId;
   if (STATUSES.includes(status)) query.status = status;
   if (typeof decisionId === 'number') query.decision_id = decisionId;

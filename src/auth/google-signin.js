@@ -3,6 +3,7 @@ const users = require('../core/users/user-service');
 const invites = require('../core/invites/invite-service');
 const { isAdmin } = require('../services/permissions');
 const beta = require('../core/beta/beta-access');
+const { ensurePersonalSpace } = require('../services/spaces');
 
 /**
  * Decides which workspace a verified Google user signs in to.
@@ -115,6 +116,7 @@ function membershipUser(membership, user) {
 
 async function finish(user, membership) {
   await users.setLastWorkspace(user.user_id, membership.workspace_id);
+  await ensurePersonalSpace(membership.workspace_id, membership.user_id, membership.user_name || user.name);
   return {
     sessionUser: {
       user_id: membership.user_id,

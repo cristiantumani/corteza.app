@@ -4,7 +4,7 @@ const connections = require('../integrations/google/connections');
 const meetClient = require('../integrations/google/meet-client');
 const googleMeetSource = require('../ingestion/sources/google-meet');
 const pipeline = require('../ingestion/pipeline');
-const { ensureDefaultSpace } = require('../services/spaces');
+const { ensurePersonalSpace } = require('../services/spaces');
 const { countByType } = require('../core/decisions/types');
 
 /**
@@ -21,7 +21,7 @@ const GIVE_UP_AFTER_MS = 6 * 60 * 60 * 1000; // no transcript 6h after the end â
 const LOOKBACK_MS = GIVE_UP_AFTER_MS; // keep re-checking meetings until we process them or give up
 
 /**
- * Space a connection's decisions go to: its chosen space if it still exists, else the default space
+ * Space a connection's decisions go to: its chosen space if it still exists, else the person's personal space
  */
 async function resolveSpace(connection) {
   const spaceId = connection.settings?.space_id;
@@ -31,7 +31,7 @@ async function resolveSpace(connection) {
     });
     if (space) return space;
   }
-  return ensureDefaultSpace(connection.workspace_id);
+  return ensurePersonalSpace(connection.workspace_id, connection.user_id, connection.user_name);
 }
 
 /**

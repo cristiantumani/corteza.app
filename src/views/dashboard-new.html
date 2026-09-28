@@ -48,7 +48,7 @@
 <header class="fixed top-0 right-0 left-64 h-16 z-10 bg-surface border-b border-outline-variant flex items-center justify-between px-6 shadow-sm">
     <div class="flex items-center gap-4 flex-1">
         <!-- Space Filter -->
-        <select id="space-filter" class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none space-selector-required">
+        <select id="space-filter" data-multi-space class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none space-selector-required">
             <!-- No "All Spaces" option - populated by JavaScript -->
         </select>
 
@@ -194,7 +194,7 @@
         </select>
       </div>
 
-      <div class="detail-item">
+      <div class="detail-item" data-multi-space>
         <label>📁 Space *</label>
         <select
           id="log-memory-space"
@@ -283,7 +283,7 @@
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" data-multi-space>
         <label for="edit-decision-space">📁 Space *</label>
         <select id="edit-decision-space" required>
           <option value="">Loading spaces...</option>
@@ -411,8 +411,8 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/dashboard.js?v=22"></script>
-<script src="/scripts/dashboard-new.js?v=9"></script>
+<script src="/scripts/dashboard.js?v=23"></script>
+<script src="/scripts/dashboard-new.js?v=10"></script>
 <script src="/scripts/people.js?v=1"></script>
 <script src="/scripts/decision-actions.js?v=1"></script>
 <script src="/scripts/inline-edit.js?v=3"></script>

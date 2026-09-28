@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const { getDatabase } = require('../../config/database');
-const { ensureDefaultSpace } = require('../../services/spaces');
 
 /**
  * Workspaces (the `workspaces` collection).
@@ -31,7 +30,7 @@ async function findById(workspaceId) {
 }
 
 /**
- * Creates a workspace and its default space.
+ * Creates a workspace. Each member's personal space is created when they sign in.
  * @param {Object} params
  * @param {string} params.name
  * @param {string|null} [params.googleDomain] - unique; a duplicate throws a MongoDB 11000 error
@@ -48,7 +47,6 @@ async function createWorkspace({ name, googleDomain = null, createdBy }) {
     created_at: new Date()
   };
   await collection().insertOne(workspace);
-  await ensureDefaultSpace(workspace.workspace_id, createdBy.user_id, createdBy.user_name);
   console.log(`🏢 Created workspace ${workspace.workspace_id} (${name})${workspace.google_domain ? ` for ${workspace.google_domain}` : ''}`);
   return workspace;
 }

@@ -4,7 +4,7 @@ const {
   getDecisionsCollection
 } = require('../../config/database');
 const { getUserAccessibleSpaces } = require('../../services/permissions');
-const { ensureDefaultSpace } = require('../../services/spaces');
+const { ensurePersonalSpace } = require('../../services/spaces');
 
 /**
  * The spaces a user sees, with decision counts and their role in each.
@@ -17,24 +17,29 @@ const { ensureDefaultSpace } = require('../../services/spaces');
  * @param {string} params.workspaceId
  * @param {string} params.userId
  * @param {string} [params.userName]
- * @param {boolean} params.isAdminUser - workspace admins see every space (to manage them)
+ * @param {boolean} params.isAdminUser - workspace admins see every shared space (to manage them),
+ *   but never a colleague's personal space
  * @returns {Promise<Object[]>} spaces with decision_count, is_creator, user_role, can_modify, can_create
  */
 async function listSpacesForUser({ workspaceId, userId, userName, isAdminUser }) {
-  // Every workspace has a default space (older workspaces may not have one yet)
-  await ensureDefaultSpace(workspaceId, userId, userName);
+  // Every member has a personal space (older members get it here the first time)
+  await ensurePersonalSpace(workspaceId, userId, userName);
 
   const spacesCollection = getWorkspaceSpacesCollection();
   let spaces;
   if (isAdminUser) {
-    spaces = await spacesCollection.find({ workspace_id: workspaceId, archived: false })
-      .sort({ is_default: -1, created_at: 1 }).toArray();
+    spaces = await spacesCollection.find({
+      workspace_id: workspaceId,
+      archived: false,
+      $or: [{ personal_for: { $exists: false } }, { personal_for: null }, { personal_for: userId }]
+    }).toArray();
   } else {
     const accessibleSpaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
     if (accessibleSpaceIds.length === 0) return [];
-    spaces = await spacesCollection.find({ workspace_id: workspaceId, space_id: { $in: accessibleSpaceIds }, archived: false })
-      .sort({ is_default: -1, created_at: 1 }).toArray();
+    spaces = await spacesCollection.find({ workspace_id: workspaceId, space_id: { $in: accessibleSpaceIds }, archived: false }).toArray();
   }
+  // Their personal space first, then the rest in creation order
+  spaces.sort((a, b) => (b.personal_for === userId) - (a.personal_for === userId) || String(a.created_at).localeCompare(String(b.created_at)));
   if (spaces.length === 0) return [];
 
   const spaceIds = spaces.map(space => space.space_id);
@@ -57,6 +62,7 @@ async function listSpacesForUser({ workspaceId, userId, userName, isAdminUser })
     const userRole = space.visibility === 'public' ? 'member' : (roleBySpace.get(space.space_id) || null);
     return {
       ...space,
+      is_personal: space.personal_for === userId,
       decision_count: countBySpace.get(space.space_id) || 0,
       is_creator: isCreator, // who created it (may not be a member)
       user_role: userRole, // actual role in the space (null if not a member)

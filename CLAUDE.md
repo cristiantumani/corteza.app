@@ -37,7 +37,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Env config / MongoDB connection and indexes | `src/config/environment.js`, `src/config/database.js` |
 | HTTP routes (handlers) | `src/routes/*.js` |
 | Business logic services | `src/services/*.js` |
-| Space helpers (default space) | `src/services/spaces.js` (`ensureDefaultSpace`) |
+| Space helpers (personal space per member, default space for Slack/API) | `src/services/spaces.js` (`ensurePersonalSpace`, `ensureDefaultSpace`) |
 | Spaces a user sees, with counts and roles (API and page preload) | `src/core/spaces/list-spaces.js` (`listSpacesForUser`) |
 | Space/admin permission rules | `src/services/permissions.js` |
 | Google sign-in routes (login page, OAuth callback, onboarding) | `src/auth/routes.js` |
@@ -82,7 +82,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 - **New action items go through `createActionItem`** (`src/core/actions/action-service.js`), never into `decisions`.
 - **Naming:** in the UI, everything captured from a meeting is an **outcome**; a *decision* is one type of outcome, next to action items, open questions and risks. Say "decisions" only for `type: 'decision'`. Code, collections and APIs keep the `decisions` name.
 - **New decisions go through `createDecision`** (`src/core/decisions/decision-service.js`); new transcript sources are adapters in `src/ingestion/sources/` that call `ingestTranscript`.
-- **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker (Slack, API, AI), use `ensureDefaultSpace(workspaceId)` from `src/services/spaces.js`.
+- **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker, a person's captures go to their **personal space** (`ensurePersonalSpace(workspaceId, userId)` in `src/services/spaces.js`; private, created at sign-in). Only captures with no Corteza user behind them (Slack, API keys) use `ensureDefaultSpace(workspaceId)`.
+- **Spaces stay out of sight while someone has one.** Space controls carry `data-multi-space` and are hidden when the page sets `body.single-space` (1 space). Never show a colleague's personal space, not even to admins.
 - **Workspace isolation:** never trust a `workspace_id` from the request body or query. Use the session's (`req.session.user.workspace_id`), `requireWorkspaceAccess`, or the API key's (`req.user.workspace_id`).
 - **Joining a workspace:** only through Google sign-in (same `hd` domain, or an invite link). Never trust the email's domain, only Google's `hd` claim. See `signInWithGoogle` in `src/auth/google-signin.js`.
 - **User IDs:** memberships keep their own `user_id` (legacy Slack/email IDs). The session uses the membership's `user_id`, and decisions reference it.

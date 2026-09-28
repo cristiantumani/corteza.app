@@ -27,7 +27,7 @@ describe('Google sign-in: workspace resolution', { skip }, () => {
     assert.match(result.error, /not verified/);
   });
 
-  test('first user of a new Google domain creates the workspace as admin, with a default space', async () => {
+  test('first user of a new Google domain creates the workspace as admin, with their own private space', async () => {
     const result = await signInWithGoogle(identity({ sub: 'ana', email: 'Ana@Acme.com', name: 'Ana', hd: 'acme.com' }));
 
     assert.equal(result.error, undefined);
@@ -40,7 +40,10 @@ describe('Google sign-in: workspace resolution', { skip }, () => {
     const member = await db.collection('workspace_members').findOne({ workspace_id: workspaceId, email: 'ana@acme.com' });
     assert.equal(member.role, 'admin');
     assert.ok(await db.collection('workspace_admins').findOne({ workspace_id: workspaceId, user_id: member.user_id }));
-    assert.ok(await db.collection('workspace_spaces').findOne({ workspace_id: workspaceId, is_default: true }));
+    const personal = await db.collection('workspace_spaces').findOne({ workspace_id: workspaceId, personal_for: member.user_id });
+    assert.equal(personal.visibility, 'private');
+    assert.ok(await db.collection('space_members').findOne({ space_id: personal.space_id, user_id: member.user_id, role: 'owner', removed_at: null }));
+    assert.equal(await db.collection('workspace_spaces').findOne({ workspace_id: workspaceId, is_default: true }), null, 'no shared General space');
 
     // The dashboard (/auth/me) and admin-only endpoints must see them as admin without Slack
     const { isAdmin } = require('../../src/services/permissions');
@@ -56,8 +59,17 @@ describe('Google sign-in: workspace resolution', { skip }, () => {
     const member = await db.collection('workspace_members').findOne({ email: 'bob@acme.com' });
     assert.equal(member.role, 'member');
     assert.equal(await db.collection('workspace_admins').findOne({ user_id: member.user_id }), null);
-    const { isAdmin } = require('../../src/services/permissions');
+    const { isAdmin, canAccessSpace } = require('../../src/services/permissions');
     assert.equal(await isAdmin(null, acme.workspace_id, member.user_id), false);
+
+    // Colleagues are separated: Bob gets his own space and can't see Ana's
+    const ana = await db.collection('workspace_members').findOne({ email: 'ana@acme.com' });
+    const bobSpace = await db.collection('workspace_spaces').findOne({ workspace_id: acme.workspace_id, personal_for: member.user_id });
+    const anaSpace = await db.collection('workspace_spaces').findOne({ workspace_id: acme.workspace_id, personal_for: ana.user_id });
+    assert.ok(bobSpace);
+    assert.notEqual(bobSpace.space_id, anaSpace.space_id);
+    assert.equal(await canAccessSpace(null, acme.workspace_id, anaSpace.space_id, member.user_id), false);
+    assert.equal(await canAccessSpace(null, acme.workspace_id, bobSpace.space_id, ana.user_id), false);
   });
 
   test('signing in again returns the same workspace and user_id', async () => {

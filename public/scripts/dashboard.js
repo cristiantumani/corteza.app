@@ -594,7 +594,7 @@
 
         // Add space badge
         const spaceBadge = d.space_name ?
-          `<span class="space-badge-small" style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #6b7280; margin-left: 8px;">📁 ${d.space_name}</span>` :
+          `<span data-multi-space class="space-badge-small" style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #6b7280; margin-left: 8px;">📁 ${d.space_name}</span>` :
           '';
 
         // Backward compatibility: if type has old values, treat as category
@@ -854,6 +854,7 @@
         spaceSelect.appendChild(option);
       });
       const preselected = writableSpaces.find(s => s.space_id === currentSpaceId)
+        || writableSpaces.find(s => s.is_personal)
         || writableSpaces.find(s => s.is_default)
         || writableSpaces[0];
       spaceSelect.value = preselected.space_id;
@@ -1752,6 +1753,9 @@
     async function initializeSpaceContext() {
       console.log('🎯 Initializing space context...');
 
+      // With a single space (the usual case: your personal space) every space control is hidden
+      document.body.classList.toggle('single-space', currentUserSpaces.length <= 1);
+
       // 1. Check if user has any accessible spaces
       if (currentUserSpaces.length === 0) {
         console.log('⚠️ No accessible spaces');
@@ -1786,9 +1790,9 @@
         return;
       }
 
-      // Priority 3: Default space
+      // Priority 3: your personal space, else the workspace default
       if (!selectedSpaceId) {
-        const defaultSpace = currentUserSpaces.find(s => s.is_default);
+        const defaultSpace = currentUserSpaces.find(s => s.is_personal) || currentUserSpaces.find(s => s.is_default);
         if (defaultSpace) {
           selectedSpaceId = defaultSpace.space_id;
           console.log('⭐ Using default space:', selectedSpaceId);

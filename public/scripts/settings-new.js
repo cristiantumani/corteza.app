@@ -179,6 +179,8 @@
       const data = await response.json();
 
       allSpaces = data.spaces || [];
+      // With a single space (your personal one) Manage Spaces and the space pickers stay hidden
+      document.body.classList.toggle('single-space', allSpaces.length <= 1);
 
       const tbody = document.getElementById('spaces-table');
       tbody.innerHTML = '';

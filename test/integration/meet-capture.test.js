@@ -249,8 +249,8 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.deepEqual(notified, ['Planning']);
 
     const decision = await db.collection('decisions').findOne({ workspace_id: 'WPOLL', 'source_details.external_id': 'conferenceRecords/ready' });
-    const defaultSpace = await spaces.ensureDefaultSpace('WPOLL');
-    assert.equal(decision.space_id, defaultSpace.space_id, 'goes to the default space when none is chosen');
+    const personalSpace = await spaces.ensurePersonalSpace('WPOLL', 'U1');
+    assert.equal(decision.space_id, personalSpace.space_id, "goes to the person's own space when none is chosen");
     assert.equal(decision.user_id, 'U1');
 
     const saved = await connections.getConnection('WPOLL', 'U1');

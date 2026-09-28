@@ -114,7 +114,7 @@
     card.innerHTML = `
       <div class="flex items-start justify-between mb-4">
         <div class="flex gap-1 flex-wrap">
-          ${decision.space_name ? `<span class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
+          ${decision.space_name ? `<span data-multi-space class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
           <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(TYPE_LABELS[decision.type] || decision.type)}</span>
           ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="Captured automatically${decision.confidence != null ? ` (${Math.round(decision.confidence * 100)}% confidence)` : ''}">✨ AI-captured</span>` : ''}
         </div>
