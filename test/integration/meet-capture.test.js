@@ -182,7 +182,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
 
     assert.equal((await pipeline.ingestTranscript(transcript, { extract: failing })).status, 'failed');
     assert.equal((await pipeline.ingestTranscript(transcript, { extract: fakeExtract([]) })).status, 'duplicate', 'too soon to retry');
-    assert.equal(await pipeline.isHandled('WFAIL', 'google_meet', 'conferenceRecords/f'), false);
+    assert.equal(await pipeline.isHandled('WFAIL', 'U1', 'google_meet', 'conferenceRecords/f'), false);
 
     await db.collection('ingestions').updateOne({ external_id: 'conferenceRecords/f' }, { $set: { updated_at: new Date(Date.now() - 11 * 60 * 1000) } });
     const retried = await pipeline.ingestTranscript(transcript, { extract: fakeExtract([{ decision_text: 'Retry works', decision_type: 'decision', confidence: 0.9 }]) });
@@ -289,7 +289,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.equal(result.error, undefined);
     assert.equal(result.decisionsCaptured, 1);
     assert.deepEqual(result.results.map(r => r.status).sort(), ['completed', 'failed']);
-    assert.equal(await pipeline.isHandled('WPOLL', 'google_meet', 'conferenceRecords/refused'), false, 'retried on a later poll');
+    assert.equal(await pipeline.isHandled('WPOLL', 'U1', 'google_meet', 'conferenceRecords/refused'), false, 'retried on a later poll');
   });
 
   test('poller: a held lease blocks a second concurrent run; revoked tokens mark the connection', async () => {

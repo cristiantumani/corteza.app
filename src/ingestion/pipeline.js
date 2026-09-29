@@ -49,6 +49,14 @@ function ownerOf(transcript) {
 }
 
 /**
+ * One ingestion per person per meeting: colleagues in the same meeting each get
+ * its outcomes in their own personal space
+ */
+function keyOf(transcript) {
+  return { workspace_id: transcript.workspaceId, user_id: ownerOf(transcript), source: transcript.source, external_id: transcript.externalId };
+}
+
+/**
  * Latest meetings a person's Google Meet connection handled (never a colleague's)
  * @param {string} workspaceId
  * @param {string} userId
@@ -73,13 +81,12 @@ async function listRecentForUser(workspaceId, userId, source, limit = 10) {
  * @returns {Promise<Object|null>} the ingestion document, or null if already handled/in progress
  */
 async function claim(transcript, manual = false) {
-  const key = { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId };
+  const key = keyOf(transcript);
   const now = new Date();
 
   try {
     const doc = {
       ...key,
-      user_id: ownerOf(transcript),
       title: transcript.title,
       status: 'processing',
       attempts: 1,
@@ -99,7 +106,7 @@ async function claim(transcript, manual = false) {
     : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } };
   return ingestions().findOneAndUpdate(
     { ...key, ...retryable },
-    { $set: { status: 'processing', user_id: ownerOf(transcript), updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
+    { $set: { status: 'processing', updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
     { returnDocument: 'after' }
   );
 }
@@ -110,10 +117,9 @@ async function claim(transcript, manual = false) {
  */
 async function recordSkipped(transcript, reason) {
   await ingestions().updateOne(
-    { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId },
+    keyOf(transcript),
     {
       $setOnInsert: {
-        user_id: ownerOf(transcript),
         title: transcript.title || null,
         status: 'skipped',
         skip_reason: reason,
@@ -128,20 +134,24 @@ async function recordSkipped(transcript, reason) {
 }
 
 /**
- * Ingestion status for many external items at once
+ * A person's ingestion status for many external items at once
+ * @param {string} workspaceId
+ * @param {string} userId - whose connection (colleagues' captures of the same meeting don't count)
+ * @param {string} source
+ * @param {string[]} externalIds
  * @returns {Promise<Map<string, Object>>} external_id → ingestion document
  */
-async function getStatuses(workspaceId, source, externalIds) {
+async function getStatuses(workspaceId, userId, source, externalIds) {
   const docs = await ingestions()
-    .find({ workspace_id: workspaceId, source, external_id: { $in: externalIds } })
+    .find({ workspace_id: workspaceId, user_id: userId, source, external_id: { $in: externalIds } })
     .project({ external_id: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, _id: 0 })
     .toArray();
   return new Map(docs.map(doc => [doc.external_id, doc]));
 }
 
-/** Has this external item been handled already (processed, skipped, or given up on)? */
-async function isHandled(workspaceId, source, externalId) {
-  const doc = await ingestions().findOne({ workspace_id: workspaceId, source, external_id: externalId });
+/** Has this person's connection handled this external item already (processed, skipped, or given up on)? */
+async function isHandled(workspaceId, userId, source, externalId) {
+  const doc = await ingestions().findOne({ workspace_id: workspaceId, user_id: userId, source, external_id: externalId });
   return !!doc && (doc.status !== 'failed' || doc.attempts >= MAX_ATTEMPTS);
 }
 
@@ -167,7 +177,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
   const ingestion = await claim(transcript, manual);
   if (!ingestion) return { status: 'duplicate', decisions: [], actionItems: [] };
 
-  const key = { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId };
+  const key = keyOf(transcript);
 
   try {
     const wordCount = (transcript.text || '').split(/\s+/).filter(Boolean).length;

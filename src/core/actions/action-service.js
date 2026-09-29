@@ -115,13 +115,35 @@ async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, statu
   if (due === 'none') query.due_date = null;
   if (due === 'week') query.due_date = { $ne: null, $gte: today, $lte: inAWeek };
 
-  const items = await collection().find(query, { projection: { _id: 0 } }).sort({ created_at: -1 }).limit(500).toArray();
+  let items = await collection().find(query, { projection: { _id: 0 } }).sort({ created_at: -1 }).limit(500).toArray();
+  if (viewerId) items = await withoutColleaguesCopies(workspaceId, viewerId, spaceIds || [], items);
   return items.sort((a, b) => {
     if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
     if (a.due_date) return -1;
     if (b.due_date) return 1;
     return 0;
   });
+}
+
+/**
+ * When colleagues are in the same meeting, each captures it into their own space, so an
+ * item the viewer owns can exist twice: in their own capture and in a colleague's. The
+ * viewer keeps only their own copy (whatever its status) of meetings they captured.
+ * @returns {Promise<Object[]>}
+ */
+async function withoutColleaguesCopies(workspaceId, viewerId, spaceIds, items) {
+  const own = new Set(spaceIds);
+  const meetingOf = item => (item.source && item.source.external_id) || null;
+  const fromColleagues = items.filter(item => !own.has(item.space_id) && meetingOf(item));
+  if (fromColleagues.length === 0) return items;
+
+  const captured = new Set(await getDatabase().collection('ingestions').distinct('external_id', {
+    workspace_id: workspaceId,
+    user_id: viewerId,
+    status: 'completed',
+    external_id: { $in: [...new Set(fromColleagues.map(meetingOf))] }
+  }));
+  return items.filter(item => own.has(item.space_id) || !captured.has(meetingOf(item)));
 }
 
 /** One action item of a workspace, or null */
