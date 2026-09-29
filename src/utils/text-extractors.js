@@ -18,7 +18,7 @@ async function extractTextFromFile(fileBuffer, fileName, mimeType) {
     // Caption files are checked first: browsers often report .srt as text/plain
     if (fileExtension === 'vtt' || fileExtension === 'srt' || mimeType === 'text/vtt') {
       return extractFromCaptions(fileBuffer);
-    } else if (fileExtension === 'txt' || mimeType === 'text/plain') {
+    } else if (fileExtension === 'txt' || fileExtension === 'csv' || mimeType === 'text/plain' || mimeType === 'text/csv') {
       return extractFromPlainText(fileBuffer);
     } else if (fileExtension === 'md' || mimeType === 'text/markdown') {
       return extractFromPlainText(fileBuffer);

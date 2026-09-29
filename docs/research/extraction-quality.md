@@ -184,16 +184,16 @@ El costo es bajo frente al valor de un registro confiable. Propongo comparar Son
 1. **Set de evaluación:** solo reuniones de Cristian, exportadas a su Mac, fuera del repo (`scripts/eval/export-meetings.js`).
 2. **Precisión antes que cobertura:** confirmado. Preferimos perder un ítem menor antes que guardar ruido.
 3. **Contexto de la empresa:** sí, pero como descripción general (no "este trimestre"), con la opción de subir un diccionario u otra información relevante (siglas, clientes, productos, nombres). Ver la propuesta de abajo.
+4. **Quién administra el contexto:** dos niveles (aprobado el 29 de septiembre).
+   - **Contexto de la empresa:** descripción, glosario y documentos. Lo editan los admins, los miembros lo leen y lo usan las capturas de todos.
+   - **"Sobre ti":** rol, foco y glosario personal. Solo lo usan las capturas de esa persona.
 
-**Pendientes:**
-- **Quién administra el contexto.** No todos tienen el mismo acceso: quien crea el workspace es **admin** y los colegas que entran por el dominio son **miembros**. Propuesta en dos niveles:
-  - **Contexto de la empresa** (workspace): lo editan los admins y los miembros lo leen. Incluye descripción, diccionario o glosario y documentos de referencia. Lo usan las capturas de todos.
-  - **Mi contexto** (usuario, opcional): el rol de cada persona, sus áreas y su glosario personal. Lo usan solo sus capturas.
+   Implementado en Settings → Context for the AI (`core/context`).
 
-  Empezar solo con el nivel de usuario duplicaría la descripción de la empresa en cada persona y dejaría de estar sincronizada.
+**Pendiente:**
 - **PR #48:** propuesta de no mergearlo y medirlo como una variante más en la Fase 1.
 
-**Cómo usa la IA el contexto:** va en el prompt, antes del transcript y en caché, así que casi no suma costo después de la primera reunión. El diccionario también ayuda con otras dos cosas:
+**Cómo usa la IA el contexto:** va en el prompt, antes del transcript y marcado como información de fondo. Normalmente son menos de 1.000 tokens (como máximo unos 15.000 con 5 documentos), un costo pequeño frente al transcript. El diccionario también ayuda con otras dos cosas:
 - **siglas** que la transcripción escribe mal (CAC, PNL);
 - **nombres de personas y clientes**, para asignar bien los dueños.
 

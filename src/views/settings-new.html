@@ -146,6 +146,64 @@
                     <div id="google-meet-body" class="text-sm text-on-surface-variant">Loading…</div>
                 </section>
 
+                <!-- Context for the AI: company (admins edit) and personal (public/scripts/settings-context.js) -->
+                <section id="ai-context" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Context for the AI</h3>
+                            <p class="text-sm text-on-surface-variant max-w-2xl">Corteza reads this with every meeting, so it knows what matters to your business, spells names and acronyms right (the transcript often gets "CAC" or "P&amp;L" wrong) and knows who's who when it assigns owners.</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="rounded-lg border border-outline-variant p-5 flex flex-col gap-4">
+                            <div>
+                                <h4 class="font-bold text-on-surface">Your company</h4>
+                                <p id="ctx-company-note" class="text-xs text-on-surface-variant mt-1">Shared by everyone in your workspace.</p>
+                            </div>
+                            <label class="text-sm font-semibold text-on-surface">What the company does
+                                <textarea id="ctx-company-description" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. Ninja Excel teaches Excel and data skills online to companies and individuals in Latin America and Spain. We sell B2C courses and B2B training."></textarea>
+                            </label>
+                            <label class="text-sm font-semibold text-on-surface">Glossary
+                                <span class="block text-xs font-normal text-on-surface-variant">One term per line: acronyms, products, customers, people and their roles.</span>
+                                <textarea id="ctx-company-glossary" rows="5" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="CAC: customer acquisition cost&#10;PNL: profit and loss statement&#10;José Tomás Acuña: finance"></textarea>
+                            </label>
+                            <div>
+                                <p class="text-sm font-semibold text-on-surface">Reference documents</p>
+                                <p class="text-xs text-on-surface-variant">TXT, MD, CSV, PDF or DOCX: a dictionary, org chart, product list… Only the text is kept.</p>
+                                <ul id="ctx-documents" class="mt-2 space-y-2 text-sm"></ul>
+                                <label id="ctx-upload-label" class="mt-2 inline-flex items-center gap-2 text-sm font-bold text-primary cursor-pointer hover:underline">
+                                    <span class="material-symbols-outlined text-base">upload_file</span> Add a document
+                                    <input id="ctx-upload" type="file" accept=".txt,.md,.csv,.pdf,.docx" class="hidden">
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="ctx-company-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">Save company context</button>
+                                <span id="ctx-company-status" class="text-xs text-on-surface-variant"></span>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border border-outline-variant p-5 flex flex-col gap-4">
+                            <div>
+                                <h4 class="font-bold text-on-surface">About you</h4>
+                                <p class="text-xs text-on-surface-variant mt-1">Only used for your own meetings. Colleagues don't see it.</p>
+                            </div>
+                            <label class="text-sm font-semibold text-on-surface">Your role
+                                <input id="ctx-personal-role" type="text" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. CEO">
+                            </label>
+                            <label class="text-sm font-semibold text-on-surface">What you focus on
+                                <textarea id="ctx-personal-focus" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. Growth in Spain, pricing, and the finance team's reporting."></textarea>
+                            </label>
+                            <label class="text-sm font-semibold text-on-surface">Your glossary
+                                <textarea id="ctx-personal-glossary" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="Terms and names that come up in your meetings"></textarea>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <button id="ctx-personal-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">Save</button>
+                                <span id="ctx-personal-status" class="text-xs text-on-surface-variant"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Account (Google sign-in) -->
                 <section class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col h-full">
                     <div class="mb-6">
@@ -360,5 +418,6 @@
     <script src="/scripts/settings-new.js?v=4"></script>
     <script src="/scripts/outcome-labels.js?v=1"></script>
     <script src="/scripts/settings-integrations.js?v=6"></script>
+    <script src="/scripts/settings-context.js?v=1"></script>
 </body>
 </html>
