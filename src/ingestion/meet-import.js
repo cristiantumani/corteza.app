@@ -90,7 +90,7 @@ async function findMeetings(connection, { from, to }, deps = {}) {
   const listed = records.slice(0, MAX_MEETINGS_LISTED);
 
   const described = await mapWithLimit(listed, DESCRIBE_CONCURRENCY, record => describeMeeting(client, record));
-  const statuses = await pipeline.getStatuses(connection.workspace_id, 'google_meet', listed.map(r => r.name));
+  const statuses = await pipeline.getStatuses(connection.workspace_id, connection.user_id, 'google_meet', listed.map(r => r.name));
 
   const meetings = described.map(meeting => {
     const ingestion = statuses.get(meeting.externalId);

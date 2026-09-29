@@ -185,7 +185,10 @@ async function connectToMongoDB() {
     // Google Meet capture (integrations/google/connections, ingestion/pipeline)
     await db.collection('google_connections').createIndex({ workspace_id: 1, user_id: 1 }, { unique: true });
     await db.collection('google_connections').createIndex({ status: 1 });
-    await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, external_id: 1 }, { unique: true });
+    // One ingestion per person per meeting (colleagues in the same meeting each capture it).
+    // The older per-workspace unique index would block the second person, so it's dropped.
+    await db.collection('ingestions').dropIndex('workspace_id_1_source_1_external_id_1').catch(() => {});
+    await db.collection('ingestions').createIndex({ workspace_id: 1, user_id: 1, source: 1, external_id: 1 }, { unique: true });
     await db.collection('ingestions').createIndex({ workspace_id: 1, source: 1, updated_at: -1 });
     await db.collection('meet_imports').createIndex({ import_id: 1 }, { unique: true });
     await db.collection('meet_imports').createIndex({ status: 1, lease_until: 1 });

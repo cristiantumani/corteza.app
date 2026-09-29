@@ -86,8 +86,8 @@ describe('Google Meet: import past meetings', { skip }, () => {
 
     // History: one meeting imported before, one skipped automatically as a 1:1
     await db.collection('ingestions').insertMany([
-      { workspace_id: 'WIMP', source: 'google_meet', external_id: 'conferenceRecords/done', status: 'completed', decisions_created: 2, attempts: 1, updated_at: new Date() },
-      { workspace_id: 'WIMP', source: 'google_meet', external_id: 'conferenceRecords/oneonone', status: 'skipped', skip_reason: 'one_on_one', attempts: 0, updated_at: new Date() }
+      { workspace_id: 'WIMP', user_id: 'U1', source: 'google_meet', external_id: 'conferenceRecords/done', status: 'completed', decisions_created: 2, attempts: 1, updated_at: new Date() },
+      { workspace_id: 'WIMP', user_id: 'U1', source: 'google_meet', external_id: 'conferenceRecords/oneonone', status: 'skipped', skip_reason: 'one_on_one', attempts: 0, updated_at: new Date() }
     ]);
   });
 

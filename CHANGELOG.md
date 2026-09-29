@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Colleagues in the same meeting each get its outcomes
+- **Shared meetings:** when two colleagues with Google Meet connected were in the same meeting, only the first one's connection captured it and the other got nothing. Each person now captures it into their own personal space (ingestions are unique per person, not per workspace)
+- **No duplicate action items:** an item you own that a colleague also captured shows once in your list (your own copy, even after you mark it done). If you didn't capture the meeting, you still see the colleague's copy
+- **One due date email:** colleagues with Google Meet connected are asked for due dates by their own capture only, not once per colleague
+
 ### Security - Colleagues could see each other's meetings and data
 - **Latest meetings:** Home and Settings → Google Meet listed every meeting captured in the workspace, including colleagues' meeting titles and outcome counts. Each person now sees only their own (`ingestions.user_id`). Run `scripts/migrations/008-ingestion-owners.js --apply` to keep the history of existing meetings
 - **Data export:** Settings → Data Privacy → Export downloaded the whole workspace, including colleagues' personal spaces and uploaded transcripts. It now exports only outcomes in spaces you can see and transcripts you uploaded

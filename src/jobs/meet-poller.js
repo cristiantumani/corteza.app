@@ -71,7 +71,7 @@ async function pollConnection(connection, deps = {}) {
 
   for (const record of records) {
     const source = 'google_meet';
-    if (await pipeline.isHandled(connection.workspace_id, source, record.name)) continue;
+    if (await pipeline.isHandled(connection.workspace_id, connection.user_id, source, record.name)) continue;
 
     let meeting;
     try {
