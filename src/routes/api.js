@@ -595,7 +595,7 @@ const EXTRACTION_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
  * POST /api/extract-decisions - Extract decisions from transcript text
- * Session-authenticated; automations should use POST /api/v1/extract with an API key instead
+ * Session-authenticated
  *
  * CREDIT OPTIMIZATION: Added caching to prevent duplicate Claude API calls
  * - Caches extraction results by content hash
@@ -703,52 +703,6 @@ async function extractDecisionsFromText(req, res) {
       error: 'Failed to extract decisions',
       details: error.message
     }));
-  }
-}
-
-/**
- * GET /api/v1/decisions/:id - Get a single decision by ID (for API key integrations)
- * Protected by API key authentication
- */
-async function getDecisionById(req, res) {
-  try {
-    const idString = req.params.id;
-    const id = validateDecisionId(idString);
-
-    if (!id) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid decision ID' }));
-      return;
-    }
-
-    // Get workspace_id from API key authentication
-    const workspace_id = req.user?.workspace_id;
-
-    if (!workspace_id) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid API key' }));
-      return;
-    }
-
-    const decisionsCollection = getDecisionsCollection();
-    const decision = await decisionsCollection.findOne({
-      id: id,
-      workspace_id: workspace_id
-    });
-
-    if (!decision) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Decision not found' }));
-      return;
-    }
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ decision }));
-
-  } catch (error) {
-    console.error('Error fetching decision by ID:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Failed to fetch decision' }));
   }
 }
 
@@ -916,7 +870,6 @@ async function createMemory(req, res) {
 
 module.exports = {
   getDecisions,
-  getDecisionById,
   updateDecision,
   deleteDecision,
   getStats,

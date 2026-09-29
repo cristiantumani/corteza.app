@@ -13,7 +13,7 @@ A team decision log focused on **Google Workspace**:
 **Sign-in is Google only.** A company's Google Workspace domain is its Corteza workspace.
 
 Also kept: Jira linking, AI (semantic) search, the demo, and the weekly digest email.
-Removed: the Obsidian plugin, import and export, and the AI Analytics page (Sept 2026). Don't re-add them; analytics will come back as roadmap C4.
+Removed: the Obsidian plugin, import and export, the AI Analytics page and API keys (`/api/v1/*`) (Sept 2026). Don't re-add them; analytics will come back as roadmap C4.
 
 ## Commands
 
@@ -67,7 +67,6 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |
-| API-key integrations (`/api/v1/*`) | `src/routes/extract-api.js`, `src/middleware/api-key-auth.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
@@ -82,9 +81,9 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 - **New action items go through `createActionItem`** (`src/core/actions/action-service.js`), never into `decisions`.
 - **Naming:** in the UI, everything captured from a meeting is an **outcome**; a *decision* is one type of outcome, next to action items, open questions and risks. Say "decisions" only for `type: 'decision'`. Code, collections and APIs keep the `decisions` name.
 - **New decisions go through `createDecision`** (`src/core/decisions/decision-service.js`); new transcript sources are adapters in `src/ingestion/sources/` that call `ingestTranscript`.
-- **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker, a person's captures go to their **personal space** (`ensurePersonalSpace(workspaceId, userId)` in `src/services/spaces.js`; private, created at sign-in). Only captures with no Corteza user behind them (Slack, API keys) use `ensureDefaultSpace(workspaceId)`.
+- **Every decision has a `space_id`.** The dashboard filters by space. When there's no space picker, a person's captures go to their **personal space** (`ensurePersonalSpace(workspaceId, userId)` in `src/services/spaces.js`; private, created at sign-in). Only captures with no Corteza user behind them (Slack) use `ensureDefaultSpace(workspaceId)`.
 - **Spaces stay out of sight while someone has one.** Space controls carry `data-multi-space` and are hidden when the page sets `body.single-space` (1 space). Never show a colleague's personal space, not even to admins.
-- **Workspace isolation:** never trust a `workspace_id` from the request body or query. Use the session's (`req.session.user.workspace_id`), `requireWorkspaceAccess`, or the API key's (`req.user.workspace_id`).
+- **Workspace isolation:** never trust a `workspace_id` from the request body or query. Use the session's (`req.session.user.workspace_id`), or `requireWorkspaceAccess`.
 - **Joining a workspace:** only through Google sign-in (same `hd` domain, or an invite link). Never trust the email's domain, only Google's `hd` claim. See `signInWithGoogle` in `src/auth/google-signin.js`.
 - **User IDs:** memberships keep their own `user_id` (legacy Slack/email IDs). The session uses the membership's `user_id`, and decisions reference it.
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.

@@ -3343,7 +3343,7 @@
       fetchPendingSuggestions();
     };
 
-    // Pending suggestions queued by automations (POST /api/v1/extract), e.g. Google Drive via n8n
+    // AI suggestions still waiting for review in this space (e.g. an uploaded transcript's, left unreviewed)
     let pendingSuggestions = [];
 
     async function fetchPendingSuggestions() {

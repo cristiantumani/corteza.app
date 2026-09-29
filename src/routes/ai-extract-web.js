@@ -526,8 +526,8 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
 
 /**
  * GET /api/ai/pending-suggestions
- * List AI suggestions still awaiting review in a space, e.g. ones created by
- * automations (Google Drive via n8n) through POST /api/v1/extract
+ * List AI suggestions still awaiting review in a space (e.g. from an uploaded
+ * transcript whose review was closed before finishing)
  *
  * Query:
  * - workspace_id: string
@@ -574,4 +574,3 @@ router.get('/api/ai/pending-suggestions', async (req, res) => {
 });
 
 module.exports = router;
-module.exports.processTranscriptWeb = processTranscriptWeb;
