@@ -131,15 +131,20 @@ function validateAISuggestion(suggestion) {
 function sanitizeTranscriptText(text) {
   if (!text) return '';
 
-  // Remove excessive whitespace
-  let sanitized = text.replace(/\s+/g, ' ');
+  // Keep line breaks: each transcript turn ("Ana: …") is a line, and sections
+  // ("Transcript:", "Meeting notes (Gemini):") are separated by a blank line
+  let sanitized = String(text).replace(/\r\n?/g, '\n');
 
   // Remove control characters except newlines and tabs
   // eslint-disable-next-line no-control-regex -- stripping control characters is the point
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
-  // Trim
-  sanitized = sanitized.trim();
+  // Collapse spaces within a line, trim each line, and allow at most one blank line
+  sanitized = sanitized
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
   return sanitized;
 }

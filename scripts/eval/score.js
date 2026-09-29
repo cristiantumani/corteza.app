@@ -5,6 +5,10 @@
  * `match` keyword appears in its text (case- and accent-insensitive). Each
  * expected item can be matched once. Precision and recall are reported per type.
  *
+ * Fixtures can also list `not_expected`: things said in the meeting that must NOT be
+ * captured (logistics, equipment problems, small talk). An extracted item of any type
+ * whose text has all of an entry's `match` keywords counts as noise.
+ *
  * Also checked:
  * - rationale_match: keywords the item's rationale should contain (context behind it)
  * - decisions phrased as outcomes ("Se decide…", "Launch moves to…"), not narration
@@ -24,12 +28,18 @@ function matches(item, expected) {
   return (expected.match || []).every(keyword => text.includes(normalize(keyword)));
 }
 
+function mentions(item, entry) {
+  const text = normalize(item.decision_text);
+  return (entry.match || []).length > 0 && entry.match.every(keyword => text.includes(normalize(keyword)));
+}
+
 /**
  * @param {Object[]} extracted - items from extractDecisionsFromTranscript
  * @param {Object[]} expected - [{ type, match: [keywords], owner?, due_date? }]
- * @returns {{ matched: Object[], missed: Object[], extra: Object[] }}
+ * @param {Object[]} [notExpected] - [{ match: [keywords], why? }] things that must not be captured
+ * @returns {{ matched: Object[], missed: Object[], extra: Object[], noise: Object[] }} noise ⊆ extra
  */
-function scoreFixture(extracted, expected) {
+function scoreFixture(extracted, expected, notExpected = []) {
   const remaining = [...extracted];
   const matched = [];
   const missed = [];
@@ -41,7 +51,8 @@ function scoreFixture(extracted, expected) {
       matched.push({ expected: exp, item: remaining.splice(index, 1)[0] });
     }
   }
-  return { matched, missed, extra: remaining };
+  const noise = remaining.filter(item => notExpected.some(entry => mentions(item, entry)));
+  return { matched, missed, extra: remaining, noise };
 }
 
 /**
@@ -69,7 +80,11 @@ function summarize(results) {
     if (NARRATION.test(normalize(item.decision_text))) decisionsNarrated++;
   };
 
-  for (const { matched, missed, extra } of results) {
+  let noiseItems = 0;
+  let extraItems = 0;
+  for (const { matched, missed, extra, noise = [] } of results) {
+    noiseItems += noise.length;
+    extraItems += extra.length;
     for (const { expected, item } of matched) {
       bump(expected.type, 'expected');
       bump(expected.type, 'extracted');
@@ -105,7 +120,10 @@ function summarize(results) {
     ownerAccuracy: ownerChecks ? ownerCorrect / ownerChecks : null,
     dueDateAccuracy: dueChecks ? dueCorrect / dueChecks : null,
     rationaleAccuracy: rationaleChecks ? rationaleCorrect / rationaleChecks : null,
-    decisionsAsOutcomes: decisionsTotal ? (decisionsTotal - decisionsNarrated) / decisionsTotal : null
+    decisionsAsOutcomes: decisionsTotal ? (decisionsTotal - decisionsNarrated) / decisionsTotal : null,
+    // Items that should not have been captured, per meeting: known noise (not_expected) and all extras
+    noisePerMeeting: results.length ? noiseItems / results.length : null,
+    extrasPerMeeting: results.length ? extraItems / results.length : null
   };
 }
 

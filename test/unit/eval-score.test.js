@@ -39,3 +39,23 @@ test('rationale context and outcome phrasing are measured', () => {
   assert.equal(summary.rationaleAccuracy, 0.5);
   assert.equal(summary.decisionsAsOutcomes, 0.5, '"Se propuso…" counts as narration');
 });
+
+test('not_expected items count as noise, of any type, and are reported per meeting', () => {
+  const extracted = [
+    { decision_type: 'decision', decision_text: 'Se aprueba el reajuste salarial' },
+    { decision_type: 'decision', decision_text: 'Se decide reprogramar la reunión para las 15:45' },
+    { decision_type: 'risk', decision_text: 'Fallas técnicas del computador interrumpen el análisis' },
+    { decision_type: 'open_question', decision_text: '¿Quién revisa el PNL?' }
+  ];
+  const result = scoreFixture(extracted, [{ type: 'decision', match: ['reajuste'] }], [
+    { match: ['reprogram'] },
+    { match: ['computador'] }
+  ]);
+  assert.equal(result.matched.length, 1);
+  assert.equal(result.extra.length, 3);
+  assert.deepEqual(result.noise.map(item => item.decision_type), ['decision', 'risk']);
+
+  const summary = summarize([result, { matched: [], missed: [], extra: [], noise: [] }]);
+  assert.equal(summary.noisePerMeeting, 1);
+  assert.equal(summary.extrasPerMeeting, 1.5);
+});
