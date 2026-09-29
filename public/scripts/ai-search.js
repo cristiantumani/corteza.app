@@ -1,5 +1,5 @@
 // AI Search View Logic
-// Handles semantic search and renders intelligence breakdown
+// Handles semantic search: the answer, then its evidence sources
 
 (function() {
   'use strict';
@@ -180,9 +180,6 @@
     const now = new Date();
     timestamp.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-    // Render intelligence breakdown
-    renderIntelligenceBreakdown(data);
-
     // Render evidence sources
     renderEvidenceSources(data.decisions || []);
 
@@ -191,123 +188,6 @@
 
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // Render intelligence breakdown (categorized insights)
-  function renderIntelligenceBreakdown(data) {
-    const container = document.getElementById('intelligence-breakdown');
-    container.innerHTML = '';
-
-    const categorized = data.categorized || {};
-    const highlyRelevant = categorized.highlyRelevant || [];
-    const relevant = categorized.relevant || [];
-    const somewhatRelevant = categorized.somewhatRelevant || [];
-
-    // Highly Relevant Section
-    if (highlyRelevant.length > 0) {
-      const section = createBreakdownSection(
-        'Highly Relevant',
-        'Key decisions that directly address your query',
-        highlyRelevant,
-        'tertiary',
-        'check_circle'
-      );
-      container.appendChild(section);
-    }
-
-    // Relevant Section
-    if (relevant.length > 0) {
-      const section = createBreakdownSection(
-        'Relevant',
-        'Related decisions worth considering',
-        relevant,
-        'primary',
-        'circle'
-      );
-      container.appendChild(section);
-    }
-
-    // Somewhat Relevant Section
-    if (somewhatRelevant.length > 0) {
-      const section = createBreakdownSection(
-        'Context',
-        'Additional background information',
-        somewhatRelevant,
-        'secondary',
-        'radio_button_unchecked'
-      );
-      container.appendChild(section);
-    }
-
-    // No results
-    if (highlyRelevant.length === 0 && relevant.length === 0 && somewhatRelevant.length === 0) {
-      container.innerHTML = `
-        <div class="text-center py-12 text-on-surface-variant">
-          <span class="material-symbols-outlined text-6xl mb-4 opacity-30">search_off</span>
-          <p class="text-lg">No relevant decisions found for this query</p>
-        </div>
-      `;
-    }
-  }
-
-  function createBreakdownSection(title, description, decisions, colorClass, iconName) {
-    const section = document.createElement('div');
-    section.className = 'bg-surface-container-lowest border border-outline-variant rounded-xl p-6 mb-4';
-
-    const colorMap = {
-      'tertiary': 'text-tertiary',
-      'primary': 'text-primary',
-      'secondary': 'text-secondary'
-    };
-
-    const bgMap = {
-      'tertiary': 'bg-tertiary-container/20',
-      'primary': 'bg-primary-container/20',
-      'secondary': 'bg-secondary-container/20'
-    };
-
-    section.innerHTML = `
-      <div class="flex items-start gap-4 mb-4">
-        <div class="w-10 h-10 ${bgMap[colorClass]} rounded-lg flex items-center justify-center ${colorMap[colorClass]} flex-shrink-0">
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">${iconName}</span>
-        </div>
-        <div>
-          <h4 class="text-lg font-bold mb-1">${title}</h4>
-          <p class="text-sm text-on-surface-variant">${description}</p>
-        </div>
-        <span class="ml-auto text-sm font-semibold ${colorMap[colorClass]} px-3 py-1 ${bgMap[colorClass]} rounded-full">${decisions.length}</span>
-      </div>
-
-      <div class="space-y-3 ml-14">
-        ${decisions.slice(0, 5).map((decision, index) => createBreakdownItem(decision, index)).join('')}
-        ${decisions.length > 5 ? `<p class="text-sm text-on-surface-variant italic">+${decisions.length - 5} more in evidence sources</p>` : ''}
-      </div>
-    `;
-
-    return section;
-  }
-
-  function createBreakdownItem(decision, index) {
-    const title = decision.text.split('\n')[0];
-    const preview = getTruncatedText(decision.text, 120);
-    const score = decision.score ? `${Math.round(decision.score * 100)}% relevance` : '';
-    const date = new Date(decision.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-    return `
-      <div class="p-4 bg-surface-container rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer" onclick="openDecisionDetail(${decision.id})">
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <h5 class="font-semibold text-sm line-clamp-1">${escapeHtml(title)}</h5>
-          <span class="text-xs text-on-surface-variant whitespace-nowrap">${score}</span>
-        </div>
-        <p class="text-sm text-on-surface-variant line-clamp-2 mb-2">${escapeHtml(preview)}</p>
-        <div class="flex items-center gap-3 text-xs text-on-surface-variant">
-          <span>${escapeHtml(decision.creator)}</span>
-          <span>•</span>
-          <span>${date}</span>
-          ${decision.space_name ? `<span>•</span><span>${escapeHtml(decision.space_name)}</span>` : ''}
-        </div>
-      </div>
-    `;
   }
 
   /** Sources the answer used, in the order the AI listed them */
@@ -324,7 +204,7 @@
 
     if (decisions.length === 0) {
       container.innerHTML = `
-        <div class="text-center py-8 text-on-surface-variant">
+        <div class="lg:col-span-2 text-center py-8 text-on-surface-variant">
           <p>No sources match this question</p>
         </div>
       `;
@@ -337,10 +217,10 @@
 
     if (others.length) {
       const details = document.createElement('details');
-      details.className = 'evidence-others';
+      details.className = 'evidence-others lg:col-span-2';
       details.innerHTML = `<summary class="cursor-pointer text-sm font-semibold text-on-surface-variant py-2">Other matches not used in the answer (${others.length})</summary>`;
       const list = document.createElement('div');
-      list.className = 'space-y-4 mt-3';
+      list.className = 'grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mt-3';
       others.forEach(decision => list.appendChild(createEvidenceCard(decision)));
       details.appendChild(list);
       if (used.length === 0) details.open = true;
