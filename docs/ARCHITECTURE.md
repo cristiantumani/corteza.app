@@ -14,6 +14,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
   - Claude answers in the question's language and returns `used_ids`, the sources it used.
   - `exclude_ids` answers again without sources the user marked as unrelated (`POST /api/search-feedback`).
   - Results never include `embedding`.
+  - **Open action items** (`core/search/action-items.js`): the open items the question is about go to Claude with the outcomes and back as `action_items`, shown above Evidence Sources. A person named in the question (any owner name) gets their items; "my/mis pendientes" gets the viewer's; a question about pending work gets items on its topic, or all of them; other questions only get items on their topic (at most 5). Items come from the current space plus those the viewer owns.
 - **Email:** Resend.
 - **Coupled to Slack:** Express is currently created by Bolt's `ExpressReceiver` (`src/index.js`), so the app still needs Slack env vars to start. Phase 1 removes that coupling.
 

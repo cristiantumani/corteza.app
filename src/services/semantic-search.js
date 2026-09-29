@@ -330,7 +330,7 @@ async function semanticSearch(query, options = {}) {
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 4; // v4: sources may be in another language; latest outcomes as candidates
+const CACHE_VERSION = 5; // v5: open action items are part of the answer
 
 /**
  * Answers the question from the search results with Claude, and says which results it used.
@@ -344,14 +344,16 @@ const CACHE_VERSION = 4; // v4: sources may be in another language; latest outco
  * @param {Array} conversationHistory - Previous turns [{ role, content }] or [{ query, response }]
  * @returns {Promise<{ text: string, usedIds: number[] }>}
  */
-async function generateConversationalResponse(query, results, conversationHistory = []) {
+async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = []) {
   const allIds = results.all.map(r => r.id);
   // Without Claude, only real matches can be listed (not the latest outcomes added as candidates)
   const matchedOnly = { ...results, all: results.all.filter(r => r.matched !== false) };
-  const fallback = () => ({ text: formatResultsSimple(query, matchedOnly), usedIds: matchedOnly.all.slice(0, 3).map(r => r.id) });
-  if (!config.claude.isConfigured || results.all.length === 0) return fallback();
+  const fallback = () => (matchedOnly.all.length === 0 && actionItems.length > 0
+    ? { text: `${actionItems.length} open action item${actionItems.length === 1 ? '' : 's'} match your question. They're listed below.`, usedIds: [] }
+    : { text: formatResultsSimple(query, matchedOnly), usedIds: matchedOnly.all.slice(0, 3).map(r => r.id) });
+  if (!config.claude.isConfigured || (results.all.length === 0 && actionItems.length === 0)) return fallback();
 
-  const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}`;
+  const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}_${actionItems.map(item => item.item_id).join(',')}`;
   const cached = responseCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
     console.log('♻️  CREDIT SAVED: Using cached conversational response (v' + CACHE_VERSION + ')');
@@ -359,8 +361,11 @@ async function generateConversationalResponse(query, results, conversationHistor
   }
 
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
-  const sources = results.all.map(r => describeSource(r)).join('\n\n');
+  const sources = results.all.map(r => describeSource(r)).join('\n\n') || '(none)';
   const history = formatHistory(conversationHistory);
+  const actions = actionItems.length
+    ? `\n\nOpen action items (pending work) that may relate to the question:\n${actionItems.map(describeActionItem).join('\n')}`
+    : '';
 
   const prompt = `You answer questions about a team's meeting outcomes (decisions, open questions, risks and context captured from their meetings).${history}
 
@@ -368,7 +373,7 @@ Question: "${query}"
 
 Sources (search matches; some may be unrelated to the question):
 
-${sources}
+${sources}${actions}
 
 Instructions:
 - Answer in the same language as the question.
@@ -376,6 +381,7 @@ Instructions:
 - Use only sources that actually help answer the question. Ignore the others, even if they share words with it.
 - Start with the direct answer, then the why and context. Mention sources by number, like "(#74)". 60 to 150 words, plain text, no headings or lists unless steps are needed.
 - If no source answers the question, say so briefly and suggest what to search instead. Don't invent anything that isn't in the sources.
+- If the question is about pending work (action items, "pendientes", what someone still owes), answer from the open action items: who has to do what, and by when (say which are overdue). A short list is fine here. They're shown to the user below the answer, so don't cite them by number.
 
 Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources you used]}`;
 
@@ -413,6 +419,15 @@ function describeSource(r) {
   if (typeof r.alternatives === 'string' && r.alternatives) lines.push(`  Notes: ${r.alternatives.slice(0, r.matched === false ? 200 : 600)}`);
   if (Array.isArray(r.tags) && r.tags.length) lines.push(`  Tags: ${r.tags.join(', ')}`);
   return lines.join('\n');
+}
+
+/** One open action item for the answer prompt: what, who, when, from which meeting */
+function describeActionItem(item) {
+  const today = new Date().toISOString().slice(0, 10);
+  const owners = (item.owners || []).map(owner => owner.name).filter(Boolean).join(', ') || 'no owner';
+  const due = item.due_date ? `due ${item.due_date}${item.due_date < today ? ' (overdue)' : ''}` : 'no due date';
+  const meeting = item.source && item.source.title ? ` · from meeting "${item.source.title}"` : '';
+  return `- ${item.text} · owner: ${owners} · ${due}${meeting}`;
 }
 
 /** The last two turns, in either shape the page sends */

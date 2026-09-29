@@ -84,4 +84,25 @@ describe('Search: keyword relevance, excluded sources, feedback', { skip }, () =
     sessionUser = { workspace_id: 'WOTHER', user_id: 'U1' };
     assert.equal(await send({ query: 'Buk en octubre', decision_id: 1, relevant: true }), 404, 'other workspaces cannot rate it');
   });
+
+  test('a question about someone\'s pending work returns their open action items with the answer', async () => {
+    await db.collection('workspace_spaces').insertOne({ workspace_id: 'WSRCH', space_id: 'sp1', name: 'My space', visibility: 'public', archived: false });
+    await db.collection('action_items').insertMany([
+      { item_id: 'ai1', workspace_id: 'WSRCH', space_id: 'sp1', text: 'Enviar el deck a Buk', owners: [{ name: 'Nicolle Reveco', user_id: null }], owner_ids: [], status: 'open', due_date: '2026-09-25', created_at: new Date() },
+      { item_id: 'ai2', workspace_id: 'WSRCH', space_id: 'sp1', text: 'Revisar contratos', owners: [{ name: 'Martín', user_id: 'U9' }], owner_ids: ['U9'], status: 'open', due_date: null, created_at: new Date() },
+      { item_id: 'ai3', workspace_id: 'WSRCH', space_id: 'sp1', text: 'Ya hecho', owners: [{ name: 'Nicolle Reveco', user_id: null }], owner_ids: [], status: 'done', due_date: null, created_at: new Date() },
+      { item_id: 'ai4', workspace_id: 'WSRCH', space_id: 'sp2', text: 'Otro espacio', owners: [{ name: 'Nicolle Reveco', user_id: null }], owner_ids: [], status: 'open', due_date: null, created_at: new Date() }
+    ]);
+
+    const { handleSemanticSearch } = require('../../src/routes/semantic-search-api');
+    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
+    await handleSemanticSearch({
+      session: { user: { workspace_id: 'WSRCH', user_id: 'U1' } },
+      body: { query: "What's still pending from Nicolle?", space_id: 'sp1' }
+    }, res);
+
+    assert.equal(res.code, 200);
+    assert.deepEqual(res.body.action_items.map(item => item.item_id), ['ai1'], 'open, in this space, owned by Nicolle');
+    assert.ok(res.body.response, 'an answer is returned even without matching outcomes');
+  });
 });

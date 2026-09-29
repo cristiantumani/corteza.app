@@ -2,6 +2,8 @@ const { hybridSearch, generateConversationalResponse, visibleSources } = require
 const { validateQueryParams } = require('../middleware/validation');
 const { canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
+const { listActionItems } = require('../core/actions/action-service');
+const { selectActionItems } = require('../core/search/action-items');
 
 /**
  * Parse query parameters from URL
@@ -37,6 +39,7 @@ function parseQueryParams(url) {
  *   "response": "We moved AEM to ... (#12)",
  *   "used_ids": [12],            (sources the answer is based on)
  *   "decisions": [...],
+ *   "action_items": [...],       (open action items the question is about: a person's, "my", or on its topic)
  *   "searchMethod": "semantic",
  *   "resultsCount": 5
  * }
@@ -157,6 +160,15 @@ async function handleSemanticSearch(req, res) {
       console.log(`   - Top score: ${(searchResult.results.all[0].score * 100).toFixed(1)}%`);
     }
 
+    // Open action items the question is about ("What's pending from Ana?"): in this space, or owned by the viewer
+    let actionItems = [];
+    try {
+      const open = await listActionItems(requestData.workspace_id, { spaceIds: [requestData.space_id], viewerId: userId, status: 'open' });
+      actionItems = selectActionItems(requestData.query, open, { viewerId: userId }).items;
+    } catch (actionError) {
+      console.error('⚠️ Loading action items for search failed:', actionError.message);
+    }
+
     // Generate conversational response (if requested)
     let conversationalResponse = null;
     let usedIds = searchResult.results.all.filter(r => r.matched !== false).map(r => r.id);
@@ -168,7 +180,8 @@ async function handleSemanticSearch(req, res) {
         const answer = await generateConversationalResponse(
           requestData.query,
           searchResult.results,
-          conversationHistory
+          conversationHistory,
+          actionItems
         );
         conversationalResponse = answer.text;
         usedIds = answer.usedIds;
@@ -194,6 +207,7 @@ async function handleSemanticSearch(req, res) {
       excluded_ids: searchOptions.excludeIds,
       // Used sources first, then other matches; outcomes Claude only read as candidates are left out
       decisions: shown,
+      action_items: actionItems,
       categorized: {
         highlyRelevant: shown.filter(r => usedIds.includes(r.id)),
         relevant: shown.filter(r => !usedIds.includes(r.id)),

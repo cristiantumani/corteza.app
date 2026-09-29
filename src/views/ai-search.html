@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=3">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link rel="stylesheet" href="/styles/dashboard.css?v=5">
@@ -110,6 +110,9 @@
                 </div>
             </div>
 
+            <!-- Open action items the question is about ("What's pending from Ana?"), filled by ai-search.js -->
+            <div id="search-action-items" class="hidden mb-10"></div>
+
             <!-- Evidence Sources: what the answer is based on (full width; the old "Intelligence Breakdown" repeated the same outcomes) -->
             <div>
                 <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
@@ -135,27 +138,33 @@
         <!-- Empty State (Initial) -->
         <div id="empty-state" class="text-center py-20">
             <div class="text-8xl mb-6">🔍</div>
-            <h2 class="text-3xl font-bold mb-4">Search Your Decision Intelligence</h2>
+            <h2 class="text-3xl font-bold mb-4">Ask about your meetings</h2>
             <p class="text-lg text-on-surface-variant max-w-xl mx-auto mb-8">
-                Ask questions about your team's decisions using natural language. Get AI-powered insights backed by evidence.
+                In your own words: what was decided and why, and what's still pending (and from whom) before your next meeting.
             </p>
-            <div class="max-w-2xl mx-auto space-y-3">
-                <button onclick="performSearch('What decisions did we make about authentication?')" class="w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+            <div id="search-examples" class="max-w-2xl mx-auto space-y-3">
+                <button type="button" data-example-mine data-query="What are my open action items?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                        <span class="font-medium">What decisions did we make about authentication?</span>
+                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">task_alt</span>
+                        <span class="font-medium">What are my open action items?</span>
                     </div>
                 </button>
-                <button onclick="performSearch('Show me recent API architecture decisions')" class="w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-example-person data-query="What's still pending from Ana before our next meeting?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                        <span class="font-medium">Show me recent API architecture decisions</span>
+                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">person</span>
+                        <span class="font-medium">What's still pending from Ana before our next meeting?</span>
                     </div>
                 </button>
-                <button onclick="performSearch('Why did we choose MongoDB over PostgreSQL?')" class="w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-query="What did we decide about pricing, and why?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                        <span class="font-medium">Why did we choose MongoDB over PostgreSQL?</span>
+                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">auto_awesome</span>
+                        <span class="font-medium">What did we decide about pricing, and why?</span>
+                    </div>
+                </button>
+                <button type="button" data-query="Which open questions and risks are still unresolved?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">help</span>
+                        <span class="font-medium">Which open questions and risks are still unresolved?</span>
                     </div>
                 </button>
             </div>
@@ -173,7 +182,7 @@
                     <textarea
                         id="search-input"
                         rows="1"
-                        placeholder="Ask a question about your decisions..."
+                        placeholder="Ask about decisions, pending action items, people…"
                         class="w-full bg-transparent border-none outline-none resize-none text-base"
                         onkeydown="handleSearchKeydown(event)"
                     ></textarea>
@@ -205,7 +214,7 @@
 <script src="/scripts/decision-actions.js?v=1"></script>
 <script src="/scripts/inline-edit.js?v=3"></script>
 <script src="/scripts/dashboard.js?v=12"></script>
-<script src="/scripts/ai-search.js?v=6"></script>
+<script src="/scripts/ai-search.js?v=7"></script>
 
 <!-- Initialize Space Context Indicator -->
 <script>

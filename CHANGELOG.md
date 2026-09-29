@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Search answers "what's pending?"
+- **Action items in Search:** ask "What's still pending from Nicolle?", "¿cuáles son mis pendientes?" or "pendientes del directorio" and the answer says who owes what and by when (overdue first). The open action items appear in their own list above the evidence sources, with a link to Action items
+- **Examples:** the empty Search page now starts with "What are my open action items?" and "What's still pending from <name> before our next meeting?" (the colleague with the most open items from your meetings; hidden when there's nobody else). Heading, description and placeholder mention pending work too
+
 ### Changed - Search shows the answer and its sources, once
 - **One list:** under the answer, Search showed "Intelligence Breakdown" and "Evidence Sources" side by side, listing the same outcomes twice. The breakdown is gone; Evidence Sources now uses the full width (two columns on large screens), with "Other matches not used in the answer" below
 

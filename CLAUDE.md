@@ -61,7 +61,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Extraction eval (labeled transcripts, scoring) | `scripts/eval-extraction.js`, `scripts/eval/score.js`, `test/fixtures/extraction/` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
 | Google verification / launch checklist | `docs/launch/google-verification.md` |
-| Embeddings / semantic search (answer + sources used, keyword fallback, source feedback) | `src/services/embeddings.js`, `src/services/semantic-search.js`, `src/core/search/relevance.js`, `src/http/search-feedback.js`, `public/scripts/ai-search.js` |
+| Embeddings / semantic search (answer + sources used, keyword fallback, source feedback, open action items for "what's pending from Ana?") | `src/services/embeddings.js`, `src/services/semantic-search.js`, `src/core/search/relevance.js`, `src/core/search/action-items.js`, `src/http/search-feedback.js`, `public/scripts/ai-search.js` |
 | App sidebar (one for every page: Home, Action items, Search, Settings) | `src/views/partials/sidebar.html`, injected at `<!-- SIDEBAR -->` by `renderView` in `src/http/page-partials.js`. Change it there, never per page |
 | Outcome detail modal (shared by Home and Search) | `src/views/partials/detail-modal.html`, injected at `<!-- DETAIL_MODAL -->` by `renderView` in `src/http/page-partials.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |

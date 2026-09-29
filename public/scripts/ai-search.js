@@ -170,8 +170,9 @@
     const resultsCount = document.getElementById('results-count');
     const usedCount = usedSources(data).length;
     const total = (data.decisions || []).length;
+    const actionCount = (data.action_items || []).length;
     resultsCount.textContent = total === 0
-      ? 'No matching sources'
+      ? (actionCount ? `${actionCount} open action item${actionCount !== 1 ? 's' : ''}` : 'No matching sources')
       : `Based on ${usedCount} source${usedCount !== 1 ? 's' : ''}${total > usedCount ? ` (${total - usedCount} other match${total - usedCount !== 1 ? 'es' : ''})` : ''}`
         + (excludedIds.length ? ` · ${excludedIds.length} left out` : '');
     renderExcludedBanner();
@@ -180,7 +181,8 @@
     const now = new Date();
     timestamp.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-    // Render evidence sources
+    // Open action items the question is about, then the evidence sources
+    renderActionItems(data.action_items || []);
     renderEvidenceSources(data.decisions || []);
 
     // Render related topics
@@ -188,6 +190,84 @@
 
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Open action items the question is about ("What's pending from Ana?"), most urgent first */
+  function renderActionItems(items) {
+    const container = document.getElementById('search-action-items');
+    if (!container) return;
+    container.classList.toggle('hidden', items.length === 0);
+    if (items.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = items.map(item => {
+      const owners = (item.owners || []).map(owner => owner.name).filter(Boolean).join(', ') || 'No owner';
+      const overdue = item.due_date && item.due_date < today;
+      const due = item.due_date
+        ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'No due date';
+      const meeting = item.source && item.source.title ? ` · ${escapeHtml(item.source.title)}` : '';
+      return `
+        <li class="flex items-start justify-between gap-4 py-3">
+          <div class="flex items-start gap-3 min-w-0">
+            <span class="material-symbols-outlined text-on-surface-variant text-xl mt-0.5" style="font-variation-settings: 'FILL' 0;">radio_button_unchecked</span>
+            <div class="min-w-0">
+              <p class="text-on-surface">${escapeHtml(item.text)}</p>
+              <p class="text-sm text-on-surface-variant">${escapeHtml(owners)}${meeting}</p>
+            </div>
+          </div>
+          <span class="whitespace-nowrap text-sm font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}">${overdue ? 'Overdue · ' : ''}${escapeHtml(due)}</span>
+        </li>`;
+    }).join('');
+    container.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+          Open action items
+        </h3>
+        <a href="/actions" class="text-sm text-primary font-semibold hover:underline">Open Action items →</a>
+      </div>
+      <ul class="bg-surface-container-lowest border border-outline-variant rounded-xl px-5 divide-y divide-outline-variant/50">${rows}</ul>`;
+  }
+
+  /**
+   * Examples: the person one names whoever has the most open action items besides you
+   * (from your meetings), and is hidden when nobody else has any
+   */
+  async function setupExamples() {
+    const examples = document.getElementById('search-examples');
+    if (!examples) return;
+    examples.addEventListener('click', event => {
+      const button = event.target.closest('.search-example');
+      if (button) performSearch(button.dataset.query);
+    });
+
+    const personExample = examples.querySelector('[data-example-person]');
+    if (!personExample) return;
+    try {
+      const response = await fetch('/api/action-items?owner=all&status=open', { credentials: 'include' });
+      const data = await response.json();
+      const counts = new Map();
+      for (const item of (response.ok && data.items) || []) {
+        for (const owner of item.owners || []) {
+          if (!owner.name || (owner.user_id && owner.user_id === data.user_id)) continue;
+          const first = owner.name.trim().split(/\s+/)[0];
+          counts.set(first, (counts.get(first) || 0) + 1);
+        }
+      }
+      const top = [...counts].sort((a, b) => b[1] - a[1])[0];
+      if (!top) {
+        personExample.remove();
+        return;
+      }
+      const query = `What's still pending from ${top[0]} before our next meeting?`;
+      personExample.dataset.query = query;
+      personExample.querySelector('.font-medium').textContent = query;
+    } catch (error) {
+      personExample.remove();
+    }
   }
 
   /** Sources the answer used, in the order the AI listed them */
@@ -438,6 +518,8 @@
     div.textContent = text;
     return div.innerHTML;
   }
+
+  setupExamples();
 
   // Check if there's a query in the URL (deep linking)
   const urlParams = new URLSearchParams(window.location.search);
