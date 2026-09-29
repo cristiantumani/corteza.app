@@ -1,5 +1,6 @@
 const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { validateQueryParams } = require('../middleware/validation');
+const { getUserAccessibleSpaces, isAdmin } = require('../services/permissions');
 
 /**
  * Parses URL query parameters
@@ -17,7 +18,24 @@ function parseQueryParams(url) {
 }
 
 /**
- * GET /api/gdpr/export - Export all workspace data
+ * What a person may see of a workspace's data: outcomes and suggestions in spaces they can
+ * access (never a colleague's personal space), and transcripts and feedback they created
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @returns {Promise<{decisions: Object, aiSuggestions: Object, transcripts: Object, feedback: Object}>} MongoDB filters
+ */
+async function visibleDataFilters(workspaceId, userId) {
+  const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
+  return {
+    decisions: { workspace_id: workspaceId, space_id: { $in: spaceIds } },
+    aiSuggestions: { workspace_id: workspaceId, space_id: { $in: spaceIds } },
+    transcripts: { workspace_id: workspaceId, uploaded_by: userId },
+    feedback: { workspace_id: workspaceId, user_id: userId }
+  };
+}
+
+/**
+ * GET /api/gdpr/export - Export the workspace data the signed-in person can see
  * Supports formats: json, csv
  */
 async function exportWorkspaceData(req, res) {
@@ -31,7 +49,8 @@ async function exportWorkspaceData(req, res) {
       return;
     }
 
-    const workspace_id = validated.workspace_id;
+    // The session's workspace, never the query's (requireWorkspaceAccess already checked they match)
+    const workspace_id = req.session.user.workspace_id;
     const format = query.format || 'json'; // Default to JSON
 
     const db = getDatabase();
@@ -40,12 +59,13 @@ async function exportWorkspaceData(req, res) {
     const meetingTranscriptsCollection = db.collection('meeting_transcripts');
     const aiFeedbackCollection = db.collection('ai_feedback');
 
-    // Fetch all data for this workspace
+    // Only what this person can see: colleagues' personal spaces stay private
+    const filters = await visibleDataFilters(workspace_id, req.session.user.user_id);
     const [decisions, aiSuggestions, transcripts, feedback] = await Promise.all([
-      decisionsCollection.find({ workspace_id }).toArray(),
-      aiSuggestionsCollection.find({ workspace_id }).toArray(),
-      meetingTranscriptsCollection.find({ workspace_id }).toArray(),
-      aiFeedbackCollection.find({ workspace_id }).toArray()
+      decisionsCollection.find(filters.decisions, { projection: { embedding: 0 } }).toArray(),
+      aiSuggestionsCollection.find(filters.aiSuggestions).toArray(),
+      meetingTranscriptsCollection.find(filters.transcripts).toArray(),
+      aiFeedbackCollection.find(filters.feedback).toArray()
     ]);
 
     const exportData = {
@@ -122,7 +142,14 @@ async function deleteAllWorkspaceData(req, res) {
       return;
     }
 
-    const workspace_id = validated.workspace_id;
+    const workspace_id = req.session.user.workspace_id;
+
+    // Deleting everyone's data is a workspace admin's decision
+    if (!await isAdmin(null, workspace_id, req.session.user.user_id)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Only a workspace admin can delete all workspace data' }));
+      return;
+    }
 
     // Require confirmation parameter
     if (query.confirm !== 'DELETE_ALL_DATA') {
@@ -211,7 +238,8 @@ async function getWorkspaceDataInfo(req, res) {
       return;
     }
 
-    const workspace_id = validated.workspace_id;
+    const workspace_id = req.session.user.workspace_id;
+    const filters = await visibleDataFilters(workspace_id, req.session.user.user_id);
 
     const db = getDatabase();
     const decisionsCollection = db.collection('decisions');
@@ -228,10 +256,10 @@ async function getWorkspaceDataInfo(req, res) {
       feedbackCount,
       installation
     ] = await Promise.all([
-      decisionsCollection.countDocuments({ workspace_id }),
-      aiSuggestionsCollection.countDocuments({ workspace_id }),
-      meetingTranscriptsCollection.countDocuments({ workspace_id }),
-      aiFeedbackCollection.countDocuments({ workspace_id }),
+      decisionsCollection.countDocuments(filters.decisions),
+      aiSuggestionsCollection.countDocuments(filters.aiSuggestions),
+      meetingTranscriptsCollection.countDocuments(filters.transcripts),
+      aiFeedbackCollection.countDocuments(filters.feedback),
       installationsCollection.findOne({ team_id: workspace_id })
     ]);
 
@@ -263,6 +291,7 @@ async function getWorkspaceDataInfo(req, res) {
 }
 
 module.exports = {
+  visibleDataFilters,
   exportWorkspaceData,
   deleteAllWorkspaceData,
   getWorkspaceDataInfo

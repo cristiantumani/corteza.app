@@ -109,7 +109,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |
 | `google_connections` | Per-user "Connect Google Meet": encrypted refresh token, settings (space, skip 1:1, excluded keywords, `language`: 'auto' or a fixed 'es'/'en'/'pt' for the outcomes' language), poll cursor/lease, counters (`decisions_captured` = all outcomes, `outcomes_by_type`, `meetings_processed`) |
-| `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): status, attempts, `decisions_created` (all outcomes), `outcomes_by_type` (e.g. `{ decision: 3, risk: 1 }`, from `countByType`), `action_items_created` |
+| `ingestions` | One row per processed/skipped external item (unique `workspace_id` + `source` + `external_id`): `user_id` (whose Google Meet connection handled it; "Latest meetings" shows each person only their own, backfilled by `scripts/migrations/008-ingestion-owners.js`), status, attempts, `decisions_created` (all outcomes), `outcomes_by_type` (e.g. `{ decision: 3, risk: 1 }`, from `countByType`), `action_items_created` |
 | `search_feedback` | Search → "Is this related to your question?": one row per `workspace_id` + `user_id` + `query` + `decision_id`, with `relevant` (true/false). Kept to tune search later |
 | `counters` | Atomic per-workspace decision ids (`decision:<workspace_id>`) |
 | `action_items` | Action items ("pendientes") from meetings: `owners` [{ name, user_id, email }], `owner_ids`, `due_date`, `status` open/done/cancelled, `decision_id` (the decision it carries out), `source`, `evidence_quote`, `due_date_requested_at` (`core/actions`) |
