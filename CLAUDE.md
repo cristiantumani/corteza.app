@@ -24,6 +24,7 @@ npm test                  # unit tests; integration tests run when TEST_MONGODB_
 npm run lint              # ESLint (warnings allowed, errors fail CI)
 npm run build:css         # rebuild public/styles/tailwind.min.css after changing Tailwind classes
 TEST_MONGODB_URI=mongodb://localhost:27017 npm test   # run everything against a local MongoDB
+railway run node scripts/db-size.js   # space used per collection vs the Atlas free tier (512 MB); read-only
 node scripts/eval-extraction.js   # extraction quality eval (calls Claude, costs money); run before/after prompt or model changes
 ```
 

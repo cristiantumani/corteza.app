@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Database size script
+- **`scripts/db-size.js`:** shows documents, data and index size per collection, total use against the Atlas free tier's 512 MB, and how much of `decisions` is embeddings. Read-only. Run it with `railway run node scripts/db-size.js`
+
 ### Removed - API keys
 - **Settings → API Keys** and the integration API (`/api/keys*`, `/api/v1/extract`, `/api/v1/decisions/:id`) are gone. They were built for an n8n / Google Drive automation that Google Meet auto-capture replaces, and they were an extra way into a workspace's data. Existing keys stop working; the n8n guide moved to `docs/archive/`
 
