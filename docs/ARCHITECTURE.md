@@ -24,6 +24,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 |---|---|---|
 | Dashboard pages (`/dashboard`, `/settings`, `/ai-search`; `/select-space` redirects to Home) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
+| Context for the AI (`/api/ai-context*`) | `src/http/ai-context.js` → `core/context/context-service.js` | session; company context: admins only (`isAdmin`) |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |
 | Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`; `/login` only links to the web sign-in), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
 | Sign-in | `/auth/login` page → `/auth/google` → Google → `/auth/google/callback` (`src/auth/routes.js`) | Google OpenID Connect (`src/integrations/google/oauth.js`) |
@@ -105,6 +106,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `api_keys` | No longer used: API keys and `/api/v1/*` were removed (Sept 2026). Old rows are ignored |
 | `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
+| `ai_context` | Context the AI reads with every meeting (`core/context`), unique on `workspace_id` + `user_id`. Company row (`user_id: null`): `description`, `glossary`, `documents` (`doc_id`, `name`, extracted `text`, `chars`), edited by admins, used by everyone's captures. Personal rows: `role`, `focus`, `glossary`, used only by that person's captures. Capped (4k description, 8k glossary, 5 documents / 40k characters) so it stays a small part of the prompt |
 | `beta_access` | Private beta approved list: one row per `email` or Google `domain` (each unique), with `name`, `company`, `approved_at`, `approved_via` ('email_link' / 'script'), `welcome_sent_at` (`core/beta`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |

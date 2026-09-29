@@ -74,7 +74,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
-| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet) |
+| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet, `settings-context.js` for Context for the AI) |
+| Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |
 | Chrome extension | `browser-extension/` |
 | DB migrations (manual, idempotent) | `scripts/migrations/` |
 | Tests | `test/unit/`, `test/integration/`, helper `test/helpers/db.js` |

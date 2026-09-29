@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Context for the AI
+- **Settings → Context for the AI:** two levels. **Your company** (what it does, a glossary of acronyms, products, customers and people, and up to 5 reference documents as TXT, MD, CSV, PDF or DOCX) is shared by the workspace and only admins can edit it. **About you** (role, focus, personal glossary) only applies to your own meetings
+- **Used by the extraction:** the context goes into the prompt before the transcript, marked as background, so Claude judges what matters to the business, spells names and acronyms right and recognizes owners. It never becomes an outcome by itself. Uploaded transcripts and Slack captures get the company context
+- **Eval:** fixtures can carry a `context` to measure its effect
+
 ### Fixed - Transcripts reached the AI as one long line
 - **Line breaks kept:** `sanitizeTranscriptText` collapsed every newline into a space, so each speaker turn, the transcript and the Gemini notes reached the extraction as a single line (worse owner attribution), and language detection couldn't find the spoken transcript and read the Gemini notes too. Spaces are still collapsed within a line
 
