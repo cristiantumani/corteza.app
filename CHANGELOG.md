@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Search shows the answer and its sources, once
+- **One list:** under the answer, Search showed "Intelligence Breakdown" and "Evidence Sources" side by side, listing the same outcomes twice. The breakdown is gone; Evidence Sources now uses the full width (two columns on large screens), with "Other matches not used in the answer" below
+
 ### Changed - Importing past meetings runs in the background, visibly
 - **Leave the page:** the import already ran on the server. Now Settings says so while it runs, and when you come back to Settings the progress shows up again
 - **Progress on Home:** while an import runs, Home shows "Importing past meetings: 5 of 20" with a progress bar, refreshed every 10 seconds, and reloads your outcomes and action items when it finishes
