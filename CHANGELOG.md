@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Home showed no outcomes for workspaces created with Google sign-in
+- **Empty "Recent decisions":** the query validator only accepted legacy workspace IDs (Slack `T…`, email `W…`), so `/api/decisions` answered 400 for every workspace created with Google sign-in (`ws_…`). It now accepts `ws_…` IDs, and `/api/decisions` and `/api/stats` use the session's workspace
+- **Stats across workspaces:** for those workspaces, `/api/stats` counted the outcomes of every workspace. It now always counts only the signed-in workspace's
+
 ### Added - Search answers "what's pending?"
 - **Action items in Search:** ask "What's still pending from Nicolle?", "¿cuáles son mis pendientes?" or "pendientes del directorio" and the answer says who owes what and by when (overdue first). The open action items appear in their own list above the evidence sources, with a link to Action items
 - **Examples:** the empty Search page now starts with "What are my open action items?" and "What's still pending from <name> before our next meeting?" (the colleague with the most open items from your meetings; hidden when there's nobody else). Heading, description and placeholder mention pending work too

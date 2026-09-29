@@ -48,7 +48,8 @@ async function getDecisions(req, res) {
     const { page, limit } = validated;
     const skip = (page - 1) * limit;
 
-    // SECURITY: Workspace filter is REQUIRED for multi-tenancy
+    // SECURITY: the workspace comes from the session (requireWorkspaceAccess checked the query matches it)
+    validated.workspace_id = req.session?.user?.workspace_id || req.user?.workspace_id || validated.workspace_id;
     if (!validated.workspace_id) {
       return res.status(400).json({
         error: 'workspace_id is required'
@@ -440,8 +441,14 @@ async function getStats(req, res) {
     const decisionsCollection = getDecisionsCollection();
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Build base filter with optional workspace_id
-    const baseFilter = validated.workspace_id ? { workspace_id: validated.workspace_id } : {};
+    // Only the signed-in workspace's outcomes, never all workspaces
+    const workspaceId = req.session?.user?.workspace_id || req.user?.workspace_id || validated.workspace_id;
+    if (!workspaceId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'workspace_id is required' }));
+      return;
+    }
+    const baseFilter = { workspace_id: workspaceId };
 
     const [total, byType, byCategory, recentCount] = await Promise.all([
       decisionsCollection.countDocuments(baseFilter),
