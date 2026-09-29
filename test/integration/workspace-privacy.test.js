@@ -45,8 +45,8 @@ describe("colleagues don't see each other's meetings or outcomes", { skip }, () 
       { workspace_id: WS, space_id: bobSpace.space_id, id: 3, type: 'risk', text: "Bob's risk", user_id: 'UB', timestamp: new Date().toISOString() }
     ]);
     await db.collection('meeting_transcripts').insertMany([
-      { workspace_id: WS, uploaded_by: 'UA', content: 'Ana transcript' },
-      { workspace_id: WS, uploaded_by: 'UB', content: 'Bob transcript' }
+      { workspace_id: WS, transcript_id: 'tr_ana', uploaded_by: 'UA', content: 'Ana transcript' },
+      { workspace_id: WS, transcript_id: 'tr_bob', uploaded_by: 'UB', content: 'Bob transcript' }
     ]);
   });
 
