@@ -13,6 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`business_relevance` label:** each extracted item is labeled high, medium or low; low ones are discarded before saving, and action items keep their link to the right decision
 - **Eval:** new fixture `revision-cac-es.json` (a meeting cut short by technical problems) counts logistics and equipment items as extras
 
+### Added - Context for the AI
+- **Settings → Context for the AI:** two levels. **Your company** (what it does, a glossary of acronyms, products, customers and people, and up to 5 reference documents as TXT, MD, CSV, PDF or DOCX) is shared by the workspace and only admins can edit it. **About you** (role, focus, personal glossary) only applies to your own meetings
+- **Used by the extraction:** the context goes into the prompt before the transcript, marked as background, so Claude judges what matters to the business, spells names and acronyms right and recognizes owners. It never becomes an outcome by itself. Uploaded transcripts and Slack captures get the company context
+- **Eval:** fixtures can carry a `context` to measure its effect
+
+### Fixed - Transcripts reached the AI as one long line
+- **Line breaks kept:** `sanitizeTranscriptText` collapsed every newline into a space, so each speaker turn, the transcript and the Gemini notes reached the extraction as a single line (worse owner attribution), and language detection couldn't find the spoken transcript and read the Gemini notes too. Spaces are still collapsed within a line
+
+### Added - Evaluation with real meetings
+- **`scripts/eval/export-meetings.js`:** exports one person's own Google Meet meetings as eval fixtures into a folder outside the repository
+- **`scripts/eval/draft-labels.js`:** Claude drafts `expected` and `not_expected` labels for review
+- **Eval:** `--dir` for real meetings, `not_expected` (things that must not be captured) and noise per meeting in the report; draft labels are skipped until reviewed
+- **Research:** `docs/research/extraction-quality.md` (benchmark, findings and the plan to improve extraction)
+
 ### Fixed - Colleagues in the same meeting each get its outcomes
 - **Shared meetings:** when two colleagues with Google Meet connected were in the same meeting, only the first one's connection captured it and the other got nothing. Each person now captures it into their own personal space (ingestions are unique per person, not per workspace)
 - **No duplicate action items:** an item you own that a colleague also captured shows once in your list (your own copy, even after you mark it done). If you didn't capture the meeting, you still see the colleague's copy

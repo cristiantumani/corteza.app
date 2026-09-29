@@ -201,6 +201,8 @@ async function connectToMongoDB() {
     await db.collection('action_items').createIndex({ workspace_id: 1, decision_id: 1 });
 
     // Private beta approved list (core/beta): an email or a whole Google domain
+    // Context the AI reads with every meeting (core/context): company (user_id null) and personal
+    await db.collection('ai_context').createIndex({ workspace_id: 1, user_id: 1 }, { unique: true });
     await db.collection('beta_access').createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
     await db.collection('beta_access').createIndex({ domain: 1 }, { unique: true, partialFilterExpression: { domain: { $type: 'string' } } });
 

@@ -145,6 +145,9 @@ async function startApp() {
   expressApp.use(require('./http/action-items'));
   expressApp.use(require('./http/search-feedback'));
 
+  // Context for the AI: company (admins) and personal, used when reading meetings
+  expressApp.use(require('./http/ai-context'));
+
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/auth/login');

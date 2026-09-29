@@ -86,9 +86,11 @@ async function getRejectedExamples(workspace_id, limit = 2) {
  * @param {string} transcriptText - The meeting transcript text
  * @param {Array} approvedExamples - Recent approved decision examples from this workspace
  * @param {Array} rejectedExamples - Recent rejected decision examples from this workspace
+ * @param {string|null} [language] - output language code
+ * @param {string} [contextBlock] - company and personal context (core/context formatContextBlock)
  * @returns {string} The formatted prompt
  */
-function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], rejectedExamples = [], language = null) {
+function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], rejectedExamples = [], language = null, contextBlock = '') {
   let examplesSection = '';
 
   // Add few-shot learning examples if available (compact format to save tokens)
@@ -115,7 +117,8 @@ function buildDecisionExtractionPrompt(transcriptText, approvedExamples = [], re
 
   // CREDIT OPTIMIZATION: Removed redundant "Analyze..." instruction (already in system message)
   const languageLine = languageName(language) ? `OUTPUT LANGUAGE: ${languageName(language)}\n` : '';
-  return `${examplesSection}
+  const contextSection = contextBlock ? `CONTEXT (background about the company and the person whose meeting this is; not part of the meeting):\n${contextBlock}\n\n` : '';
+  return `${contextSection}${examplesSection}
 ${languageLine}TRANSCRIPT:
 ${transcriptText}`;
 }
@@ -173,6 +176,8 @@ Fields for each item:
 - tags: 2-5 lowercase keywords
 - confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
 - business_relevance: "high" (strategy, money, customers, people, a deliverable), "medium" (useful team context or a smaller work commitment) or "low" (logistics, meeting or equipment issues, housekeeping). Items you would label "low" should normally not be returned at all; if you return one anyway, label it "low" and it will be discarded.
+
+Context: a CONTEXT section may come before the transcript, with what the company does, a glossary (names, acronyms, customers, products), reference documents, and the role and focus of the person whose meeting this is. Use it to judge what matters to this business, to spell names and terms correctly (transcripts often mangle acronyms and names), and to recognize who owners are. Never return items taken from the context itself; every item must come from the meeting.
 
 Language: write decision_text, rationale and tags in the OUTPUT LANGUAGE given before the transcript. If none is given, use the language the participants spoke. Meeting notes (for example Gemini notes) may be in another language than the conversation; still write in the output language. Keep evidence_quote verbatim, in its original language.
 
@@ -420,10 +425,22 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
     }
   }
 
+  // Company and personal context (Settings → Context for the AI); a caller can pass it ready-made (eval)
+  let contextBlock = typeof options.context === 'string' ? options.context : '';
+  if (!contextBlock && workspace_id) {
+    try {
+      const { buildContextBlock } = require('../core/context/context-service');
+      contextBlock = await buildContextBlock(workspace_id, options.userId || null, options.personName || null);
+    } catch (error) {
+      console.warn('⚠️  Could not load the AI context, proceeding without it:', error.message);
+    }
+  }
+  if (contextBlock) console.log(`🧭 Using ${contextBlock.length} characters of company/personal context`);
+
   // Build the prompt with examples
   const language = outputLanguage(sanitized, options.language);
   if (language) console.log(`🌐 Outcomes will be written in ${languageName(language)}`);
-  const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language);
+  const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language, contextBlock);
 
   // Call Claude API
   const response = await callClaudeAPI(prompt);
