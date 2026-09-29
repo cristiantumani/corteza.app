@@ -5,13 +5,10 @@ const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
-const { getDecisions, getDecisionById, updateDecision, deleteDecision, getStats, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
+const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
-const { handleGenerateApiKey, handleListApiKeys, handleRevokeApiKey } = require('./routes/api-keys');
-const { requireApiKey } = require('./middleware/api-key-auth');
 const { serveDashboard, serveAISearch, serveSettings, redirectToDashboard } = require('./routes/dashboard');
 const { exportWorkspaceData, deleteAllWorkspaceData, getWorkspaceDataInfo } = require('./routes/gdpr');
-const { extractFromApi } = require('./routes/extract-api');
 const { handleMe, handleLogout } = require('./routes/auth');
 const {
   handleDecisionCommand,
@@ -192,18 +189,6 @@ async function startApp() {
   expressApp.post('/api/semantic-search', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
   expressApp.post('/api/memory/create', apiRateLimiter, require('express').json(), requireAuth, createMemory);
-
-  // API Key management routes (requires session authentication)
-  expressApp.post('/api/keys/generate', apiRateLimiter, require('express').json(), requireAuth, handleGenerateApiKey);
-  expressApp.get('/api/keys', apiRateLimiter, requireAuth, handleListApiKeys);
-  expressApp.delete('/api/keys/:keyPreview', apiRateLimiter, requireAuth, handleRevokeApiKey);
-
-  // Integration API routes (requires API key authentication)
-  expressApp.get('/api/v1/decisions/:id', apiRateLimiter, requireApiKey, getDecisionById);
-
-  // Transcript extraction for automations, e.g. Google Drive via n8n (requires API key authentication)
-  expressApp.post('/api/v1/extract', aiRateLimiter, require('express').json({ limit: '1mb' }), requireApiKey, extractFromApi);
-
 
   // Protected routes - GDPR (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/gdpr/info', apiRateLimiter, requireAuth, requireWorkspaceAccess, getWorkspaceDataInfo);

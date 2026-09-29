@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed - API keys
+- **Settings → API Keys** and the integration API (`/api/keys*`, `/api/v1/extract`, `/api/v1/decisions/:id`) are gone. They were built for an n8n / Google Drive automation that Google Meet auto-capture replaces, and they were an extra way into a workspace's data. Existing keys stop working; the n8n guide moved to `docs/archive/`
+
 ### Fixed - Home showed no outcomes for workspaces created with Google sign-in
 - **Empty "Recent decisions":** the query validator only accepted legacy workspace IDs (Slack `T…`, email `W…`), so `/api/decisions` answered 400 for every workspace created with Google sign-in (`ws_…`). It now accepts `ws_…` IDs, and `/api/decisions` and `/api/stats` use the session's workspace
 - **Stats across workspaces:** for those workspaces, `/api/stats` counted the outcomes of every workspace. It now always counts only the signed-in workspace's

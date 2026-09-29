@@ -24,7 +24,6 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 |---|---|---|
 | Dashboard pages (`/dashboard`, `/settings`, `/ai-search`; `/select-space` redirects to Home) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
-| Integration API (`/api/v1/*`) | `src/routes/extract-api.js`, `api.js#getDecisionById` | API key (`src/middleware/api-key-auth.js`) |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |
 | Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`; `/login` only links to the web sign-in), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
 | Sign-in | `/auth/login` page → `/auth/google` → Google → `/auth/google/callback` (`src/auth/routes.js`) | Google OpenID Connect (`src/integrations/google/oauth.js`) |
@@ -41,9 +40,6 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 2. Extract decisions with Claude (`services/claude.js`).
 3. Save them to `ai_suggestions`, where the user reviews them.
 4. Approving a suggestion inserts it into `decisions`.
-
-**Transcript via automation:**
-`POST /api/v1/extract` (API key) → same pipeline, into the key owner's space or the default space → a pending banner in the dashboard.
 
 **Google Meet auto-capture** (see `docs/integrations/google-meet.md`):
 1. A user connects Google Meet in Settings, which stores an encrypted refresh token in `google_connections`.
@@ -93,7 +89,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 - **`workspaces`** holds one row per workspace (`name`, unique `google_domain`, `slack_team_id`). Older workspaces get a row the first time they're linked to Google. **`users`** holds one row per Google account (`google_sub`, `email`). Memberships keep their own `user_id`, and the session always uses the membership's.
 - **Personal space:** every member has one private space of their own (`personal_for: <user_id>`, name "My space"), created at sign-in and on `GET /api/spaces` by `ensurePersonalSpace()`; they're its owner in `space_members`. Their Google Meet captures, imports and Log manually go there unless they pick another space, so colleagues on the same domain don't see each other's meetings. A partial unique index enforces one per member. It can't be deleted, and admins never see a colleague's personal space. Action items are the exception: an item owned by someone is visible to (and updatable by) that owner even when it sits in a colleague's personal space.
 - **One space, no space UI:** while someone has a single space, every space control (header picker, "Searching in", space pickers in Log manually, edit and Google Meet settings, space chips on cards, Settings → Manage Spaces) is hidden: those elements carry `data-multi-space` and the page sets `body.single-space`.
-- **Default space:** "General", public, only for captures with no Corteza user behind them (Slack, API keys). `ensureDefaultSpace()` creates it when one of those needs it; a partial unique index enforces one per workspace. `scripts/migrations/007-personal-spaces.js` split the old General into personal spaces.
+- **Default space:** "General", public, only for captures with no Corteza user behind them (Slack). `ensureDefaultSpace()` creates it when one of those needs it; a partial unique index enforces one per workspace. `scripts/migrations/007-personal-spaces.js` split the old General into personal spaces.
 - **Spaces** are `public`, `shared` or `private`. Space roles are owner, admin, member and viewer. Rules are in `src/services/permissions.js`. `GET /api/spaces` returns `can_create` per space, and `?writable=true` returns only spaces the user can post to.
 - **Workspace admins** live in `workspace_admins`. `isAdmin` still falls back to Slack admin status; Phase 1 removes that.
 
@@ -106,7 +102,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links |
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |
 | `workspace_settings` | Per-workspace settings, such as encrypted Jira credentials |
-| `api_keys` | Integration API keys |
+| `api_keys` | No longer used: API keys and `/api/v1/*` were removed (Sept 2026). Old rows are ignored |
 | `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
 | `beta_access` | Private beta approved list: one row per `email` or Google `domain` (each unique), with `name`, `company`, `approved_at`, `approved_via` ('email_link' / 'script'), `welcome_sent_at` (`core/beta`) |
@@ -171,10 +167,10 @@ src/
     extractor.js         # Claude extraction (from services/claude.js)
     parsers/             # txt/md/vtt/srt/pdf/docx (from utils/text-extractors.js)
     sources/             # adapters producing a Transcript
-      google-meet/  slack/  upload/  api/
+      google-meet/  slack/  upload/
   integrations/          # thin API clients + token storage
     google/  slack/  jira/  email/
-  auth/                  # Google sign-in, session, requireAuth/requireWorkspace/requireAdmin, API keys
+  auth/                  # Google sign-in, session, requireAuth/requireWorkspace/requireAdmin
   http/                  # route modules only: parse → call core/ingestion → respond
   jobs/                  # scheduler.js (Mongo lease locks) + meet-poller, weekly-digest, reengagement
 ```

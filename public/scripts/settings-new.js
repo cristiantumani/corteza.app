@@ -7,7 +7,6 @@
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth();
-    await loadApiKeys();
     await loadSpaces();
     await loadInvites();
   });
@@ -44,130 +43,6 @@
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return parts.slice(0, 2).map(n => n[0]).join('').toUpperCase();
   }
-
-  // ========================================
-  // API KEYS
-  // ========================================
-
-  async function loadApiKeys() {
-    try {
-      const response = await fetch('/api/keys');
-      const data = await response.json();
-
-      const container = document.getElementById('api-keys-list');
-      container.innerHTML = '';
-
-      if (data.keys && data.keys.length > 0) {
-        data.keys.forEach(key => {
-          const keyCard = createApiKeyCard(key);
-          container.appendChild(keyCard);
-        });
-      } else {
-        container.innerHTML = `
-          <div class="p-6 bg-surface-container-low rounded-lg border border-outline-variant text-center">
-            <p class="text-sm text-on-surface-variant">No API keys yet. Create one to get started.</p>
-          </div>
-        `;
-      }
-    } catch (error) {
-      console.error('Error loading API keys:', error);
-    }
-  }
-
-  function createApiKeyCard(key) {
-    const card = document.createElement('div');
-    card.className = 'p-4 bg-surface-container-low rounded-lg border border-outline-variant';
-
-    const createdDate = new Date(key.created_at).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-
-    card.innerHTML = `
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded">${escapeHtml(key.name)}</span>
-        <span class="text-xs text-on-surface-variant">Created: ${createdDate}</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <code class="text-sm font-mono flex-1 truncate bg-surface-container-high p-2 rounded">${escapeHtml(key.key_preview)}...</code>
-        <button onclick="copyToClipboard('${escapeHtml(key.key_preview)}')" class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors p-2">
-          content_copy
-        </button>
-        <button onclick="revokeApiKey('${escapeHtml(key.key_preview)}')" class="material-symbols-outlined text-error hover:text-error/80 transition-colors p-2">
-          delete
-        </button>
-      </div>
-    `;
-
-    return card;
-  }
-
-  window.openGenerateKeyModal = function() {
-    document.getElementById('generate-key-modal').classList.add('active');
-  };
-
-  window.closeGenerateKeyModal = function() {
-    document.getElementById('generate-key-modal').classList.remove('active');
-    document.getElementById('api-key-name').value = '';
-  };
-
-  window.generateApiKey = async function() {
-    const name = document.getElementById('api-key-name').value.trim();
-
-    if (!name) {
-      alert('Please enter a name for the API key');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/keys/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate API key');
-      }
-
-      closeGenerateKeyModal();
-
-      // Show the full key once
-      alert(`API Key Generated!\n\nKEY: ${data.api_key}\n\nCopy this now - you won't be able to see it again!`);
-
-      await loadApiKeys();
-    } catch (error) {
-      console.error('Error generating API key:', error);
-      alert('Failed to generate API key: ' + error.message);
-    }
-  };
-
-  window.revokeApiKey = async function(keyPreview) {
-    if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/keys/${keyPreview}`, {
-        method: 'DELETE'
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to revoke API key');
-      }
-
-      showNotification('API key revoked successfully');
-      await loadApiKeys();
-    } catch (error) {
-      console.error('Error revoking API key:', error);
-      alert('Failed to revoke API key: ' + error.message);
-    }
-  };
 
   // ========================================
   // SPACES
