@@ -153,7 +153,12 @@ Item types:
 - open_question: a question that was raised, matters for the work, and was explicitly left unresolved.
 - risk: a concern, dependency or blocker raised that could affect a decision or deadline.
 
-Do not return background explanations, how-things-work descriptions, small talk, or hypotheticals. When the same outcome is mentioned several times, return it once with the clearest wording. Meeting notes may already list "next steps"; treat them as evidence, but still apply these rules.
+Only business outcomes. The log is for decisions and commitments about the work itself: strategy, customers, sales, product, pricing, finances and budgets, metrics, hiring, compensation and team, operations, legal, partners and deliverables. Ask: would a manager who missed this meeting want this in the team's decision log a month from now? If not, leave it out. Leave out:
+- Meeting logistics: scheduling, rescheduling, moving, shortening or ending this or another meeting, who joins, agendas, sharing the screen or the deck ("se decide reprogramar la reunión para las 15:45", "nos juntamos el jueves para seguir"). A follow-up meeting is only worth an action item when it is a working session with a stated business purpose AND a deadline matters, and even then describe the work, not the calendar invite.
+- Problems with the meeting itself or someone's equipment: audio, connection, a computer restarting, a tool not loading, moving files to a new laptop, installing software ("fallas técnicas interrumpieron el análisis", "José traspasa la base de datos al nuevo computador"). These are never risks or action items unless the equipment is itself a business project (for example migrating the company's CRM).
+- Personal errands, small talk, jokes, greetings, and anything said about the meeting's own flow ("seguimos después", "vamos rápido").
+- Background explanations, how-things-work descriptions, status updates with no commitment, and hypotheticals.
+A risk is a threat to a business result (revenue, customers, a launch, a deadline for a deliverable, compliance, the team), not to the meeting. When the same outcome is mentioned several times, return it once with the clearest wording. Prefer a few meaningful items over many small ones; [] is a valid answer for a meeting with no business outcomes. Meeting notes may already list "next steps"; treat them as evidence, but still apply these rules.
 
 Fields for each item:
 - decision_type: "decision" | "action_item" | "open_question" | "risk"
@@ -167,6 +172,7 @@ Fields for each item:
 - epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null
 - tags: 2-5 lowercase keywords
 - confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
+- business_relevance: "high" (strategy, money, customers, people, a deliverable), "medium" (useful team context or a smaller work commitment) or "low" (logistics, meeting or equipment issues, housekeeping). Items you would label "low" should normally not be returned at all; if you return one anyway, label it "low" and it will be discarded.
 
 Language: write decision_text, rationale and tags in the OUTPUT LANGUAGE given before the transcript. If none is given, use the language the participants spoke. Meeting notes (for example Gemini notes) may be in another language than the conversation; still write in the output language. Keep evidence_quote verbatim, in its original language.
 
@@ -276,12 +282,17 @@ function parseDecisionResponse(claudeResponse) {
     }
 
     // Validate and filter each decision
-    const validDecisions = decisions.map(normalizeItem).filter(d => {
+    const validDecisions = keepItems(decisions.map(normalizeItem), d => {
       const isValid = validateAISuggestion(d);
       if (!isValid) {
         console.log(`⚠️  Skipping invalid suggestion:`, d);
+        return false;
       }
-      return isValid;
+      if (d.business_relevance === 'low') {
+        console.log(`🧹 Skipping low-relevance item: ${d.decision_text}`);
+        return false;
+      }
+      return true;
     });
 
     console.log(`✅ Parsed ${validDecisions.length} valid decisions from Claude response`);
@@ -291,6 +302,26 @@ function parseDecisionResponse(claudeResponse) {
     console.error('Response was:', claudeResponse.substring(0, 500));
     return [];
   }
+}
+
+/**
+ * Keeps the items that pass `keep`, fixing each action item's decision_ref (a position
+ * in the list) so it still points at the same decision; a link to a dropped item is removed
+ * @param {Object[]} items - normalized items, in Claude's order
+ * @param {Function} keep - (item) => boolean
+ * @returns {Object[]}
+ */
+function keepItems(items, keep) {
+  const newIndex = new Map();
+  const kept = [];
+  items.forEach((item, index) => {
+    if (!keep(item)) return;
+    newIndex.set(index, kept.length);
+    kept.push(item);
+  });
+  return kept.map(item => (item && Number.isInteger(item.decision_ref)
+    ? { ...item, decision_ref: newIndex.has(item.decision_ref) ? newIndex.get(item.decision_ref) : null }
+    : item));
 }
 
 /** Trims an optional string field to a max length, or null */
@@ -315,6 +346,7 @@ function normalizeItem(item) {
     owner_names: ownerNames,
     owner_name: ownerNames[0] || null,
     decision_ref: Number.isInteger(item.decision_ref) && item.decision_ref >= 0 ? item.decision_ref : null,
+    business_relevance: ['high', 'medium', 'low'].includes(item.business_relevance) ? item.business_relevance : null,
     due_date: typeof item.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.due_date) ? item.due_date : null,
     rationale: optionalText(item.rationale, 500),
     evidence_quote: evidence,
@@ -420,6 +452,7 @@ module.exports = {
   parseDecisionResponse,
   parseLeadingJsonArray,
   normalizeItem,
+  keepItems,
   responseText,
   SAMPLING_MODELS
 };

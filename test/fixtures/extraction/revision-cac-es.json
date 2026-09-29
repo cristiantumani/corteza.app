@@ -1,0 +1,11 @@
+{
+  "name": "Revisión de indicadores con fallas técnicas (Spanish, synthetic)",
+  "title": "Revisión de indicadores y CAC",
+  "date": "2026-09-29",
+  "participants": ["Cristian Tumani", "Tomás Rivas"],
+  "transcript": "Cristian Tumani: Hola Tomás, ¿me escuchas?\nTomás Rivas: Sí, perdón, el computador está lentísimo, creo que se va a reiniciar.\nCristian Tumani: Dale. Antes de los números, te cuento lo del reajuste salarial que vimos con Fernanda. Hicimos el esfuerzo, no es fácil con el contexto económico, pero lo aprobamos. Se aplica desde este mes.\nTomás Rivas: Buenísimo, gracias. Le aviso a Fernanda.\nCristian Tumani: Vamos al CAC. España sale altísimo este mes.\nTomás Rivas: Sí, pero ojo, en España tenemos muy pocos clientes todavía, entonces cualquier gasto que le cargamos al mercado dispara el CAC. Creo que el problema es cómo repartimos los gastos por mercado en el PNL.\nCristian Tumani: Tiene sentido. ¿Puedes revisar la asignación de gastos por mercado en el PNL para que el CAC no se distorsione con volúmenes tan bajos?\nTomás Rivas: Sí, yo lo reviso.\nTomás Rivas: Uy, se me reinició el computador. Perdón, se perdió todo lo que tenía abierto.\nCristian Tumani: No te preocupes. Mejor retomemos a las 15:45 y revisamos los indicadores con calma.\nTomás Rivas: Perfecto, a las 15:45. Y mañana traspaso la base de datos al computador nuevo para que no me vuelva a pasar.\nCristian Tumani: Dale, nos vemos a las 15:45.",
+  "expected": [
+    { "type": "decision", "match": ["reajuste"] },
+    { "type": "action_item", "match": ["gastos", "mercado"], "owner": "Tomás Rivas", "due_date": null }
+  ]
+}

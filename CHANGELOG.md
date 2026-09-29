@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Capture only business outcomes
+- **Relevance rules in the extraction prompt:** meeting logistics (rescheduling, "let's continue at 15:45"), problems with the meeting or someone's equipment (audio, a computer restarting, moving files to a new laptop), personal errands and small talk are no longer saved as decisions, risks or action items. A risk has to threaten a business result, not the meeting
+- **`business_relevance` label:** each extracted item is labeled high, medium or low; low ones are discarded before saving, and action items keep their link to the right decision
+- **Eval:** new fixture `revision-cac-es.json` (a meeting cut short by technical problems) counts logistics and equipment items as extras
+
 ### Fixed - Colleagues in the same meeting each get its outcomes
 - **Shared meetings:** when two colleagues with Google Meet connected were in the same meeting, only the first one's connection captured it and the other got nothing. Each person now captures it into their own personal space (ingestions are unique per person, not per workspace)
 - **No duplicate action items:** an item you own that a colleague also captured shows once in your list (your own copy, even after you mark it done). If you didn't capture the meeting, you still see the colleague's copy
