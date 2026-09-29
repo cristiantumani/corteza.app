@@ -68,10 +68,12 @@ function validateQueryParams(query) {
     }
   }
 
-  // Workspace ID (alphanumeric, starts with T for Slack or W for email)
+  // Workspace ID: "ws_<hex>" (Google sign-in, kept as is), or a legacy Slack "T…" / email "W…" ID (uppercased)
   if (query.workspace_id) {
     const workspaceId = query.workspace_id.trim();
-    if (/^[TW][A-Z0-9-]+$/i.test(workspaceId)) {
+    if (/^ws_[a-f0-9]{8,64}$/.test(workspaceId)) {
+      validated.workspace_id = workspaceId;
+    } else if (/^[TW][A-Z0-9-]+$/i.test(workspaceId)) {
       validated.workspace_id = workspaceId.toUpperCase();
     }
   }
