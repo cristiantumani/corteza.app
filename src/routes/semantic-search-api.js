@@ -252,17 +252,23 @@ async function handleSearchSuggestions(req, res) {
     }
 
     const { getDecisionsCollection } = require('../config/database');
+    const { getUserAccessibleSpaces } = require('../services/permissions');
     const decisionsCollection = getDecisionsCollection();
 
-    // Get unique tags and epic keys that match
+    // Only tags from spaces this person can see (never a colleague's personal space)
+    const workspaceId = req.session.user.workspace_id;
+    const spaceIds = await getUserAccessibleSpaces(null, workspaceId, req.session.user.user_id);
+    const pattern = String(query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const [tags, epics] = await Promise.all([
       decisionsCollection.distinct('tags', {
-        workspace_id: query.workspace_id,
-        tags: { $regex: query.q, $options: 'i' }
+        workspace_id: workspaceId,
+        space_id: { $in: spaceIds },
+        tags: { $regex: pattern, $options: 'i' }
       }),
       decisionsCollection.distinct('epic_key', {
-        workspace_id: query.workspace_id,
-        epic_key: { $regex: query.q, $options: 'i' }
+        workspace_id: workspaceId,
+        space_id: { $in: spaceIds },
+        epic_key: { $regex: pattern, $options: 'i' }
       })
     ]);
 

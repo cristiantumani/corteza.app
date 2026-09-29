@@ -43,6 +43,28 @@ function ingestions() {
   return getDatabase().collection('ingestions');
 }
 
+/** Whose meeting this is: only they see it in their list of latest meetings */
+function ownerOf(transcript) {
+  return (transcript.author && transcript.author.user_id) || null;
+}
+
+/**
+ * Latest meetings a person's Google Meet connection handled (never a colleague's)
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @param {string} source
+ * @param {number} [limit]
+ * @returns {Promise<Object[]>}
+ */
+async function listRecentForUser(workspaceId, userId, source, limit = 10) {
+  return ingestions()
+    .find({ workspace_id: workspaceId, user_id: userId, source })
+    .sort({ updated_at: -1 })
+    .limit(limit)
+    .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, action_items_created: 1, updated_at: 1, _id: 0 })
+    .toArray();
+}
+
 /**
  * Claims a transcript for processing
  * @param {Transcript} transcript
@@ -57,6 +79,7 @@ async function claim(transcript, manual = false) {
   try {
     const doc = {
       ...key,
+      user_id: ownerOf(transcript),
       title: transcript.title,
       status: 'processing',
       attempts: 1,
@@ -76,7 +99,7 @@ async function claim(transcript, manual = false) {
     : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } };
   return ingestions().findOneAndUpdate(
     { ...key, ...retryable },
-    { $set: { status: 'processing', updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
+    { $set: { status: 'processing', user_id: ownerOf(transcript), updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
     { returnDocument: 'after' }
   );
 }
@@ -90,6 +113,7 @@ async function recordSkipped(transcript, reason) {
     { workspace_id: transcript.workspaceId, source: transcript.source, external_id: transcript.externalId },
     {
       $setOnInsert: {
+        user_id: ownerOf(transcript),
         title: transcript.title || null,
         status: 'skipped',
         skip_reason: reason,
@@ -273,6 +297,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
 module.exports = {
   ingestTranscript,
   recordSkipped,
+  listRecentForUser,
   isHandled,
   getStatuses,
   buildExtractionText,

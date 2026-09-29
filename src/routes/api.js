@@ -297,12 +297,13 @@ async function updateDecision(req, res) {
 
         // CHECK PERMISSION: Can this user modify this decision?
         const client = await getSlackClient(req.authenticatedWorkspaceId);
+        // Also needs access to its space: admins never edit a colleague's personal space
         const canModify = await canModifyDecision(
           client,
           req.authenticatedWorkspaceId,
           req.session.user.user_id,
           decision.user_id
-        );
+        ) && await canAccessSpace(client, req.authenticatedWorkspaceId, decision.space_id, req.session.user.user_id);
 
         if (!canModify) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -396,12 +397,13 @@ async function deleteDecision(req, res) {
 
     // CHECK PERMISSION: Can this user delete this decision?
     const client = await getSlackClient(req.authenticatedWorkspaceId);
+    // Also needs access to its space: admins never delete from a colleague's personal space
     const canModify = await canModifyDecision(
       client,
       req.authenticatedWorkspaceId,
       req.session.user.user_id,
       decision.user_id
-    );
+    ) && await canAccessSpace(client, req.authenticatedWorkspaceId, decision.space_id, req.session.user.user_id);
 
     if (!canModify) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -448,7 +450,10 @@ async function getStats(req, res) {
       res.end(JSON.stringify({ error: 'workspace_id is required' }));
       return;
     }
-    const baseFilter = { workspace_id: workspaceId };
+    // Only outcomes in spaces this person can see: never a colleague's personal space
+    const userId = req.session?.user?.user_id || req.user?.user_id;
+    const spaceIds = userId ? await getUserAccessibleSpaces(null, workspaceId, userId) : [];
+    const baseFilter = { workspace_id: workspaceId, space_id: { $in: spaceIds } };
 
     const [total, byType, byCategory, recentCount] = await Promise.all([
       decisionsCollection.countDocuments(baseFilter),

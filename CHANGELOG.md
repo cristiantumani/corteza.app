@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - Colleagues could see each other's meetings and data
+- **Latest meetings:** Home and Settings → Google Meet listed every meeting captured in the workspace, including colleagues' meeting titles and outcome counts. Each person now sees only their own (`ingestions.user_id`). Run `scripts/migrations/008-ingestion-owners.js --apply` to keep the history of existing meetings
+- **Data export:** Settings → Data Privacy → Export downloaded the whole workspace, including colleagues' personal spaces and uploaded transcripts. It now exports only outcomes in spaces you can see and transcripts you uploaded
+- **Delete all data:** any member could delete the whole workspace's data. Only a workspace admin can now
+- **Counts and tags:** Home stats counted colleagues' outcomes, and search suggestions offered tags from their personal spaces. Both now use only spaces you can see
+- **Edit and delete:** an admin could edit or delete an outcome in a colleague's personal space by its number. Editing now also requires access to the outcome's space
+
 ### Added - Database size script
 - **`scripts/db-size.js`:** shows documents, data and index size per collection, total use against the Atlas free tier's 512 MB, and how much of `decisions` is embeddings. Read-only. Run it with `railway run node scripts/db-size.js`
 

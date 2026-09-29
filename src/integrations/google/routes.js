@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDatabase } = require('../../config/database');
+const { listRecentForUser } = require('../../ingestion/pipeline');
 const { apiRateLimiter } = require('../../middleware/auth');
 const { canCreateInSpace } = require('../../services/permissions');
 const google = require('./oauth');
@@ -95,12 +95,8 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       return res.json({ success: true, configured: google.isGoogleConfigured(), connected: false });
     }
 
-    const recent = await getDatabase().collection('ingestions')
-      .find({ workspace_id, source: 'google_meet' })
-      .sort({ updated_at: -1 })
-      .limit(10)
-      .project({ title: 1, status: 1, skip_reason: 1, decisions_created: 1, outcomes_by_type: 1, action_items_created: 1, updated_at: 1, _id: 0 })
-      .toArray();
+    // Only this person's meetings: colleagues' meeting titles are private
+    const recent = await listRecentForUser(workspace_id, user_id, 'google_meet');
 
     const { getActiveImport } = require('../../ingestion/meet-import');
     const activeImport = await getActiveImport(workspace_id, user_id);
