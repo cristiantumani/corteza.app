@@ -10,8 +10,8 @@
 
   const params = new URLSearchParams(window.location.search);
   const focusItemId = params.get('item');
-  // ?due=overdue|none|week opens the list filtered (links in the daily digest email)
-  const dueParam = ['overdue', 'none', 'week'].includes(params.get('due')) ? params.get('due') : '';
+  // ?due=overdue|today|none|week opens the list filtered (links in the daily digest email)
+  const dueParam = ['overdue', 'today', 'none', 'week'].includes(params.get('due')) ? params.get('due') : '';
   const state = {
     owner: focusItemId ? 'all' : 'me',
     status: focusItemId ? 'all' : 'open',

@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Private beta: approved list, sign-in check, approve link from the early access email, welcome email | `src/core/beta/` (`beta-access.js`, `approve.js`), `src/http/beta.js`, `scripts/beta-approve.js` |
 | Google OAuth client (URLs, token verification) | `src/integrations/google/oauth.js` |
 | Workspaces (Google domain ↔ workspace) | `src/core/workspaces/workspace-service.js` |
-| Users and memberships | `src/core/users/user-service.js` |
+| Users and memberships | `src/core/users/user-service.js`; each person's time zone (browser-detected or set in Settings, used by the daily digest): `src/core/users/timezone.js`, `src/http/timezone.js`, `public/scripts/timezone.js` |
 | Invites (validate, join) | `src/core/invites/invite-service.js` |
 | Create a decision (single write path for new code) | `src/core/decisions/decision-service.js` (`createDecision`) |
 | Transcript → decisions pipeline (dedupe, extract, auto-save) | `src/ingestion/pipeline.js` (`ingestTranscript`) |
@@ -75,7 +75,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |
 | Product analytics (PostHog, server-side: `track`, `identify`, `trackAiGeneration`; counts and ids only, never meeting content) | `src/integrations/posthog/client.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
-| Background jobs | `src/jobs/` (daily digest: the one routine email, per person, counts only; weekly digest; re-engagement) |
+| Background jobs | `src/jobs/` (daily digest: the one routine email, per person, counts only, 8:00 in each person's time zone; weekly digest; re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
 | Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet, `settings-context.js` for Context for the AI) |
 | Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |

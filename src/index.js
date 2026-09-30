@@ -165,6 +165,9 @@ async function startApp() {
   // First-run onboarding on Home
   expressApp.use(require('./http/onboarding'));
 
+  // Each person's time zone (the daily summary goes out at 8:00 local time)
+  expressApp.use(require('./http/timezone'));
+
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/auth/login');

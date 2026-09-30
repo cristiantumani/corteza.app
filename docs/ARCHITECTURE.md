@@ -89,16 +89,19 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 **Request input** (`src/middleware/input-safety.js`, wired in `src/index.js`): after the session, one `express.json({ limit: '1mb' })` parses every JSON body and `rejectOperatorKeys` answers 400 when a body has a key starting with `$` or `__proto__` at any depth, so `{"id": {"$ne": ""}}` can't turn a lookup into a query. Slack's routes are registered by Bolt before it and keep their raw body. Multipart uploads run the same check after multer. Malformed or oversized JSON gets a JSON 400/413 (`jsonBodyErrors`).
 
-**Daily digest** (`jobs/daily-digest.js`, email in `utils/n8n-client.sendDailyDigestEmail`): the one routine email.
+**Daily digest** (`jobs/daily-digest.js`, email in `utils/n8n-client.sendDailyDigestEmail`): the one routine email, a morning summary to plan the day.
 - **Replaces** the per-meeting capture email and the per-meeting due date requests.
-- **When:** Mon–Fri from `DAILY_DIGEST_HOUR_UTC` (default 22:00 UTC).
+- **When:** Mon–Fri at `DAILY_DIGEST_HOUR` (default 8:00) in each person's time zone, within a 4-hour window (a restart doesn't skip a day; nobody gets it in the afternoon).
+- **Time zone** (`core/users/timezone.js`): `workspace_members.timezone` (IANA name) with `timezone_source`:
+  - `auto`: every app page reports the browser's zone once per session (`public/scripts/timezone.js`, loaded by the sidebar partial) to `POST /api/me/timezone` (`http/timezone.js`);
+  - `manual`: picked in Settings → Morning summary; the browser never overrides it.
+  - Without one: the workspace's most common zone, else `DAILY_DIGEST_DEFAULT_TIMEZONE` (default UTC).
 - **Content:** each member gets their own counts since their previous check (at most 72 h, so Monday covers the weekend):
-  - meetings captured for them and their outcomes by type (imports, `ingestions.manual`, don't count);
-  - action items newly assigned to them;
-  - reminders: outcomes to review in their spaces, and their overdue and undated open items.
-- **No meeting content,** only links (`/dashboard?review=pending`, `/actions?due=overdue|none`).
-- **Only on days with news** (a meeting or a new item): reminders alone never send it.
-- **Once per person per day:** each person/day is claimed in `daily_digests` (unique on workspace, user and day).
+  - on their plate today: open action items due today (their local date), overdue, outcomes to review in their spaces, items without a due date;
+  - since then: meetings captured for them and their outcomes by type (imports, `ingestions.manual`, don't count), and action items newly assigned to them.
+- **No meeting content,** only links (`/actions?due=today|overdue|none`, `/dashboard?review=pending`). `/api/action-items` computes "today" and "overdue" in the viewer's saved time zone.
+- **Only when there's news or something due today:** the other reminders alone never send it.
+- **Once per person per day:** each person/local day is claimed in `daily_digests` (unique on workspace, user and day; the row keeps the time zone used).
 - **Opt-out:** the email's signed link (`/digest/unsubscribe?…&k=daily`) sets `workspace_members.daily_digest_opt_out`.
 
 **Reviewing AI-captured outcomes** (`core/decisions/review-service.js`, `http/decision-review.js`, `public/scripts/outcome-review.js`):
@@ -165,7 +168,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `DAILY_DIGEST_ENABLED` (on unless `false`), `DAILY_DIGEST_HOUR_UTC` (default 22), `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `DAILY_DIGEST_ENABLED` (on unless `false`), `DAILY_DIGEST_HOUR` (local hour, default 8), `DAILY_DIGEST_DEFAULT_TIMEZONE` (default UTC), `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
 
 ### Migrations
 

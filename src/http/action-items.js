@@ -4,13 +4,14 @@ const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
 const { getUserAccessibleSpaces, isAdmin, canCreateInSpace } = require('../services/permissions');
 const { getDecisionsCollection, getWorkspaceMembersCollection } = require('../config/database');
 const actions = require('../core/actions/action-service');
+const { getTimeZone, localTime } = require('../core/users/timezone');
 const { track } = require('../integrations/posthog/client');
 
 /**
  * Action items ("pendientes"): page and API (logic in core/actions).
  *
  *   GET   /actions                          page (filters: mine/everyone, status, due)
- *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|all&due=overdue|none|week&decision_id=12
+ *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|all&due=overdue|today|none|week&decision_id=12
  *   POST  /api/action-items                 { decision_id, text, owner_user_ids?, due_date? } add one to a decision by hand
  *   PATCH /api/action-items/:itemId         { status?, due_date? }
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
@@ -36,7 +37,10 @@ router.get('/actions', requireAuthBrowser, (req, res) => {
 router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res) => {
   try {
     const { workspace_id, user_id } = req.session.user;
-    const spaceIds = await getUserAccessibleSpaces(null, workspace_id, user_id);
+    const [spaceIds, { timezone }] = await Promise.all([
+      getUserAccessibleSpaces(null, workspace_id, user_id),
+      getTimeZone(workspace_id, user_id)
+    ]);
     const decisionId = req.query.decision_id !== undefined ? parseInt(req.query.decision_id, 10) : undefined;
 
     const items = await actions.listActionItems(workspace_id, {
@@ -45,7 +49,8 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
       ownerId: req.query.owner === 'me' ? user_id : undefined,
       status: typeof req.query.status === 'string' ? req.query.status : 'open',
       due: typeof req.query.due === 'string' ? req.query.due : undefined,
-      decisionId: Number.isInteger(decisionId) ? decisionId : undefined
+      decisionId: Number.isInteger(decisionId) ? decisionId : undefined,
+      today: localTime(new Date(), timezone || 'UTC').date
     });
     res.json({ success: true, items, user_id });
   } catch (error) {

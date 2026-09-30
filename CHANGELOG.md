@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - The daily digest is a morning email, at 8:00 in each person's time zone
+- **Morning, to plan the day:** "Good morning. Here's your day." leads with what's on your plate today (action items due today, overdue ones, outcomes to review, items without a date), then what your meetings left since yesterday (since Friday on Mondays). The button opens Action items
+- **Your own time zone:** Corteza detects it from the browser when you open the app; Settings → Morning summary lets you pick another one (then it stays put when you travel). People who haven't opened Corteza yet get their team's usual time zone
+- **Also sent when something is due today,** not only after new meetings
+- Action items: new "Due today" filter (`/actions?due=today`); "today" and "overdue" follow your time zone
+- `DAILY_DIGEST_HOUR` (local hour, default 8) and `DAILY_DIGEST_DEFAULT_TIMEZONE` replace `DAILY_DIGEST_HOUR_UTC`
+
 ### Changed - One daily email instead of one per meeting
 - **Daily digest:** at the end of each weekday, each person gets one summary: how many meetings Corteza captured for them, the decisions and other outcomes in them, new action items assigned to them, and what needs attention (outcomes to review, overdue action items, items without a due date), with links straight to each list. Counts only, no meeting content. It's sent only on days with something new, and Monday's covers the weekend
 - **No more email per meeting:** the capture summary after each meeting and the "set a due date" email to owners are gone; both are covered by the daily digest. The import summary (one per import) stays
