@@ -30,3 +30,9 @@ test('AI generation events carry tokens and latency, never the prompt or the out
   assert.ok(!JSON.stringify(props).includes('Secret'), 'no response content');
   assert.ok(!('$ai_input' in props) && !('$ai_output_choices' in props));
 });
+
+test('request properties keep the path and drop the query string (OAuth codes, search text)', () => {
+  const props = analytics.requestProperties({ method: 'GET', originalUrl: '/auth/google/callback?state=abc&code=4/0AXsecret' });
+  assert.deepEqual(props, { $current_url: '/auth/google/callback', $request_path: '/auth/google/callback', $request_method: 'GET' });
+  assert.equal(analytics.requestProperties({ method: 'GET', url: '/api/decisions?search=pricing#x' }).$current_url, '/api/decisions');
+});

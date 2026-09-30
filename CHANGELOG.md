@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Events from the server** (set up with the PostHog wizard, then trimmed): sign-in, Google Meet connected, sync and import, meeting captured (with outcome counts per type) or failed, searches, action items added or updated, onboarding finished or skipped, invites, spaces, and uncaught errors
 - **AI cost per user:** each Claude call is recorded with model, tokens and latency only
 - **No meeting content leaves Corteza:** transcripts, outcome text, questions, answers and context are never sent. PostHog's LLM tracing (which sends prompts) and the OpenTelemetry log exporter from the wizard were removed
+- **URLs without query strings:** events and errors carry the request path only, so OAuth codes (`/auth/google/callback?code=…`) and search text in a URL never reach PostHog
 - Off unless `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` are set; `POSTHOG_DISABLED=1` turns it off (the extraction eval does)
 
 ### Fixed - Long meetings losing all their outcomes

@@ -1,4 +1,4 @@
-const { PostHog, setupExpressErrorHandler, setupExpressRequestContext } = require('posthog-node');
+const { PostHog } = require('posthog-node');
 
 /**
  * Product analytics (PostHog). Server-side only.
@@ -23,32 +23,49 @@ if (apiKey && host && !disabled) {
 }
 
 /**
- * Adds PostHog's per-request context (the signed-in user, request path) so capture()
- * calls inside a request don't need a distinctId, then the error handler goes last.
- * Identity comes only from the session: client-sent x-posthog-* headers are dropped.
+ * Request properties for events: the path without its query string. Query strings can
+ * carry search text or OAuth codes (/auth/google/callback?code=…), so they're never sent.
+ * @param {import('express').Request} req
+ * @returns {Object}
+ */
+function requestProperties(req) {
+  const path = String(req.originalUrl || req.url || '').split('?')[0].split('#')[0];
+  return { $current_url: path, $request_path: path, $request_method: req.method };
+}
+
+/** Who a request belongs to: only the session's user (client-sent headers are ignored) */
+function requestIdentity(req) {
+  const userId = req.session?.user?.user_id;
+  return userId ? { distinctId: userId, sessionId: req.sessionID } : {};
+}
+
+/**
+ * Per-request context, so capture() calls inside a request are attributed to the
+ * signed-in user without passing a distinctId. Register after the session middleware.
  * @param {import('express').Application} app
  */
 function setupRequestContext(app) {
   if (!posthog) return;
   app.use((req, res, next) => {
-    delete req.headers['x-posthog-distinct-id'];
-    delete req.headers['x-posthog-session-id'];
-    const userId = req.session?.user?.user_id;
-    if (userId) {
-      req.headers['x-posthog-distinct-id'] = userId;
-      req.headers['x-posthog-session-id'] = req.sessionID;
-    }
-    next();
+    posthog.withContext({ ...requestIdentity(req), properties: requestProperties(req) }, () => next());
   });
-  setupExpressRequestContext(posthog, app);
 }
 
 /**
- * Captures uncaught route errors. Register after all routes.
+ * Captures uncaught route errors ($exception), then passes them on. Register after all routes.
  * @param {import('express').Application} app
  */
 function setupErrorHandler(app) {
-  if (posthog) setupExpressErrorHandler(posthog, app);
+  if (!posthog) return;
+  app.use((error, req, res, next) => {
+    try {
+      const { distinctId, sessionId } = requestIdentity(req);
+      posthog.captureException(error, distinctId, { ...requestProperties(req), ...(sessionId ? { $session_id: sessionId } : {}) });
+    } catch (captureError) {
+      console.warn('⚠️  PostHog exception capture failed:', captureError.message);
+    }
+    next(error);
+  });
 }
 
 /**
@@ -135,6 +152,7 @@ module.exports = {
   identify,
   trackAiGeneration,
   aiGenerationProperties,
+  requestProperties,
   setupRequestContext,
   setupErrorHandler,
   shutdownAnalytics
