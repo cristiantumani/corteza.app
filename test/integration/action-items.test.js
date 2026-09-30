@@ -12,7 +12,6 @@ describe('Action items: service, due date requests, API', { skip }, () => {
   let db;
   let cleanup;
   let actions;
-  let dueDates;
   let space;
   let privateSpaceId;
   let server;
@@ -44,7 +43,6 @@ describe('Action items: service, due date requests, API', { skip }, () => {
     ({ cleanup } = await setupTestDatabase());
     db = require('../../src/config/database').getDatabase();
     actions = require('../../src/core/actions/action-service');
-    dueDates = require('../../src/core/actions/due-date-requests');
     space = await require('../../src/services/spaces').ensureDefaultSpace('WACT');
     await db.collection('workspace_members').insertMany(members);
 
@@ -92,31 +90,6 @@ describe('Action items: service, due date requests, API', { skip }, () => {
     assert.equal(done.due_date, '2026-10-01');
     assert.ok(done.completed_at);
     assert.equal(await actions.updateActionItem('WOTHER', item.item_id, { status: 'open' }), null, 'other workspaces cannot update it');
-  });
-
-  test('owners are asked once for missing due dates, only for recent meetings', async () => {
-    const undated = await create({ text: 'Undated A', ownerNames: ['Martín', 'Felipe'] });
-    const undated2 = await create({ text: 'Undated B', ownerNames: ['Martín'] });
-    const dated = await create({ text: 'Dated', ownerNames: ['Martín'], dueDate: '2026-10-01' });
-    const unmatched = await create({ text: 'Nobody known', ownerNames: ['Carla'] });
-    const sent = [];
-    const send = async params => { sent.push(params); };
-    const recent = { title: 'Weekly Ops', url: null, occurredAt: '2026-09-26T10:00:00Z' };
-
-    const result = await dueDates.requestMissingDueDates([undated, undated2, dated, unmatched], recent, { send, now });
-    assert.equal(result.sent, 2);
-    const martin = sent.find(s => s.email === 'martin@acme.com');
-    assert.deepEqual(martin.items.map(i => i.text), ['Undated A', 'Undated B'], 'one email per owner, listing all their undated items');
-    assert.equal(sent.find(s => s.email === 'felipe@acme.com').items.length, 1);
-
-    const saved = await actions.getActionItem('WACT', undated.item_id);
-    assert.ok(saved.due_date_requested_at);
-    const refreshed = await Promise.all([undated, undated2].map(i => actions.getActionItem('WACT', i.item_id)));
-    assert.equal((await dueDates.requestMissingDueDates(refreshed, recent, { send, now })).sent, 0, 'not asked twice');
-
-    const old = { title: 'August planning', occurredAt: '2026-08-10T10:00:00Z' };
-    const fresh = await create({ text: 'From an old meeting', ownerNames: ['Martín'] });
-    assert.equal((await dueDates.requestMissingDueDates([fresh], old, { send, now })).sent, 0, 'imports of past meetings do not email');
   });
 
   test('API: lists for the signed-in user, and only owners, the author or admins can update', async () => {

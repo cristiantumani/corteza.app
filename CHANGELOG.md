@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - One daily email instead of one per meeting
+- **Daily digest:** at the end of each weekday, each person gets one summary: how many meetings Corteza captured for them, the decisions and other outcomes in them, new action items assigned to them, and what needs attention (outcomes to review, overdue action items, items without a due date), with links straight to each list. Counts only, no meeting content. It's sent only on days with something new, and Monday's covers the weekend
+- **No more email per meeting:** the capture summary after each meeting and the "set a due date" email to owners are gone; both are covered by the daily digest. The import summary (one per import) stays
+- **Unsubscribe** from daily summaries with the link in the email. `DAILY_DIGEST_ENABLED=false` turns it off; `DAILY_DIGEST_HOUR_UTC` sets the hour (default 22 UTC)
+- Action items: `/actions?due=overdue` (or `none`, `week`) opens the list filtered
+
 ### Security - No stored XSS through names, spaces or meeting content
 - **Escaped everywhere:** space names, descriptions and icons, member names, emails, workspace names, outcome text in the chat widget and the classic table, invite results and Jira links are escaped before they reach the page. A colleague's name like `<img onerror=…>` or a space called `'); …` shows as text instead of running code
 - **One escape function per script that also escapes quotes:** Home had two, and the one that won didn't escape quotes, so it wasn't safe inside attributes. Settings and Search had the same weaker version

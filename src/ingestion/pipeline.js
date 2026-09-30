@@ -3,7 +3,6 @@ const { createDecision } = require('../core/decisions/decision-service');
 const { countByType } = require('../core/decisions/types');
 const { track } = require('../integrations/posthog/client');
 const { createActionItem } = require('../core/actions/action-service');
-const { requestMissingDueDates } = require('../core/actions/due-date-requests');
 const { getWorkspaceMembersCollection } = require('../config/database');
 
 /**
@@ -89,6 +88,7 @@ async function claim(transcript, manual = false) {
     const doc = {
       ...key,
       title: transcript.title,
+      manual, // imported past meeting (or a manual retry): not counted as "today" in the daily digest
       status: 'processing',
       attempts: 1,
       decisions_created: 0,
@@ -107,7 +107,7 @@ async function claim(transcript, manual = false) {
     : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } };
   return ingestions().findOneAndUpdate(
     { ...key, ...retryable },
-    { $set: { status: 'processing', updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
+    { $set: { status: 'processing', manual, updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },
     { returnDocument: 'after' }
   );
 }
@@ -171,10 +171,9 @@ function buildExtractionText(transcript) {
  * @param {Object} [options]
  * @param {Function} [options.extract] - (text, workspaceId) => { decisions } (defaults to Claude)
  * @param {boolean} [options.manual] - chosen by a person (see claim)
- * @param {Function} [options.requestDueDates] - (actionItems, transcript) => Promise; asks owners for missing due dates
  * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], actionItems: Object[], error?: string }>}
  */
-async function ingestTranscript(transcript, { extract, manual = false, requestDueDates = requestMissingDueDates } = {}) {
+async function ingestTranscript(transcript, { extract, manual = false } = {}) {
   const ingestion = await claim(transcript, manual);
   if (!ingestion) return { status: 'duplicate', decisions: [], actionItems: [] };
 
@@ -307,11 +306,6 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
       workspace_id: transcript.workspaceId
     }, ownerOf(transcript));
 
-    try {
-      await requestDueDates(actionItems, transcript);
-    } catch (error) {
-      console.error('❌ Asking owners for due dates failed:', error.message);
-    }
     return { status: 'completed', decisions, actionItems };
   } catch (error) {
     console.error(`❌ Ingestion failed for ${transcript.source} ${transcript.externalId}:`, error.message);

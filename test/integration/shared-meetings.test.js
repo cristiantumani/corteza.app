@@ -55,18 +55,17 @@ describe('colleagues in the same meeting each capture it', { skip }, () => {
   });
 
   test("the second person isn't blocked by the first: each gets the outcomes in their own space", async () => {
-    const noDueDates = async () => {};
-    const ana = await pipeline.ingestTranscript(await transcriptFor('UA', 'Ana'), { extract: fakeExtract(extracted), requestDueDates: noDueDates });
+    const ana = await pipeline.ingestTranscript(await transcriptFor('UA', 'Ana'), { extract: fakeExtract(extracted) });
     assert.equal(ana.status, 'completed');
 
     // Bob's poller hasn't handled it yet, even though Ana's has
     assert.equal(await pipeline.isHandled(WS, 'UA', 'google_meet', MEETING), true);
     assert.equal(await pipeline.isHandled(WS, 'UB', 'google_meet', MEETING), false);
 
-    const bob = await pipeline.ingestTranscript(await transcriptFor('UB', 'Bob'), { extract: fakeExtract(extracted), requestDueDates: noDueDates });
+    const bob = await pipeline.ingestTranscript(await transcriptFor('UB', 'Bob'), { extract: fakeExtract(extracted) });
     assert.equal(bob.status, 'completed');
 
-    const again = await pipeline.ingestTranscript(await transcriptFor('UB', 'Bob'), { extract: fakeExtract(extracted), requestDueDates: noDueDates });
+    const again = await pipeline.ingestTranscript(await transcriptFor('UB', 'Bob'), { extract: fakeExtract(extracted) });
     assert.equal(again.status, 'duplicate', 'still once per person');
 
     const anaSpace = await spaces.ensurePersonalSpace(WS, 'UA', 'Ana');
@@ -107,21 +106,4 @@ describe('colleagues in the same meeting each capture it', { skip }, () => {
     assert.deepEqual(carlaSees.map(item => item.text), ['Carla books the venue']);
   });
 
-  test("due dates: a colleague with Google Meet connected is asked by their own capture, not by others'", async () => {
-    const dueDates = require('../../src/core/actions/due-date-requests');
-    await db.collection('google_connections').insertOne({ workspace_id: WS, user_id: 'UB', status: 'active' });
-    const item = owner => ({ item_id: `i_${owner.user_id}`, status: 'open', due_date: null, owners: [owner], owner_ids: [owner.user_id] });
-    const bobItem = item({ name: 'Bob', user_id: 'UB', email: 'bob@acme.com' });
-    const carlaItem = item({ name: 'Carla', user_id: 'UC', email: 'carla@acme.com' });
-    const sent = [];
-    const send = async params => { sent.push(params.email); };
-
-    const fromAna = { workspaceId: WS, title: 'Launch sync', occurredAt: new Date().toISOString(), author: { user_id: 'UA', name: 'Ana' } };
-    await dueDates.requestMissingDueDates([bobItem, carlaItem], fromAna, { send });
-    assert.deepEqual(sent, ['carla@acme.com'], 'Bob is asked by his own capture; Carla has no connection');
-
-    const fromBob = { ...fromAna, author: { user_id: 'UB', name: 'Bob' } };
-    await dueDates.requestMissingDueDates([item({ name: 'Bob', user_id: 'UB', email: 'bob@acme.com' })], fromBob, { send });
-    assert.deepEqual(sent, ['carla@acme.com', 'bob@acme.com']);
-  });
 });
