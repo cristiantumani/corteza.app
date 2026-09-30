@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Adding action items by hand
+- **Log manually → Action item** now asks who owns it (you by default) and when it's due, and saves it to Action items, where it can be followed up and marked done. Before, it became an outcome card with no owner or date
+- **In an outcome's detail,** the "+ Add action item" button is now "Save", and closing the window with an action item typed in saves it instead of losing it
+
 ### Changed - The morning summary lists your action items
 - **Your due and overdue items, by name:** "On your plate today" lists up to 5 of your own action items due today or overdue, with the meeting they came from and an **Open** button that takes you to the item in Corteza. "See all" when there are more
 - **New look:** a card with a blue top band, like a task list; outcomes to review and items without a date are rows with their own button

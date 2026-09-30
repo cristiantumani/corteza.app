@@ -148,4 +148,28 @@ describe('Action items: service, due date requests, API', { skip }, () => {
     sessionUser = { workspace_id: 'WOTHER', user_id: 'U3', user_name: 'Ana' };
     assert.equal((await request('POST', '/api/action-items', { decision_id: 501, text: 'x' })).status, 404, 'other workspaces cannot add to it');
   });
+
+  test('API: an action item can be logged on its own (Log manually), in a space the person can add to', async () => {
+    sessionUser = { workspace_id: 'WACT', user_id: 'U3', user_name: 'Ana Ruiz' };
+    const added = await request('POST', '/api/action-items', {
+      space_id: space.space_id, text: 'Enviar propuesta a Carolina', owner_user_ids: ['U3'], due_date: '2026-10-03'
+    });
+    assert.equal(added.status, 201);
+    assert.equal(added.body.item.decision_id, null);
+    assert.equal(added.body.item.space_id, space.space_id);
+    assert.equal(added.body.item.space_name, space.name, 'space name comes from the database');
+    assert.deepEqual(added.body.item.owner_ids, ['U3']);
+    assert.equal(added.body.item.due_date, '2026-10-03');
+
+    const mine = await request('GET', '/api/action-items?owner=me');
+    assert.ok(mine.body.items.some(item => item.item_id === added.body.item.item_id), 'it shows in Action items');
+    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WACT', text: 'Enviar propuesta a Carolina' }), 0, 'not saved as an outcome');
+
+    assert.equal((await request('POST', '/api/action-items', { text: 'x' })).status, 400, 'a space is needed');
+    assert.equal((await request('POST', '/api/action-items', { space_id: { $ne: '' }, text: 'x' })).status, 400);
+    assert.equal((await request('POST', '/api/action-items', { space_id: 'nope', text: 'x' })).status, 404);
+    assert.equal((await request('POST', '/api/action-items', { space_id: privateSpaceId, text: 'x' })).status, 403, 'not a member of the private space');
+    sessionUser = { workspace_id: 'WOTHER', user_id: 'U3', user_name: 'Ana' };
+    assert.equal((await request('POST', '/api/action-items', { space_id: space.space_id, text: 'x' })).status, 404, "another workspace's space");
+  });
 });

@@ -162,7 +162,7 @@
 <div class="modal-overlay" id="log-memory-modal">
   <div class="modal detail-modal">
     <div class="detail-header">
-      <h2>➕ Log Team Memory</h2>
+      <h2>➕ Log manually</h2>
       <button class="close-btn" onclick="closeLogMemoryModal()">✕ Close</button>
     </div>
 
@@ -205,7 +205,7 @@
         </small>
       </div>
 
-      <div class="detail-item">
+      <div class="detail-item" data-log-not-action>
         <label>Category</label>
         <input
           type="text"
@@ -215,7 +215,7 @@
         />
       </div>
 
-      <div class="detail-item">
+      <div class="detail-item" data-log-not-action>
         <label>Tags</label>
         <input
           type="text"
@@ -225,7 +225,7 @@
         />
       </div>
 
-      <div class="detail-item">
+      <div class="detail-item" data-log-not-action>
         <label>Epic Key / Jira</label>
         <input
           type="text"
@@ -236,7 +236,17 @@
       </div>
     </div>
 
-    <div class="detail-section">
+    <!-- Action item: owners and due date; saved to Action items (public/scripts/log-action-item.js) -->
+    <div class="detail-section" id="log-action-fields" hidden>
+      <h3>Who and when</h3>
+      <div class="decision-action-row">
+        <div class="decision-action-owners" id="log-action-owners"></div>
+        <label class="decision-action-due">Due <input type="date" id="log-action-due" class="inline-edit-input"></label>
+      </div>
+      <small style="color: #616061; font-size: 12px; margin-top: 6px; display: block;">It goes to Action items, where you can follow it up and mark it done.</small>
+    </div>
+
+    <div class="detail-section" data-log-not-action>
       <h3>Additional Context (Optional)</h3>
       <textarea
         id="log-memory-alternatives"
@@ -248,7 +258,7 @@
 
     <div class="modal-buttons">
       <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">Cancel</button>
-      <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save Memory</button>
+      <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save</button>
     </div>
   </div>
 </div>
@@ -413,10 +423,11 @@
 </script>
 <!-- BOOTSTRAP -->
 <script src="/scripts/outcome-review.js?v=1"></script>
-<script src="/scripts/dashboard.js?v=26"></script>
+<script src="/scripts/dashboard.js?v=27"></script>
 <script src="/scripts/dashboard-new.js?v=12"></script>
-<script src="/scripts/people.js?v=1"></script>
-<script src="/scripts/decision-actions.js?v=1"></script>
+<script src="/scripts/people.js?v=2"></script>
+<script src="/scripts/decision-actions.js?v=2"></script>
+<script src="/scripts/log-action-item.js?v=1"></script>
 <script src="/scripts/inline-edit.js?v=3"></script>
 <script src="/scripts/outcome-labels.js?v=1"></script>
 <script src="/scripts/home-capture.js?v=4"></script>
