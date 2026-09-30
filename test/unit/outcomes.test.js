@@ -39,3 +39,10 @@ test('due dates edited in place must be real YYYY-MM-DD dates', () => {
   assert.equal(isValidDueDate('29/10/2026'), false);
   assert.equal(isValidDueDate(20261029), false);
 });
+
+test('review=pending filters to outcomes waiting for review; anything else is ignored', () => {
+  const { PENDING_REVIEW } = require('../../src/core/decisions/review-service');
+  assert.equal(validateQueryParams({ review: 'pending' }).review, 'pending');
+  assert.equal(validateQueryParams({ review: 'all' }).review, undefined);
+  assert.deepEqual(PENDING_REVIEW, { capture: 'ai', review_status: null });
+});
