@@ -5,6 +5,7 @@ const analytics = require('./integrations/posthog/client');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
+const { rejectOperatorKeys, jsonBodyErrors } = require('./middleware/input-safety');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
@@ -128,6 +129,12 @@ async function startApp() {
   // Product analytics: events in a request are attributed to the signed-in user
   analytics.setupRequestContext(expressApp);
 
+  // JSON bodies are parsed once for every route, and refused when they carry MongoDB
+  // operators ({"$ne": ""}) or __proto__ keys (middleware/input-safety.js). Slack's own
+  // routes were registered by Bolt before this, with their raw body for signature checks.
+  expressApp.use(require('express').json({ limit: '1mb' }));
+  expressApp.use(rejectOperatorKeys);
+
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
   expressApp.get('/health', healthCheck);
@@ -229,6 +236,7 @@ async function startApp() {
   // AI extraction for web (requires authentication)
   expressApp.use(require('./routes/ai-extract-web'));
 
+  expressApp.use(jsonBodyErrors); // a malformed body is the client's mistake, not an exception to report
   analytics.setupErrorHandler(expressApp);
 
   // Create Slack App with the custom receiver

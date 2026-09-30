@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - Every request body checked for database operators
+- **One JSON parser for the whole app:** bodies are parsed once and requests carrying MongoDB operators (`{"$ne": ""}`) or `__proto__` keys are refused with a 400 before reaching any route. Uploads get the same check. Before, each route had to remember to check types
+- **Editing an outcome and the demo search** read the request stream by hand; they now use the parsed body (with a 1 MB limit instead of none)
+- Malformed JSON gets a JSON error instead of an HTML page
+
 ### Security - Uploaded transcripts stay with whoever uploaded them
 - **Space permission:** uploading notes or approving a suggestion now checks you can post to the space, so nobody can add outcomes to a colleague's personal space
 - **Your suggestions only:** approving, rejecting and listing pending suggestions only work on your own uploads. Uploading a transcript a colleague already uploaded no longer returns their suggestions
