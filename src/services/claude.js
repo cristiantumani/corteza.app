@@ -23,14 +23,16 @@ function isClaudeConfigured() {
  *
  * @param {string} workspace_id - Workspace ID to filter examples
  * @param {number} limit - Maximum number of examples to fetch (default: 3)
+ * @param {string|null} [userId] - only this person's feedback
  * @returns {Promise<Array>} Array of approved feedback examples
  */
-async function getApprovedExamples(workspace_id, limit = 3) {
+async function getApprovedExamples(workspace_id, limit = 3, userId = null) {
   try {
     const feedbackCollection = getAIFeedbackCollection();
     const examples = await feedbackCollection
       .find({
         workspace_id: workspace_id,
+        ...(userId ? { user_id: userId } : {}),
         action: { $in: ['approved', 'edited_approved'] }
       })
       .sort({ created_at: -1 })
@@ -54,14 +56,16 @@ async function getApprovedExamples(workspace_id, limit = 3) {
  *
  * @param {string} workspace_id - Workspace ID to filter examples
  * @param {number} limit - Maximum number of examples to fetch (default: 2)
+ * @param {string|null} [userId] - only this person's feedback
  * @returns {Promise<Array>} Array of rejected feedback examples
  */
-async function getRejectedExamples(workspace_id, limit = 2) {
+async function getRejectedExamples(workspace_id, limit = 2, userId = null) {
   try {
     const feedbackCollection = getAIFeedbackCollection();
     const examples = await feedbackCollection
       .find({
         workspace_id: workspace_id,
+        ...(userId ? { user_id: userId } : {}),
         action: 'rejected'
       })
       .sort({ created_at: -1 })
@@ -426,8 +430,9 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
   if (workspace_id) {
     try {
       [approvedExamples, rejectedExamples] = await Promise.all([
-        getApprovedExamples(workspace_id, 5),
-        getRejectedExamples(workspace_id, 5)
+        // A person's own reviews (Confirm / Dismiss on their outcomes): colleagues' outcomes never reach their prompt
+        getApprovedExamples(workspace_id, 5, options.userId || null),
+        getRejectedExamples(workspace_id, 5, options.userId || null)
       ]);
 
       if (approvedExamples.length > 0 || rejectedExamples.length > 0) {

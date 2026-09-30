@@ -38,6 +38,9 @@
         currentUser = data.user;
         WORKSPACE_ID = data.user.workspace_id;
         isCurrentUserAdmin = data.user.is_admin || false;
+        // Other scripts (cards, review buttons) read these; set them once they're known
+        window.currentUser = currentUser;
+        window.isCurrentUserAdmin = isCurrentUserAdmin;
 
         console.log('✅ Authenticated:', {
           user_id: currentUser.user_id,
@@ -537,6 +540,7 @@
         if (e) p.append('epic', e);
         if (dateFrom) p.append('date_from', dateFrom);
         if (dateTo) p.append('date_to', dateTo);
+        if (window.CortezaReview && window.CortezaReview.onlyPending) p.append('review', 'pending');
         p.append('limit', '100');
 
         console.log(`   📡 API call: /api/decisions?${p}`);
@@ -564,6 +568,7 @@
         console.log(`   ✅ Received ${d.decisions.length} decisions for space ${currentSpaceId}`);
         allDecisions = d.decisions;
         window.allDecisions = allDecisions; // Keep window reference updated
+        if (window.CortezaReview) window.CortezaReview.onFetched(d.pending_review);
         renderDecisions(d.decisions);
         document.dispatchEvent(new CustomEvent('corteza:decisions-loaded', { detail: { spaceId: currentSpaceId, workspaceId: WORKSPACE_ID } }));
       } catch (err) {
@@ -648,6 +653,12 @@
     // Expose key functions to window for dashboard-new.js to override and for onclick handlers
     window.renderDecisions = renderDecisions;
     window.fetchDecisions = fetchDecisions;
+    // Replace the loaded list (outcome-review.js after confirm/dismiss), keeping card indexes in sync
+    window.setDecisions = function(list) {
+      allDecisions = list;
+      window.allDecisions = list;
+      window.renderDecisions(list);
+    };
 
     function openDeleteModal(id) {
       deleteTargetId = id;
@@ -795,6 +806,9 @@
       } else {
         document.getElementById('detail-tags-section').style.display = 'none';
       }
+
+      // Confirm / dismiss for AI-captured outcomes nobody reviewed (public/scripts/outcome-review.js)
+      if (window.CortezaReview) window.CortezaReview.renderDetail(decision);
 
       // Click a field to edit it in place (public/scripts/inline-edit.js)
       if (window.CortezaInlineEdit) {
@@ -1240,7 +1254,6 @@
       if (e.key === 'Escape') {
         closeDeleteModal();
         closeDetailModal();
-        closeDeleteAllModal();
         closeFeedbackModal();
       }
     });
@@ -1251,8 +1264,11 @@
     }
 
     function closeFeedbackModal() {
-      document.getElementById('feedback-modal').classList.remove('active');
-      document.getElementById('feedback-form').reset();
+      const modal = document.getElementById('feedback-modal');
+      if (!modal) return; // not on every page (Home has none)
+      modal.classList.remove('active');
+      const form = document.getElementById('feedback-form');
+      if (form) form.reset();
     }
 
     async function submitFeedback(event) {

@@ -255,7 +255,8 @@ async function processTranscriptWeb(transcriptContent, metadata) {
     // Call Claude API to extract decisions
     const aiResult = await extractDecisionsFromTranscript(
       transcriptContent,
-      metadata.workspace_id
+      metadata.workspace_id,
+      { userId: metadata.user_id || null } // their own review feedback and personal context
     );
 
     // Update transcript with processing results

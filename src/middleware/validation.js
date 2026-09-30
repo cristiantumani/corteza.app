@@ -4,6 +4,9 @@
 function validateQueryParams(query) {
   const validated = {};
 
+  // Only AI-captured outcomes nobody has confirmed or dismissed yet
+  if (query.review === 'pending') validated.review = 'pending';
+
   // Page number (default: 1, min: 1)
   if (query.page) {
     const page = parseInt(query.page);

@@ -288,11 +288,11 @@ async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, deci
         <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${escapeHtml(summary.replace(/^./, c => c.toUpperCase()))} captured</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
           From ${meeting_url ? `<a href="${escapeHtml(meeting_url)}" style="color: #3953bd;">${escapeHtml(meeting_title)}</a>` : `<strong>${escapeHtml(meeting_title)}</strong>`}.
-          They're already saved in Corteza; edit or delete any that aren't right.
+          They're already saved in Corteza. Confirm the ones that are right and dismiss the rest: Corteza learns from it.
         </p>
         ${outcomesHtml}
         ${actionsHtml}
-        <a href="${dashboardUrl}/dashboard"
+        <a href="${dashboardUrl}/dashboard?review=pending"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
           Review in Corteza →
         </a>
@@ -419,10 +419,10 @@ async function sendImportSummaryEmail({ email, job }) {
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
         <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">Your import is done</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
-          Corteza captured <strong>${escapeHtml(summary)}</strong> from ${escapeHtml(meetings)}. They're saved in your space; edit or delete any that aren't right.
+          Corteza captured <strong>${escapeHtml(summary)}</strong> from ${escapeHtml(meetings)}. They're saved in your space. Confirm the ones that are right and dismiss the rest: Corteza learns from it.
         </p>
         <table style="border-collapse: collapse; font-size: 14px; width: 100%; margin: 0 0 28px;">${rows}</table>
-        <a href="${dashboardUrl}/dashboard"
+        <a href="${dashboardUrl}/dashboard?review=pending"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
           Review in Corteza →
         </a>

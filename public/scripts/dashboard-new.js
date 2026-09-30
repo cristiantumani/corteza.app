@@ -100,9 +100,6 @@
     const date = new Date(decision.timestamp);
     const dateStr = formatDate(date);
 
-    // Get status
-    const status = getStatusInfo(decision);
-
     // Check permissions
     const isOwnDecision = decision.user_id === (window.currentUser && window.currentUser.user_id);
     const canModify = window.isCurrentUserAdmin || isOwnDecision;
@@ -118,10 +115,7 @@
           <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(TYPE_LABELS[decision.type] || decision.type)}</span>
           ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="Captured automatically${decision.confidence != null ? ` (${Math.round(decision.confidence * 100)}% confidence)` : ''}">✨ AI-captured</span>` : ''}
         </div>
-        <span class="flex items-center gap-1 ${status.color} font-bold text-xs">
-          <span class="w-2 h-2 rounded-full ${status.dotColor}"></span>
-          ${status.text}
-        </span>
+        ${window.CortezaReview ? window.CortezaReview.statusPill(decision) : ''}
       </div>
 
       <h5 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors mb-2 line-clamp-2">${escapeHtml(decision.text.split('\n')[0])}</h5>
@@ -139,6 +133,8 @@
         </div>
         <span class="text-xs text-on-surface-variant">${dateStr}</span>
       </div>
+
+      ${window.CortezaReview ? window.CortezaReview.cardControls(decision) : ''}
 
       ${canModify ? `
       <div class="mt-4 pt-4 border-t border-outline-variant/50 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -209,23 +205,6 @@
   function getMetaLines(decision) {
     const lines = getOwnerLine(decision) + getSourceLine(decision);
     return lines ? `<div class="-mt-4 mb-6 flex flex-col gap-1">${lines}</div>` : '';
-  }
-
-  function getStatusInfo(decision) {
-    // You can customize this based on your decision status logic
-    const hasJira = decision.epic_key || decision.jira_url;
-    if (hasJira) {
-      return {
-        text: 'Finalized',
-        color: 'text-tertiary',
-        dotColor: 'bg-tertiary'
-      };
-    }
-    return {
-      text: 'Review',
-      color: 'text-on-surface-variant',
-      dotColor: 'bg-on-surface-variant'
-    };
   }
 
   function formatDate(date) {

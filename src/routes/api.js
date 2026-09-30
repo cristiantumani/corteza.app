@@ -6,6 +6,7 @@ const { canModifyDecision, isAdmin, getUserAccessibleSpaces, canCreateInSpace, c
 const { getSlackClient } = require('../config/slack-client');
 const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
 const { DECISION_TYPES } = require('../core/decisions/types');
+const { PENDING_REVIEW } = require('../core/decisions/review-service');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -100,6 +101,10 @@ async function getDecisions(req, res) {
       });
     }
 
+    // How many outcomes in this space are waiting for review (before the other filters)
+    const pendingFilter = { ...filter, ...PENDING_REVIEW };
+    if (validated.review === 'pending') Object.assign(filter, PENDING_REVIEW);
+
     if (validated.type) {
       filter.type = Array.isArray(validated.type) ? { $in: validated.type } : validated.type;
     }
@@ -131,19 +136,21 @@ async function getDecisions(req, res) {
     }
 
     const decisionsCollection = getDecisionsCollection();
-    const [decisions, total] = await Promise.all([
+    const [decisions, total, pendingReview] = await Promise.all([
       decisionsCollection
         .find(filter, { projection: { embedding: 0 } }) // embeddings are large and only used server-side
         .sort({ timestamp: -1 })
         .skip(skip)
         .limit(limit)
         .toArray(),
-      decisionsCollection.countDocuments(filter)
+      decisionsCollection.countDocuments(filter),
+      decisionsCollection.countDocuments(pendingFilter)
     ]);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       decisions,
+      pending_review: pendingReview,
       pagination: {
         page,
         limit,
@@ -658,7 +665,7 @@ async function extractDecisionsFromText(req, res) {
     console.log('🤖 Extracting decisions from:', fileName || 'text', `(${text.length} chars)`);
 
     // CREDIT OPTIMIZATION: Pass workspace_id for few-shot learning
-    const result = await extractDecisionsFromTranscript(text, workspace_id);
+    const result = await extractDecisionsFromTranscript(text, workspace_id, { userId: req.session?.user?.user_id || null });
     const extractedDecisions = result.decisions;
 
     if (!extractedDecisions || extractedDecisions.length === 0) {
