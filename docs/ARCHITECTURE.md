@@ -38,10 +38,12 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 
 **Transcript upload (dashboard):**
 `POST /api/ai/extract-from-text` → `extractTextFromFile` → `processTranscriptWeb`:
-1. Deduplicate by content hash in `meeting_transcripts`.
-2. Extract decisions with Claude (`services/claude.js`).
-3. Save them to `ai_suggestions`, where the user reviews them.
-4. Approving a suggestion inserts it into `decisions`.
+1. The uploader must be able to post to the target space (`canCreateInSpace`).
+2. Deduplicate by content hash in `meeting_transcripts`, only among the same person's uploads.
+3. Extract decisions with Claude (`services/claude.js`).
+4. Save them to `ai_suggestions` (random, unguessable ids), where the user reviews them.
+5. Suggestions belong to the uploader: only they list (`GET /api/ai/pending-suggestions`), approve or reject them. Ids come from the request as plain strings, never objects.
+6. Approving one creates the outcome through `createDecision` (atomic number, embedding), in a space the reviewer can post to, already confirmed (`review_status: 'confirmed'`).
 
 **Google Meet auto-capture** (see `docs/integrations/google-meet.md`):
 1. A user connects Google Meet in Settings, which stores an encrypted refresh token in `google_connections`.
