@@ -69,3 +69,26 @@ test('owners become a list and decision_ref an index; a single owner_name still 
   assert.deepEqual(legacy.owner_names, ['Ana']);
   assert.equal(legacy.decision_ref, null);
 });
+
+test('low business relevance items are dropped, and action items keep pointing at their decision', () => {
+  const items = parseDecisionResponse(JSON.stringify([
+    { decision_text: 'Se decide reprogramar la reunión para las 15:45', decision_type: 'decision', confidence: 0.9, business_relevance: 'low' },
+    { decision_text: 'Se aprueba el reajuste salarial', decision_type: 'decision', confidence: 0.95, business_relevance: 'high' },
+    { decision_text: 'José traspasa la base de datos al nuevo computador', decision_type: 'action_item', confidence: 0.8, business_relevance: 'low' },
+    { decision_text: 'Finanzas aplica el reajuste en la próxima liquidación', decision_type: 'action_item', confidence: 0.9, business_relevance: 'high', decision_ref: 1 },
+    { decision_text: 'Coordinar la reunión de seguimiento', decision_type: 'action_item', confidence: 0.7, business_relevance: 'medium', decision_ref: 0 }
+  ]));
+  assert.deepEqual(items.map(i => i.decision_text), [
+    'Se aprueba el reajuste salarial',
+    'Finanzas aplica el reajuste en la próxima liquidación',
+    'Coordinar la reunión de seguimiento'
+  ]);
+  assert.equal(items[1].decision_ref, 0, 'still linked to the salary decision, now first');
+  assert.equal(items[2].decision_ref, null, 'its decision was dropped');
+});
+
+test('items without a relevance label are kept (older responses)', () => {
+  const items = parseDecisionResponse(JSON.stringify([{ decision_text: 'Launch on the 15th', decision_type: 'decision', confidence: 0.9 }]));
+  assert.equal(items.length, 1);
+  assert.equal(items[0].business_relevance, null);
+});

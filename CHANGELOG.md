@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Capture only business outcomes
+- **Relevance rules in the extraction prompt:** meeting logistics (rescheduling, "let's continue at 15:45"), problems with the meeting or someone's equipment (audio, a computer restarting, moving files to a new laptop), personal errands and small talk are no longer saved as decisions, risks or action items. A risk has to threaten a business result, not the meeting
+- **`business_relevance` label:** each extracted item is labeled high, medium or low; low ones are discarded before saving, and action items keep their link to the right decision
+- **Eval:** new fixture `revision-cac-es.json` (a meeting cut short by technical problems) counts logistics and equipment items as extras
+
 ### Added - Context for the AI
 - **Settings → Context for the AI:** two levels. **Your company** (what it does, a glossary of acronyms, products, customers and people, and up to 5 reference documents as TXT, MD, CSV, PDF or DOCX) is shared by the workspace and only admins can edit it. **About you** (role, focus, personal glossary) only applies to your own meetings
 - **Used by the extraction:** the context goes into the prompt before the transcript, marked as background, so Claude judges what matters to the business, spells names and acronyms right and recognizes owners. It never becomes an outcome by itself. Uploaded transcripts and Slack captures get the company context
