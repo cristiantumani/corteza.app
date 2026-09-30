@@ -6,6 +6,7 @@
  * what needs to be done, owners picked from the workspace members (people.js)
  * and an optional due date (POST /api/action-items).
  * Fires `corteza:action-items-changed` after adding one (Home refreshes "My action items").
+ * Closing the modal with the form filled in saves it (flush), like the click-to-edit fields.
  */
 (function() {
   'use strict';
@@ -15,6 +16,7 @@
   }
 
   let current = null; // decision id the modal shows, so late responses for another decision are ignored
+  let openSave = null; // saves the open "Add action item" form, if any
 
   function renderItems(items) {
     return items.map(item => {
@@ -33,6 +35,7 @@
     const list = document.getElementById('detail-actions');
     if (!section || !list) return;
     current = decision.id;
+    openSave = null;
     section.style.display = 'none';
     list.innerHTML = '';
 
@@ -70,43 +73,16 @@
     form.innerHTML = `
       <input type="text" name="text" class="inline-edit-input" placeholder="What needs to be done?" maxlength="500" required>
       <div class="decision-action-row">
-        <div class="decision-action-owners">
-          <div class="decision-action-chips"></div>
-          <select name="owner" class="inline-edit-input">
-            <option value="">+ Add owner…</option>
-            ${people.map(person => `<option value="${escapeHtml(person.user_id)}">${escapeHtml(person.name)}</option>`).join('')}
-          </select>
-        </div>
+        <div class="decision-action-owners"></div>
         <label class="decision-action-due">Due <input type="date" name="due_date" class="inline-edit-input"></label>
       </div>
       <div class="decision-action-buttons">
-        <button type="submit" class="modal-btn modal-btn-primary">Add</button>
+        <button type="submit" class="modal-btn modal-btn-primary">Save</button>
         <button type="button" class="modal-btn modal-btn-cancel" data-cancel>Cancel</button>
         <span class="inline-edit-hint"></span>
       </div>`;
     footer.replaceWith(form);
-
-    const chosen = [];
-    const chips = form.querySelector('.decision-action-chips');
-    const ownerSelect = form.querySelector('select[name="owner"]');
-    const renderChips = () => {
-      chips.innerHTML = chosen.map(id => {
-        const person = people.find(p => p.user_id === id);
-        return `<span class="tag decision-action-chip">${escapeHtml(person ? person.name : id)} <button type="button" data-remove="${escapeHtml(id)}" aria-label="Remove">×</button></span>`;
-      }).join('');
-      for (const option of ownerSelect.options) option.hidden = option.disabled = !!option.value && chosen.includes(option.value);
-    };
-    ownerSelect.addEventListener('change', () => {
-      if (ownerSelect.value && !chosen.includes(ownerSelect.value)) chosen.push(ownerSelect.value);
-      ownerSelect.value = '';
-      renderChips();
-    });
-    chips.addEventListener('click', event => {
-      const id = event.target.dataset && event.target.dataset.remove;
-      if (!id) return;
-      chosen.splice(chosen.indexOf(id), 1);
-      renderChips();
-    });
+    const owners = window.CortezaPeople.ownerPicker(form.querySelector('.decision-action-owners'), people);
 
     form.querySelector('[data-cancel]').addEventListener('click', () => load({ decision, canAdd }));
     form.addEventListener('keydown', event => {
@@ -117,8 +93,7 @@
       }
     });
 
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
+    const save = async () => {
       const hint = form.querySelector('.inline-edit-hint');
       const submit = form.querySelector('button[type="submit"]');
       submit.disabled = true;
@@ -132,23 +107,42 @@
           body: JSON.stringify({
             decision_id: decision.id,
             text: form.elements.text.value,
-            owner_user_ids: chosen,
+            owner_user_ids: owners.selected(),
             due_date: form.elements.due_date.value || null
           })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Couldn’t add it');
+        openSave = null;
         document.dispatchEvent(new CustomEvent('corteza:action-items-changed', { detail: { item: data.item } }));
-        await load({ decision, canAdd });
+        if (current === decision.id) await load({ decision, canAdd });
+        return true;
       } catch (error) {
         hint.textContent = error.message;
         hint.classList.add('inline-edit-error');
         submit.disabled = false;
+        return false;
       }
+    };
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      save();
     });
+    // Closing the modal saves what was typed (nothing to save without a description)
+    openSave = () => (form.isConnected && form.elements.text.value.trim() ? save() : Promise.resolve(true));
 
     form.elements.text.focus();
   }
 
-  window.CortezaDecisionActions = { load };
+  /**
+   * Saves the "Add action item" form if it's open and filled in (the modal is closing)
+   * @returns {Promise<boolean>} false when saving failed (the form shows why)
+   */
+  function flush() {
+    const save = openSave;
+    openSave = null;
+    return save ? save() : Promise.resolve(true);
+  }
+
+  window.CortezaDecisionActions = { load, flush };
 })();

@@ -2,7 +2,7 @@ const express = require('express');
 const { renderView } = require('./page-partials');
 const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
 const { getUserAccessibleSpaces, isAdmin, canCreateInSpace } = require('../services/permissions');
-const { getDecisionsCollection, getWorkspaceMembersCollection } = require('../config/database');
+const { getDecisionsCollection, getWorkspaceMembersCollection, getWorkspaceSpacesCollection } = require('../config/database');
 const actions = require('../core/actions/action-service');
 const { getTimeZone, localTime } = require('../core/users/timezone');
 const { track } = require('../integrations/posthog/client');
@@ -12,7 +12,8 @@ const { track } = require('../integrations/posthog/client');
  *
  *   GET   /actions                          page (filters: mine/everyone, status, due)
  *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|all&due=overdue|today|none|week&decision_id=12
- *   POST  /api/action-items                 { decision_id, text, owner_user_ids?, due_date? } add one to a decision by hand
+ *   POST  /api/action-items                 { decision_id | space_id, text, owner_user_ids?, due_date? } add one by hand,
+ *                                           to a decision or on its own (Log manually → Action item)
  *   PATCH /api/action-items/:itemId         { status?, due_date? }
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
  *
@@ -62,14 +63,24 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
 router.post('/api/action-items', apiRateLimiter, express.json(), requireSession, async (req, res) => {
   try {
     const { workspace_id, user_id, user_name } = req.session.user;
-    const { decision_id, text, owner_user_ids, due_date } = req.body || {};
+    const { decision_id, space_id, text, owner_user_ids, due_date } = req.body || {};
 
-    const decisionId = typeof decision_id === 'number' ? decision_id : parseInt(decision_id, 10);
-    const decision = Number.isInteger(decisionId)
-      ? await getDecisionsCollection().findOne({ workspace_id, id: decisionId }, { projection: { id: 1, space_id: 1, space_name: 1 } })
-      : null;
-    if (!decision) return res.status(404).json({ success: false, error: 'Decision not found' });
-    if (!await canCreateInSpace(null, workspace_id, decision.space_id, user_id)) {
+    // Where it goes: the decision's space, or (on its own) a space the person picked
+    let decision = null;
+    let space;
+    if (decision_id !== undefined && decision_id !== null) {
+      const decisionId = typeof decision_id === 'number' ? decision_id : parseInt(decision_id, 10);
+      decision = Number.isInteger(decisionId)
+        ? await getDecisionsCollection().findOne({ workspace_id, id: decisionId }, { projection: { id: 1, space_id: 1, space_name: 1 } })
+        : null;
+      if (!decision) return res.status(404).json({ success: false, error: 'Decision not found' });
+      space = { space_id: decision.space_id, name: decision.space_name || null };
+    } else {
+      if (typeof space_id !== 'string' || !space_id) return res.status(400).json({ success: false, error: 'Choose a space' });
+      space = await getWorkspaceSpacesCollection().findOne({ workspace_id, space_id, archived: { $ne: true } }, { projection: { space_id: 1, name: 1 } });
+      if (!space) return res.status(404).json({ success: false, error: 'Space not found' });
+    }
+    if (!await canCreateInSpace(null, workspace_id, space.space_id, user_id)) {
       return res.status(403).json({ success: false, error: 'You cannot add action items in this space' });
     }
 
@@ -81,17 +92,17 @@ router.post('/api/action-items', apiRateLimiter, express.json(), requireSession,
 
     const item = await actions.createActionItem({
       workspaceId: workspace_id,
-      spaceId: decision.space_id,
-      spaceName: decision.space_name || null,
+      spaceId: space.space_id,
+      spaceName: space.name || null,
       text: cleanText,
       ownerUserIds: Array.isArray(owner_user_ids) ? owner_user_ids : [],
       dueDate: due_date || null,
-      decisionId: decision.id,
+      decisionId: decision ? decision.id : null,
       capture: 'manual',
       author: { user_id, name: user_name || null }
     });
-    console.log(`✅ Action item ${item.item_id} added to decision #${decision.id} by ${user_id}`);
-    track('action_item_added', { has_due_date: !!item.due_date, owner_count: item.owner_ids.length });
+    console.log(`✅ Action item ${item.item_id} added ${decision ? `to decision #${decision.id}` : 'on its own'} by ${user_id}`);
+    track('action_item_added', { has_due_date: !!item.due_date, owner_count: item.owner_ids.length, linked: !!decision });
     res.status(201).json({ success: true, item });
   } catch (error) {
     console.error('❌ Failed to add action item:', error);

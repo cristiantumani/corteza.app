@@ -832,9 +832,14 @@
     // (not while it's open, so currentDecisionIndex keeps pointing at the same item)
     let detailChanged = false;
 
-    function closeDetailModal() {
+    async function closeDetailModal() {
       const modal = document.getElementById('detail-modal');
       if (!modal.classList.contains('active')) return;
+      // An action item typed but not saved yet is saved on close; if that fails, stay open to show why
+      if (window.CortezaDecisionActions && window.CortezaDecisionActions.flush) {
+        const saved = await window.CortezaDecisionActions.flush();
+        if (!saved) return;
+      }
       modal.classList.remove('active');
       if (detailChanged) {
         detailChanged = false;
@@ -878,6 +883,7 @@
         || writableSpaces.find(s => s.is_default)
         || writableSpaces[0];
       spaceSelect.value = preselected.space_id;
+      if (window.CortezaLogActionItem) window.CortezaLogActionItem.reset();
 
       // Show modal
       document.getElementById('log-memory-modal').classList.add('active');
@@ -904,6 +910,18 @@
       const spaceId = document.getElementById('log-memory-space').value;
       if (!spaceId) {
         alert('Please choose a space');
+        return;
+      }
+
+      // Action items go to Action items (with owners and a due date), not to the outcomes list
+      if (type === 'action_item' && window.CortezaLogActionItem) {
+        try {
+          await window.CortezaLogActionItem.submit({ text, spaceId });
+          closeLogMemoryModal();
+          showNotification('✅ Saved to Action items');
+        } catch (error) {
+          alert(`❌ ${error.message}`);
+        }
         return;
       }
 
