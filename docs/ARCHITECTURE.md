@@ -87,6 +87,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 **Product analytics (PostHog, server-side only):** `src/integrations/posthog/client.js`.
 - **What's sent:** events with counts, types and ids, never meeting content (transcripts, outcome text, search questions or answers, AI context). This keeps Meet data within Google's Limited Use policy.
+- **URLs:** only the path, never the query string (OAuth codes, search text).
 - **Who:** inside a request, events go to the signed-in user (the session's `user_id`; client-sent `x-posthog-*` headers are ignored). Background work passes the owner: `track(event, props, userId)`. Sign-in sets email, name and workspace on the person (`identify`).
 - **Events:**
   - `user_signed_in`, `google_meet_connected`, `google_meet_sync_completed`, `google_meet_import_started`;
