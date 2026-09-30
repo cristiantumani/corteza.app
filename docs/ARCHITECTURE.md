@@ -85,6 +85,18 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
 
 Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
+**Product analytics (PostHog, server-side only):** `src/integrations/posthog/client.js`.
+- **What's sent:** events with counts, types and ids, never meeting content (transcripts, outcome text, search questions or answers, AI context). This keeps Meet data within Google's Limited Use policy.
+- **Who:** inside a request, events go to the signed-in user (the session's `user_id`; client-sent `x-posthog-*` headers are ignored). Background work passes the owner: `track(event, props, userId)`. Sign-in sets email, name and workspace on the person (`identify`).
+- **Events:**
+  - `user_signed_in`, `google_meet_connected`, `google_meet_sync_completed`, `google_meet_import_started`;
+  - `meeting_captured` (outcome counts per type) and `meeting_capture_failed`;
+  - `semantic_search_completed`, `action_item_added`, `action_item_updated`, `onboarding_closed` (finished, skipped or link, and the step);
+  - invites, spaces, Jira, web extraction and suggestion review;
+  - uncaught route errors (`$exception`).
+- **AI cost:** each Claude call (extraction, search answer) is an `$ai_generation` event with model, tokens and latency only (`trackAiGeneration`). The prompt and the output are not sent.
+- **Off** when the env vars are missing, in tests, or with `POSTHOG_DISABLED=1` (the extraction eval). Queued events are sent on SIGTERM.
+
 ### Workspaces, spaces, permissions
 
 - **`workspace_id`:** `ws_…` for workspaces created through Google sign-in. Older ones keep their IDs: a Slack team ID (`T…`) or `W<NAME>` from the removed magic-link login.
@@ -123,7 +135,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
 
 ### Migrations
 

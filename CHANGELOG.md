@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Product analytics (PostHog)
+- **Events from the server** (set up with the PostHog wizard, then trimmed): sign-in, Google Meet connected, sync and import, meeting captured (with outcome counts per type) or failed, searches, action items added or updated, onboarding finished or skipped, invites, spaces, and uncaught errors
+- **AI cost per user:** each Claude call is recorded with model, tokens and latency only
+- **No meeting content leaves Corteza:** transcripts, outcome text, questions, answers and context are never sent. PostHog's LLM tracing (which sends prompts) and the OpenTelemetry log exporter from the wizard were removed
+- Off unless `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` are set; `POSTHOG_DISABLED=1` turns it off (the extraction eval does)
+
 ### Added - First-run onboarding
 - **How Corteza works:** the first time someone opens Home they see short steps: how meeting capture works (with **Connect Google Meet**, or **Import past meetings** once connected), how to ask Search (example questions that run the search), and Action items. Admins also get an optional step to add the company context. Skip, Back and Next; shown once per person (saved on the membership, so it doesn't come back on another device)
 - **Sidebar → How it works** opens the steps again from any page

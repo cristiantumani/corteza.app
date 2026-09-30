@@ -1,25 +1,7 @@
-const crypto = require('crypto');
 const OpenAI = require('openai');
-const { OpenAI: PostHogOpenAI } = require('@posthog/ai/openai');
-const { posthog } = require('./posthog');
 
 let openaiClient = null;
 let embeddingsEnabled = false;
-
-/**
- * Adds a process-run session and per-operation trace to background embedding work.
- */
-function embeddingObservabilityContext(aiContext = {}) {
-  if (!posthog) return {};
-  const context = {
-    posthogTraceId: aiContext.traceId || crypto.randomUUID(),
-    posthogProperties: {
-      $ai_session_id: aiContext.sessionId || `embeddings-process-${process.pid}`
-    }
-  };
-  if (aiContext.distinctId) context.posthogDistinctId = aiContext.distinctId;
-  return context;
-}
 
 /**
  * Initialize OpenAI client for embeddings
@@ -40,9 +22,7 @@ function initializeEmbeddings() {
   }
 
   try {
-    openaiClient = posthog
-      ? new PostHogOpenAI({ apiKey, posthog })
-      : new OpenAI({ apiKey });
+    openaiClient = new OpenAI({ apiKey });
     embeddingsEnabled = true;
     console.log('✅ Semantic search ENABLED (OpenAI embeddings initialized)');
   } catch (error) {
@@ -77,8 +57,7 @@ async function generateDecisionEmbedding(decision) {
     const response = await openaiClient.embeddings.create({
       model: 'text-embedding-3-small', // 1536 dimensions, cheap and fast
       input: textToEmbed,
-      encoding_format: 'float',
-      ...embeddingObservabilityContext()
+      encoding_format: 'float'
     });
 
     return response.data[0].embedding;
@@ -94,7 +73,7 @@ async function generateDecisionEmbedding(decision) {
  * @param {string} query - User's search query
  * @returns {Promise<Array<number>>} - 1536-dimensional embedding vector
  */
-async function generateQueryEmbedding(query, aiContext = {}) {
+async function generateQueryEmbedding(query) {
   if (!embeddingsEnabled) {
     throw new Error('Embeddings not enabled. Set OPENAI_API_KEY.');
   }
@@ -103,8 +82,7 @@ async function generateQueryEmbedding(query, aiContext = {}) {
     const response = await openaiClient.embeddings.create({
       model: 'text-embedding-3-small',
       input: query,
-      encoding_format: 'float',
-      ...embeddingObservabilityContext(aiContext)
+      encoding_format: 'float'
     });
 
     return response.data[0].embedding;
@@ -188,7 +166,6 @@ async function batchGenerateEmbeddings(decisions) {
 
   const results = [];
   const batchSize = 100; // OpenAI allows up to 2048 inputs per batch
-  const aiContext = embeddingObservabilityContext();
 
   for (let i = 0; i < decisions.length; i += batchSize) {
     const batch = decisions.slice(i, i + batchSize);
@@ -198,8 +175,7 @@ async function batchGenerateEmbeddings(decisions) {
       const response = await openaiClient.embeddings.create({
         model: 'text-embedding-3-small',
         input: texts,
-        encoding_format: 'float',
-        ...aiContext
+        encoding_format: 'float'
       });
 
       // Add embeddings to decisions

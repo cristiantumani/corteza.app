@@ -72,6 +72,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |
+| Product analytics (PostHog, server-side: `track`, `identify`, `trackAiGeneration`; counts and ids only, never meeting content) | `src/integrations/posthog/client.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
@@ -94,6 +95,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 - **Joining a workspace:** only through Google sign-in (same `hd` domain, or an invite link). Never trust the email's domain, only Google's `hd` claim. See `signInWithGoogle` in `src/auth/google-signin.js`.
 - **User IDs:** memberships keep their own `user_id` (legacy Slack/email IDs). The session uses the membership's `user_id`, and decisions reference it.
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.
+- **Analytics never carries meeting content.** PostHog events (`track` in `src/integrations/posthog/client.js`) hold counts, types and ids. Never send transcripts, outcome text, search questions or answers, or AI context, and don't wrap the AI clients with PostHog's LLM tracing (it sends the prompts).
 - **Secrets:** per-workspace credentials are encrypted with `src/utils/encryption.js`. Never commit keys; `*.pem` and `*.crx` are gitignored.
 - **Performance:**
   - Never send `embedding` to the browser; project it out.

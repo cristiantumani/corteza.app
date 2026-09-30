@@ -14,10 +14,17 @@
   let index = 0;
   let recorded = false;
 
-  function markSeen() {
+  /** @param {'finished'|'skipped'|'link'} how - for analytics: how far people get */
+  function markSeen(how) {
     if (recorded) return;
     recorded = true;
-    fetch('/api/onboarding/seen', { method: 'POST', credentials: 'include', keepalive: true }).catch(() => {});
+    fetch('/api/onboarding/seen', {
+      method: 'POST',
+      credentials: 'include',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ how, step: index + 1, steps: steps.length })
+    }).catch(() => {});
   }
 
   function render() {
@@ -27,8 +34,8 @@
     root.querySelector('[data-onb-next]').textContent = index === steps.length - 1 ? 'Get started' : 'Next';
   }
 
-  function close() {
-    markSeen();
+  function close(how = 'skipped') {
+    markSeen(how);
     root.classList.remove('open');
     document.removeEventListener('keydown', onKey);
   }
@@ -65,15 +72,15 @@
   }
 
   root.querySelector('[data-onb-next]').addEventListener('click', () => {
-    if (index < steps.length - 1) { index++; render(); } else { close(); }
+    if (index < steps.length - 1) { index++; render(); } else { close('finished'); }
   });
   root.querySelector('[data-onb-back]').addEventListener('click', () => {
     if (index > 0) { index--; render(); }
   });
-  root.querySelector('[data-onb-skip]').addEventListener('click', close);
-  root.addEventListener('click', event => { if (event.target === root) close(); });
+  root.querySelector('[data-onb-skip]').addEventListener('click', () => close('skipped'));
+  root.addEventListener('click', event => { if (event.target === root) close('skipped'); });
   // Following a link inside a step (connect Meet, try a question…) counts as done
-  root.querySelectorAll('[data-onb-finish]').forEach(link => link.addEventListener('click', markSeen));
+  root.querySelectorAll('[data-onb-finish]').forEach(link => link.addEventListener('click', () => markSeen('link')));
 
   async function start({ force = false } = {}) {
     const params = new URLSearchParams(window.location.search);

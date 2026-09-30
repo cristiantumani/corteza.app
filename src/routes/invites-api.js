@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { getWorkspaceInvitesCollection, getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
 const { sendInviteEmail } = require('../utils/n8n-client');
 const { getUsableInvite, acceptInvite } = require('../core/invites/invite-service');
-const { posthog } = require('../services/posthog');
+const { track } = require('../integrations/posthog/client');
 
 const router = express.Router();
 
@@ -123,15 +123,12 @@ router.post('/api/invites', async (req, res) => {
       }
     }
 
-    posthog?.capture({
-      event: 'workspace_invite_created',
-      properties: {
-        role,
-        email_delivery_requested: Boolean(email?.trim()),
-        email_sent: emailSent,
-        scoped_to_space: Boolean(space_id),
-        max_uses_limited: max_uses !== null
-      }
+    track('workspace_invite_created', {
+      role,
+      email_delivery_requested: Boolean(email?.trim()),
+      email_sent: emailSent,
+      scoped_to_space: Boolean(space_id),
+      max_uses_limited: max_uses !== null
     });
 
     res.json({
@@ -287,15 +284,11 @@ router.post('/api/invites/:invite_id/accept', async (req, res) => {
     req.session.user.workspace_id = invite.workspace_id;
     req.session.user.workspace_name = invite.workspace_name;
 
-    posthog?.capture({
-      distinctId: membership.user_id,
-      event: 'workspace_invite_accepted',
-      properties: {
-        $session_id: req.sessionID,
-        role: membership.role,
-        scoped_to_space: Boolean(invite.space_id)
-      }
-    });
+    track('workspace_invite_accepted', {
+      $session_id: req.sessionID,
+      role: membership.role,
+      scoped_to_space: Boolean(invite.space_id)
+    }, membership.user_id);
 
     res.json({
       success: true,
@@ -359,10 +352,7 @@ router.delete('/api/invites/:invite_id', async (req, res) => {
       }
     );
 
-    posthog?.capture({
-      event: 'workspace_invite_revoked',
-      properties: { role: invite.role, scoped_to_space: Boolean(invite.space_id) }
-    });
+    track('workspace_invite_revoked', { role: invite.role, scoped_to_space: Boolean(invite.space_id) });
 
     res.json({ success: true });
 

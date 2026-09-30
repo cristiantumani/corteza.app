@@ -5,7 +5,7 @@ const { canCreateInSpace } = require('../../services/permissions');
 const google = require('./oauth');
 const connections = require('./connections');
 const { LANGUAGE_CODES } = require('../../core/language/detect');
-const { posthog } = require('../../services/posthog');
+const { track } = require('../posthog/client');
 
 /**
  * "Connect Google Meet" routes
@@ -81,10 +81,7 @@ router.get('/integrations/google/callback', async (req, res) => {
       refreshToken,
       grantedScopes
     });
-    posthog?.capture({
-      event: 'google_meet_connected',
-      properties: { granted_scope_count: grantedScopes.length }
-    });
+    track('google_meet_connected', { granted_scope_count: grantedScopes.length });
     settingsRedirect(res, { google: 'connected' });
   } catch (error) {
     console.error('❌ Google Meet connect failed:', error.message);
@@ -173,13 +170,10 @@ router.post('/api/integrations/google/sync', apiRateLimiter, requireSession, asy
     if (!summary) return res.status(409).json({ success: false, error: 'A check is already running. Try again in a minute.' });
     if (summary.error) return res.status(502).json({ success: false, error: summary.error === 'revoked' ? 'Google access was revoked. Reconnect Google Meet.' : 'Checking Google Meet failed.' });
 
-    posthog?.capture({
-      event: 'google_meet_sync_completed',
-      properties: {
-        meetings_processed: summary.meetingsProcessed,
-        decisions_captured: summary.decisionsCaptured,
-        action_items_captured: summary.results.reduce((sum, result) => sum + (result.actionItems ? result.actionItems.length : 0), 0)
-      }
+    track('google_meet_sync_completed', {
+      meetings_processed: summary.meetingsProcessed,
+      decisions_captured: summary.decisionsCaptured,
+      action_items_captured: summary.results.reduce((sum, result) => sum + (result.actionItems ? result.actionItems.length : 0), 0)
     });
 
     res.json({
@@ -243,12 +237,9 @@ router.post('/api/integrations/google/imports', apiRateLimiter, express.json(), 
     const job = await startImport(connection, meeting_ids, space_id || null);
     if (job.error) return res.status(400).json({ success: false, error: job.error });
 
-    posthog?.capture({
-      event: 'google_meet_import_started',
-      properties: {
-        meeting_count: job.total,
-        scoped_to_space: Boolean(space_id)
-      }
+    track('google_meet_import_started', {
+      meeting_count: job.total,
+      scoped_to_space: Boolean(space_id)
     });
 
     res.status(202).json({ success: true, import_id: job.import_id, total: job.total });

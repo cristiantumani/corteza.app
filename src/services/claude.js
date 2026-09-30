@@ -1,8 +1,6 @@
-const crypto = require('crypto');
 const Anthropic = require('@anthropic-ai/sdk');
-const { Anthropic: PostHogAnthropic } = require('@posthog/ai/anthropic');
 const config = require('../config/environment');
-const { posthog } = require('./posthog');
+const { trackAiGeneration } = require('../integrations/posthog/client');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
 const { getAIFeedbackCollection } = require('../config/database');
 const { LANGUAGE_CODES, detectLanguage, spokenText, languageName } = require('../core/language/detect');
@@ -200,19 +198,16 @@ const FALLBACK_MODELS = /^claude-(opus-5|fable-5)/;
  * @param {string} prompt - The prompt to send
  * @returns {Promise<Object>} Claude API response (Message)
  */
-async function callClaudeAPI(prompt, aiContext = {}) {
+async function callClaudeAPI(prompt) {
   if (!isClaudeConfigured()) {
     throw new Error('Claude API not configured. Set ANTHROPIC_API_KEY in environment.');
   }
 
-  const clientOptions = {
+  const anthropic = new Anthropic({
     apiKey: config.claude.apiKey,
     timeout: 5 * 60 * 1000,
     maxRetries: 2
-  };
-  const anthropic = posthog
-    ? new PostHogAnthropic({ ...clientOptions, posthog })
-    : new Anthropic(clientOptions);
+  });
   const model = config.claude.model;
   const request = {
     model,
@@ -220,13 +215,6 @@ async function callClaudeAPI(prompt, aiContext = {}) {
     system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
     messages: [{ role: 'user', content: prompt }]
   };
-  if (posthog) {
-    request.posthogTraceId = aiContext.traceId || crypto.randomUUID();
-    request.posthogProperties = {
-      $ai_session_id: aiContext.sessionId || `extraction-process-${process.pid}`
-    };
-    if (aiContext.distinctId) request.posthogDistinctId = aiContext.distinctId;
-  }
   if (SAMPLING_MODELS.test(model)) request.temperature = 0.2;
 
   console.log(`🤖 Calling Claude API (${model})...`);
@@ -456,13 +444,17 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
   const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language, contextBlock);
 
   // Call Claude API
-  const response = await callClaudeAPI(prompt, {
-    sessionId: options.aiSessionId,
-    distinctId: options.aiDistinctId,
-    traceId: options.aiTraceId
-  });
+  const callStart = Date.now();
+  const response = await callClaudeAPI(prompt);
 
   const decisions = parseDecisionResponse(responseText(response));
+  trackAiGeneration({
+    feature: 'extraction',
+    response,
+    latencyMs: Date.now() - callStart,
+    distinctId: options.userId || null,
+    properties: { item_count: decisions.length, truncated: response.stop_reason === 'max_tokens', workspace_id: workspace_id || null }
+  });
 
   const processingTime = Date.now() - startTime;
 
