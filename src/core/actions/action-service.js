@@ -88,8 +88,8 @@ async function createActionItem({
 /**
  * Lists action items of a workspace, most urgent first (overdue and soonest due, then undated, newest first)
  * @param {string} workspaceId
- * @param {Object} filters
- * @param {string[]} filters.spaceIds - spaces the viewer can access
+ * @param {Object} [filters]
+ * @param {string[]} [filters.spaceIds] - spaces the viewer can access
  * @param {string} [filters.viewerId] - also include items this user owns, in any space
  *   (an action item from a colleague's private meeting still reaches its owner)
  * @param {string} [filters.ownerId] - only items owned by this user

@@ -24,6 +24,18 @@ const { track } = require('../integrations/posthog/client');
  */
 const router = express.Router();
 
+/**
+ * A query value when it's one of the allowed ones
+ * @template {string} T
+ * @param {unknown} value
+ * @param {readonly T[]} allowed
+ * @param {T} [fallback]
+ * @returns {T|undefined}
+ */
+function oneOf(value, allowed, fallback) {
+  return allowed.find(option => option === value) ?? fallback;
+}
+
 function requireSession(req, res, next) {
   if (!req.session?.user) return res.status(401).json({ success: false, error: 'Authentication required' });
   next();
@@ -42,14 +54,14 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
       getUserAccessibleSpaces(null, workspace_id, user_id),
       getTimeZone(workspace_id, user_id)
     ]);
-    const decisionId = req.query.decision_id !== undefined ? parseInt(req.query.decision_id, 10) : undefined;
+    const decisionId = typeof req.query.decision_id === 'string' ? parseInt(req.query.decision_id, 10) : undefined;
 
     const items = await actions.listActionItems(workspace_id, {
       spaceIds,
       viewerId: user_id,
       ownerId: req.query.owner === 'me' ? user_id : undefined,
-      status: typeof req.query.status === 'string' ? req.query.status : 'open',
-      due: typeof req.query.due === 'string' ? req.query.due : undefined,
+      status: oneOf(req.query.status, /** @type {const} */ (['open', 'done', 'cancelled', 'all']), 'open'),
+      due: oneOf(req.query.due, /** @type {const} */ (['overdue', 'today', 'none', 'week'])),
       decisionId: Number.isInteger(decisionId) ? decisionId : undefined,
       today: localTime(new Date(), timezone || 'UTC').date
     });

@@ -39,7 +39,7 @@ async function listSpacesForUser({ workspaceId, userId, userName, isAdminUser })
     spaces = await spacesCollection.find({ workspace_id: workspaceId, space_id: { $in: accessibleSpaceIds }, archived: false }).toArray();
   }
   // Their personal space first, then the rest in creation order
-  spaces.sort((a, b) => (b.personal_for === userId) - (a.personal_for === userId) || String(a.created_at).localeCompare(String(b.created_at)));
+  spaces.sort((a, b) => Number(b.personal_for === userId) - Number(a.personal_for === userId) || String(a.created_at).localeCompare(String(b.created_at)));
   if (spaces.length === 0) return [];
 
   const spaceIds = spaces.map(space => space.space_id);

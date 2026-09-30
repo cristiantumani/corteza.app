@@ -41,6 +41,7 @@ function earlyAccessUrl(email) {
  */
 async function isApproved(email, domain) {
   if (!isBetaRequired()) return true;
+  /** @type {Object[]} */
   const or = [{ email: String(email).toLowerCase() }];
   if (domain) or.push({ domain: String(domain).toLowerCase() });
   return !!(await collection().findOne({ $or: or }, { projection: { _id: 1 } }));

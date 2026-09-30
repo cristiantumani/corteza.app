@@ -214,7 +214,7 @@ router.get('/api/integrations/google/meetings', apiRateLimiter, requireSession, 
     const connection = await activeConnection(req, res);
     if (!connection) return;
 
-    const { meetings, truncated } = await findMeetings(connection, range);
+    const { meetings, truncated } = await findMeetings(connection, { from: range.from, to: range.to });
     res.json({ success: true, meetings, truncated });
   } catch (error) {
     console.error('❌ Listing Google Meet meetings failed:', error.message);

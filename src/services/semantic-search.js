@@ -1,6 +1,6 @@
 const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
-const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
 const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');

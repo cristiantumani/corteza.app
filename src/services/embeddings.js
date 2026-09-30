@@ -1,4 +1,4 @@
-const OpenAI = require('openai');
+const { OpenAI } = require('openai');
 
 let openaiClient = null;
 let embeddingsEnabled = false;

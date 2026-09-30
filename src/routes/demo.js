@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { DEMO_WORKSPACE_ID, DEMO_WORKSPACE_NAME, DEMO_DECISIONS } = require('../data/demo-decisions');
 

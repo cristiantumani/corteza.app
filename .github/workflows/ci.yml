@@ -33,6 +33,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Dependency audit (production, high and critical)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Test
         run: npm test
         env:

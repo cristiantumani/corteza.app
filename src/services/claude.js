@@ -1,4 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
@@ -213,6 +213,8 @@ async function callClaudeAPI(prompt) {
     maxRetries: 2
   });
   const model = config.claude.model;
+  // Untyped on purpose: server-side `fallbacks` and `stop_details` are newer than this SDK's type definitions
+  /** @type {any} */
   const request = {
     model,
     max_tokens: config.claude.maxTokens,
@@ -223,6 +225,7 @@ async function callClaudeAPI(prompt) {
 
   console.log(`🤖 Calling Claude API (${model})...`);
   try {
+    /** @type {any} */
     let response;
     if (FALLBACK_MODELS.test(model)) {
       try {
@@ -416,6 +419,9 @@ function parseLeadingJsonArray(text) {
  * @param {Object} [options]
  * @param {string} [options.language] - 'es' | 'en' | 'pt' to force the language outcomes are written in;
  *   otherwise the language spoken in the meeting (detected from the transcript, not the notes)
+ * @param {string|null} [options.userId] - whose context and review examples to use
+ * @param {string|null} [options.personName] - that person's name, for their personal context
+ * @param {string} [options.context] - a ready context block (the eval), instead of loading it
  * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean, language }
  */
 async function extractDecisionsFromTranscript(transcriptText, workspace_id, options = {}) {

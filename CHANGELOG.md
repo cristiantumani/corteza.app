@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - PDF uploads
+- **Uploading a PDF transcript works again.** pdf-parse 2 changed its API (a `PDFParse` class instead of a function), so every PDF upload failed with "PDF parsing module failed to load". Found by the new type check
+
+### Added - Type checking and dependency audit in CI
+- **`npm run typecheck`:** TypeScript checks the JavaScript in `src/core`, `src/jobs`, `src/ingestion`, `src/http`, `src/integrations`, `src/auth` and `src/middleware` (and what they use) through the JSDoc types, with no build step. It runs in CI. Fixed along the way: outdated JSDoc, date arithmetic, query values used without checking they're strings, and the session's shape (`src/types/session.d.ts`)
+- **Dependency audit in CI:** `npm audit --omit=dev --audit-level=high`. Updated the 8 high and 5 moderate vulnerable production dependencies (`npm audit fix`, no breaking upgrades)
+- **Express is declared** in `package.json` (it came in only through Slack Bolt)
+
 ### Fixed - Adding action items by hand
 - **Log manually → Action item** now asks who owns it (you by default) and when it's due, and saves it to Action items, where it can be followed up and marked done. Before, it became an outcome card with no owner or date
 - **In an outcome's detail,** the "+ Add action item" button is now "Save", and closing the window with an action item typed in saves it instead of losing it

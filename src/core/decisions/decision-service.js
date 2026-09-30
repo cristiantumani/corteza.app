@@ -70,7 +70,7 @@ async function createDecision({
 
   const now = new Date();
   const decided = decidedAt ? new Date(decidedAt) : null;
-  const timestamp = decided && !isNaN(decided) && decided <= now ? decided : now;
+  const timestamp = decided && !isNaN(decided.getTime()) && decided <= now ? decided : now;
   const decision = {
     workspace_id: workspaceId,
     space_id: spaceId,
@@ -97,12 +97,12 @@ async function createDecision({
   };
 
   const decisionsCollection = getDecisionsCollection();
-  await decisionsCollection.insertOne(decision);
+  const { insertedId } = await decisionsCollection.insertOne(decision);
 
   // Embedding for semantic search (non-blocking)
   if (isEmbeddingsEnabled()) {
     generateDecisionEmbedding(decision)
-      .then(embedding => decisionsCollection.updateOne({ _id: decision._id }, { $set: { embedding } }))
+      .then(embedding => decisionsCollection.updateOne({ _id: insertedId }, { $set: { embedding } }))
       .catch(error => console.error('Embedding generation failed:', error.message));
   }
 
