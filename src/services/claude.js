@@ -488,6 +488,8 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
 
 module.exports = {
   extractDecisionsFromTranscript,
+  getApprovedExamples,
+  getRejectedExamples,
   isClaudeConfigured,
   buildDecisionExtractionPrompt,
   outputLanguage,

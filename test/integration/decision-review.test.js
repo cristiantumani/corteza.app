@@ -17,8 +17,8 @@ describe('confirm and dismiss AI-captured outcomes', { skip }, () => {
   let cleanup;
   let server;
   let base;
-  let createDecision;
   let anaSpace;
+  let nextId = 1;
 
   async function call(user, path, body) {
     const response = await fetch(base + path, {
@@ -29,17 +29,20 @@ describe('confirm and dismiss AI-captured outcomes', { skip }, () => {
     return { status: response.status, body: await response.json() };
   }
 
-  function capture(text, extra = {}) {
-    return createDecision({
-      workspaceId: WS, spaceId: anaSpace.space_id, text, type: 'decision', capture: 'ai',
-      author: { user_id: 'UA', name: 'Ana' }, source: { type: 'google_meet', title: 'Weekly' }, ...extra
-    });
+  /** An outcome Ana's Google Meet capture saved (shape of createDecision's) */
+  async function capture(text) {
+    const decision = {
+      workspace_id: WS, space_id: anaSpace.space_id, id: nextId++, text, type: 'decision', tags: [],
+      user_id: 'UA', creator: 'Ana', source: 'google_meet', source_details: { type: 'google_meet', title: 'Weekly' },
+      capture: 'ai', confidence: 0.9, timestamp: new Date().toISOString(), created_at: new Date()
+    };
+    await db.collection('decisions').insertOne(decision);
+    return decision;
   }
 
   before(async () => {
     ({ cleanup } = await setupTestDatabase());
     db = require('../../src/config/database').getDatabase();
-    ({ createDecision } = require('../../src/core/decisions/decision-service'));
     const spaces = require('../../src/services/spaces');
     await db.collection('workspace_members').insertMany([
       { workspace_id: WS, user_id: 'UA', user_name: 'Ana', removed_at: null },
