@@ -26,7 +26,7 @@ function sidebar(active) {
  * Reads a view once and fills in its partials
  * @param {string} file - file name in src/views
  * @param {Object} [options]
- * @param {string} [options.active] - sidebar link to mark as current
+ * @param {'home'|'actions'|'search'|'settings'} [options.active] - sidebar link to mark as current
  * @returns {string}
  */
 function renderView(file, { active } = {}) {

@@ -8,6 +8,16 @@ const { describeOutcomes } = require('../core/decisions/types');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
+/**
+ * Sends one email through Resend
+ * @param {Object} params
+ * @param {string} params.to
+ * @param {string} params.subject
+ * @param {string} params.html
+ * @param {string} [params.replyTo]
+ * @param {Object<string, string>} [params.headers] - e.g. List-Unsubscribe
+ * @returns {Promise<{ id: string }>}
+ */
 async function sendEmail({ to, subject, html, replyTo, headers }) {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -195,6 +205,8 @@ async function sendFeedbackNotificationEmail({ to, type, feedback, user_name, us
 /**
  * Sends a member their workspace's weekly decision digest
  * @param {Object} params
+ * @param {string} params.email
+ * @param {string} params.workspace_name
  * @param {Object} params.stats - Output of buildDigestStats (jobs/weekly-digest.js)
  * @param {string} params.unsubscribe_url - Signed link that turns the digest off for this member
  */

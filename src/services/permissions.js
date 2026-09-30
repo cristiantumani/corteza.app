@@ -142,7 +142,7 @@ async function demoteFromAdmin(workspaceId, userId) {
 /**
  * List all admins for a workspace
  * @param {string} workspaceId - Workspace ID
- * @returns {Array} Array of admin records
+ * @returns {Promise<Object[]>} Array of admin records
  */
 async function listAdmins(workspaceId) {
   try {
@@ -169,7 +169,7 @@ async function listAdmins(workspaceId) {
  * @param {string} workspaceId - Workspace ID
  * @param {string} userId - User ID attempting the action
  * @param {string} decisionCreatorId - User ID who created the decision
- * @returns {boolean} true if user can modify the decision
+ * @returns {Promise<boolean>} true if user can modify the decision
  */
 async function canModifyDecision(client, workspaceId, userId, decisionCreatorId) {
   try {

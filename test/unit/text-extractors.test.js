@@ -44,3 +44,32 @@ test('extractTextFromFile rejects unsupported types with a helpful message', asy
   assert.equal(result.success, false);
   assert.match(result.error, /Supported: .txt, .md, .vtt, .srt, .pdf, .docx/);
 });
+
+/** A one-page PDF with a line of text (Helvetica), built by hand */
+function tinyPdf(text) {
+  const content = `BT /F1 24 Tf 72 700 Td (${text}) Tj ET`;
+  const bodies = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = bodies.map((body, i) => {
+    const offset = pdf.length;
+    pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+    return offset;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 6\n0000000000 65535 f \n${offsets.map(o => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
+  pdf += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+
+test('PDF: text comes out (pdf-parse v2), without page markers', async () => {
+  const result = await extractTextFromFile(tinyPdf('Se decide lanzar en octubre'), 'notes.pdf');
+  assert.equal(result.success, true, result.error);
+  assert.match(result.text, /Se decide lanzar en octubre/);
+  assert.doesNotMatch(result.text, /-- 1 of 1 --/);
+});

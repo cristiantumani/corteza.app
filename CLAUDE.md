@@ -22,6 +22,7 @@ npm install
 npm start                 # node src/index.js (needs .env, see .env.example)
 npm test                  # unit tests; integration tests run when TEST_MONGODB_URI is set
 npm run lint              # ESLint (warnings allowed, errors fail CI)
+npm run typecheck         # TypeScript checks our JavaScript (JSDoc types; see tsconfig.json for the folders); errors fail CI
 npm run build:css         # rebuild public/styles/tailwind.min.css after changing Tailwind classes
 TEST_MONGODB_URI=mongodb://localhost:27017 npm test   # run everything against a local MongoDB
 railway run node scripts/db-size.js   # space used per collection vs the Atlas free tier (512 MB); read-only
@@ -31,7 +32,7 @@ node scripts/eval/draft-labels.js --dir ~/corteza-eval   # Claude drafts expecte
 node scripts/eval-extraction.js --dir ~/corteza-eval     # eval on reviewed real meetings (plus --with-synthetic)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB service on every PR.
+CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev --audit-level=high` and all tests against a MongoDB service on every PR.
 
 ## Where things live
 
@@ -105,6 +106,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
   - Keep static assets ahead of the session middleware.
   - Avoid a query per item: use one aggregate or one `$in` query, as `core/spaces/list-spaces.js` does.
   - Pages that run `dashboard.js` get the user and spaces preloaded (`routes/dashboard.js` → `window.__CORTEZA_BOOTSTRAP__`). Keep them working without the preload.
+- **Types:** the code is JavaScript checked by TypeScript (`npm run typecheck`, no build step). JSDoc on exported functions is the type: keep `@param`/`@returns` accurate, mark optional ones `[name]`, and type query values before use (`typeof x === 'string'`). What's in the session is declared in `src/types/session.d.ts`. New folders go into `tsconfig.json`'s `include` once they pass.
+- **Dependencies:** everything `require`d is declared in `package.json` (not only reached through another package). A high or critical `npm audit` finding in production dependencies fails CI.
 - **Style:** CommonJS, async/await, JSDoc comments on exported functions, and the existing emoji-prefixed `console.log` style for server logs. Match the surrounding code.
 - **Tests:** new services get unit tests. Anything that touches MongoDB goes in `test/integration/` using `setupTestDatabase()`, which gives each file its own throwaway database.
 - **Docs:** when you change architecture, data shape or env vars, update `docs/ARCHITECTURE.md`, `.env.example` and this file in the same PR.

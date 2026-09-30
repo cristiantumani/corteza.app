@@ -32,7 +32,7 @@ function detectLanguage(text, { short = false } = {}) {
   }
   const [best, second] = LANGUAGE_CODES.slice().sort((a, b) => counts[b] - counts[a]);
   if (counts[best] < (short ? 2 : 5) || counts[best] < counts[second] * 1.2) return null; // not clear enough
-  return best;
+  return /** @type {'es'|'en'|'pt'} */ (best);
 }
 
 /**

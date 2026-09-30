@@ -40,7 +40,10 @@ function imports() {
 
 /**
  * Validates a date range from the UI ('YYYY-MM-DD', both days inclusive)
- * @returns {{ from: Date, to: Date } | { error: string }} to is exclusive (the day after `to`)
+ * @param {unknown} fromText
+ * @param {unknown} toText
+ * @param {Date} [now]
+ * @returns {{ from?: Date, to?: Date, error?: string }} to is exclusive (the day after `to`); error when invalid
  */
 function parseRange(fromText, toText, now = new Date()) {
   const valid = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(`${value}T00:00:00Z`));
@@ -50,7 +53,7 @@ function parseRange(fromText, toText, now = new Date()) {
   const to = new Date(new Date(`${toText}T00:00:00Z`).getTime() + DAY_MS);
   if (to <= from) return { error: 'The end date must be on or after the start date.' };
   if (from > now) return { error: 'The period is in the future.' };
-  if ((to - from) / DAY_MS > MAX_RANGE_DAYS) return { error: `Choose a period of at most ${MAX_RANGE_DAYS} days.` };
+  if ((to.getTime() - from.getTime()) / DAY_MS > MAX_RANGE_DAYS) return { error: `Choose a period of at most ${MAX_RANGE_DAYS} days.` };
   return { from, to };
 }
 
@@ -85,7 +88,7 @@ async function findMeetings(connection, { from, to }, deps = {}) {
   const client = getClient(connection);
   const records = (await listRecords(client, { from, to }))
     .filter(record => record.endTime) // still running
-    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   const truncated = records.length > MAX_MEETINGS_LISTED;
   const listed = records.slice(0, MAX_MEETINGS_LISTED);
 
@@ -322,7 +325,7 @@ async function resumeStaleImports(deps = {}) {
   const now = new Date();
   const stale = await imports().find({
     status: 'running',
-    $or: [{ lease_until: { $lt: now } }, { lease_until: null, updated_at: { $lt: new Date(now - LEASE_MS) } }]
+    $or: [{ lease_until: { $lt: now } }, { lease_until: null, updated_at: { $lt: new Date(now.getTime() - LEASE_MS) } }]
   }).project({ import_id: 1 }).toArray();
   for (const job of stale) {
     await runImport(job.import_id, deps);

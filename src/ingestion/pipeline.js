@@ -104,7 +104,7 @@ async function claim(transcript, manual = false) {
   // Already known: automatic runs retry only if a previous attempt failed a while ago
   const retryable = manual
     ? { status: { $in: ['skipped', 'failed'] } }
-    : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now - RETRY_AFTER_MS) } };
+    : { status: 'failed', attempts: { $lt: MAX_ATTEMPTS }, updated_at: { $lt: new Date(now.getTime() - RETRY_AFTER_MS) } };
   return ingestions().findOneAndUpdate(
     { ...key, ...retryable },
     { $set: { status: 'processing', manual, updated_at: now }, $unset: { skip_reason: '' }, $inc: { attempts: 1 } },

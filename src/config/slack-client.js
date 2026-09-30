@@ -30,7 +30,7 @@ async function getInstallationStore() {
 /**
  * Get Slack Web API client for a workspace
  * @param {string} workspaceId - Slack team/workspace ID
- * @returns {Promise<WebClient|null>} Authenticated Slack Web API client or null if not available
+ * @returns {Promise<import('@slack/web-api').WebClient|null>} Authenticated Slack Web API client or null if not available
  */
 async function getSlackClient(workspaceId) {
   const cached = clientCache.get(workspaceId);
@@ -62,8 +62,7 @@ async function loadSlackClient(workspaceId) {
       }
 
       // Return the bot client from the installation
-      const { WebClient } = require('@slack/web-api');
-      return new WebClient(installation.bot.token);
+      return new (require('@slack/web-api').WebClient)(installation.bot.token);
     } catch (error) {
       // Installation not found or error fetching - return null for email-authenticated workspaces
       console.log(`ℹ️  No Slack installation for workspace ${workspaceId} (likely email-authenticated)`);
@@ -73,8 +72,7 @@ async function loadSlackClient(workspaceId) {
 
   // If single-workspace mode, use the global bot token
   if (config.slack.token) {
-    const { WebClient } = require('@slack/web-api');
-    return new WebClient(config.slack.token);
+    return new (require('@slack/web-api').WebClient)(config.slack.token);
   }
 
   // No Slack client available - return null for email-authenticated workspaces

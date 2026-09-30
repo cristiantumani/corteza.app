@@ -35,6 +35,7 @@ function outcomeGroup(type) {
  * @returns {Object<string, number>} e.g. { decision: 3, open_question: 1 }
  */
 function countByType(items) {
+  /** @type {Object<string, number>} */
   const counts = {};
   for (const item of items || []) {
     const key = outcomeGroup(item.type);

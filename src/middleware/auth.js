@@ -3,7 +3,7 @@
  * Protects API endpoints by requiring Slack OAuth authentication
  */
 
-const rateLimit = require('express-rate-limit');
+const { rateLimit } = require('express-rate-limit');
 
 /**
  * Middleware to require authentication for API endpoints

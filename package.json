@@ -12,7 +12,8 @@
     "eval:search": "node evals/run-search-evals.js",
     "eval:conversational": "node evals/run-conversational-evals.js",
     "eval:watch": "nodemon evals/run-evals.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +29,7 @@
     "compression": "^1.8.2",
     "connect-mongo": "^6.0.0",
     "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
     "google-auth-library": "^11.1.0",
@@ -44,6 +46,10 @@
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.2.0",
     "@tailwindcss/forms": "^0.5.11",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.19.0",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^22.20.4",
     "autoprefixer": "^10.5.0",
     "braintrust": "^2.2.0",
     "cssnano": "^8.0.1",
@@ -53,6 +59,7 @@
     "postcss": "^8.5.15",
     "postcss-cli": "^11.0.1",
     "tailwindcss": "^3.4.19",
-    "tailwindcss-cli": "^0.1.2"
+    "tailwindcss-cli": "^0.1.2",
+    "typescript": "^5.9.3"
   }
 }

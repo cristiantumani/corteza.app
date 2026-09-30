@@ -162,8 +162,16 @@ async function acquireLease(connectionId, ms = 5 * 60 * 1000) {
 
 /**
  * Records the result of a poll and releases the lease
+ * @param {*} connectionId
+ * @param {Object} result
+ * @param {Date} [result.cursor] - meetings up to here are done (successful polls)
+ * @param {Error & { revoked?: boolean }} [result.error] - why the poll failed
+ * @param {number} [result.meetingsProcessed]
+ * @param {number} [result.decisionsCaptured]
+ * @param {Object<string, number>} [result.outcomesByType]
  */
 async function finishPoll(connectionId, { cursor, error, meetingsProcessed = 0, decisionsCaptured = 0, outcomesByType = {} }) {
+  /** @type {{ $set: Object<string, *>, $inc: Object<string, number> }} */
   const update = {
     $set: { last_polled_at: new Date(), lease_until: null, last_error: error || null },
     $inc: {

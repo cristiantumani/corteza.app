@@ -1,6 +1,6 @@
 // Lazy-load these dependencies only when needed to avoid startup issues
 // in environments that don't support native modules
-let pdfParse = null;
+let PDFParse = null; // pdf-parse v2 (class API), loaded on first use
 let mammoth = null;
 
 /**
@@ -125,12 +125,10 @@ function extractFromCaptions(fileBuffer) {
  */
 async function extractFromPDF(fileBuffer) {
   try {
-    // Lazy-load pdf-parse only when actually needed
-    if (!pdfParse) {
+    // Lazy-load pdf-parse only when actually needed (v2: `new PDFParse({ data }).getText()`)
+    if (!PDFParse) {
       try {
-        const pdfParseModule = require('pdf-parse');
-        // Handle both CommonJS and ES module exports
-        pdfParse = pdfParseModule.default || pdfParseModule;
+        PDFParse = require('pdf-parse').PDFParse;
       } catch (error) {
         console.error('❌ pdf-parse not available:', error.message);
         return {
@@ -141,17 +139,13 @@ async function extractFromPDF(fileBuffer) {
       }
     }
 
-    // Verify pdfParse is a function
-    if (typeof pdfParse !== 'function') {
-      console.error('❌ pdf-parse loaded but is not a function:', typeof pdfParse);
-      return {
-        success: false,
-        text: '',
-        error: 'PDF parsing module failed to load correctly. Please upload .txt or .docx files instead.'
-      };
+    const parser = new PDFParse({ data: new Uint8Array(fileBuffer) });
+    let data;
+    try {
+      data = await parser.getText({ pageJoiner: '' }); // no "-- 1 of 3 --" page markers
+    } finally {
+      await parser.destroy();
     }
-
-    const data = await pdfParse(fileBuffer);
 
     if (!data.text || data.text.trim().length === 0) {
       return {

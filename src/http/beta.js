@@ -35,18 +35,18 @@ function who(tester) {
 }
 
 router.get('/beta/approve', apiRateLimiter, (req, res) => {
-  const tester = verifyApprovalToken(req.query.t);
+  const tester = verifyApprovalToken(typeof req.query.t === 'string' ? req.query.t : '');
   if (!tester) return res.status(400).send(invalidLink);
 
   res.send(page('Approve for the beta?', `
   <p style="color: #555;">${who(tester)} will be able to sign in with Google and create their workspace. They’ll get a welcome email inviting them to sign in.</p>
-  <form method="POST" action="/beta/approve?${new URLSearchParams({ t: req.query.t })}">
+  <form method="POST" action="/beta/approve?${new URLSearchParams({ t: String(req.query.t) })}">
     <button type="submit" style="background: #000; color: #fff; border: 0; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px; cursor: pointer;">Approve and send welcome</button>
   </form>`));
 });
 
 router.post('/beta/approve', apiRateLimiter, async (req, res) => {
-  const tester = verifyApprovalToken(req.query.t);
+  const tester = verifyApprovalToken(typeof req.query.t === 'string' ? req.query.t : '');
   if (!tester) return res.status(400).send(invalidLink);
 
   try {

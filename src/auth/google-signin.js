@@ -27,7 +27,8 @@ const { ensurePersonalSpace } = require('../services/spaces');
  * @param {Object} identity - verified ID token claims: { sub, email, email_verified, name, picture, hd }
  * @param {Object} [options]
  * @param {string} [options.inviteId]
- * @returns {Promise<{ sessionUser?: Object, notInBeta?: boolean, error?: string }>}
+ * @returns {Promise<{ sessionUser?: Corteza.SessionUser, notInBeta?: boolean, email?: string, error?: string }>}
+ *   email: set with notInBeta, to prefill the early access form
  */
 async function signInWithGoogle(identity, { inviteId } = {}) {
   if (!identity?.email || identity.email_verified !== true) {
