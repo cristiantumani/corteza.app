@@ -1,25 +1,33 @@
 const { getDatabase, getDecisionsCollection, getWorkspaceMembersCollection } = require('../config/database');
 const { getUserAccessibleSpaces } = require('../services/permissions');
 const { PENDING_REVIEW } = require('../core/decisions/review-service');
+const { isValidTimeZone, localTime } = require('../core/users/timezone');
 const { getUnsubscribeUrl } = require('./weekly-digest');
 
 /**
- * Daily digest: one end-of-day email per person with what happened, instead of one
- * email per meeting.
+ * Daily digest: one morning email per person with what happened since their last one, to
+ * plan the day, instead of one email per meeting.
  *
- * Mon–Fri at DAILY_DIGEST_HOUR_UTC (default 22:00 UTC, early evening in Latin America),
- * each member gets their own numbers:
+ * Mon–Fri at DAILY_DIGEST_HOUR (default 8:00) in each person's own time zone, each member
+ * gets their own numbers:
  * - meetings Corteza captured for them and the outcomes in them (imports of past meetings
  *   don't count),
- * - action items newly assigned to them,
+ * - action items newly assigned to them, and their open ones due today,
  * - reminders: outcomes waiting for review in their spaces, and their overdue and undated
  *   open action items.
  *
- * Counts only, no meeting content, with links into Corteza. Sent only on days with
- * something new (a meeting or a new action item), so reminders never arrive alone.
+ * Counts only, no meeting content, with links into Corteza. Sent only when there's
+ * something new or due today, so reminders never arrive alone.
+ *
+ * Time zone: the membership's `timezone` (reported by the browser or set in Settings; see
+ * core/users/timezone.js). Without one, the most common time zone among the workspace's
+ * members, else DAILY_DIGEST_DEFAULT_TIMEZONE (default UTC). The email goes out within
+ * SEND_WINDOW_HOURS after the hour (a restart or deploy doesn't skip a day, and nobody gets
+ * a "morning" summary in the afternoon).
+ *
  * The window runs from the person's previous digest check (at most 72 hours back), so
- * Monday's email covers the weekend. Each person/day is claimed with a unique insert into
- * `daily_digests`, so it's sent once even with several app instances.
+ * Monday's email covers the weekend. Each person/day (their local date) is claimed with a
+ * unique insert into `daily_digests`, so it's sent once even with several app instances.
  *
  * On by default when RESEND_API_KEY is set; DAILY_DIGEST_ENABLED=false turns it off.
  * People opt out with the link in the email (`daily_digest_opt_out` on the membership).
@@ -28,22 +36,68 @@ const { getUnsubscribeUrl } = require('./weekly-digest');
 const CHECK_INTERVAL_MS = 15 * 60 * 1000;
 const MAX_WINDOW_MS = 72 * 60 * 60 * 1000;
 const DEFAULT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const SEND_WINDOW_HOURS = 4;
 
 function digestHour() {
-  const hour = parseInt(process.env.DAILY_DIGEST_HOUR_UTC || '22', 10);
-  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 22;
+  const hour = parseInt(process.env.DAILY_DIGEST_HOUR || '8', 10);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 8;
+}
+
+function defaultTimeZone() {
+  const zone = process.env.DAILY_DIGEST_DEFAULT_TIMEZONE;
+  return isValidTimeZone(zone) ? zone : 'UTC';
 }
 
 /**
- * The day to send for, or null when it isn't time (weekend, or before the send hour)
+ * The local day to send for, or null when it isn't time there (weekend, before the send
+ * hour, or past the send window)
  * @param {Date} now
- * @returns {string|null} 'YYYY-MM-DD' (UTC)
+ * @param {string} [timeZone] - IANA name; UTC when missing
+ * @returns {string|null} 'YYYY-MM-DD' in that time zone
  */
-function digestDay(now) {
-  const weekday = now.getUTCDay();
-  if (weekday === 0 || weekday === 6) return null;
-  if (now.getUTCHours() < digestHour()) return null;
-  return now.toISOString().slice(0, 10);
+function digestDay(now, timeZone = 'UTC') {
+  const local = localTime(now, timeZone);
+  if (local.weekday === 0 || local.weekday === 6) return null;
+  const hour = digestHour();
+  if (local.hour < hour || local.hour >= hour + SEND_WINDOW_HOURS) return null;
+  return local.date;
+}
+
+/**
+ * The time zone each member's digest uses: their own, else their workspace's most common
+ * one, else the default
+ * @param {Object[]} members - { workspace_id, timezone }
+ * @returns {(member: Object) => string}
+ */
+function timeZoneResolver(members) {
+  const counts = new Map();
+  for (const member of members) {
+    if (!isValidTimeZone(member.timezone)) continue;
+    const byZone = counts.get(member.workspace_id) || new Map();
+    byZone.set(member.timezone, (byZone.get(member.timezone) || 0) + 1);
+    counts.set(member.workspace_id, byZone);
+  }
+  const workspaceZone = new Map();
+  for (const [workspaceId, byZone] of counts) {
+    workspaceZone.set(workspaceId, [...byZone.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+  }
+  const fallback = defaultTimeZone();
+  return member => (isValidTimeZone(member.timezone) ? member.timezone : workspaceZone.get(member.workspace_id) || fallback);
+}
+
+/**
+ * How the email names the start of its window: 'yesterday', or the weekday ('Friday')
+ * @param {Date} since
+ * @param {Date} now
+ * @param {string} timeZone
+ * @returns {string}
+ */
+function sinceLabel(since, now, timeZone) {
+  const zone = isValidTimeZone(timeZone) ? timeZone : 'UTC';
+  const yesterday = new Date(`${localTime(now, zone).date}T12:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (localTime(since, zone).date >= yesterday.toISOString().slice(0, 10)) return 'yesterday';
+  return since.toLocaleDateString('en-US', { weekday: 'long', timeZone: zone });
 }
 
 /**
@@ -52,19 +106,21 @@ function digestDay(now) {
  * @param {string} userId
  * @param {Date} since
  * @param {Date} now
- * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, toReview: number, overdue: number, noDueDate: number }>}
+ * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
+ * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number }>}
  */
-async function buildDailySummary(workspaceId, userId, since, now) {
+async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UTC') {
   const db = getDatabase();
-  const today = now.toISOString().slice(0, 10);
+  const today = localTime(now, timeZone).date;
   const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
 
-  const [ingestions, newActionItems, overdue, noDueDate, toReview] = await Promise.all([
+  const [ingestions, newActionItems, dueToday, overdue, noDueDate, toReview] = await Promise.all([
     db.collection('ingestions').find(
       { workspace_id: workspaceId, user_id: userId, status: 'completed', manual: { $ne: true }, completed_at: { $gte: since, $lte: now } },
       { projection: { outcomes_by_type: 1 } }
     ).toArray(),
     db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, created_at: { $gte: since, $lte: now } }),
+    db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: today }),
     db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: { $ne: null, $lt: today } }),
     db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: null }),
     spaceIds.length
@@ -78,12 +134,12 @@ async function buildDailySummary(workspaceId, userId, since, now) {
       outcomes[type] = (outcomes[type] || 0) + count;
     }
   }
-  return { meetings: ingestions.length, outcomes, newActionItems, toReview, overdue, noDueDate };
+  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate };
 }
 
-/** Something new happened: reminders alone never trigger an email */
+/** Something new happened, or something is due today: reminders alone never trigger an email */
 function hasNews(summary) {
-  return summary.meetings > 0 || summary.newActionItems > 0;
+  return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0;
 }
 
 /**
@@ -112,47 +168,53 @@ async function claimDay(workspaceId, userId, day, now) {
 }
 
 /**
- * Sends today's digests that haven't been sent yet
+ * Sends the digests that are due now (8:00 in each person's time zone) and not sent yet
  * @param {Date} [now]
  * @param {Object} [deps] - { send } injectable for tests
  * @returns {Promise<{ checked: number, sent: number }>}
  */
 async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
-  const day = digestDay(now);
-  if (!day) return { checked: 0, sent: 0 };
-
   const members = await getWorkspaceMembersCollection().find(
-    { removed_at: null, email: { $nin: [null, ''] }, daily_digest_opt_out: { $ne: true } },
-    { projection: { workspace_id: 1, user_id: 1, email: 1, workspace_name: 1 } }
+    { removed_at: null, email: { $nin: [null, ''] } },
+    { projection: { workspace_id: 1, user_id: 1, email: 1, workspace_name: 1, timezone: 1, daily_digest_opt_out: 1 } }
   ).toArray();
+  // Opted-out members still count for their workspace's usual time zone
+  const timeZoneOf = timeZoneResolver(members);
 
   let checked = 0;
   let sent = 0;
-  const dayLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
   for (const member of members) {
+    if (member.daily_digest_opt_out) continue;
+    const timeZone = timeZoneOf(member);
+    const day = digestDay(now, timeZone);
+    if (!day) continue;
     try {
       const since = await claimDay(member.workspace_id, member.user_id, day, now);
       if (!since) continue;
       checked++;
-      const summary = await buildDailySummary(member.workspace_id, member.user_id, since, now);
+      const summary = await buildDailySummary(member.workspace_id, member.user_id, since, now, timeZone);
       if (!hasNews(summary)) continue;
 
       await send({
         email: member.email,
         workspace_name: member.workspace_name || member.workspace_id,
-        summary: { ...summary, dayLabel },
+        summary: {
+          ...summary,
+          dayLabel: now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
+          since: sinceLabel(since, now, timeZone)
+        },
         unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily')
       });
       await getDatabase().collection('daily_digests').updateOne(
         { workspace_id: member.workspace_id, user_id: member.user_id, day },
-        { $set: { sent: true, sent_at: new Date(), summary } }
+        { $set: { sent: true, sent_at: new Date(), summary, timezone: timeZone } }
       );
       sent++;
     } catch (error) {
       console.error(`❌ Daily digest failed for ${member.user_id} in ${member.workspace_id}:`, error.message);
     }
   }
-  if (sent > 0) console.log(`📬 Daily digest (${day}): ${sent} email(s) sent, ${checked} people checked`);
+  if (sent > 0) console.log(`📬 Daily digest: ${sent} email(s) sent, ${checked} people checked`);
   return { checked, sent };
 }
 
@@ -175,7 +237,7 @@ function startDailyDigestJob() {
     run();
     setInterval(run, CHECK_INTERVAL_MS);
   }, 2 * 60 * 1000);
-  console.log(`⏰ Daily digest scheduled (Mon–Fri from ${digestHour()}:00 UTC)`);
+  console.log(`⏰ Daily digest scheduled (Mon–Fri at ${digestHour()}:00 in each person's time zone)`);
 }
 
 module.exports = {
@@ -183,5 +245,7 @@ module.exports = {
   runDailyDigest,
   buildDailySummary,
   digestDay,
-  hasNews
+  hasNews,
+  sinceLabel,
+  timeZoneResolver
 };

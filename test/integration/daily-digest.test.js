@@ -10,8 +10,9 @@ console.error = () => {};
 
 describe('daily digest: one summary per person per day, with only their own numbers', { skip }, () => {
   const WS = 'WDAY';
-  const WEDNESDAY_EVENING = new Date('2026-09-30T22:10:00Z');
-  const hoursAgo = hours => new Date(WEDNESDAY_EVENING.getTime() - hours * 3600 * 1000);
+  // 8:10 in Santiago (UTC-3), 13:10 in Madrid
+  const WEDNESDAY_MORNING = new Date('2026-09-30T11:10:00Z');
+  const hoursAgo = hours => new Date(WEDNESDAY_MORNING.getTime() - hours * 3600 * 1000);
   let db;
   let cleanup;
   let digest;
@@ -23,8 +24,11 @@ describe('daily digest: one summary per person per day, with only their own numb
     digest = require('../../src/jobs/daily-digest');
     const spaces = require('../../src/services/spaces');
     await db.collection('workspace_members').insertMany([
-      { workspace_id: WS, user_id: 'UA', user_name: 'Ana', email: 'ana@acme.com', workspace_name: 'Acme', removed_at: null },
+      { workspace_id: WS, user_id: 'UA', user_name: 'Ana', email: 'ana@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago' },
+      // No time zone yet: gets the workspace's (Santiago)
       { workspace_id: WS, user_id: 'UB', user_name: 'Bob', email: 'bob@acme.com', workspace_name: 'Acme', removed_at: null },
+      // In Madrid it's already past the morning
+      { workspace_id: WS, user_id: 'UD', user_name: 'Dani', email: 'dani@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'Europe/Madrid' },
       { workspace_id: WS, user_id: 'UC', user_name: 'Carla', email: 'carla@acme.com', workspace_name: 'Acme', removed_at: null, daily_digest_opt_out: true }
     ]);
     anaSpace = await spaces.ensurePersonalSpace(WS, 'UA', 'Ana');
@@ -40,9 +44,11 @@ describe('daily digest: one summary per person per day, with only their own numb
     await db.collection('action_items').insertMany([
       { workspace_id: WS, item_id: 'a1', owner_ids: ['UA'], status: 'open', due_date: '2026-09-20', created_at: hoursAgo(24 * 10) },
       { workspace_id: WS, item_id: 'a2', owner_ids: ['UA'], status: 'open', due_date: null, created_at: hoursAgo(2) },
+      { workspace_id: WS, item_id: 'a4', owner_ids: ['UA'], status: 'open', due_date: '2026-09-30', created_at: hoursAgo(24 * 5) },
       { workspace_id: WS, item_id: 'a3', owner_ids: ['UA'], status: 'done', due_date: '2026-09-01', created_at: hoursAgo(24 * 30) },
       // Bob: nothing new today, only an old overdue item
-      { workspace_id: WS, item_id: 'b1', owner_ids: ['UB'], status: 'open', due_date: '2026-09-10', created_at: hoursAgo(24 * 20) }
+      { workspace_id: WS, item_id: 'b1', owner_ids: ['UB'], status: 'open', due_date: '2026-09-10', created_at: hoursAgo(24 * 20) },
+      { workspace_id: WS, item_id: 'd1', owner_ids: ['UD'], status: 'open', due_date: null, created_at: new Date('2026-09-30T05:00:00Z') }
     ]);
     await db.collection('decisions').insertMany([
       { workspace_id: WS, space_id: anaSpace.space_id, id: 1, text: 'x', type: 'decision', capture: 'ai' },
@@ -55,34 +61,43 @@ describe('daily digest: one summary per person per day, with only their own numb
     if (cleanup) await cleanup();
   });
 
-  test("a person's numbers: today's meetings and outcomes (not imports), new items, and reminders", async () => {
-    const summary = await digest.buildDailySummary(WS, 'UA', hoursAgo(24), WEDNESDAY_EVENING);
-    assert.deepEqual(summary, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, toReview: 1, overdue: 1, noDueDate: 1 });
+  test("a person's numbers: meetings and outcomes since the last one (not imports), new items, due today, reminders", async () => {
+    const summary = await digest.buildDailySummary(WS, 'UA', hoursAgo(24), WEDNESDAY_MORNING, 'America/Santiago');
+    assert.deepEqual(summary, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1 });
   });
 
   test('sends once per person per day, skips people with nothing new and people who opted out', async () => {
     const sent = [];
     const send = async params => { sent.push(params); };
 
-    const first = await digest.runDailyDigest(WEDNESDAY_EVENING, { send });
-    assert.deepEqual(sent.map(s => s.email), ['ana@acme.com'], 'Bob only has reminders; Carla opted out');
+    const first = await digest.runDailyDigest(WEDNESDAY_MORNING, { send });
+    assert.deepEqual(sent.map(s => s.email), ['ana@acme.com'], "Bob only has reminders; Carla opted out; it's afternoon for Dani");
     assert.equal(first.checked, 2);
     assert.equal(sent[0].summary.meetings, 2);
+    assert.equal(sent[0].summary.since, 'yesterday');
     assert.match(sent[0].unsubscribe_url, /k=daily/);
     assert.equal(sent[0].summary.dayLabel, 'Wednesday, September 30');
 
-    const again = await digest.runDailyDigest(new Date(WEDNESDAY_EVENING.getTime() + 15 * 60 * 1000), { send });
+    const again = await digest.runDailyDigest(new Date(WEDNESDAY_MORNING.getTime() + 15 * 60 * 1000), { send });
     assert.equal(again.checked, 0, 'already claimed today');
     assert.equal(sent.length, 1);
 
     const saved = await db.collection('daily_digests').findOne({ workspace_id: WS, user_id: 'UA', day: '2026-09-30' });
     assert.equal(saved.sent, true);
+    assert.equal(saved.timezone, 'America/Santiago');
+  });
+
+  test("each person gets it at 8:00 their time", async () => {
+    const sent = [];
+    const madridMorning = new Date('2026-09-30T06:10:00Z');
+    await digest.runDailyDigest(madridMorning, { send: async params => { sent.push(params); } });
+    assert.deepEqual(sent.map(s => s.email), ['dani@acme.com']);
   });
 
   test("the next day's window starts at the previous check, so nothing is counted twice", async () => {
     const sent = [];
-    const thursday = new Date('2026-10-01T22:10:00Z');
+    const thursday = new Date('2026-10-01T11:10:00Z');
     await digest.runDailyDigest(thursday, { send: async params => { sent.push(params); } });
-    assert.deepEqual(sent, [], "yesterday's meetings are not news today");
+    assert.deepEqual(sent, [], "yesterday's meetings are not news today (and Ana's item was due yesterday)");
   });
 });

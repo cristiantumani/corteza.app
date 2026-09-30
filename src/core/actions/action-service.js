@@ -94,12 +94,13 @@ async function createActionItem({
  *   (an action item from a colleague's private meeting still reaches its owner)
  * @param {string} [filters.ownerId] - only items owned by this user
  * @param {'open'|'done'|'cancelled'|'all'} [filters.status='open']
- * @param {'overdue'|'none'|'week'} [filters.due]
+ * @param {'overdue'|'today'|'none'|'week'} [filters.due]
  * @param {number} [filters.decisionId]
  * @param {Date} [filters.now]
+ * @param {string} [filters.today] - 'YYYY-MM-DD' in the viewer's time zone (default: UTC date of `now`)
  * @returns {Promise<Object[]>}
  */
-async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, status = 'open', due, decisionId, now = new Date() } = {}) {
+async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, status = 'open', due, decisionId, now = new Date(), today: localToday } = {}) {
   const query = { workspace_id: workspaceId, space_id: { $in: spaceIds || [] } };
   if (viewerId) {
     delete query.space_id;
@@ -109,9 +110,12 @@ async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, statu
   if (STATUSES.includes(status)) query.status = status;
   if (typeof decisionId === 'number') query.decision_id = decisionId;
 
-  const today = now.toISOString().slice(0, 10);
-  const inAWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(localToday || '') ? localToday : now.toISOString().slice(0, 10);
+  const weekAhead = new Date(`${today}T12:00:00Z`);
+  weekAhead.setUTCDate(weekAhead.getUTCDate() + 7);
+  const inAWeek = weekAhead.toISOString().slice(0, 10);
   if (due === 'overdue') query.due_date = { $ne: null, $lt: today };
+  if (due === 'today') query.due_date = today;
   if (due === 'none') query.due_date = null;
   if (due === 'week') query.due_date = { $ne: null, $gte: today, $lte: inAWeek };
 

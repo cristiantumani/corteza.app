@@ -146,6 +146,22 @@
                     </div>
                 </section>
 
+                <!-- Daily summary email: the time zone it's sent in (public/scripts/settings-timezone.js) -->
+                <section id="email-summary" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">Morning summary</h3>
+                            <p class="text-sm text-on-surface-variant">On weekdays at 8:00 AM, Corteza emails you what happened since your last summary: meetings, decisions, new action items and what's due today. Only when there's something new.</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl">schedule</span>
+                    </div>
+                    <label for="timezone-select" class="text-sm font-semibold text-on-surface mb-2">Your time zone</label>
+                    <select id="timezone-select" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                        <option value="">Loading…</option>
+                    </select>
+                    <span id="timezone-status" class="text-xs text-on-surface-variant mt-2"></span>
+                </section>
+
                 <!-- Account (Google sign-in) -->
                 <section class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col h-full">
                     <div class="mb-6">
@@ -361,5 +377,6 @@
     <script src="/scripts/outcome-labels.js?v=1"></script>
     <script src="/scripts/settings-integrations.js?v=7"></script>
     <script src="/scripts/settings-context.js?v=2"></script>
+    <script src="/scripts/settings-timezone.js?v=1"></script>
 </body>
 </html>

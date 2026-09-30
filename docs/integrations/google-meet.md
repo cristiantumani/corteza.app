@@ -8,7 +8,7 @@ Corteza reads the transcripts and Gemini notes of your Google Meet meetings and 
 2. Go to **Settings → Google Meet → Connect Google Meet** and allow the requested access. Use the same Google account you signed in with.
 3. In your meetings, turn on **transcription** (Activities → Transcripts) or **Gemini "Take notes for me"**.
 
-A few minutes after a meeting ends and Google has finished the transcript, its decisions appear in the dashboard. At the end of the day, the daily digest email sums up the day's meetings and what needs attention (no email per meeting).
+A few minutes after a meeting ends and Google has finished the transcript, its decisions appear in the dashboard. The next weekday morning (8:00 in each person's time zone), the daily digest email sums up those meetings and what's on their plate today (no email per meeting).
 
 **Settings** (per user):
 - **Save decisions to:** a space you can post to. Defaults to the workspace's default space.
