@@ -368,73 +368,23 @@ function dailyDigestSubject(summary) {
 }
 
 /**
- * The morning summary for one person, to plan the day: counts only, no meeting content,
- * and links to where they can act in Corteza. Replaces the per-meeting capture emails.
+ * The morning summary for one person, to plan the day. Like a task list: their own action
+ * items due today or overdue, each with a button to open it in Corteza; then counts of
+ * what else needs them and of what their meetings left. No decisions, colleagues' items
+ * or transcript text.
  * @param {Object} params
  * @param {string} params.email
  * @param {string} params.workspace_name
  * @param {string} params.unsubscribe_url
- * @param {Object} params.summary - { dayLabel, since ('yesterday' or a weekday), meetings,
- *   outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview, overdue, noDueDate }
+ * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
+ *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
+ *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }] }
  */
 async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
-  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
-  const outcomes = summary.outcomes || {};
-  const decisions = outcomes.decision || 0;
-  const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 });
-
-  const tile = (value, label) => `
-          <td style="width: 33%; padding: 16px 8px; text-align: center; background: #f6f8fa; border-radius: 12px;">
-            <div style="font-size: 30px; font-weight: 800;">${value}</div>
-            <div style="font-size: 13px; color: #555;">${escapeHtml(label)}</div>
-          </td>`;
-  const plural = (count, word) => `${word}${count === 1 ? '' : 's'}`;
-
-  const attention = [
-    summary.dueToday ? { text: `${summary.dueToday} action ${plural(summary.dueToday, 'item')} due today`, hint: 'Block time for them before the day fills up', href: '/actions?due=today' } : null,
-    summary.overdue ? { text: `${summary.overdue} overdue action ${plural(summary.overdue, 'item')}`, hint: 'Close them or pick a new date you can keep', href: '/actions?due=overdue' } : null,
-    summary.toReview ? { text: `${summary.toReview} ${plural(summary.toReview, 'outcome')} to review`, hint: 'Confirm the right ones, dismiss the rest', href: '/dashboard?review=pending' } : null,
-    summary.noDueDate ? { text: `${summary.noDueDate} action ${plural(summary.noDueDate, 'item')} without a due date`, hint: 'Set a date so they don’t slip', href: '/actions?due=none' } : null
-  ].filter(Boolean);
-
-  const attentionHtml = attention.length ? `
-        <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 8px;">On your plate today</h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          ${attention.map(row => `
-          <tr><td style="padding: 10px 0; border-top: 1px solid #eee;">
-            <a href="${baseUrl}${row.href}" style="color: #111; font-weight: 600; text-decoration: none;">${escapeHtml(row.text)} →</a>
-            <div style="color: #777; font-size: 13px;">${escapeHtml(row.hint)}</div>
-          </td></tr>`).join('')}
-        </table>` : '';
-
-  const since = escapeHtml(summary.since || 'yesterday');
-  const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
-        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px;">Good morning. Here's your day.</h1>
-        <p style="font-size: 15px; color: #555; margin: 0 0 8px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
-        <p style="font-size: 15px; color: #111; margin: 0 0 4px;">What's waiting for you and what your meetings left since ${since}, so you can plan your day before it gets busy.</p>
-        ${attentionHtml}
-        <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">Since ${since}</h2>
-        <table style="width: 100%; border-collapse: separate; border-spacing: 8px 0; margin: 0 -8px;">
-          <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>
-        </table>
-        ${otherOutcomes ? `<p style="font-size: 14px; color: #555; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
-        <a href="${baseUrl}/actions"
-           style="display: inline-block; margin-top: 28px; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Plan my day in Corteza →
-        </a>
-        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
-          One email each weekday morning, only when there's something new or due. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
-          Change the time zone in Settings, or <a href="${unsubscribe_url}" style="color: #999;">unsubscribe from morning summaries</a>.
-        </p>
-      </div>
-    `;
-
   const result = await sendEmail({
     to: email,
     subject: dailyDigestSubject(summary),
-    html,
+    html: dailyDigestHtml({ workspace_name, summary, unsubscribe_url }),
     headers: {
       'List-Unsubscribe': `<${unsubscribe_url}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
@@ -443,10 +393,106 @@ async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscrib
   return { success: true, email_id: result.id };
 }
 
+/**
+ * HTML of the morning summary (see sendDailyDigestEmail)
+ * @param {{ workspace_name: string, summary: Object, unsubscribe_url: string }} params
+ * @returns {string}
+ */
+function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
+  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const outcomes = summary.outcomes || {};
+  const decisions = outcomes.decision || 0;
+  const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 });
+  const plural = (count, word) => `${word}${count === 1 ? '' : 's'}`;
+  const shortDate = date => new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
+
+  const button = (href, label) => `
+              <a href="${baseUrl}${href}" style="display: inline-block; white-space: nowrap; padding: 7px 14px; border: 1px solid #c5c6d0; border-radius: 6px; color: #1b1b1d; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(label)}</a>`;
+  const row = ({ box, title, meta, href, label }) => `
+          <tr>
+            <td style="width: 26px; padding: 14px 0; vertical-align: top;">
+              <div style="width: 14px; height: 14px; margin-top: 3px; border: 2px solid ${box}; border-radius: 3px;"></div>
+            </td>
+            <td style="padding: 14px 12px 14px 0; vertical-align: top;">
+              <div style="font-size: 15px; line-height: 1.4; color: #1b1b1d;">${title}</div>
+              <div style="font-size: 13px; color: #6b6d78; margin-top: 2px;">${meta}</div>
+            </td>
+            <td style="padding: 14px 0; vertical-align: top; text-align: right;">${button(href, label)}</td>
+          </tr>`;
+
+  const items = Array.isArray(summary.planItems) ? summary.planItems : [];
+  const itemRows = items.map(item => {
+    const overdue = summary.today && item.due_date < summary.today;
+    const when = overdue ? `Overdue · was due ${shortDate(item.due_date)}` : 'Due today';
+    return row({
+      box: overdue ? '#ba1a1a' : '#3953bd',
+      title: escapeHtml(clip(String(item.text), 160)),
+      meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`,
+      href: `/actions?item=${encodeURIComponent(item.item_id)}`,
+      label: 'Open'
+    });
+  });
+  const dueCount = (summary.dueToday || 0) + (summary.overdue || 0);
+  const allDue = summary.dueToday && summary.overdue ? '/actions' : `/actions?due=${summary.overdue ? 'overdue' : 'today'}`;
+  const more = dueCount > items.length ? `
+          <tr><td colspan="3" style="padding: 0 0 14px 26px;">
+            <a href="${baseUrl}${allDue}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">See all ${dueCount} due or overdue →</a>
+          </td></tr>` : '';
+  const reminders = [
+    summary.toReview ? row({ box: '#c5c6d0', title: `${summary.toReview} ${plural(summary.toReview, 'outcome')} to review`, meta: 'Confirm the right ones, dismiss the rest', href: '/dashboard?review=pending', label: 'Review' }) : '',
+    summary.noDueDate ? row({ box: '#c5c6d0', title: `${summary.noDueDate} action ${plural(summary.noDueDate, 'item')} without a due date`, meta: 'Set a date so they don’t slip', href: '/actions?due=none', label: 'Set dates' }) : ''
+  ].filter(Boolean);
+
+  const divider = '<tr><td colspan="3" style="border-top: 1px solid #ebe7ec; font-size: 0; line-height: 0;">&nbsp;</td></tr>';
+  const plateHtml = itemRows.length || reminders.length ? `
+        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: 0 0 4px;">On your plate today</h2>
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          ${[itemRows.join(divider) + more, ...reminders].filter(Boolean).join(divider)}
+        </table>` : '';
+
+  const tile = (value, label) => `
+            <td style="width: 33%; padding: 14px 6px; text-align: center; background: #f6f3f5; border-radius: 10px;">
+              <div style="font-size: 26px; font-weight: 800; color: #1b1b1d;">${value}</div>
+              <div style="font-size: 13px; color: #6b6d78;">${escapeHtml(label)}</div>
+            </td>`;
+  const since = escapeHtml(summary.since || 'yesterday');
+
+  return `
+      <div style="background: #eef1fb; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b1b1d;">
+        <div style="max-width: 580px; margin: 0 auto; background: #fff; border: 1px solid #e4e1e8; border-top: 6px solid #3953bd; border-radius: 12px; overflow: hidden;">
+          <div style="padding: 20px 28px; border-bottom: 1px solid #ebe7ec;">
+            <img src="https://corteza.app/favicon-96x96.png" alt="" width="24" height="24" style="vertical-align: middle; border-radius: 6px; margin-right: 10px;" />
+            <span style="font-size: 17px; font-weight: 700; vertical-align: middle;">Your morning summary</span>
+          </div>
+          <div style="padding: 24px 28px 28px;">
+            <h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">Good morning. Here's your day.</h1>
+            <p style="font-size: 14px; color: #6b6d78; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
+            ${plateHtml}
+            <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">Since ${since}</h2>
+            <table role="presentation" style="width: 100%; border-collapse: separate; border-spacing: 6px 0; margin: 0 -6px;">
+              <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>
+            </table>
+            ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
+            <a href="${baseUrl}/actions"
+               style="display: inline-block; margin-top: 28px; background: #3953bd; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
+              Plan my day in Corteza →
+            </a>
+          </div>
+        </div>
+        <p style="max-width: 580px; margin: 20px auto 0; font-size: 12px; color: #8a8c96; text-align: center;">
+          One email each weekday morning, only when there's something new or due. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
+          Change the time zone in Settings, or <a href="${unsubscribe_url}" style="color: #8a8c96;">unsubscribe from morning summaries</a>.
+        </p>
+      </div>
+    `;
+}
+
 module.exports = {
   sendImportSummaryEmail,
   sendBetaWelcomeEmail,
   sendDailyDigestEmail,
+  dailyDigestHtml,
   dailyDigestSubject,
   sendEmail,
   escapeHtml,

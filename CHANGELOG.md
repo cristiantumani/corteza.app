@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - The morning summary lists your action items
+- **Your due and overdue items, by name:** "On your plate today" lists up to 5 of your own action items due today or overdue, with the meeting they came from and an **Open** button that takes you to the item in Corteza. "See all" when there are more
+- **New look:** a card with a blue top band, like a task list; outcomes to review and items without a date are rows with their own button
+- Only your own action items' text is included: no decisions, no colleagues' items, no transcript. The record of sent summaries keeps counts only
+
 ### Changed - The daily digest is a morning email, at 8:00 in each person's time zone
 - **Morning, to plan the day:** "Good morning. Here's your day." leads with what's on your plate today (action items due today, overdue ones, outcomes to review, items without a date), then what your meetings left since yesterday (since Friday on Mondays). The button opens Action items
 - **Your own time zone:** Corteza detects it from the browser when you open the app; Settings → Morning summary lets you pick another one (then it stays put when you travel). People who haven't opened Corteza yet get their team's usual time zone

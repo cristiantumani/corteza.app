@@ -16,8 +16,11 @@ const { getUnsubscribeUrl } = require('./weekly-digest');
  * - reminders: outcomes waiting for review in their spaces, and their overdue and undated
  *   open action items.
  *
- * Counts only, no meeting content, with links into Corteza. Sent only when there's
- * something new or due today, so reminders never arrive alone.
+ * Counts, plus the text of the person's own action items due today or overdue (up to
+ * PLAN_ITEMS, each linking to it in Corteza, like a task list). Nothing else from meetings:
+ * no decisions, no colleagues' items, no transcript. The item text is not stored in
+ * `daily_digests`. Sent only when there's something new or due today, so reminders never
+ * arrive alone.
  *
  * Time zone: the membership's `timezone` (reported by the browser or set in Settings; see
  * core/users/timezone.js). Without one, the most common time zone among the workspace's
@@ -37,6 +40,7 @@ const CHECK_INTERVAL_MS = 15 * 60 * 1000;
 const MAX_WINDOW_MS = 72 * 60 * 60 * 1000;
 const DEFAULT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const SEND_WINDOW_HOURS = 4;
+const PLAN_ITEMS = 5;
 
 function digestHour() {
   const hour = parseInt(process.env.DAILY_DIGEST_HOUR || '8', 10);
@@ -107,14 +111,16 @@ function sinceLabel(since, now, timeZone) {
  * @param {Date} since
  * @param {Date} now
  * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
- * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number }>}
+ * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[] }>}
+ *   planItems: the person's open items due today, then the most recently overdue
+ *   ({ item_id, text, due_date, meeting }), at most PLAN_ITEMS
  */
 async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UTC') {
   const db = getDatabase();
   const today = localTime(now, timeZone).date;
   const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
 
-  const [ingestions, newActionItems, dueToday, overdue, noDueDate, toReview] = await Promise.all([
+  const [ingestions, newActionItems, dueToday, overdue, noDueDate, toReview, dueItems] = await Promise.all([
     db.collection('ingestions').find(
       { workspace_id: workspaceId, user_id: userId, status: 'completed', manual: { $ne: true }, completed_at: { $gte: since, $lte: now } },
       { projection: { outcomes_by_type: 1 } }
@@ -125,8 +131,23 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
     db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: null }),
     spaceIds.length
       ? getDecisionsCollection().countDocuments({ workspace_id: workspaceId, space_id: { $in: spaceIds }, ...PENDING_REVIEW })
-      : 0
+      : 0,
+    db.collection('action_items').find(
+      { workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: { $ne: null, $lte: today } },
+      { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1 } }
+    ).sort({ due_date: -1, created_at: -1 }).limit(PLAN_ITEMS * 3).toArray()
   ]);
+
+  // Colleagues in the same meeting each capture the item: show it once
+  const seen = new Set();
+  const planItems = [];
+  for (const item of dueItems) {
+    const key = `${String(item.text || '').trim().toLowerCase()}|${item.due_date}`;
+    if (!item.text || seen.has(key)) continue;
+    seen.add(key);
+    planItems.push({ item_id: item.item_id, text: item.text, due_date: item.due_date, meeting: (item.source && item.source.title) || null });
+    if (planItems.length === PLAN_ITEMS) break;
+  }
 
   const outcomes = {};
   for (const ingestion of ingestions) {
@@ -134,7 +155,7 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
       outcomes[type] = (outcomes[type] || 0) + count;
     }
   }
-  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate };
+  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems };
 }
 
 /** Something new happened, or something is due today: reminders alone never trigger an email */
@@ -200,6 +221,7 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
         workspace_name: member.workspace_name || member.workspace_id,
         summary: {
           ...summary,
+          today: localTime(now, timeZone).date,
           dayLabel: now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
           since: sinceLabel(since, now, timeZone)
         },
@@ -207,7 +229,8 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
       });
       await getDatabase().collection('daily_digests').updateOne(
         { workspace_id: member.workspace_id, user_id: member.user_id, day },
-        { $set: { sent: true, sent_at: new Date(), summary, timezone: timeZone } }
+        // Counts only: the items' text isn't kept
+        { $set: { sent: true, sent_at: new Date(), summary: { ...summary, planItems: summary.planItems.length }, timezone: timeZone } }
       );
       sent++;
     } catch (error) {

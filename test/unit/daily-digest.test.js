@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { digestDay, hasNews, sinceLabel, timeZoneResolver } = require('../../src/jobs/daily-digest');
-const { dailyDigestSubject } = require('../../src/utils/n8n-client');
+const { dailyDigestSubject, dailyDigestHtml } = require('../../src/utils/n8n-client');
 
 test("sends weekday mornings from 8:00 in the person's own time zone, never on weekends", () => {
   delete process.env.DAILY_DIGEST_HOUR;
@@ -57,4 +57,25 @@ test('the subject leads with the day ahead, then what happened since the last su
     'Your day: 2 due today, 2 overdue · since yesterday: 3 meetings, 5 decisions, 1 new action item');
   assert.equal(dailyDigestSubject({ since: 'Friday', meetings: 0, outcomes: {}, newActionItems: 2, overdue: 0 }), 'Since Friday: 2 new action items');
   assert.equal(dailyDigestSubject({ meetings: 0, outcomes: {}, newActionItems: 0, overdue: 0 }), 'Plan your day with Corteza');
+});
+
+test("the email lists the person's items, escaped, each linking to it in Corteza", () => {
+  const html = dailyDigestHtml({
+    workspace_name: 'Acme',
+    unsubscribe_url: 'https://app.corteza.app/digest/unsubscribe?x',
+    summary: {
+      dayLabel: 'Thursday, October 1', today: '2026-10-01', since: 'yesterday',
+      meetings: 1, outcomes: { decision: 1 }, newActionItems: 0, dueToday: 1, overdue: 1, toReview: 0, noDueDate: 0,
+      planItems: [
+        { item_id: 'act_1', text: 'Ship <script>alert(1)</script>', due_date: '2026-10-01', meeting: 'Weekly' },
+        { item_id: 'act_2', text: 'Old one', due_date: '2026-09-28', meeting: null }
+      ]
+    }
+  });
+  assert.ok(!html.includes('<script>'));
+  assert.match(html, /Ship &lt;script&gt;/);
+  assert.match(html, /\/actions\?item=act_1/);
+  assert.match(html, /Due today/);
+  assert.match(html, /was due Sep 28/);
+  assert.doesNotMatch(html, /See all/, 'every due item is already listed');
 });
