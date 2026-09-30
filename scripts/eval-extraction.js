@@ -15,12 +15,13 @@
  *
  * Fixture format (test/fixtures/extraction/*.json):
  *   { "name", "title", "date": "YYYY-MM-DD", "participants": [..], "transcript": "...",
- *     "expected": [{ "type": "decision|action_item|open_question|risk", "match": ["keyword", ..],
+ *     "expected": [{ "type": "decision|action_item|open_question|risk", "match": ["keyword", "alt|other", ..],
  *                    "owner"?: "Ana", "due_date"?: "YYYY-MM-DD" | null,
  *                    "rationale_match"?: ["keyword", ..] }],
  *     "context"?: { "company": { "description", "glossary" }, "personal": { "role", "focus", "glossary" } },
  *     "not_expected"?: [{ "match": ["keyword", ..], "why"? }],   // must NOT be captured (noise)
  *     "labeled"?: false }                                        // draft labels, skipped unless --include-drafts
+ *   Every "match" keyword must appear in the item's text; "a|b" accepts either (synonyms, translations).
  * Real meetings: export them with scripts/eval/export-meetings.js and draft labels with
  * scripts/eval/draft-labels.js (see docs/research/extraction-quality.md).
  * Only add real transcripts with the participants' consent, and never commit them to a public repo.
@@ -77,7 +78,10 @@ async function main() {
     results.push(result);
 
     console.log(`📄 ${fixture.name}: ${result.matched.length}/${fixture.expected.length} expected found, ${result.extra.length} extra (${result.noise.length} known noise)`);
-    for (const exp of result.missed) console.log(`   ✗ missed ${exp.type}: ${exp.match.join(' + ')}`);
+    for (const exp of result.missed) {
+      const retyped = result.retyped.find(r => r.expected === exp);
+      console.log(`   ✗ missed ${exp.type}: ${exp.match.join(' + ')}${retyped ? `  (captured as ${retyped.item.decision_type})` : ''}`);
+    }
     for (const item of result.extra) console.log(`   ${result.noise.includes(item) ? '🗑️  noise' : '+ extra'} ${item.decision_type}: ${item.decision_text}`);
   }
 

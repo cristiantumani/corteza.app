@@ -92,3 +92,12 @@ test('items without a relevance label are kept (older responses)', () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].business_relevance, null);
 });
+
+test('a response cut off at max_tokens keeps the complete items', () => {
+  const cut = '```json\n[\n  {"decision_text": "Launch on the 15th", "decision_type": "decision", "confidence": 0.9, "tags": ["a"]},\n'
+    + '  {"decision_text": "Ana sends the deck", "decision_type": "action_item", "confidence": 0.9},\n'
+    + '  {"decision_text": "Pricing moves to Q4", "decision_type": "decision", "rationale": "Because the cust';
+  assert.deepEqual(parseLeadingJsonArray(cut.replace(/^```json\n/, '')).map(item => item.decision_text), ['Launch on the 15th', 'Ana sends the deck']);
+  assert.deepEqual(parseDecisionResponse(cut).map(item => item.decision_text), ['Launch on the 15th', 'Ana sends the deck']);
+  assert.throws(() => parseLeadingJsonArray('[{"decision_text": "cut in the first ite'));
+});

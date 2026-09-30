@@ -59,3 +59,20 @@ test('not_expected items count as noise, of any type, and are reported per meeti
   assert.equal(summary.noisePerMeeting, 1);
   assert.equal(summary.extrasPerMeeting, 1.5);
 });
+
+test('"|" keywords accept alternatives, and a missed item captured with another type is reported', () => {
+  const extracted = [
+    { decision_type: 'action_item', decision_text: 'Paola escribe un documento de una página con los datos' },
+    { decision_type: 'action_item', decision_text: 'Se reasignan presupuestos para Reino Unido y Oceanía' }
+  ];
+  const expected = [
+    { type: 'action_item', match: ['one pager|una pagina', 'paola'] },
+    { type: 'decision', match: ['reino unido', 'oceania'] }
+  ];
+  const result = scoreFixture(extracted, expected, [{ match: ['uk|oceania'] }]);
+  assert.equal(result.matched.length, 1);
+  assert.deepEqual(result.missed.map(m => m.type), ['decision']);
+  assert.equal(result.retyped.length, 1);
+  assert.equal(result.retyped[0].item.decision_type, 'action_item');
+  assert.equal(result.noise.length, 1, 'alternatives work in not_expected too');
+});
