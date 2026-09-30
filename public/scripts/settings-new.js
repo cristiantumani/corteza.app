@@ -80,7 +80,7 @@
       const inviteSelect = document.getElementById('invite-space-select');
       if (inviteSelect) {
         inviteSelect.innerHTML = allSpaces.map(space =>
-          `<option value="${space.space_id}">${space.settings?.icon || '📁'} ${escapeHtml(space.name)}</option>`
+          `<option value="${escapeHtml(space.space_id)}">${escapeHtml(space.settings?.icon || '📁')} ${escapeHtml(space.name)}</option>`
         ).join('');
       }
 
@@ -101,7 +101,7 @@
       <td class="py-4">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center text-primary text-xl">
-            ${icon}
+            ${escapeHtml(icon)}
           </div>
           <span class="text-sm font-medium text-on-surface">${escapeHtml(space.name)}</span>
         </div>
@@ -110,13 +110,13 @@
       <td class="py-4 text-sm text-on-surface-variant">${lastActivity}</td>
       <td class="py-4 text-right">
         <div class="flex items-center justify-end gap-2">
-          <button onclick="openMembersModal('${space.space_id}', '${escapeHtml(space.name)}')" class="text-xs font-bold text-primary px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
+          <button onclick="openMembersModal(${jsArg(space.space_id)}, ${jsArg(space.name)})" class="text-xs font-bold text-primary px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
             Manage Members
           </button>
-          <button onclick="editSpace('${space.space_id}')" class="p-1 rounded-lg hover:bg-surface-container-highest transition-colors">
+          <button onclick="editSpace(${jsArg(space.space_id)})" class="p-1 rounded-lg hover:bg-surface-container-highest transition-colors">
             <span class="material-symbols-outlined text-lg text-on-surface-variant">edit</span>
           </button>
-          <button onclick="deleteSpace('${space.space_id}', '${escapeHtml(space.name)}')" class="p-1 rounded-lg hover:bg-surface-container-highest transition-colors">
+          <button onclick="deleteSpace(${jsArg(space.space_id)}, ${jsArg(space.name)})" class="p-1 rounded-lg hover:bg-surface-container-highest transition-colors">
             <span class="material-symbols-outlined text-lg text-error">delete</span>
           </button>
         </div>
@@ -272,7 +272,7 @@
     card.innerHTML = `
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs">
-          ${initials}
+          ${escapeHtml(initials)}
         </div>
         <div>
           <div class="text-sm font-medium text-on-surface">${escapeHtml(member.user_name)}</div>
@@ -280,9 +280,9 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="px-2 py-1 ${roleColor} rounded-full text-[10px] font-bold uppercase">${member.role}</span>
+        <span class="px-2 py-1 ${roleColor} rounded-full text-[10px] font-bold uppercase">${escapeHtml(member.role)}</span>
         ${member.role !== 'owner' ? `
-          <button onclick="removeMember('${member.user_id}', '${escapeHtml(member.user_name)}')" class="material-symbols-outlined text-error text-lg hover:scale-110 transition-transform">
+          <button onclick="removeMember(${jsArg(member.user_id)}, ${jsArg(member.user_name)})" class="material-symbols-outlined text-error text-lg hover:scale-110 transition-transform">
             person_remove
           </button>
         ` : ''}
@@ -344,7 +344,7 @@
                 <p class="text-xs font-medium">${escapeHtml(invite.space_name)}</p>
                 <p class="text-[10px] text-on-surface-variant">Expires: ${new Date(invite.expires_at).toLocaleDateString()}</p>
               </div>
-              <button onclick="revokeInvite('${invite.invite_id}')" class="material-symbols-outlined text-error text-sm">delete</button>
+              <button onclick="revokeInvite(${jsArg(invite.invite_id)})" class="material-symbols-outlined text-error text-sm">delete</button>
             </div>
           `).join('')}
         </div>
@@ -536,10 +536,15 @@
     }, 3000);
   }
 
+  // Escapes quotes too, so it's safe in attribute values
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // A value passed to a function in an inline handler: onclick="fn(${jsArg(name)})"
+  function jsArg(value) {
+    return escapeHtml(JSON.stringify(value === undefined ? null : value));
   }
 
   // Micro-interactions

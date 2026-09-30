@@ -74,7 +74,7 @@
         if (h1) {
           h1.innerHTML += `
             <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
-              ${currentUser.workspace_name} • ${currentUser.user_name}
+              ${escapeHtml(currentUser.workspace_name)} • ${escapeHtml(currentUser.user_name)}
             </span>
             <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
               Logout →
@@ -410,11 +410,11 @@
 
           card.innerHTML = `
             <div class="card-header">
-              <span class="card-id">#${decision.id}</span>
-              <span class="card-badge">${decision.type || 'decision'}</span>
+              <span class="card-id">#${escapeHtml(decision.id)}</span>
+              <span class="card-badge">${escapeHtml(decision.type || 'decision')}</span>
             </div>
-            <div class="card-text">${decision.text.substring(0, 150)}${decision.text.length > 150 ? '...' : ''}</div>
-            <div class="card-meta">${decision.user_name || 'Unknown'} • ${new Date(decision.timestamp).toLocaleDateString()}</div>
+            <div class="card-text">${escapeHtml(decision.text.substring(0, 150))}${decision.text.length > 150 ? '...' : ''}</div>
+            <div class="card-meta">${escapeHtml(decision.user_name || 'Unknown')} • ${new Date(decision.timestamp).toLocaleDateString()}</div>
           `;
 
           cardsContainer.appendChild(card);
@@ -594,9 +594,9 @@
         let epicCell = '-';
         if (d.epic_key) {
           if (d.jira_data && d.jira_data.url) {
-            epicCell = `<a href="${d.jira_data.url}" target="_blank" class="jira-link">${d.epic_key}</a>`;
+            epicCell = `<a href="${safeUrl(d.jira_data.url)}" target="_blank" rel="noopener" class="jira-link">${escapeHtml(d.epic_key)}</a>`;
           } else {
-            epicCell = d.epic_key;
+            epicCell = escapeHtml(d.epic_key);
           }
         }
         // Truncate decision text if too long
@@ -605,7 +605,7 @@
 
         // Add space badge
         const spaceBadge = d.space_name ?
-          `<span data-multi-space class="space-badge-small" style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #6b7280; margin-left: 8px;">📁 ${d.space_name}</span>` :
+          `<span data-multi-space class="space-badge-small" style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #6b7280; margin-left: 8px;">📁 ${escapeHtml(d.space_name)}</span>` :
           '';
 
         // Backward compatibility: if type has old values, treat as category
@@ -616,8 +616,8 @@
           actualType = null;
         }
 
-        const typeBadge = actualType ? `<span class="badge badge-${actualType}">${actualType}</span>` : '-';
-        const categoryBadge = actualCategory ? `<span class="badge badge-${actualCategory}">${actualCategory}</span>` : '-';
+        const typeBadge = actualType ? `<span class="badge badge-${escapeHtml(actualType)}">${escapeHtml(actualType)}</span>` : '-';
+        const categoryBadge = actualCategory ? `<span class="badge badge-${escapeHtml(actualCategory)}">${escapeHtml(actualCategory)}</span>` : '-';
 
         // Check if user can edit/delete this decision
         const isOwnDecision = d.user_id === currentUser.user_id;
@@ -628,7 +628,7 @@
         if (canModify) {
           actionsHtml = `
             <button class="view-btn" onclick="openDetailModal(${index})">👁️ View</button>
-            <button class="delete-btn" onclick="openDeleteModal(${d.id})">🗑️</button>
+            <button class="delete-btn" onclick="openDeleteModal(${jsArg(d.id)})">🗑️</button>
           `;
         } else {
           actionsHtml = `
@@ -638,12 +638,12 @@
         }
 
         return `<tr>
-          <td><strong>#${d.id}</strong></td>
-          <td class="decision-text" title="${d.text}">${truncatedText}${spaceBadge}</td>
+          <td><strong>#${escapeHtml(d.id)}</strong></td>
+          <td class="decision-text" title="${escapeHtml(d.text)}">${escapeHtml(truncatedText)}${spaceBadge}</td>
           <td>${typeBadge}</td>
           <td>${categoryBadge}</td>
           <td>${epicCell}</td>
-          <td>${d.creator}</td>
+          <td>${escapeHtml(d.creator)}</td>
           <td>${new Date(d.timestamp).toLocaleDateString()}</td>
           <td>${actionsHtml}</td>
         </tr>`;
@@ -1223,15 +1223,31 @@
       };
     }
 
-    // Security: Escape HTML to prevent XSS
+    // Security: escape text before putting it in HTML (content and attribute values).
+    // Anything from users, meetings or the AI goes through this, never raw into innerHTML.
     function escapeHtml(unsafe) {
-      if (!unsafe) return '';
-      return unsafe
+      if (unsafe === null || unsafe === undefined) return '';
+      return String(unsafe)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    // A value passed to a function in an inline handler: onclick="fn(${jsArg(name)})"
+    function jsArg(value) {
+      return escapeHtml(JSON.stringify(value === undefined ? null : value));
+    }
+
+    // Only https links (no javascript: URLs)
+    function safeUrl(url) {
+      return typeof url === 'string' && /^https:\/\//i.test(url) ? escapeHtml(url) : '#';
+    }
+
+    // Only hex colors in inline styles
+    function safeColor(color) {
+      return typeof color === 'string' && /^#[0-9a-f]{3,8}$/i.test(color) ? color : '#667eea';
     }
 
     // Close modals on overlay click (only if modals exist)
@@ -1390,7 +1406,7 @@
             if (response.ok && data.admins && data.admins.length > 0) {
               const adminEmails = data.admins
                 .filter(a => a.email)
-                .map(a => `<a href="mailto:${a.email}" style="color: #667eea; text-decoration: none; font-weight: 600;">${a.email}</a>`)
+                .map(a => `<a href="mailto:${escapeHtml(encodeURIComponent(a.email))}" style="color: #667eea; text-decoration: none; font-weight: 600;">${escapeHtml(a.email)}</a>`)
                 .join(', ');
 
               if (adminEmails) {
@@ -1507,7 +1523,7 @@
                   <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
                   <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">No Spaces Available</h2>
                   <p style="color: #616061; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-                    You're in the <strong>${currentUser.workspace_name || WORKSPACE_ID}</strong> workspace, but you haven't been added to any spaces yet.
+                    You're in the <strong>${escapeHtml(currentUser.workspace_name || WORKSPACE_ID)}</strong> workspace, but you haven't been added to any spaces yet.
                   </p>
                   <p style="color: #616061; font-size: 16px; line-height: 1.6;">
                     Spaces are where teams organize and share decisions. Please contact your workspace administrator to be added to a space.
@@ -1580,7 +1596,7 @@
                 <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
                 <h2 style="color: #1d1c1d; margin-bottom: 12px; font-size: 28px;">Space Created!</h2>
                 <p style="color: #616061; font-size: 16px; line-height: 1.6;">
-                  <strong>${space.settings.icon} ${space.name}</strong> is ready.
+                  <strong>${escapeHtml(space.settings.icon)} ${escapeHtml(space.name)}</strong> is ready.
                 </p>
               </div>
 
@@ -1591,7 +1607,7 @@
                   Send email invitations to add people to this space. You can also do this later in Settings.
                 </p>
 
-                <form id="add-members-form" onsubmit="handleAddMembers(event, '${space.space_id}', '${space.name}')">
+                <form id="add-members-form" onsubmit="handleAddMembers(event, ${jsArg(space.space_id)}, ${jsArg(space.name)})">
                   <div style="margin-bottom: 20px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #1d1c1d; font-size: 14px;">
                       Email Addresses
@@ -1719,7 +1735,7 @@
             </p>
             ${results.map(r => `
               <div style="font-size: 13px; color: #616061; margin-top: 4px;">
-                ${r.success ? '✅' : '❌'} ${r.email} - ${r.message}
+                ${r.success ? '✅' : '❌'} ${escapeHtml(r.email)} - ${escapeHtml(r.message)}
               </div>
             `).join('')}
           </div>
@@ -2130,37 +2146,37 @@
     function createSpaceCard(space) {
       const card = document.createElement('div');
       card.className = 'space-card';
-      card.style.borderLeft = `4px solid ${space.settings.color}`;
+      card.style.borderLeft = `4px solid ${safeColor(space.settings.color)}`;
 
       const visibilityIcon = space.visibility === 'private' ? '🔒' :
                            space.visibility === 'shared' ? '👥' : '🌐';
 
       card.innerHTML = `
         <div class="space-header">
-          <span class="space-icon-large">${space.settings.icon}</span>
+          <span class="space-icon-large">${escapeHtml(space.settings.icon)}</span>
           <div class="space-info">
-            <h4>${space.name}</h4>
-            <p class="space-description">${space.description || 'No description'}</p>
+            <h4>${escapeHtml(space.name)}</h4>
+            <p class="space-description">${escapeHtml(space.description || 'No description')}</p>
             <div class="space-meta">
-              <span class="space-visibility">${visibilityIcon} ${space.visibility}</span>
-              <span>${space.decision_count || 0} memories</span>
+              <span class="space-visibility">${visibilityIcon} ${escapeHtml(space.visibility)}</span>
+              <span>${escapeHtml(space.decision_count || 0)} memories</span>
               ${space.is_default ? '<span class="badge-default">Default</span>' : ''}
             </div>
           </div>
         </div>
         <div class="space-actions">
           ${space.can_modify ? `
-            <button onclick="editSpace('${space.space_id}')" class="btn-icon" title="Edit">
+            <button onclick="editSpace(${jsArg(space.space_id)})" class="btn-icon" title="Edit">
               ⚙️
             </button>
           ` : ''}
           ${space.visibility === 'shared' && space.can_modify ? `
-            <button onclick="manageMembers('${space.space_id}', '${space.name}')" class="btn-icon" title="Members">
+            <button onclick="manageMembers(${jsArg(space.space_id)}, ${jsArg(space.name)})" class="btn-icon" title="Members">
               👥
             </button>
           ` : ''}
           ${!space.is_default && space.is_owner ? `
-            <button onclick="deleteSpace('${space.space_id}', '${space.name}')" class="btn-icon danger" title="Delete">
+            <button onclick="deleteSpace(${jsArg(space.space_id)}, ${jsArg(space.name)})" class="btn-icon danger" title="Delete">
               🗑️
             </button>
           ` : ''}
@@ -2366,10 +2382,10 @@
             memberCard.className = 'member-card';
             memberCard.innerHTML = `
               <div class="member-info">
-                <strong>${member.user_name}</strong>
-                <span class="member-role">${member.role}</span>
+                <strong>${escapeHtml(member.user_name)}</strong>
+                <span class="member-role">${escapeHtml(member.role)}</span>
               </div>
-              <button onclick="removeSpaceMemberConfirm('${spaceId}', '${member.user_id}', '${member.user_name}')" class="btn-icon danger" title="Remove">
+              <button onclick="removeSpaceMemberConfirm(${jsArg(spaceId)}, ${jsArg(member.user_id)}, ${jsArg(member.user_name)})" class="btn-icon danger" title="Remove">
                 ✕
               </button>
             `;
@@ -2558,7 +2574,7 @@
           minimalView.innerHTML = `
             <div style="padding: 40px; text-align: center;">
               <h2>⚠️ Failed to load dashboard</h2>
-              <p style="margin: 20px 0; color: #666;">${error.message || 'Unknown error'}</p>
+              <p style="margin: 20px 0; color: #666;">${escapeHtml(error.message || 'Unknown error')}</p>
               <button onclick="window.location.reload()" style="padding: 10px 20px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">
                 Reload Page
               </button>
@@ -2684,7 +2700,7 @@
         messageDiv.className = 'chat-message bot';
 
         // Convert markdown-like formatting to HTML
-        let html = text
+        let html = escapeHtml(text)
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
           .replace(/`(.*?)`/g, '<code>$1</code>')
@@ -2733,11 +2749,6 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
     })();
 
     // ========== UPLOAD MEETING NOTES FUNCTIONALITY ==========
@@ -2916,13 +2927,13 @@
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
             <div style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span style="font-size: 20px;">${typeEmoji[suggestion.decision_type]}</span>
+                <span style="font-size: 20px;">${typeEmoji[suggestion.decision_type] || ''}</span>
                 <span style="font-weight: 600; font-size: 14px; color: #1d1c1d;">Suggestion ${index + 1}</span>
                 <span style="background: ${confidenceColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
                   ${confidencePercent}% confidence
                 </span>
                 <span style="background: #F0F7FF; color: #667eea; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-                  ${suggestion.decision_type}
+                  ${escapeHtml(suggestion.decision_type)}
                 </span>
               </div>
               <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(suggestion.decision_text)}</p>
@@ -2931,13 +2942,13 @@
             </div>
           </div>
           <div style="display: flex; gap: 8px; margin-top: 12px;">
-            <button onclick="approveSuggestion('${suggestion.suggestion_id}')" class="suggestion-approve-btn" style="flex: 1; padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+            <button onclick="approveSuggestion(${jsArg(suggestion.suggestion_id)})" class="suggestion-approve-btn" style="flex: 1; padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
               ✅ Approve
             </button>
-            <button onclick="editSuggestion('${suggestion.suggestion_id}')" style="flex: 1; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+            <button onclick="editSuggestion(${jsArg(suggestion.suggestion_id)})" style="flex: 1; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
               ✏️ Edit
             </button>
-            <button onclick="rejectSuggestion('${suggestion.suggestion_id}')" style="padding: 8px 16px; background: #E1E4E8; color: #616061; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+            <button onclick="rejectSuggestion(${jsArg(suggestion.suggestion_id)})" style="padding: 8px 16px; background: #E1E4E8; color: #616061; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
               ❌ Reject
             </button>
           </div>
@@ -3319,13 +3330,13 @@
 
       card.innerHTML = `
         <div class="flex items-start justify-between mb-3">
-          <span class="px-3 py-1 rounded-full text-xs font-semibold ${typeColor}">${suggestion.decision_type}</span>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold ${typeColor}">${escapeHtml(suggestion.decision_type)}</span>
           <div class="flex items-center gap-2">
             <span class="text-xs text-gray-500">Confidence: ${Math.round(suggestion.confidence_score * 100)}%</span>
           </div>
         </div>
 
-        <p class="text-base font-medium text-gray-900 mb-3" id="suggestion-text-${suggestion.suggestion_id}">${escapeHtml(suggestion.decision_text)}</p>
+        <p class="text-base font-medium text-gray-900 mb-3" id="suggestion-text-${escapeHtml(suggestion.suggestion_id)}">${escapeHtml(suggestion.decision_text)}</p>
 
         ${suggestion.context ? `<p class="text-sm text-gray-600 mb-3 italic">Context: ${escapeHtml(suggestion.context)}</p>` : ''}
 
@@ -3338,13 +3349,13 @@
         ` : ''}
 
         <div class="flex gap-2 pt-4 border-t border-gray-200">
-          <button onclick="approveSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+          <button onclick="approveSuggestion(${jsArg(suggestion.suggestion_id)})" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
             ✓ Approve
           </button>
-          <button onclick="editSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <button onclick="editSuggestion(${jsArg(suggestion.suggestion_id)})" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
             ✏️ Edit
           </button>
-          <button onclick="rejectSuggestion('${suggestion.suggestion_id}')" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+          <button onclick="rejectSuggestion(${jsArg(suggestion.suggestion_id)})" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
             ✕ Reject
           </button>
         </div>
@@ -3513,9 +3524,3 @@
       }
     };
 
-    // Helper function to escape HTML (prevent XSS)
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }

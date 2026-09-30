@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - No stored XSS through names, spaces or meeting content
+- **Escaped everywhere:** space names, descriptions and icons, member names, emails, workspace names, outcome text in the chat widget and the classic table, invite results and Jira links are escaped before they reach the page. A colleague's name like `<img onerror=…>` or a space called `'); …` shows as text instead of running code
+- **One escape function per script that also escapes quotes:** Home had two, and the one that won didn't escape quotes, so it wasn't safe inside attributes. Settings and Search had the same weaker version
+- **Inline handlers** get their arguments through `jsArg` (JSON, then escaped), so an apostrophe in a name can't break out of `onclick="…"`
+- **No Tailwind CDN:** Action items and Settings loaded Tailwind's in-browser compiler from a CDN; they now use the built stylesheet like the other pages (their extra colors moved to `tailwind.config.js`), and the CSP no longer allows third-party scripts
+
 ### Security - Every request body checked for database operators
 - **One JSON parser for the whole app:** bodies are parsed once and requests carrying MongoDB operators (`{"$ne": ""}`) or `__proto__` keys are refused with a 400 before reaching any route. Uploads get the same check. Before, each route had to remember to check types
 - **Editing an outcome and the demo search** read the request stream by hand; they now use the parsed body (with a 1 MB limit instead of none)
