@@ -40,7 +40,7 @@ Business relevance test: it touches strategy, customers, sales, product, pricing
 Never business outcomes: scheduling or rescheduling this or another meeting, audio/connection/computer/tool problems, moving files to a new laptop, small talk, comments about the meeting's own flow, and status updates with no commitment.
 
 Return:
-- expected: every outcome a careful analyst would record. Write text in the meeting's language, as it would read in a decision log. "match" is 1 to 3 short lowercase keywords (use word stems, e.g. "reajust", "gasto") that any reasonable wording of this item would contain and that don't appear in other items. owner as named in the meeting or null; due_date YYYY-MM-DD resolved from the meeting date, or null.
+- expected: every outcome a careful analyst would record. Write text in the meeting's language, as it would read in a decision log. "match" is 1 to 3 short lowercase keywords (use word stems, e.g. "reajust", "gasto"; list synonyms or translations as one keyword with "|", e.g. "one pager|una pagina", "eeuu|estados unidos") that any reasonable wording of this item would contain and that don't appear in other items. owner as named in the meeting or null; due_date YYYY-MM-DD resolved from the meeting date, or null.
 - not_expected: things said in this meeting that a naive extractor would likely capture as an outcome but must not be (the list above, plus trivial or unagreed items). Same "match" rules; "why" says which rule excludes it.
 Use empty lists when there is nothing. Do not invent content that isn't in the meeting.`;
 

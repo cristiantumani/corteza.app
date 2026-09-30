@@ -2,8 +2,13 @@
  * Scoring for the extraction eval (scripts/eval-extraction.js).
  *
  * An extracted item matches an expected one when the type is the same and every
- * `match` keyword appears in its text (case- and accent-insensitive). Each
- * expected item can be matched once. Precision and recall are reported per type.
+ * `match` keyword appears in its text (case- and accent-insensitive). A keyword can
+ * list alternatives with "|": "one pager|una pagina" matches either. Each expected
+ * item can be matched once. Precision and recall are reported per type.
+ *
+ * A missed item whose keywords do appear in an extra item of another type is reported
+ * as `retyped` (e.g. expected a decision, captured as an action item). It still counts
+ * as missed and extra; the list only helps tell a wrong type from a real miss.
  *
  * Fixtures can also list `not_expected`: things said in the meeting that must NOT be
  * captured (logistics, equipment problems, small talk). An extracted item of any type
@@ -22,22 +27,26 @@ function normalize(text) {
   return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function matches(item, expected) {
-  if (item.decision_type !== expected.type) return false;
-  const text = normalize(item.decision_text);
-  return (expected.match || []).every(keyword => text.includes(normalize(keyword)));
+/** Whether normalized text contains a keyword, or one of its "|" alternatives */
+function hasKeyword(text, keyword) {
+  return String(keyword).split('|').some(option => option.trim() && text.includes(normalize(option.trim())));
 }
 
 function mentions(item, entry) {
   const text = normalize(item.decision_text);
-  return (entry.match || []).length > 0 && entry.match.every(keyword => text.includes(normalize(keyword)));
+  return (entry.match || []).length > 0 && entry.match.every(keyword => hasKeyword(text, keyword));
+}
+
+function matches(item, expected) {
+  return item.decision_type === expected.type && mentions(item, expected);
 }
 
 /**
  * @param {Object[]} extracted - items from extractDecisionsFromTranscript
  * @param {Object[]} expected - [{ type, match: [keywords], owner?, due_date? }]
  * @param {Object[]} [notExpected] - [{ match: [keywords], why? }] things that must not be captured
- * @returns {{ matched: Object[], missed: Object[], extra: Object[], noise: Object[] }} noise ⊆ extra
+ * @returns {{ matched: Object[], missed: Object[], extra: Object[], noise: Object[], retyped: Object[] }}
+ *   noise ⊆ extra; retyped: [{ expected, item }] missed items found with another type
  */
 function scoreFixture(extracted, expected, notExpected = []) {
   const remaining = [...extracted];
@@ -52,7 +61,12 @@ function scoreFixture(extracted, expected, notExpected = []) {
     }
   }
   const noise = remaining.filter(item => notExpected.some(entry => mentions(item, entry)));
-  return { matched, missed, extra: remaining, noise };
+  const retyped = [];
+  for (const exp of missed) {
+    const item = remaining.find(candidate => mentions(candidate, exp) && !retyped.some(r => r.item === candidate));
+    if (item) retyped.push({ expected: exp, item });
+  }
+  return { matched, missed, extra: remaining, noise, retyped };
 }
 
 /**
@@ -100,7 +114,7 @@ function summarize(results) {
       if (expected.rationale_match) {
         rationaleChecks++;
         const rationale = normalize(item.rationale);
-        if (expected.rationale_match.every(keyword => rationale.includes(normalize(keyword)))) rationaleCorrect++;
+        if (expected.rationale_match.every(keyword => hasKeyword(rationale, keyword))) rationaleCorrect++;
       }
       countPhrasing(item);
     }

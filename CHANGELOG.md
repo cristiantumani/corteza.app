@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **No meeting content leaves Corteza:** transcripts, outcome text, questions, answers and context are never sent. PostHog's LLM tracing (which sends prompts) and the OpenTelemetry log exporter from the wizard were removed
 - Off unless `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` are set; `POSTHOG_DISABLED=1` turns it off (the extraction eval does)
 
+### Fixed - Long meetings losing all their outcomes
+- **Cut-off responses:** when Claude's answer for a long meeting hit the output limit, the whole list failed to parse and the meeting saved nothing. The complete items are now kept, and `CLAUDE_MAX_TOKENS` defaults to 32000 (was 16000)
+- **Eval:** `match` keywords accept alternatives with `|` (`"one pager|una pagina"`), and a missed item captured with another type is shown as "(captured as action_item)"
+
 ### Added - First-run onboarding
 - **How Corteza works:** the first time someone opens Home they see short steps: how meeting capture works (with **Connect Google Meet**, or **Import past meetings** once connected), how to ask Search (example questions that run the search), and Action items. Admins also get an optional step to add the company context. Skip, Back and Next; shown once per person (saved on the membership, so it doesn't come back on another device)
 - **Sidebar → How it works** opens the steps again from any page

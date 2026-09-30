@@ -275,6 +275,9 @@ function parseDecisionResponse(claudeResponse) {
       const codeMatch = claudeResponse.match(/```\n([\s\S]*?)\n```/);
       if (codeMatch) {
         jsonString = codeMatch[1];
+      } else {
+        // A response cut off at max_tokens opens a code block but never closes it
+        jsonString = claudeResponse.replace(/^\s*```(?:json)?\s*\n/, '');
       }
     }
 
@@ -363,7 +366,9 @@ function normalizeItem(item) {
 
 /**
  * Parses JSON text, or the first complete JSON array in it when Claude added
- * prose before or after (e.g. "[]\n\nThe transcript appears to be...")
+ * prose before or after (e.g. "[]\n\nThe transcript appears to be...").
+ * When the array was cut off (the response hit max_tokens), returns the items
+ * that were complete, so a long meeting doesn't lose all of its outcomes.
  * @param {string} text
  * @returns {*} parsed value
  */
@@ -375,6 +380,7 @@ function parseLeadingJsonArray(text) {
     if (start === -1) throw error;
     let depth = 0;
     let inString = false;
+    let lastItemEnd = -1;
     for (let i = start; i < text.length; i++) {
       const char = text[i];
       if (inString) {
@@ -387,7 +393,13 @@ function parseLeadingJsonArray(text) {
       } else if (char === ']' || char === '}') {
         depth--;
         if (depth === 0) return JSON.parse(text.slice(start, i + 1));
+        if (depth === 1 && char === '}') lastItemEnd = i;
       }
+    }
+    if (depth > 0 && lastItemEnd !== -1) {
+      const items = JSON.parse(`${text.slice(start, lastItemEnd + 1)}]`);
+      console.warn(`⚠️  Claude response was cut off; kept the ${items.length} complete item(s)`);
+      return items;
     }
     throw error;
   }
