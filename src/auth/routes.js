@@ -4,6 +4,7 @@ const { authRateLimiter } = require('../middleware/auth');
 const google = require('../integrations/google/oauth');
 const { signInWithGoogle } = require('./google-signin');
 const { earlyAccessUrl } = require('../core/beta/beta-access');
+const { posthog } = require('../services/posthog');
 
 /**
  * Sign-in routes. Google is the only way to log in.
@@ -87,6 +88,27 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
         if (saveErr) {
           console.error('❌ Failed to save session:', saveErr);
           return loginErrorRedirect(res, 'Could not create your session. Please try again.');
+        }
+        if (posthog && result.sessionUser?.user_id) {
+          posthog.identify({
+            distinctId: result.sessionUser.user_id,
+            properties: {
+              $set: {
+                email: result.sessionUser.email,
+                name: result.sessionUser.user_name,
+                workspace_id: result.sessionUser.workspace_id
+              }
+            }
+          });
+          posthog.capture({
+            distinctId: result.sessionUser.user_id,
+            event: 'user_signed_in',
+            properties: {
+              $session_id: req.sessionID,
+              sign_in_method: 'google',
+              invited: Boolean(oauth.inviteId)
+            }
+          });
         }
         console.log(`✅ Google sign-in: ${result.sessionUser.email} → ${result.sessionUser.workspace_id}`);
         const destination = oauth.returnTo || '/dashboard';

@@ -351,7 +351,10 @@ async function processTranscript(transcriptContent, metadata) {
     console.log(`✅ Saved transcript: ${transcriptId}`);
 
     // Call Claude API to extract decisions (with few-shot learning from workspace feedback)
-    const aiResult = await extractDecisionsFromTranscript(transcriptContent, metadata.workspace_id);
+    const aiResult = await extractDecisionsFromTranscript(transcriptContent, metadata.workspace_id, {
+      aiSessionId: transcriptId,
+      aiDistinctId: metadata.user_id
+    });
 
     // Update transcript with processing results
     await transcriptsCollection.updateOne(

@@ -658,7 +658,10 @@ async function extractDecisionsFromText(req, res) {
     console.log('🤖 Extracting decisions from:', fileName || 'text', `(${text.length} chars)`);
 
     // CREDIT OPTIMIZATION: Pass workspace_id for few-shot learning
-    const result = await extractDecisionsFromTranscript(text, workspace_id);
+    const result = await extractDecisionsFromTranscript(text, workspace_id, {
+      aiSessionId: `extraction-${contentHash}`,
+      aiDistinctId: req.session?.user?.user_id
+    });
     const extractedDecisions = result.decisions;
 
     if (!extractedDecisions || extractedDecisions.length === 0) {

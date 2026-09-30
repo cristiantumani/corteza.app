@@ -1,6 +1,8 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
+const { posthog, setupExpressErrorHandler, setupExpressRequestContext } = require('./services/posthog');
+const { emitPostHogLog } = require('./services/posthog-logs');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
@@ -124,6 +126,21 @@ async function startApp() {
   const sessionMiddleware = createSessionMiddleware();
   expressApp.use(sessionMiddleware);
 
+  if (posthog) {
+    // The SDK's Express integration reads these headers for both request context
+    // and error capture. Replace any client-supplied identity with the trusted
+    // session user so all request telemetry inherits the authenticated user.
+    expressApp.use((req, res, next) => {
+      const userId = req.session?.user?.user_id;
+      if (userId) {
+        req.headers['x-posthog-distinct-id'] = userId;
+        req.headers['x-posthog-session-id'] = req.sessionID;
+      }
+      next();
+    });
+    setupExpressRequestContext(posthog, expressApp);
+  }
+
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
   expressApp.get('/health', healthCheck);
@@ -216,6 +233,10 @@ async function startApp() {
   // AI extraction for web (requires authentication)
   expressApp.use(require('./routes/ai-extract-web'));
 
+  if (posthog) {
+    setupExpressErrorHandler(posthog, expressApp);
+  }
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
@@ -268,6 +289,10 @@ async function startApp() {
 
   // Start the server FIRST so Railway can health check it
   await app.start(config.port);
+  emitPostHogLog('INFO', 'application_started', {
+    port: config.port,
+    oauth_enabled: oauthEnabled
+  });
   console.log(`⚡️ Bot running on port ${config.port}!`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
   console.log(`\n🔐 Authentication:`);
@@ -288,7 +313,9 @@ async function startApp() {
   console.log('🔌 Connecting to MongoDB...');
   try {
     await connectToMongoDB();
+    emitPostHogLog('INFO', 'database_connection_established');
   } catch (error) {
+    emitPostHogLog('ERROR', 'database_connection_failed');
     console.error('❌ MongoDB connection error during startup:', error.message);
     console.error('⚠️  App is running but database operations will fail');
   }

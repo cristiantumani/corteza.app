@@ -1,9 +1,11 @@
+const crypto = require('crypto');
 const { hybridSearch, generateConversationalResponse, visibleSources } = require('../services/semantic-search');
 const { validateQueryParams } = require('../middleware/validation');
 const { canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
 const { listActionItems } = require('../core/actions/action-service');
 const { selectActionItems } = require('../core/search/action-items');
+const { posthog } = require('../services/posthog');
 
 /**
  * Parse query parameters from URL
@@ -117,13 +119,19 @@ async function handleSemanticSearch(req, res) {
     }
 
     // Build search options
+    const aiContext = {
+      sessionId: req.sessionID,
+      distinctId: userId,
+      traceId: crypto.randomUUID()
+    };
     const searchOptions = {
       workspace_id: requestData.workspace_id,
       space_id: requestData.space_id,  // SECURITY FIX: Filter search by space
       limit: Math.min(Math.max(parseInt(requestData.limit, 10) || 8, 1), 20),
       minScore: requestData.minScore || 0.5,  // Low threshold to get candidates; false positives filtered later
       excludeIds: (Array.isArray(requestData.exclude_ids) ? requestData.exclude_ids : [])
-        .map(Number).filter(Number.isInteger).slice(0, 50)
+        .map(Number).filter(Number.isInteger).slice(0, 50),
+      aiContext
     };
 
     if (requestData.type) {
@@ -181,7 +189,8 @@ async function handleSemanticSearch(req, res) {
           requestData.query,
           searchResult.results,
           conversationHistory,
-          actionItems
+          actionItems,
+          aiContext
         );
         conversationalResponse = answer.text;
         usedIds = answer.usedIds;
@@ -196,6 +205,18 @@ async function handleSemanticSearch(req, res) {
     // Without an AI answer, every match counts as used
     if (requestData.conversational === false) usedIds = searchResult.results.all.filter(r => r.matched !== false).map(r => r.id);
     const shown = visibleSources(searchResult.results.all, usedIds);
+
+    posthog?.capture({
+      event: 'semantic_search_completed',
+      properties: {
+        search_method: searchResult.searchMethod,
+        result_count: shown.length,
+        used_source_count: usedIds.length,
+        action_item_count: actionItems.length,
+        conversational: requestData.conversational !== false,
+        filters_applied: Boolean(requestData.type || requestData.dateFrom || requestData.dateTo)
+      }
+    });
 
     // Return results
     console.log('   📤 Sending response to client...');

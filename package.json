@@ -24,6 +24,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@opentelemetry/api-logs": "^0.222.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-logs": "^0.222.0",
+    "@posthog/ai": "^6.6.0",
     "@slack/bolt": "^4.6.0",
     "compression": "^1.8.2",
     "connect-mongo": "^6.0.0",
@@ -37,6 +42,7 @@
     "node-fetch": "^2.7.0",
     "openai": "^4.77.3",
     "pdf-parse": "^2.4.5",
+    "posthog-node": "^5.54.1",
     "resend": "^6.9.2"
   },
   "devDependencies": {

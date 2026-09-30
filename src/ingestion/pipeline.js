@@ -187,7 +187,11 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     }
 
     const extractDecisions = extract || require('../services/claude').extractDecisionsFromTranscript;
-    const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId, { language: transcript.language || null });
+    const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId, {
+      language: transcript.language || null,
+      aiSessionId: `ingestion-${transcript.externalId}`,
+      aiDistinctId: ownerOf(transcript)
+    });
 
     const source = {
       type: transcript.source,

@@ -1,5 +1,8 @@
+const crypto = require('crypto');
 const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic: PostHogAnthropic } = require('@posthog/ai/anthropic');
 const config = require('../config/environment');
+const { posthog } = require('./posthog');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
 const { getAIFeedbackCollection } = require('../config/database');
 const { LANGUAGE_CODES, detectLanguage, spokenText, languageName } = require('../core/language/detect');
@@ -186,16 +189,19 @@ const FALLBACK_MODELS = /^claude-(opus-5|fable-5)/;
  * @param {string} prompt - The prompt to send
  * @returns {Promise<Object>} Claude API response (Message)
  */
-async function callClaudeAPI(prompt) {
+async function callClaudeAPI(prompt, aiContext = {}) {
   if (!isClaudeConfigured()) {
     throw new Error('Claude API not configured. Set ANTHROPIC_API_KEY in environment.');
   }
 
-  const anthropic = new Anthropic({
+  const clientOptions = {
     apiKey: config.claude.apiKey,
     timeout: 5 * 60 * 1000,
     maxRetries: 2
-  });
+  };
+  const anthropic = posthog
+    ? new PostHogAnthropic({ ...clientOptions, posthog })
+    : new Anthropic(clientOptions);
   const model = config.claude.model;
   const request = {
     model,
@@ -203,6 +209,13 @@ async function callClaudeAPI(prompt) {
     system: DECISION_EXTRACTION_SYSTEM_MESSAGE,
     messages: [{ role: 'user', content: prompt }]
   };
+  if (posthog) {
+    request.posthogTraceId = aiContext.traceId || crypto.randomUUID();
+    request.posthogProperties = {
+      $ai_session_id: aiContext.sessionId || `extraction-process-${process.pid}`
+    };
+    if (aiContext.distinctId) request.posthogDistinctId = aiContext.distinctId;
+  }
   if (SAMPLING_MODELS.test(model)) request.temperature = 0.2;
 
   console.log(`🤖 Calling Claude API (${model})...`);
@@ -394,7 +407,11 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
   const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language);
 
   // Call Claude API
-  const response = await callClaudeAPI(prompt);
+  const response = await callClaudeAPI(prompt, {
+    sessionId: options.aiSessionId,
+    distinctId: options.aiDistinctId,
+    traceId: options.aiTraceId
+  });
 
   const decisions = parseDecisionResponse(responseText(response));
 

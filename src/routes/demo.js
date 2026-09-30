@@ -8,10 +8,13 @@
  * POST /demo/api/search     → keyword search + Claude conversational response
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic: PostHogAnthropic } = require('@posthog/ai/anthropic');
 const config = require('../config/environment');
+const { posthog } = require('../services/posthog');
 const { DEMO_WORKSPACE_ID, DEMO_WORKSPACE_NAME, DEMO_DECISIONS } = require('../data/demo-decisions');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -61,7 +64,7 @@ function keywordSearch(query, decisions, limit = 10) {
  * recalling from memory, not a database dump.
  * Falls back to a plain-text summary if Claude is not configured.
  */
-async function generateDemoResponse(query, results, conversationHistory = []) {
+async function generateDemoResponse(query, results, conversationHistory = [], aiContext = {}) {
   // Plain-text fallback (no Claude available)
   if (!config.claude.isConfigured || results.length === 0) {
     if (results.length === 0) {
@@ -132,13 +135,23 @@ DO:
 Answer as if you're a senior team member who was in all those meetings and knows the full story.`;
 
   try {
-    const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
-    const message = await anthropic.messages.create({
+    const anthropic = posthog
+      ? new PostHogAnthropic({ apiKey: config.claude.apiKey, posthog })
+      : new Anthropic({ apiKey: config.claude.apiKey });
+    const request = {
       model: config.claude.model,
       max_tokens: 400,
       temperature: 0.8,
       messages: [{ role: 'user', content: prompt }]
-    });
+    };
+    if (posthog) {
+      request.posthogTraceId = aiContext.traceId || crypto.randomUUID();
+      request.posthogProperties = {
+        $ai_session_id: aiContext.sessionId || `demo-process-${process.pid}`
+      };
+      if (aiContext.distinctId) request.posthogDistinctId = aiContext.distinctId;
+    }
+    const message = await anthropic.messages.create(request);
     return message.content[0].text;
   } catch (err) {
     console.error('❌ Demo Claude response failed:', err.message);
@@ -286,7 +299,10 @@ function handleDemoSearch(req, res) {
       const results = keywordSearch(query.trim(), pool, limit || 8);
 
       // Use Claude for a real conversational response, same as the live product
-      const response = await generateDemoResponse(query.trim(), results, conversationHistory || []);
+      const response = await generateDemoResponse(query.trim(), results, conversationHistory || [], {
+        sessionId: req.sessionID,
+        distinctId: req.session?.user?.user_id
+      });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({

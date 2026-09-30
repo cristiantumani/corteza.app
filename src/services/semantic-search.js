@@ -1,7 +1,10 @@
+const crypto = require('crypto');
 const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
 const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic: PostHogAnthropic } = require('@posthog/ai/anthropic');
 const config = require('../config/environment');
+const { posthog } = require('./posthog');
 const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');
 const { SAMPLING_MODELS } = require('./claude');
 
@@ -160,7 +163,8 @@ async function semanticSearch(query, options = {}) {
     dateTo,
     limit = 10,
     minScore = 0.7,
-    excludeIds = []
+    excludeIds = [],
+    aiContext
   } = options;
 
   if (!workspace_id) {
@@ -179,7 +183,7 @@ async function semanticSearch(query, options = {}) {
 
     const decisionsCollection = getDatabase().collection('decisions');
 
-    const queryEmbedding = await generateQueryEmbedding(query);
+    const queryEmbedding = await generateQueryEmbedding(query, aiContext);
 
     // Detect if query is looking for recent decisions
     const queryHasTemporalContext = hasTemporalContext(query);
@@ -344,7 +348,7 @@ const CACHE_VERSION = 5; // v5: open action items are part of the answer
  * @param {Array} conversationHistory - Previous turns [{ role, content }] or [{ query, response }]
  * @returns {Promise<{ text: string, usedIds: number[] }>}
  */
-async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = []) {
+async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = [], aiContext = {}) {
   const allIds = results.all.map(r => r.id);
   // Without Claude, only real matches can be listed (not the latest outcomes added as candidates)
   const matchedOnly = { ...results, all: results.all.filter(r => r.matched !== false) };
@@ -360,7 +364,9 @@ async function generateConversationalResponse(query, results, conversationHistor
     return cached.response;
   }
 
-  const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
+  const anthropic = posthog
+    ? new PostHogAnthropic({ apiKey: config.claude.apiKey, posthog })
+    : new Anthropic({ apiKey: config.claude.apiKey });
   const sources = results.all.map(r => describeSource(r)).join('\n\n') || '(none)';
   const history = formatHistory(conversationHistory);
   const actions = actionItems.length
@@ -388,6 +394,13 @@ Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources 
   try {
     const model = config.claude.model;
     const request = { model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
+    if (posthog) {
+      request.posthogTraceId = aiContext.traceId || crypto.randomUUID();
+      request.posthogProperties = {
+        $ai_session_id: aiContext.sessionId || `semantic-search-process-${process.pid}`
+      };
+      if (aiContext.distinctId) request.posthogDistinctId = aiContext.distinctId;
+    }
     if (SAMPLING_MODELS.test(model)) request.temperature = 0.3; // newer models don't take sampling parameters
     const response = await anthropic.messages.create(request);
     const parsed = parseAnswer(

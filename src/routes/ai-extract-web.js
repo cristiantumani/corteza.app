@@ -14,6 +14,7 @@ const {
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 const { canAccessSpace } = require('../services/permissions');
 const multer = require('multer');
+const { posthog } = require('../services/posthog');
 
 const router = express.Router();
 
@@ -160,6 +161,15 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
       });
     }
 
+    posthog?.capture({
+      event: 'ai_transcript_extracted',
+      properties: {
+        input_type: req.file ? 'file' : 'text',
+        suggestion_count: result.suggestions.length,
+        cached: Boolean(result.cached)
+      }
+    });
+
     // Return suggestions for user review
     res.json({
       success: true,
@@ -248,7 +258,11 @@ async function processTranscriptWeb(transcriptContent, metadata) {
     // Call Claude API to extract decisions
     const aiResult = await extractDecisionsFromTranscript(
       transcriptContent,
-      metadata.workspace_id
+      metadata.workspace_id,
+      {
+        aiSessionId: transcriptId,
+        aiDistinctId: metadata.user_id
+      }
     );
 
     // Update transcript with processing results
@@ -437,6 +451,16 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
 
     console.log(`✅ Suggestion ${suggestion_id} approved as decision #${nextId}`);
 
+    posthog?.capture({
+      event: 'ai_suggestion_approved',
+      properties: {
+        edited: Boolean(edits),
+        decision_type: finalDecision.decision_type,
+        has_epic: Boolean(finalDecision.epic_key),
+        tag_count: finalDecision.tags?.length || 0
+      }
+    });
+
     res.json({
       success: true,
       decision_id: nextId,
@@ -509,6 +533,11 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
     );
 
     console.log(`✅ Suggestion ${suggestion_id} rejected`);
+
+    posthog?.capture({
+      event: 'ai_suggestion_rejected',
+      properties: { provided_reason: Boolean(reason) }
+    });
 
     res.json({
       success: true,
