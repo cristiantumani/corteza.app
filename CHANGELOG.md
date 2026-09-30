@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - Uploaded transcripts stay with whoever uploaded them
+- **Space permission:** uploading notes or approving a suggestion now checks you can post to the space, so nobody can add outcomes to a colleague's personal space
+- **Your suggestions only:** approving, rejecting and listing pending suggestions only work on your own uploads. Uploading a transcript a colleague already uploaded no longer returns their suggestions
+- **No query objects:** suggestion ids and space ids must be plain text; a JSON object like `{"$ne": ""}` is refused instead of matching any suggestion. Suggestion and transcript ids are random
+- **Approved suggestions** are saved through the single write path: an atomic decision number (older code could reuse or collide with another space's numbers), the embedding for search, and they count as already confirmed
+- Error messages no longer include internal details
+
 ### Added - Confirm or dismiss what the AI captured
 - **Needs review:** outcomes Corteza captured from a meeting show ✓ Confirm and ✕ Dismiss on Home and in their detail. Confirmed ones say so; outcomes logged by hand have no review. The old "Review / Finalized" label (it only checked for a Jira link) is gone
 - **Dismiss** removes the outcome, with **Undo**, and optional reasons (not relevant, nobody decided this, inaccurate, duplicate, about a person). Corteza learns from them: each person's recent dismissals and confirmations are examples in the prompt for their next meetings

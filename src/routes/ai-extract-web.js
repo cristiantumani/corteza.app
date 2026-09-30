@@ -3,16 +3,17 @@ const crypto = require('crypto');
 const {
   getAISuggestionsCollection,
   getMeetingTranscriptsCollection,
-  getDecisionsCollection
+  getWorkspaceSpacesCollection
 } = require('../config/database');
+const { createDecision } = require('../core/decisions/decision-service');
+const { DECISION_TYPES } = require('../core/decisions/types');
 const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../services/claude');
 const { extractTextFromFile } = require('../utils/text-extractors');
 const {
   validateUploadedFile,
   validateTranscriptContent
 } = require('../middleware/ai-validation');
-const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
-const { canAccessSpace } = require('../services/permissions');
+const { canAccessSpace, canCreateInSpace } = require('../services/permissions');
 const multer = require('multer');
 const { track } = require('../integrations/posthog/client');
 
@@ -41,6 +42,45 @@ const upload = multer({
     }
   }
 });
+
+/**
+ * Privacy: suggestions from an uploaded transcript belong to whoever uploaded it. Only they
+ * can list, approve or reject them, and only into spaces they can post to. Ids and names from
+ * the request must be plain strings, so a JSON object ({"$ne": ""}) can't become a query.
+ */
+
+/** A non-empty string from the request (trimmed, capped), or null */
+function text(value, max = 200) {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+}
+
+/** Random id: suggestion and transcript ids must not be guessable */
+function randomId(prefix) {
+  return `${prefix}_${crypto.randomBytes(12).toString('hex')}`;
+}
+
+/** The space's name for a decision (from the database, never from the request) */
+async function spaceNameOf(workspaceId, spaceId) {
+  const space = await getWorkspaceSpacesCollection().findOne({ workspace_id: workspaceId, space_id: spaceId }, { projection: { name: 1 } });
+  return space ? space.name : null;
+}
+
+/**
+ * Edits the reviewer made to a suggestion, validated; null when there are none
+ * @param {*} edits - { decision_text, decision_type, epic_key, tags, alternatives } from the request
+ * @returns {Object|null}
+ */
+function cleanEdits(edits) {
+  if (!edits || typeof edits !== 'object' || Array.isArray(edits)) return null;
+  const epicKey = text(edits.epic_key, 50);
+  return {
+    decision_text: text(edits.decision_text, 5000),
+    decision_type: DECISION_TYPES.includes(edits.decision_type) ? edits.decision_type : null,
+    epic_key: epicKey && /^[A-Z0-9-]+$/i.test(epicKey) ? epicKey.toUpperCase() : null,
+    tags: Array.isArray(edits.tags) ? edits.tags.map(tag => text(tag, 50)).filter(Boolean).slice(0, 20) : null,
+    alternatives: text(edits.alternatives, 5000)
+  };
+}
 
 /**
  * Generate hash for transcript content (duplicate detection)
@@ -80,7 +120,11 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
       });
     }
 
-    const { workspace_id, space_id, text, file_name } = req.body;
+    const body = req.body || {};
+    const workspace_id = text(body.workspace_id);
+    const space_id = text(body.space_id);
+    const pastedText = typeof body.text === 'string' ? body.text : '';
+    const file_name = text(body.file_name);
     const user_id = req.session.user.user_id;
     const user_name = req.session.user.user_name;
 
@@ -98,6 +142,11 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
         success: false,
         error: 'Access denied to this workspace'
       });
+    }
+
+    // Suggestions are saved to this space later: the uploader must be able to post there
+    if (!await canCreateInSpace(null, workspace_id, space_id, user_id)) {
+      return res.status(403).json({ success: false, error: 'You cannot add decisions to this space' });
     }
 
     let transcriptContent = '';
@@ -123,8 +172,8 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
       }
 
       transcriptContent = extraction.text;
-    } else if (text) {
-      transcriptContent = text;
+    } else if (pastedText.trim()) {
+      transcriptContent = pastedText;
     } else {
       return res.status(400).json({
         success: false,
@@ -182,7 +231,7 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
     console.error('❌ Error in AI extraction:', error);
     res.status(500).json({
       success: false,
-      error: `Failed to process transcript: ${error.message}`
+      error: 'Failed to process the transcript. Try again.'
     });
   }
 });
@@ -198,8 +247,10 @@ async function processTranscriptWeb(transcriptContent, metadata) {
 
     // Check for duplicate transcript by content hash
     const contentHash = hashTranscriptContent(transcriptContent);
+    // Only the same person's earlier upload counts: never hand back a colleague's suggestions
     const existingTranscript = await transcriptsCollection.findOne({
       workspace_id: metadata.workspace_id,
+      uploaded_by: metadata.user_id,
       content_hash: contentHash,
       processed_at: { $ne: null }
     });
@@ -210,6 +261,8 @@ async function processTranscriptWeb(transcriptContent, metadata) {
       // Return existing suggestions
       const existingSuggestions = await suggestionsCollection.find({
         workspace_id: metadata.workspace_id,
+        user_id: metadata.user_id,
+        space_id: metadata.space_id,
         meeting_transcript_id: existingTranscript.transcript_id,
         status: 'pending'
       }).toArray();
@@ -226,7 +279,7 @@ async function processTranscriptWeb(transcriptContent, metadata) {
     }
 
     // Save transcript to database
-    const transcriptId = `transcript_${Date.now()}`;
+    const transcriptId = randomId('transcript');
     const wordCount = transcriptContent.split(/\s+/).filter(w => w.length > 0).length;
 
     const transcript = {
@@ -284,7 +337,7 @@ async function processTranscriptWeb(transcriptContent, metadata) {
     const suggestions = aiResult.decisions.map((decision, index) => ({
       workspace_id: metadata.workspace_id,
       space_id: metadata.space_id,  // Include space_id for web context
-      suggestion_id: `ai_sugg_${Date.now()}_${index}`,
+      suggestion_id: randomId(`ai_sugg_${index}`),
       meeting_transcript_id: transcriptId,
       status: 'pending',
       decision_text: decision.decision_text,
@@ -314,7 +367,7 @@ async function processTranscriptWeb(transcriptContent, metadata) {
     return {
       success: false,
       suggestions: [],
-      error: `Processing failed: ${error.message}`
+      error: 'Processing failed. Try again.'
     };
   }
 }
@@ -329,13 +382,18 @@ async function processTranscriptWeb(transcriptContent, metadata) {
  * - space_id: string
  * - edits: object (optional) - { decision_text, decision_type, epic_key, tags, alternatives }
  */
-router.post('/api/ai/approve-suggestion', async (req, res) => {
+router.post('/api/ai/approve-suggestion', express.json(), async (req, res) => {
   try {
-    const { suggestion_id, workspace_id, space_id, edits } = req.body;
-
     // Verify authentication
     if (!req.session?.user) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const body = req.body || {};
+    const suggestionId = text(body.suggestion_id);
+    const workspace_id = text(body.workspace_id);
+    if (!suggestionId) {
+      return res.status(400).json({ success: false, error: 'suggestion_id is required' });
     }
 
     // Only allow acting on suggestions in the user's own workspace
@@ -346,11 +404,12 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
     const userId = req.session.user.user_id;
     const userName = req.session.user.user_name;
 
-    // Fetch suggestion
+    // Only the uploader's own suggestions (not found and not yours look the same)
     const suggestionsCollection = getAISuggestionsCollection();
     const suggestion = await suggestionsCollection.findOne({
       workspace_id,
-      suggestion_id
+      suggestion_id: suggestionId,
+      user_id: userId
     });
 
     if (!suggestion) {
@@ -364,30 +423,28 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
       });
     }
 
+    // Saved to the space picked on the review screen, or the one it was uploaded to
+    const spaceId = text(body.space_id) || suggestion.space_id;
+    if (!spaceId || !await canCreateInSpace(null, workspace_id, spaceId, userId)) {
+      return res.status(403).json({ success: false, error: 'You cannot add decisions to this space' });
+    }
+
     // Get transcript for context
-    const transcriptsCollection = getMeetingTranscriptsCollection();
-    const transcript = await transcriptsCollection.findOne({
-      workspace_id,
-      transcript_id: suggestion.meeting_transcript_id
-    });
+    const transcript = await getMeetingTranscriptsCollection().findOne(
+      { workspace_id, transcript_id: suggestion.meeting_transcript_id },
+      { projection: { file_name: 1 } }
+    );
     const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
 
-    // Apply edits if provided
-    const finalDecision = edits || {
-      decision_text: suggestion.decision_text,
-      decision_type: suggestion.decision_type,
-      epic_key: suggestion.epic_key,
-      tags: suggestion.tags,
-      alternatives: ''
+    // Apply edits if provided (each field falls back to what the AI suggested)
+    const edits = cleanEdits(body.edits);
+    const finalDecision = {
+      decision_text: (edits && edits.decision_text) || suggestion.decision_text,
+      decision_type: (edits && edits.decision_type) || suggestion.decision_type,
+      epic_key: edits ? edits.epic_key : suggestion.epic_key,
+      tags: (edits && edits.tags) || suggestion.tags || [],
+      alternatives: edits ? edits.alternatives : null
     };
-
-    // Create decision
-    const decisionsCollection = getDecisionsCollection();
-    const lastDecision = await decisionsCollection.findOne(
-      { workspace_id, space_id },
-      { sort: { id: -1 } }
-    );
-    const nextId = lastDecision ? lastDecision.id + 1 : 1;
 
     // Build alternatives text
     let alternativesText = `This decision was extracted from "${meetingTitle}"\n\n`;
@@ -399,70 +456,57 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
     }
     alternativesText += `AI-extracted${edits ? ' and edited' : ''} via web app`;
 
-    const decision = {
-      workspace_id,
-      space_id,
-      space_name: req.body.space_name || null,
-      id: nextId,
+    // Single write path: atomic decision number, embedding for search
+    const decision = await createDecision({
+      workspaceId: workspace_id,
+      spaceId,
+      spaceName: await spaceNameOf(workspace_id, spaceId),
       text: finalDecision.decision_text,
       type: finalDecision.decision_type,
-      epic_key: finalDecision.epic_key,
-      jira_data: null,
       tags: finalDecision.tags,
+      epicKey: finalDecision.epic_key,
       alternatives: alternativesText,
-      creator: userName,
-      user_id: userId,
-      timestamp: new Date().toISOString()
-    };
-
-    await decisionsCollection.insertOne(decision);
-
-    // Generate embedding (non-blocking)
-    if (isEmbeddingsEnabled()) {
-      generateDecisionEmbedding(decision)
-        .then(embedding => {
-          return decisionsCollection.updateOne(
-            { _id: decision._id },
-            { $set: { embedding } }
-          );
-        })
-        .catch(err => console.error('Embedding generation failed:', err));
-    }
+      author: { user_id: userId, name: userName },
+      source: { type: 'upload', title: meetingTitle },
+      capture: 'ai',
+      confidence: typeof suggestion.confidence_score === 'number' ? suggestion.confidence_score : null,
+      reviewedBy: userId // approved on the review screen: nothing left to review
+    });
 
     // Update suggestion status
     await suggestionsCollection.updateOne(
-      { workspace_id, suggestion_id },
+      { _id: suggestion._id },
       {
         $set: {
           status: edits ? 'edited_approved' : 'approved',
           reviewed_at: new Date().toISOString(),
           reviewer_id: userId,
-          edits: edits || null,
-          final_decision_id: nextId
+          edits,
+          final_decision_id: decision.id
         }
       }
     );
 
-    console.log(`✅ Suggestion ${suggestion_id} approved as decision #${nextId}`);
+    console.log(`✅ Suggestion ${suggestionId} approved as decision #${decision.id}`);
 
     track('ai_suggestion_approved', {
       edited: Boolean(edits),
-      decision_type: finalDecision.decision_type,
-      has_epic: Boolean(finalDecision.epic_key),
-      tag_count: finalDecision.tags?.length || 0
+      decision_type: decision.type,
+      has_epic: Boolean(decision.epic_key),
+      tag_count: decision.tags.length
     });
 
     res.json({
       success: true,
-      decision_id: nextId,
-      message: `Decision #${nextId} saved successfully`
+      decision_id: decision.id,
+      message: `Decision #${decision.id} saved successfully`
     });
 
   } catch (error) {
     console.error('❌ Error approving suggestion:', error);
     res.status(500).json({
       success: false,
-      error: `Failed to approve suggestion: ${error.message}`
+      error: 'Failed to approve the suggestion. Try again.'
     });
   }
 });
@@ -476,13 +520,19 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
  * - workspace_id: string
  * - reason: string (optional)
  */
-router.post('/api/ai/reject-suggestion', async (req, res) => {
+router.post('/api/ai/reject-suggestion', express.json(), async (req, res) => {
   try {
-    const { suggestion_id, workspace_id, reason } = req.body;
-
     // Verify authentication
     if (!req.session?.user) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const body = req.body || {};
+    const suggestionId = text(body.suggestion_id);
+    const workspace_id = text(body.workspace_id);
+    const reason = text(body.reason, 500);
+    if (!suggestionId) {
+      return res.status(400).json({ success: false, error: 'suggestion_id is required' });
     }
 
     // Only allow acting on suggestions in the user's own workspace
@@ -492,11 +542,12 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
 
     const userId = req.session.user.user_id;
 
-    // Fetch suggestion
+    // Only the uploader's own suggestions
     const suggestionsCollection = getAISuggestionsCollection();
     const suggestion = await suggestionsCollection.findOne({
       workspace_id,
-      suggestion_id
+      suggestion_id: suggestionId,
+      user_id: userId
     });
 
     if (!suggestion) {
@@ -512,18 +563,18 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
 
     // Update suggestion status
     await suggestionsCollection.updateOne(
-      { workspace_id, suggestion_id },
+      { _id: suggestion._id },
       {
         $set: {
           status: 'rejected',
           reviewed_at: new Date().toISOString(),
           reviewer_id: userId,
-          rejection_reason: reason || null
+          rejection_reason: reason
         }
       }
     );
 
-    console.log(`✅ Suggestion ${suggestion_id} rejected`);
+    console.log(`✅ Suggestion ${suggestionId} rejected`);
 
     track('ai_suggestion_rejected', { provided_reason: Boolean(reason) });
 
@@ -536,15 +587,15 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
     console.error('❌ Error rejecting suggestion:', error);
     res.status(500).json({
       success: false,
-      error: `Failed to reject suggestion: ${error.message}`
+      error: 'Failed to reject the suggestion. Try again.'
     });
   }
 });
 
 /**
  * GET /api/ai/pending-suggestions
- * List AI suggestions still awaiting review in a space (e.g. from an uploaded
- * transcript whose review was closed before finishing)
+ * List your AI suggestions still awaiting review in a space (e.g. from a transcript
+ * you uploaded and closed the review before finishing)
  *
  * Query:
  * - workspace_id: string
@@ -556,7 +607,8 @@ router.get('/api/ai/pending-suggestions', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const { workspace_id, space_id } = req.query;
+    const workspace_id = text(req.query.workspace_id);
+    const space_id = text(req.query.space_id);
 
     if (!workspace_id || !space_id) {
       return res.status(400).json({
@@ -575,7 +627,7 @@ router.get('/api/ai/pending-suggestions', async (req, res) => {
     }
 
     const suggestions = await getAISuggestionsCollection()
-      .find({ workspace_id, space_id, status: 'pending' })
+      .find({ workspace_id, space_id, user_id: req.session.user.user_id, status: 'pending' }) // only your uploads
       .sort({ created_at: -1 })
       .limit(50)
       .toArray();
