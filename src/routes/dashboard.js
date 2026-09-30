@@ -18,8 +18,12 @@ async function dashboardBootstrap(sessionUser) {
     const { workspace_id: workspaceId, user_id: userId, user_name: userName } = sessionUser;
     const client = await getSlackClient(workspaceId).catch(() => null);
     const isAdminUser = await isAdmin(client, workspaceId, userId);
-    const spaces = await listSpacesForUser({ workspaceId, userId, userName, isAdminUser });
-    return { user: { ...sessionUser, is_admin: isAdminUser }, spaces };
+    const { hasSeenOnboarding } = require('../core/onboarding/onboarding-service');
+    const [spaces, onboardingSeen] = await Promise.all([
+      listSpacesForUser({ workspaceId, userId, userName, isAdminUser }),
+      hasSeenOnboarding(workspaceId, userId)
+    ]);
+    return { user: { ...sessionUser, is_admin: isAdminUser, onboarding_seen: onboardingSeen }, spaces };
   } catch (error) {
     console.error('⚠️  Dashboard bootstrap failed, the page will fetch it instead:', error.message);
     return null;

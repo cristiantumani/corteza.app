@@ -189,8 +189,8 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     const extractDecisions = extract || require('../services/claude').extractDecisionsFromTranscript;
     const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId, {
       language: transcript.language || null,
-      aiSessionId: `ingestion-${transcript.externalId}`,
-      aiDistinctId: ownerOf(transcript)
+      userId: transcript.author?.user_id || null, // their personal context, plus the company's
+      personName: transcript.author?.name || null
     });
 
     const source = {

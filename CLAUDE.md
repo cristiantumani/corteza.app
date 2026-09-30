@@ -67,6 +67,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Google verification / launch checklist | `docs/launch/google-verification.md` |
 | Embeddings / semantic search (answer + sources used, keyword fallback, source feedback, open action items for "what's pending from Ana?") | `src/services/embeddings.js`, `src/services/semantic-search.js`, `src/core/search/relevance.js`, `src/core/search/action-items.js`, `src/http/search-feedback.js`, `public/scripts/ai-search.js` |
 | App sidebar (one for every page: Home, Action items, Search, Settings) | `src/views/partials/sidebar.html`, injected at `<!-- SIDEBAR -->` by `renderView` in `src/http/page-partials.js`. Change it there, never per page |
+| First-run onboarding on Home (4 steps: connect Meet, Search, Action items, company context for admins; once per person, reopened from the sidebar's "How it works") | `src/views/partials/onboarding.html` (injected at `<!-- ONBOARDING -->` by `renderView`), `public/scripts/onboarding.js`, `src/http/onboarding.js`, `src/core/onboarding/onboarding-service.js` |
 | Outcome detail modal (shared by Home and Search) | `src/views/partials/detail-modal.html`, injected at `<!-- DETAIL_MODAL -->` by `renderView` in `src/http/page-partials.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
@@ -74,7 +75,8 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
 | Background jobs | `src/jobs/` (weekly digest, re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
-| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet) |
+| Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet, `settings-context.js` for Context for the AI) |
+| Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |
 | Chrome extension | `browser-extension/` |
 | DB migrations (manual, idempotent) | `scripts/migrations/` |
 | Tests | `test/unit/`, `test/integration/`, helper `test/helpers/db.js` |

@@ -18,6 +18,7 @@
  *     "expected": [{ "type": "decision|action_item|open_question|risk", "match": ["keyword", ..],
  *                    "owner"?: "Ana", "due_date"?: "YYYY-MM-DD" | null,
  *                    "rationale_match"?: ["keyword", ..] }],
+ *     "context"?: { "company": { "description", "glossary" }, "personal": { "role", "focus", "glossary" } },
  *     "not_expected"?: [{ "match": ["keyword", ..], "why"? }],   // must NOT be captured (noise)
  *     "labeled"?: false }                                        // draft labels, skipped unless --include-drafts
  * Real meetings: export them with scripts/eval/export-meetings.js and draft labels with
@@ -31,6 +32,7 @@ const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../src/s
 const { buildExtractionText } = require('../src/ingestion/pipeline');
 const config = require('../src/config/environment');
 const { scoreFixture, summarize } = require('./eval/score');
+const { formatContextBlock } = require('../src/core/context/context-service');
 
 const FIXTURES_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'extraction');
 
@@ -68,7 +70,9 @@ async function main() {
     const text = buildExtractionText({
       title: fixture.title, occurredAt: `${fixture.date}T12:00:00Z`, participants: fixture.participants, text: fixture.transcript
     });
-    const { decisions } = await extractDecisionsFromTranscript(text, null);
+    // Optional "context": { company: { description, glossary }, personal: { role, focus, glossary } }
+    const context = fixture.context ? formatContextBlock({ company: fixture.context.company || {}, personal: fixture.context.personal || {} }) : '';
+    const { decisions } = await extractDecisionsFromTranscript(text, null, { context });
     const result = scoreFixture(decisions, fixture.expected, fixture.not_expected || []);
     results.push(result);
 
