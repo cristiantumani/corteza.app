@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - First-run onboarding
+- **How Corteza works:** the first time someone opens Home they see short steps: how meeting capture works (with **Connect Google Meet**, or **Import past meetings** once connected), how to ask Search (example questions that run the search), and Action items. Admins also get an optional step to add the company context. Skip, Back and Next; shown once per person (saved on the membership, so it doesn't come back on another device)
+- **Sidebar → How it works** opens the steps again from any page
+
 ### Changed - Capture only business outcomes
 - **Relevance rules in the extraction prompt:** meeting logistics (rescheduling, "let's continue at 15:45"), problems with the meeting or someone's equipment (audio, a computer restarting, moving files to a new laptop), personal errands and small talk are no longer saved as decisions, risks or action items. A risk has to threaten a business result, not the meeting
 - **`business_relevance` label:** each extracted item is labeled high, medium or low; low ones are discarded before saving, and action items keep their link to the right decision

@@ -68,6 +68,11 @@
        onclick="if (typeof window.openLogMemoryModal === 'function') { event.preventDefault(); window.openLogMemoryModal(); }">
       <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>Log manually
     </a>
+    <!-- Opens the first-run steps again (on Home directly; elsewhere via /dashboard?tour=1) -->
+    <a class="sb-link" href="/dashboard?tour=1"
+       onclick="if (window.CortezaOnboarding) { event.preventDefault(); window.CortezaOnboarding.open(); }">
+      <span class="material-symbols-outlined" aria-hidden="true">help</span>How it works
+    </a>
     <a class="sb-link" href="/auth/logout">
       <span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out
     </a>

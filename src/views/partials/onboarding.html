@@ -1,0 +1,127 @@
+<!-- First-run onboarding ("How Corteza works"). Injected at the ONBOARDING placeholder by src/http/page-partials.js;
+     behavior in public/scripts/onboarding.js. Opens once per person (workspace_members.onboarding_seen_at) and from
+     the sidebar's "How it works". Styled here so it doesn't depend on the page's Tailwind build. -->
+<style>
+  .cz-onb-overlay {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    align-items: center; justify-content: center; padding: 1rem;
+    background: rgba(27, 27, 29, 0.45); font-family: 'Inter', sans-serif;
+  }
+  .cz-onb-overlay.open { display: flex; }
+  .cz-onb-card {
+    width: 100%; max-width: 34rem; background: #fff; border-radius: 1rem;
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.35); overflow: hidden; color: #1b1b1d;
+  }
+  .cz-onb-step { display: none; padding: 2rem 2rem 1.25rem; }
+  .cz-onb-step.active { display: block; }
+  .cz-onb-eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #3953bd; }
+  .cz-onb-icon {
+    width: 3.5rem; height: 3.5rem; border-radius: 1rem; margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: center; background: #e3e7fb; color: #3953bd;
+  }
+  .cz-onb-icon .material-symbols-outlined { font-size: 2rem !important; font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 40; }
+  .cz-onb-card h2 { font-size: 1.5rem; line-height: 1.25; font-weight: 800; letter-spacing: -0.02em; margin: 0.35rem 0 0.75rem; }
+  .cz-onb-card p { font-size: 0.95rem; line-height: 1.55; color: #444653; margin: 0 0 0.75rem; }
+  .cz-onb-list { margin: 0.5rem 0 1rem; padding: 0; list-style: none; display: grid; gap: 0.4rem; }
+  .cz-onb-list li { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; color: #1b1b1d; }
+  .cz-onb-list .material-symbols-outlined { font-size: 1.1rem !important; color: #3953bd; }
+  .cz-onb-tip { font-size: 0.8rem !important; color: #6b6d78 !important; }
+  .cz-onb-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+  .cz-onb-actions[hidden] { display: none; }
+  .cz-onb-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 0.6rem; padding: 0.6rem 1rem;
+    font-size: 0.875rem; font-weight: 700; text-decoration: none; cursor: pointer; border: 1px solid transparent;
+  }
+  .cz-onb-btn.primary { background: #3953bd; color: #fff; }
+  .cz-onb-btn.primary:hover { background: #2f47a6; }
+  .cz-onb-btn.ghost { background: #fff; color: #1b1b1d; border-color: #e4e1e8; }
+  .cz-onb-btn.ghost:hover { background: #f6f3f5; }
+  .cz-onb-done { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.875rem; font-weight: 700; color: #0b6b43; }
+  .cz-onb-chip {
+    display: block; width: 100%; text-align: left; padding: 0.6rem 0.8rem; border-radius: 0.6rem;
+    border: 1px solid #e4e1e8; background: #faf8fb; font-size: 0.875rem; color: #1b1b1d; text-decoration: none;
+  }
+  .cz-onb-chip:hover { border-color: #3953bd; background: #f1f3fd; }
+  .cz-onb-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1rem 2rem 1.5rem; border-top: 1px solid #f0edf2;
+  }
+  .cz-onb-dots { display: flex; gap: 0.4rem; }
+  .cz-onb-dots span { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #dcd8e0; }
+  .cz-onb-dots span.active { background: #3953bd; width: 1.25rem; }
+  .cz-onb-nav { display: flex; gap: 0.5rem; align-items: center; }
+  .cz-onb-link { background: none; border: 0; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: #6b6d78; padding: 0.5rem; }
+  .cz-onb-link:hover { color: #1b1b1d; }
+</style>
+
+<div id="cz-onboarding" class="cz-onb-overlay" role="dialog" aria-modal="true" aria-labelledby="cz-onb-title-1">
+  <div class="cz-onb-card">
+    <section class="cz-onb-step" data-step="capture">
+      <div class="cz-onb-icon"><span class="material-symbols-outlined">videocam</span></div>
+      <div class="cz-onb-eyebrow">How Corteza works</div>
+      <h2 id="cz-onb-title-1">Your meetings, without taking notes</h2>
+      <p>Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves what matters:</p>
+      <ul class="cz-onb-list">
+        <li><span class="material-symbols-outlined">gavel</span>Decisions, with the reason behind them</li>
+        <li><span class="material-symbols-outlined">task_alt</span>Action items, with owner and due date</li>
+        <li><span class="material-symbols-outlined">help</span>Open questions and risks</li>
+      </ul>
+      <p class="cz-onb-tip">Turn on transcripts or Gemini's "Take notes for me" in your meetings. Outcomes of your meetings are private to you.</p>
+      <div class="cz-onb-actions" data-meet-cta>
+        <a class="cz-onb-btn primary" href="/integrations/google/connect" data-onb-finish>
+          <span class="material-symbols-outlined">link</span>Connect Google Meet
+        </a>
+      </div>
+      <div class="cz-onb-actions" data-meet-connected hidden>
+        <span class="cz-onb-done"><span class="material-symbols-outlined">check_circle</span>Google Meet connected</span>
+        <a class="cz-onb-btn ghost" href="/settings#integrations" data-onb-finish>Import past meetings</a>
+      </div>
+    </section>
+
+    <section class="cz-onb-step" data-step="search">
+      <div class="cz-onb-icon"><span class="material-symbols-outlined">forum</span></div>
+      <div class="cz-onb-eyebrow">Search</div>
+      <h2>Ask Corteza anything</h2>
+      <p>Ask in your own words about any meeting. Corteza answers and shows the outcomes it used, so you can check the source.</p>
+      <div class="cz-onb-list">
+        <a class="cz-onb-chip" href="/ai-search?q=What%20did%20we%20decide%20about%20pricing%3F" data-onb-finish>"What did we decide about pricing?"</a>
+        <a class="cz-onb-chip" href="/ai-search?q=What%20are%20my%20open%20action%20items%3F" data-onb-finish>"What are my open action items?"</a>
+        <a class="cz-onb-chip" href="/ai-search?q=Why%20did%20we%20choose%20this%20plan%3F" data-onb-finish>"Why did we choose this plan?"</a>
+      </div>
+    </section>
+
+    <section class="cz-onb-step" data-step="actions">
+      <div class="cz-onb-icon"><span class="material-symbols-outlined">checklist</span></div>
+      <div class="cz-onb-eyebrow">Action items</div>
+      <h2>Follow-ups that don't get lost</h2>
+      <p>Every commitment from your meetings lands in Action items, with who owns it and when it's due.</p>
+      <ul class="cz-onb-list">
+        <li><span class="material-symbols-outlined">event</span>No due date? Corteza emails the owner to set one</li>
+        <li><span class="material-symbols-outlined">done_all</span>Mark items done as you go, or change the date</li>
+        <li><span class="material-symbols-outlined">person</span>Filter to yours, or see everyone's</li>
+      </ul>
+      <div class="cz-onb-actions">
+        <a class="cz-onb-btn ghost" href="/actions" data-onb-finish>Open Action items</a>
+      </div>
+    </section>
+
+    <section class="cz-onb-step" data-step="context" data-admin-only>
+      <div class="cz-onb-icon"><span class="material-symbols-outlined">psychology</span></div>
+      <div class="cz-onb-eyebrow">Optional · for admins</div>
+      <h2>Teach Corteza about your company</h2>
+      <p>A short description and a glossary (acronyms, customers, people and their roles) help Corteza capture what matters to your business and spell names right.</p>
+      <div class="cz-onb-actions">
+        <a class="cz-onb-btn ghost" href="/settings#ai-context" data-onb-finish>Add company context</a>
+      </div>
+    </section>
+
+    <div class="cz-onb-footer">
+      <div class="cz-onb-dots" aria-hidden="true"></div>
+      <div class="cz-onb-nav">
+        <button type="button" class="cz-onb-link" data-onb-skip>Skip</button>
+        <button type="button" class="cz-onb-btn ghost" data-onb-back>Back</button>
+        <button type="button" class="cz-onb-btn primary" data-onb-next>Next</button>
+      </div>
+    </div>
+  </div>
+</div>
