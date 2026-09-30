@@ -85,6 +85,18 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
 
 Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
+**Reviewing AI-captured outcomes** (`core/decisions/review-service.js`, `http/decision-review.js`, `public/scripts/outcome-review.js`):
+- **On Home:**
+  - cards of AI-captured outcomes nobody reviewed say **Needs review** and show ✓ Confirm / ✕ Dismiss (also in the detail modal);
+  - "N to review" next to the list title filters to them;
+  - the capture and import emails link to `/dashboard?review=pending`.
+- **Confirm** (`POST /api/decisions/:id/review {action:'confirm'}`) marks it confirmed and saves an approved example.
+- **Dismiss** removes the outcome and saves a rejected example with a copy of it.
+  - A toast offers **Undo** (`POST /api/decisions/:id/restore`, same number, only for whoever dismissed it).
+  - It also offers optional "Why?" chips (`POST /api/decisions/:id/dismiss-reason`): not relevant, nobody decided this, inaccurate, duplicate, about a person.
+  - The reason goes into the extraction prompt's "BAD" examples.
+- **Permission:** same as editing (your own outcomes, or an admin), and only in spaces you can access, so a colleague's personal space is out of reach even for admins.
+
 **Product analytics (PostHog, server-side only):** `src/integrations/posthog/client.js`.
 - **What's sent:** events with counts, types and ids, never meeting content (transcripts, outcome text, search questions or answers, AI context). This keeps Meet data within Google's Limited Use policy.
 - **URLs:** only the path, never the query string (OAuth codes, search text).
@@ -93,6 +105,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
   - `user_signed_in`, `google_meet_connected`, `google_meet_sync_completed`, `google_meet_import_started`;
   - `meeting_captured` (outcome counts per type) and `meeting_capture_failed`;
   - `semantic_search_completed`, `action_item_added`, `action_item_updated`, `onboarding_closed` (finished, skipped or link, and the step);
+  - `outcome_confirmed`, `outcome_dismissed` (with the reason), `outcome_dismiss_reason`, `outcome_restored`;
   - invites, spaces, Jira, web extraction and suggestion review;
   - uncaught route errors (`$exception`).
 - **AI cost:** each Claude call (extraction, search answer) is an `$ai_generation` event with model, tokens and latency only (`trackAiGeneration`). The prompt and the output are not sent.
@@ -112,10 +125,10 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 | Collection | Purpose |
 |---|---|
-| `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote`. The owner is the person **accountable** for the outcome: a member (`owner_user_id` + `owner_name`) or a name heard in the meeting (`owner_name` only). Outcomes have no due dates: `due_date` only exists on older captures, and new dated commitments become linked `action_items` |
+| `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote`. The owner is the person **accountable** for the outcome: a member (`owner_user_id` + `owner_name`) or a name heard in the meeting (`owner_name` only). Outcomes have no due dates: `due_date` only exists on older captures, and new dated commitments become linked `action_items`. **Review:** AI-captured outcomes (`capture: 'ai'`) with no `review_status` are waiting for review; Confirm sets `review_status: 'confirmed'`, `reviewed_by`, `reviewed_at`. `GET /api/decisions` returns `pending_review` (count in that space) and takes `?review=pending` |
 | `workspace_spaces`, `space_members` | Spaces and explicit space membership |
 | `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links. `workspace_members.onboarding_seen_at`: when the person finished or skipped the first-run onboarding (`core/onboarding`) |
-| `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |
+| `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples. Reviews on Home add rows with `source: 'review'`, `decision_id`, `action` ('approved' / 'rejected'), `reason` and, for dismissals, a `snapshot` of the outcome (no embedding) to undo. Extraction reads only the meeting owner's own feedback (`user_id`), so colleagues' outcomes never reach their prompt |
 | `workspace_settings` | Per-workspace settings, such as encrypted Jira credentials |
 | `api_keys` | No longer used: API keys and `/api/v1/*` were removed (Sept 2026). Old rows are ignored |
 | `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |

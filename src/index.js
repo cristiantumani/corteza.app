@@ -147,6 +147,9 @@ async function startApp() {
 
   // Action items ("pendientes"): page and API
   expressApp.use(require('./http/action-items'));
+
+  // Confirm / dismiss AI-captured outcomes
+  expressApp.use(require('./http/decision-review'));
   expressApp.use(require('./http/search-feedback'));
 
   // Context for the AI: company (admins) and personal, used when reading meetings

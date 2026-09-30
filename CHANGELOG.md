@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Confirm or dismiss what the AI captured
+- **Needs review:** outcomes Corteza captured from a meeting show ✓ Confirm and ✕ Dismiss on Home and in their detail. Confirmed ones say so; outcomes logged by hand have no review. The old "Review / Finalized" label (it only checked for a Jira link) is gone
+- **Dismiss** removes the outcome, with **Undo**, and optional reasons (not relevant, nobody decided this, inaccurate, duplicate, about a person). Corteza learns from them: each person's recent dismissals and confirmations are examples in the prompt for their next meetings
+- **"N to review"** next to the list filters to what's left; the capture and import emails link straight there
+- **Privacy:** the extraction's examples now come only from the meeting owner's own feedback, never a colleague's
+- Fixed: pressing Escape on Home threw an error (a removed "delete all" modal)
+
 ### Added - Product analytics (PostHog)
 - **Events from the server** (set up with the PostHog wizard, then trimmed): sign-in, Google Meet connected, sync and import, meeting captured (with outcome counts per type) or failed, searches, action items added or updated, onboarding finished or skipped, invites, spaces, and uncaught errors
 - **AI cost per user:** each Claude call is recorded with model, tokens and latency only
