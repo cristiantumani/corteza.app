@@ -7,6 +7,7 @@ const { getSlackClient } = require('../config/slack-client');
 const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
 const { DECISION_TYPES } = require('../core/decisions/types');
 const { PENDING_REVIEW } = require('../core/decisions/review-service');
+const { jsonBody } = require('../middleware/input-safety');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -186,15 +187,10 @@ async function updateDecision(req, res) {
       return;
     }
 
-    // Read request body
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
+    // Body parsed by the global JSON parser (src/index.js)
+    {
       try {
-        const updates = JSON.parse(body);
+        const updates = jsonBody(req);
 
         // Validate and sanitize updates
         const sanitizedUpdates = {};
@@ -356,7 +352,7 @@ async function updateDecision(req, res) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid request body' }));
       }
-    });
+    }
   } catch (error) {
     console.error('Update error:', error);
     res.writeHead(500, { 'Content-Type': 'application/json' });

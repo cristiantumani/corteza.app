@@ -268,11 +268,10 @@ function handleDemoStats(req, res) {
  * Mirrors the shape of the real /api/semantic-search response.
  */
 function handleDemoSearch(req, res) {
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', async () => {
+  // Body parsed by the global JSON parser (src/index.js)
+  (async () => {
     try {
-      const { query, type, limit, conversationHistory } = JSON.parse(body || '{}');
+      const { query, type, limit, conversationHistory } = req.body && typeof req.body === 'object' ? req.body : {};
 
       if (!query || !query.trim()) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -308,7 +307,7 @@ function handleDemoSearch(req, res) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: 'Search failed' }));
     }
-  });
+  })();
 }
 
 module.exports = {

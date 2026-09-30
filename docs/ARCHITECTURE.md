@@ -87,6 +87,8 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
 
 Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
+**Request input** (`src/middleware/input-safety.js`, wired in `src/index.js`): after the session, one `express.json({ limit: '1mb' })` parses every JSON body and `rejectOperatorKeys` answers 400 when a body has a key starting with `$` or `__proto__` at any depth, so `{"id": {"$ne": ""}}` can't turn a lookup into a query. Slack's routes are registered by Bolt before it and keep their raw body. Multipart uploads run the same check after multer. Malformed or oversized JSON gets a JSON 400/413 (`jsonBodyErrors`).
+
 **Reviewing AI-captured outcomes** (`core/decisions/review-service.js`, `http/decision-review.js`, `public/scripts/outcome-review.js`):
 - **On Home:**
   - cards of AI-captured outcomes nobody reviewed say **Needs review** and show ✓ Confirm / ✕ Dismiss (also in the detail modal);

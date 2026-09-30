@@ -16,6 +16,7 @@ const {
 const { canAccessSpace, canCreateInSpace } = require('../services/permissions');
 const multer = require('multer');
 const { track } = require('../integrations/posthog/client');
+const { rejectOperatorKeys } = require('../middleware/input-safety');
 
 const router = express.Router();
 
@@ -100,7 +101,7 @@ function hashTranscriptContent(content) {
  * - space_id: string
  * - file_name: string (optional, defaults to "Meeting Notes")
  */
-router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res) => {
+router.post('/api/ai/extract-from-text', upload.single('file'), rejectOperatorKeys, async (req, res) => {
   try {
     console.log('📝 AI extraction request received');
 
