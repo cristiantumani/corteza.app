@@ -75,7 +75,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |
 | Product analytics (PostHog, server-side: `track`, `identify`, `trackAiGeneration`; counts and ids only, never meeting content) | `src/integrations/posthog/client.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
-| Background jobs | `src/jobs/` (daily digest: the one routine email, per person, counts only, 8:00 in each person's time zone; weekly digest; re-engagement) |
+| Background jobs | `src/jobs/` (daily digest: the one routine email, per person, 8:00 in each person's time zone; counts plus the text of their own due/overdue action items, nothing else from meetings; weekly digest; re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
 | Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet, `settings-context.js` for Context for the AI) |
 | Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |

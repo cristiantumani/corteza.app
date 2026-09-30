@@ -97,9 +97,9 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
   - `manual`: picked in Settings → Morning summary; the browser never overrides it.
   - Without one: the workspace's most common zone, else `DAILY_DIGEST_DEFAULT_TIMEZONE` (default UTC).
 - **Content:** each member gets their own counts since their previous check (at most 72 h, so Monday covers the weekend):
-  - on their plate today: open action items due today (their local date), overdue, outcomes to review in their spaces, items without a due date;
+  - on their plate today: their own open action items due today (their local date) or overdue, listed with their text and meeting title (up to 5, each with an **Open** link to `/actions?item=…`; copies captured by colleagues show once), then counts of outcomes to review in their spaces and items without a due date;
   - since then: meetings captured for them and their outcomes by type (imports, `ingestions.manual`, don't count), and action items newly assigned to them.
-- **No meeting content,** only links (`/actions?due=today|overdue|none`, `/dashboard?review=pending`). `/api/action-items` computes "today" and "overdue" in the viewer's saved time zone.
+- **Content limits:** besides counts, only the text of the person's own due and overdue action items; never decisions, colleagues' items or transcript text. `daily_digests` keeps counts only. Links: `/actions?item=…`, `/actions?due=today|overdue|none`, `/dashboard?review=pending`. No one-click actions in the email (link scanners would trigger them). `/api/action-items` computes "today" and "overdue" in the viewer's saved time zone.
 - **Only when there's news or something due today:** the other reminders alone never send it.
 - **Once per person per day:** each person/local day is claimed in `daily_digests` (unique on workspace, user and day; the row keeps the time zone used).
 - **Opt-out:** the email's signed link (`/digest/unsubscribe?…&k=daily`) sets `workspace_members.daily_digest_opt_out`.

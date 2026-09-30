@@ -42,9 +42,11 @@ describe('daily digest: one summary per person per day, with only their own numb
       { workspace_id: WS, user_id: 'UA', source: 'google_meet', external_id: 'last-week', status: 'completed', completed_at: hoursAgo(24 * 6), outcomes_by_type: { decision: 4 } }
     ]);
     await db.collection('action_items').insertMany([
-      { workspace_id: WS, item_id: 'a1', owner_ids: ['UA'], status: 'open', due_date: '2026-09-20', created_at: hoursAgo(24 * 10) },
+      { workspace_id: WS, item_id: 'a1', text: 'Send the pricing proposal', source: { title: 'Weekly sync' }, owner_ids: ['UA'], status: 'open', due_date: '2026-09-20', created_at: hoursAgo(24 * 10) },
       { workspace_id: WS, item_id: 'a2', owner_ids: ['UA'], status: 'open', due_date: null, created_at: hoursAgo(2) },
-      { workspace_id: WS, item_id: 'a4', owner_ids: ['UA'], status: 'open', due_date: '2026-09-30', created_at: hoursAgo(24 * 5) },
+      { workspace_id: WS, item_id: 'a4', text: 'Review the header copy', owner_ids: ['UA'], status: 'open', due_date: '2026-09-30', created_at: hoursAgo(24 * 5) },
+      // The same item captured by a colleague who was in the meeting: listed once, not counted again below
+      { workspace_id: WS, item_id: 'a4-copy', space_id: 'colleague', text: 'Review the header copy', owner_ids: ['UA'], status: 'done', due_date: '2026-09-30', created_at: hoursAgo(24 * 5) },
       { workspace_id: WS, item_id: 'a3', owner_ids: ['UA'], status: 'done', due_date: '2026-09-01', created_at: hoursAgo(24 * 30) },
       // Bob: nothing new today, only an old overdue item
       { workspace_id: WS, item_id: 'b1', owner_ids: ['UB'], status: 'open', due_date: '2026-09-10', created_at: hoursAgo(24 * 20) },
@@ -63,7 +65,19 @@ describe('daily digest: one summary per person per day, with only their own numb
 
   test("a person's numbers: meetings and outcomes since the last one (not imports), new items, due today, reminders", async () => {
     const summary = await digest.buildDailySummary(WS, 'UA', hoursAgo(24), WEDNESDAY_MORNING, 'America/Santiago');
-    assert.deepEqual(summary, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1 });
+    const { planItems, ...counts } = summary;
+    assert.deepEqual(counts, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1 });
+    assert.deepEqual(planItems, [
+      { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null },
+      { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync' }
+    ], 'their own open items: due today first, then overdue');
+  });
+
+  test('the list shows each item once, even when colleagues captured it too', async () => {
+    await db.collection('action_items').insertOne({ workspace_id: WS, item_id: 'a4-open-copy', space_id: 'colleague', text: 'review the header copy ', owner_ids: ['UA'], status: 'open', due_date: '2026-09-30', created_at: hoursAgo(24 * 6) });
+    const summary = await digest.buildDailySummary(WS, 'UA', hoursAgo(24), WEDNESDAY_MORNING, 'America/Santiago');
+    assert.deepEqual(summary.planItems.map(item => item.item_id), ['a4', 'a1']);
+    await db.collection('action_items').deleteOne({ item_id: 'a4-open-copy' });
   });
 
   test('sends once per person per day, skips people with nothing new and people who opted out', async () => {
@@ -75,6 +89,8 @@ describe('daily digest: one summary per person per day, with only their own numb
     assert.equal(first.checked, 2);
     assert.equal(sent[0].summary.meetings, 2);
     assert.equal(sent[0].summary.since, 'yesterday');
+    assert.equal(sent[0].summary.today, '2026-09-30');
+    assert.equal(sent[0].summary.planItems.length, 2);
     assert.match(sent[0].unsubscribe_url, /k=daily/);
     assert.equal(sent[0].summary.dayLabel, 'Wednesday, September 30');
 
@@ -85,6 +101,7 @@ describe('daily digest: one summary per person per day, with only their own numb
     const saved = await db.collection('daily_digests').findOne({ workspace_id: WS, user_id: 'UA', day: '2026-09-30' });
     assert.equal(saved.sent, true);
     assert.equal(saved.timezone, 'America/Santiago');
+    assert.equal(saved.summary.planItems, 2, 'only the count is kept, not the text');
   });
 
   test("each person gets it at 8:00 their time", async () => {
