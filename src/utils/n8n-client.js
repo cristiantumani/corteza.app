@@ -4,7 +4,7 @@
 
 // Use native fetch (Node 18+) or fall back to node-fetch v2
 const fetch = globalThis.fetch || require('node-fetch');
-const { OUTCOME_LABELS, outcomeGroup, countByType, describeOutcomes } = require('../core/decisions/types');
+const { describeOutcomes } = require('../core/decisions/types');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -255,97 +255,6 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
 }
 
 /**
- * Tells the user which outcomes (decisions, open questions, risks, action items)
- * Corteza captured automatically from a meeting
- * @param {Object} params - { email, meeting_title, meeting_url, decisions: [{ id, text, type }],
- *   action_items?: [{ text, owners: [name], due_date }] }
- */
-async function sendMeetingCaptureEmail({ email, meeting_title, meeting_url, decisions, action_items = [] }) {
-  const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
-  const summary = describeOutcomes({ ...countByType(decisions), action_item: action_items.length });
-  const outcomesHtml = Object.keys(OUTCOME_LABELS).map(group => {
-    const items = decisions.filter(d => outcomeGroup(d.type) === group);
-    if (items.length === 0) return '';
-    const heading = group === 'other' ? 'Other' : OUTCOME_LABELS[group][1].replace(/^./, c => c.toUpperCase());
-    return `
-        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 8px;">${heading}</h2>
-        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
-          ${items.map(d => `<li style="margin-bottom: 8px;">${escapeHtml(d.text)}${group === 'other' ? ` <span style="color: #888;">(${escapeHtml(d.type)})</span>` : ''}</li>`).join('')}
-        </ul>`;
-  }).join('');
-  const actionsHtml = action_items.length === 0 ? '' : `
-        <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 8px;">Action items</h2>
-        <ul style="padding-left: 20px; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
-          ${action_items.map(item => `<li style="margin-bottom: 8px;">${escapeHtml(item.text)} <span style="color: #888;">(${escapeHtml(item.owners.join(', ') || 'no owner')} · ${escapeHtml(item.due_date || 'no due date')})</span></li>`).join('')}
-        </ul>`;
-
-  const result = await sendEmail({
-    to: email,
-    subject: `${summary} captured from "${meeting_title}"`,
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
-        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${escapeHtml(summary.replace(/^./, c => c.toUpperCase()))} captured</h1>
-        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
-          From ${meeting_url ? `<a href="${escapeHtml(meeting_url)}" style="color: #3953bd;">${escapeHtml(meeting_title)}</a>` : `<strong>${escapeHtml(meeting_title)}</strong>`}.
-          They're already saved in Corteza. Confirm the ones that are right and dismiss the rest: Corteza learns from it.
-        </p>
-        ${outcomesHtml}
-        ${actionsHtml}
-        <a href="${dashboardUrl}/dashboard?review=pending"
-           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Review in Corteza →
-        </a>
-        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
-          You get this because you connected Google Meet to Corteza. Manage it in Settings → Integrations.
-        </p>
-      </div>
-    `
-  });
-
-  console.log(`✅ Meeting capture email sent to ${email}`, result.id);
-  return { success: true, email_id: result.id };
-}
-
-/**
- * Asks an owner to set due dates on their action items from a meeting
- * @param {Object} params - { email, name, meetingTitle, meetingUrl, items: [{ item_id, text }] }
- */
-async function sendDueDateRequestEmail({ email, name, meetingTitle, meetingUrl, items }) {
-  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
-  const count = items.length;
-  const firstName = String(name || '').split(' ')[0];
-
-  const result = await sendEmail({
-    to: email,
-    subject: `When will ${count === 1 ? 'this be' : 'these be'} done? ${count} action item${count === 1 ? '' : 's'} from "${meetingTitle}"`,
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
-        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${firstName ? `${escapeHtml(firstName)}, when` : 'When'} will ${count === 1 ? 'this be' : 'these be'} done?</h1>
-        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
-          In ${meetingUrl ? `<a href="${escapeHtml(meetingUrl)}" style="color: #3953bd;">${escapeHtml(meetingTitle)}</a>` : `<strong>${escapeHtml(meetingTitle)}</strong>`}
-          you took on ${count === 1 ? 'an action item' : 'these action items'} without a due date. Setting one helps the team follow up.
-        </p>
-        <ul style="padding-left: 0; list-style: none; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">
-          ${items.map(item => `
-            <li style="margin-bottom: 12px; padding: 12px 16px; border: 1px solid #e5e5e5; border-radius: 10px;">
-              ${escapeHtml(item.text)}<br>
-              <a href="${baseUrl}/actions?item=${encodeURIComponent(item.item_id)}" style="color: #3953bd; font-weight: 600; font-size: 13px;">Set a due date →</a>
-            </li>`).join('')}
-        </ul>
-        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
-          Corteza captured these from the meeting's transcript or Gemini notes. If one isn't yours or won't happen, mark it cancelled in Corteza.
-        </p>
-      </div>
-    `
-  });
-
-  console.log(`✅ Due date request sent to ${email}`, result.id);
-  return { success: true, email_id: result.id };
-}
-
-/**
  * Welcomes an approved beta tester and invites them to sign in with Google
  * @param {Object} params
  * @param {string} params.email - the address they requested access with
@@ -434,11 +343,99 @@ async function sendImportSummaryEmail({ email, job }) {
   return { success: true, email_id: result.id };
 }
 
+/**
+ * Subject line of the daily digest: the day's numbers, most important first
+ * @param {Object} summary - see sendDailyDigestEmail
+ * @returns {string}
+ */
+function dailyDigestSubject(summary) {
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  const parts = [];
+  if (summary.meetings) parts.push(plural(summary.meetings, 'meeting'));
+  const decisions = (summary.outcomes && summary.outcomes.decision) || 0;
+  if (decisions) parts.push(plural(decisions, 'decision'));
+  if (summary.newActionItems) parts.push(`${plural(summary.newActionItems, 'new action item')}`);
+  if (summary.overdue) parts.push(`${summary.overdue} overdue`);
+  return parts.length ? `Your day in Corteza: ${parts.join(', ')}` : 'Your day in Corteza';
+}
+
+/**
+ * The end-of-day summary for one person: counts only, no meeting content, and links
+ * to where they can act in Corteza. Replaces the per-meeting capture and due date emails.
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} params.workspace_name
+ * @param {string} params.unsubscribe_url
+ * @param {Object} params.summary - { dayLabel, meetings, outcomes: { decision, open_question, risk, … },
+ *   newActionItems, toReview, overdue, noDueDate }
+ */
+async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
+  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  const outcomes = summary.outcomes || {};
+  const decisions = outcomes.decision || 0;
+  const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 });
+
+  const tile = (value, label) => `
+          <td style="width: 33%; padding: 16px 8px; text-align: center; background: #f6f8fa; border-radius: 12px;">
+            <div style="font-size: 30px; font-weight: 800;">${value}</div>
+            <div style="font-size: 13px; color: #555;">${escapeHtml(label)}</div>
+          </td>`;
+  const plural = (count, word) => `${word}${count === 1 ? '' : 's'}`;
+
+  const attention = [
+    summary.toReview ? { text: `${summary.toReview} ${plural(summary.toReview, 'outcome')} to review`, hint: 'Confirm the right ones, dismiss the rest', href: '/dashboard?review=pending' } : null,
+    summary.overdue ? { text: `${summary.overdue} overdue action ${plural(summary.overdue, 'item')}`, hint: 'Mark them done or set a new date', href: '/actions?due=overdue' } : null,
+    summary.noDueDate ? { text: `${summary.noDueDate} action ${plural(summary.noDueDate, 'item')} without a due date`, hint: 'Set a date so they don’t slip', href: '/actions?due=none' } : null
+  ].filter(Boolean);
+
+  const attentionHtml = attention.length ? `
+        <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 8px;">Needs your attention</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          ${attention.map(row => `
+          <tr><td style="padding: 10px 0; border-top: 1px solid #eee;">
+            <a href="${baseUrl}${row.href}" style="color: #111; font-weight: 600; text-decoration: none;">${escapeHtml(row.text)} →</a>
+            <div style="color: #777; font-size: 13px;">${escapeHtml(row.hint)}</div>
+          </td></tr>`).join('')}
+        </table>` : '';
+
+  const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px;">What happened today</h1>
+        <p style="font-size: 15px; color: #555; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 8px 0; margin: 0 -8px;">
+          <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>
+        </table>
+        ${otherOutcomes ? `<p style="font-size: 14px; color: #555; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
+        ${attentionHtml}
+        <a href="${baseUrl}/dashboard"
+           style="display: inline-block; margin-top: 28px; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          Open Corteza →
+        </a>
+        <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
+          One email a day, only on days with something new. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
+          <a href="${unsubscribe_url}" style="color: #999;">Unsubscribe from daily summaries</a>.
+        </p>
+      </div>
+    `;
+
+  const result = await sendEmail({
+    to: email,
+    subject: dailyDigestSubject(summary),
+    html,
+    headers: {
+      'List-Unsubscribe': `<${unsubscribe_url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    }
+  });
+  return { success: true, email_id: result.id };
+}
+
 module.exports = {
   sendImportSummaryEmail,
   sendBetaWelcomeEmail,
-  sendDueDateRequestEmail,
-  sendMeetingCaptureEmail,
+  sendDailyDigestEmail,
+  dailyDigestSubject,
   sendEmail,
   escapeHtml,
   sendMagicLinkEmail,

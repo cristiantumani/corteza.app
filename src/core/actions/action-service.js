@@ -176,17 +176,10 @@ async function updateActionItem(workspaceId, itemId, changes = {}) {
   );
 }
 
-/** Marks items as having had their due date requested (so owners are asked once) */
-async function markDueDateRequested(itemIds) {
-  if (itemIds.length === 0) return;
-  await collection().updateMany({ item_id: { $in: itemIds } }, { $set: { due_date_requested_at: new Date() } });
-}
-
 module.exports = {
   createActionItem,
   listActionItems,
   getActionItem,
   updateActionItem,
-  markDueDateRequested,
   STATUSES
 };

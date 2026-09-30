@@ -84,7 +84,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
       spaceId: space.space_id, spaceName: space.name, author: { user_id: 'U1', name: 'Paola' }
     };
 
-    const result = await pipeline.ingestTranscript(transcript, { extract, requestDueDates: async () => {} });
+    const result = await pipeline.ingestTranscript(transcript, { extract });
     assert.equal(result.decisions.length, 3);
     assert.equal(result.actionItems.length, 2, 'the beta plan, plus the dated forecast review');
 
@@ -124,10 +124,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
       url: 'https://docs.google.com/document/d/x', spaceId: space.space_id, spaceName: space.name,
       author: { user_id: 'U1', name: 'Ana' }
     };
-    const dueDateRequests = [];
-    const requestDueDates = async (items, t) => { dueDateRequests.push({ items, title: t.title }); };
-
-    const first = await pipeline.ingestTranscript(transcript, { extract, requestDueDates });
+    const first = await pipeline.ingestTranscript(transcript, { extract });
     assert.equal(first.status, 'completed');
     assert.equal(first.decisions.length, 2, 'action items are not decisions');
     assert.equal(first.actionItems.length, 2);
@@ -157,10 +154,8 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     const venue = items.find(item => item.text.includes('venue'));
     assert.deepEqual(venue.owners, [{ name: 'Carla', user_id: null, email: null }], 'unmatched names are kept');
     assert.equal(venue.decision_id, null);
-    assert.equal(dueDateRequests.length, 1);
-    assert.equal(dueDateRequests[0].items.length, 2);
 
-    const again = await pipeline.ingestTranscript(transcript, { extract, requestDueDates });
+    const again = await pipeline.ingestTranscript(transcript, { extract });
     assert.equal(again.status, 'duplicate');
     assert.equal(extract.calls.length, 1, 'extraction is not repeated');
     assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WPIPE' }), 2);
@@ -224,7 +219,6 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
       'conferenceRecords/none': { state: 'none', title: 'No transcription', text: '', participantCount: 3, participants: [], endedAt: new Date('2026-09-27T10:00:00Z') }
     };
     const loadCalls = [];
-    const notified = [];
     const extract = fakeExtract([{ decision_text: 'Adopt quarterly planning', decision_type: 'decision', confidence: 0.9 }]);
     const deps = {
       now,
@@ -234,8 +228,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
         return Object.keys(meetings).map(name => ({ name, endTime: meetings[name].endedAt.toISOString() }));
       },
       loadMeeting: async (client, record) => { loadCalls.push(record.name); return { externalId: record.name, ...meetings[record.name] }; },
-      ingest: transcript => pipeline.ingestTranscript(transcript, { extract }),
-      notify: async (conn, result) => { notified.push(result.title); }
+      ingest: transcript => pipeline.ingestTranscript(transcript, { extract })
     };
 
     const first = await poller.runForConnection(connection, deps);
@@ -246,7 +239,6 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     assert.equal(byTitle['Ana / Bob'].reason, 'one_on_one');
     assert.equal(byTitle['Just ended'].status, 'waiting');
     assert.equal(byTitle['No transcription'].reason, 'no_transcript');
-    assert.deepEqual(notified, ['Planning']);
 
     const decision = await db.collection('decisions').findOne({ workspace_id: 'WPOLL', 'source_details.external_id': 'conferenceRecords/ready' });
     const personalSpace = await spaces.ensurePersonalSpace('WPOLL', 'U1');
@@ -283,8 +275,7 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
         }
         return { externalId: record.name, state: 'ready', title: 'Standup review', text: LONG_TEXT, participantCount: 4, participants: ['Ana', 'Bob'], endedAt: new Date(endTime) };
       },
-      ingest: transcript => pipeline.ingestTranscript(transcript, { extract }),
-      notify: async () => {}
+      ingest: transcript => pipeline.ingestTranscript(transcript, { extract })
     });
     assert.equal(result.error, undefined);
     assert.equal(result.decisionsCaptured, 1);

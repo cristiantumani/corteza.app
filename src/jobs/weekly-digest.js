@@ -95,9 +95,17 @@ function verifyUnsubscribe(workspaceId, userId, token) {
   return crypto.timingSafeEqual(expected, Buffer.from(token, 'hex'));
 }
 
-function getUnsubscribeUrl(workspaceId, userId) {
+/**
+ * Signed unsubscribe link for a member
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @param {'weekly'|'daily'} [kind] - which digest the link turns off
+ * @returns {string}
+ */
+function getUnsubscribeUrl(workspaceId, userId, kind = 'weekly') {
   const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
   const params = new URLSearchParams({ w: workspaceId, u: userId, t: signUnsubscribe(workspaceId, userId) });
+  if (kind === 'daily') params.set('k', 'daily');
   return `${baseUrl}/digest/unsubscribe?${params}`;
 }
 

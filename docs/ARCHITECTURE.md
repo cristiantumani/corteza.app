@@ -50,7 +50,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 2. Every 5 minutes, `jobs/meet-poller.js` lists conference records that ended in the last 6 hours for each connection (with a lease so only one poller works on it).
 3. `ingestion/sources/google-meet.js` loads the transcript entries and Gemini notes.
 4. The skip rules run: 1:1s, excluded titles, meetings with no transcript.
-5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). The connected user gets a summary email.
+5. `ingestion/pipeline.js` claims the meeting in `ingestions`, extracts decisions with Claude, and saves every decision through `core/decisions/decision-service.createDecision` (`capture: 'ai'`, `source_details` with title and link). No email per meeting: the day's numbers go out in the daily digest.
 
 **Page load (Home and Search):**
 - `routes/dashboard.js` renders the page with the user and their spaces already embedded (`window.__CORTEZA_BOOTSTRAP__`, built by `core/spaces/list-spaces.js`). The browser then only fetches decisions; stats load in parallel without blocking.
@@ -58,7 +58,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 - Static assets are served before the session middleware, so they never read the session from MongoDB, and are cached for 10 minutes.
 - Slack installation lookups are cached per workspace for 5 minutes (`config/slack-client.js`).
 
-**Action items:** the pipeline saves decisions (and open questions and risks) through `createDecision`, then the action items through `core/actions/action-service.createActionItem`. Action items are linked to their decision through `decision_ref` → `decision_id`, and spoken owner names are matched to members (`core/actions/owners.js`). For recent meetings, owners of undated items are emailed for a date (`core/actions/due-date-requests.js`). The page and API are in `src/http/action-items.js` (`/actions`, `GET/PATCH /api/action-items`).
+**Action items:** the pipeline saves decisions (and open questions and risks) through `createDecision`, then the action items through `core/actions/action-service.createActionItem`. Action items are linked to their decision through `decision_ref` → `decision_id`, and spoken owner names are matched to members (`core/actions/owners.js`). Owners hear about new, overdue and undated items in their daily digest (no email per meeting). The page and API are in `src/http/action-items.js` (`/actions`, `GET/PATCH /api/action-items`).
 
 **Import past meetings:** Settings → Google Meet → pick a period → `GET /api/integrations/google/meetings` lists the meetings (`ingestion/meet-import.findMeetings`) → the user ticks some → `POST /api/integrations/google/imports` starts a background job (`meet_imports`) that runs each meeting through the same pipeline with `manual: true` → the UI polls for progress. The job runs on the server, so people can leave the page: `GET /api/integrations/google` returns `active_import` (the running job, `getActiveImport`), which Home shows as a progress bar and Settings uses to pick the progress back up; when the job finishes, `sendImportSummaryEmail` emails the person a summary, once.
 
@@ -88,6 +88,18 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
 Linking an older workspace (Slack or magic link) to a Google domain: `scripts/migrations/002-link-workspace-to-google.js`.
 
 **Request input** (`src/middleware/input-safety.js`, wired in `src/index.js`): after the session, one `express.json({ limit: '1mb' })` parses every JSON body and `rejectOperatorKeys` answers 400 when a body has a key starting with `$` or `__proto__` at any depth, so `{"id": {"$ne": ""}}` can't turn a lookup into a query. Slack's routes are registered by Bolt before it and keep their raw body. Multipart uploads run the same check after multer. Malformed or oversized JSON gets a JSON 400/413 (`jsonBodyErrors`).
+
+**Daily digest** (`jobs/daily-digest.js`, email in `utils/n8n-client.sendDailyDigestEmail`): the one routine email.
+- **Replaces** the per-meeting capture email and the per-meeting due date requests.
+- **When:** Mon–Fri from `DAILY_DIGEST_HOUR_UTC` (default 22:00 UTC).
+- **Content:** each member gets their own counts since their previous check (at most 72 h, so Monday covers the weekend):
+  - meetings captured for them and their outcomes by type (imports, `ingestions.manual`, don't count);
+  - action items newly assigned to them;
+  - reminders: outcomes to review in their spaces, and their overdue and undated open items.
+- **No meeting content,** only links (`/dashboard?review=pending`, `/actions?due=overdue|none`).
+- **Only on days with news** (a meeting or a new item): reminders alone never send it.
+- **Once per person per day:** each person/day is claimed in `daily_digests` (unique on workspace, user and day).
+- **Opt-out:** the email's signed link (`/digest/unsubscribe?…&k=daily`) sets `workspace_members.daily_digest_opt_out`.
 
 **Reviewing AI-captured outcomes** (`core/decisions/review-service.js`, `http/decision-review.js`, `public/scripts/outcome-review.js`):
 - **On Home:**
@@ -153,7 +165,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `DAILY_DIGEST_ENABLED` (on unless `false`), `DAILY_DIGEST_HOUR_UTC` (default 22), `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
 
 ### Migrations
 
@@ -229,6 +241,6 @@ Existing `workspace_id` and `user_id` values are kept as opaque strings; migrati
 | 0 | Default spaces, workspace-takeover fix, DB-backed login tokens, Obsidian and dead code removed, tests, lint, CI, these docs *(done)* |
 | 1 | `core/decisions` single write path and counters, `app.js`/`server.js` split, Slack optional, DB-only admin checks, scheduler |
 | 2 | Google OIDC sign-in with domain workspaces; magic link, passwords and Slack `/login` removed; extension uses Google sign-in *(done)* |
-| 3 | "Connect Google" (Meet and Drive-Meet scopes), Meet poller, ingestion pipeline with auto-save, privacy defaults (skip 1:1s, keyword exclusions), summary email, AI-captured badge with edit and delete *(done)* |
+| 3 | "Connect Google" (Meet and Drive-Meet scopes), Meet poller, ingestion pipeline with auto-save, privacy defaults (skip 1:1s, keyword exclusions), summary email (replaced by the daily digest, Sept 2026), AI-captured badge with edit and delete *(done)* |
 | 4 | "Connect Slack" install flow mapped to a workspace; `/decision` and uploads through the pipeline; no Slack identity |
 | 5 | Split docs (DATA_MODEL, INGESTION, AUTH, GOOGLE, SLACK, DEPLOY, ADRs), remove unused dependencies and collections |

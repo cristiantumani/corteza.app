@@ -58,8 +58,7 @@ async function pollConnection(connection, deps = {}) {
     getClient = connections.getAuthorizedClient,
     listConferenceRecords = meetClient.listConferenceRecords,
     loadMeeting = googleMeetSource.loadMeeting,
-    ingest = pipeline.ingestTranscript,
-    notify = notifyCaptured
+    ingest = pipeline.ingestTranscript
   } = deps;
 
   const client = getClient(connection);
@@ -123,28 +122,7 @@ async function pollConnection(connection, deps = {}) {
   const decisionsCaptured = captured.reduce((sum, r) => sum + r.decisions.length, 0);
   const outcomesByType = countByType(captured.flatMap(r => r.decisions));
 
-  for (const result of captured.filter(r => r.decisions.length > 0 || r.actionItems.length > 0)) {
-    notify(connection, result).catch(error => console.error('❌ Meet summary email failed:', error.message));
-  }
-
   return { meetingsProcessed: captured.length, decisionsCaptured, outcomesByType, results };
-}
-
-/**
- * Emails the connected user a summary of the outcomes captured from a meeting
- */
-async function notifyCaptured(connection, result) {
-  if (!process.env.RESEND_API_KEY || !connection.google_email) return;
-  const { sendMeetingCaptureEmail } = require('../utils/n8n-client');
-  await sendMeetingCaptureEmail({
-    email: connection.google_email,
-    meeting_title: result.title,
-    meeting_url: result.url,
-    decisions: result.decisions.map(d => ({ id: d.id, text: d.text, type: d.type })),
-    action_items: result.actionItems.map(item => ({
-      text: item.text, owners: item.owners.map(owner => owner.name), due_date: item.due_date
-    }))
-  });
 }
 
 /**

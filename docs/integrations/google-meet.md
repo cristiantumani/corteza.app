@@ -8,7 +8,7 @@ Corteza reads the transcripts and Gemini notes of your Google Meet meetings and 
 2. Go to **Settings → Google Meet → Connect Google Meet** and allow the requested access. Use the same Google account you signed in with.
 3. In your meetings, turn on **transcription** (Activities → Transcripts) or **Gemini "Take notes for me"**.
 
-A few minutes after a meeting ends and Google has finished the transcript, its decisions appear in the dashboard, and you get a summary email.
+A few minutes after a meeting ends and Google has finished the transcript, its decisions appear in the dashboard. At the end of the day, the daily digest email sums up the day's meetings and what needs attention (no email per meeting).
 
 **Settings** (per user):
 - **Save decisions to:** a space you can post to. Defaults to the workspace's default space.
@@ -44,7 +44,6 @@ jobs/meet-poller.js           every MEET_POLL_INTERVAL_MINUTES (default 5), per 
   skip rules                           1:1s, excluded titles, no transcript (recorded as skipped)
   ingestion/pipeline.js                claim in `ingestions` (unique per meeting) → Claude extraction
                                        → core/decisions/decision-service.createDecision (capture: 'ai')
-  utils/n8n-client.sendMeetingCaptureEmail   summary to the connected user
 ```
 
 - **Import past meetings:** `ingestion/meet-import.js`.

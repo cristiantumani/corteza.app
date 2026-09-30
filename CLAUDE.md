@@ -60,7 +60,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | Language outcomes are written in (detected from the spoken transcript, or fixed in Settings → Google Meet) | `src/core/language/detect.js`, `outputLanguage` in `src/services/claude.js`; translate saved ones: `scripts/migrations/006-translate-outcomes.js` |
 | Decision types (decision, action_item, open_question, risk, …), outcome counts and labels | `src/core/decisions/types.js` (`countByType`, `describeOutcomes`), `public/scripts/outcome-labels.js` |
-| Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`, `due-date-requests.js`) |
+| Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`) |
 | Action items page and API (`/actions`, `/api/action-items`, `/api/people`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js`; inside a decision's detail: `public/scripts/decision-actions.js` |
 | Extraction eval (labeled transcripts, scoring, real-meeting export and draft labels) | `scripts/eval-extraction.js`, `scripts/eval/{score,export-meetings,draft-labels}.js`, `test/fixtures/extraction/` (synthetic only; real meetings stay outside the repo). Research and plan: `docs/research/extraction-quality.md` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
@@ -75,7 +75,7 @@ CI (`.github/workflows/ci.yml`) runs lint and all tests against a MongoDB servic
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |
 | Product analytics (PostHog, server-side: `track`, `identify`, `trackAiGeneration`; counts and ids only, never meeting content) | `src/integrations/posthog/client.js` |
 | Email (Resend) | `src/utils/n8n-client.js` (historical name; it's Resend, not n8n) |
-| Background jobs | `src/jobs/` (weekly digest, re-engagement) |
+| Background jobs | `src/jobs/` (daily digest: the one routine email, per person, counts only; weekly digest; re-engagement) |
 | Dashboard UI | `src/views/dashboard-new.html` + `public/scripts/dashboard.js` + `public/scripts/dashboard-new.js` (click-to-edit in the detail modal: `public/scripts/inline-edit.js`) |
 | Settings UI | `src/views/settings-new.html` + `public/scripts/settings-new.js` (+ `settings-integrations.js` for Google Meet, `settings-context.js` for Context for the AI) |
 | Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |

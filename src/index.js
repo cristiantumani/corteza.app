@@ -328,6 +328,7 @@ async function startApp() {
   // Start re-engagement job for inactive extension installs
   require('./jobs/reengagement').startReengagementJob();
   require('./jobs/weekly-digest').startWeeklyDigestJob();
+  require('./jobs/daily-digest').startDailyDigestJob();
   require('./jobs/meet-poller').startMeetPollerJob();
 }
 
