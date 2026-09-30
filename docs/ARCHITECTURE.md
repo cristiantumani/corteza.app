@@ -25,6 +25,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 | Dashboard pages (`/dashboard`, `/settings`, `/ai-search`; `/select-space` redirects to Home) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
 | Context for the AI (`/api/ai-context*`) | `src/http/ai-context.js` → `core/context/context-service.js` | session; company context: admins only (`isAdmin`) |
+| First-run onboarding (`/api/onboarding`, `/api/onboarding/seen`) | `src/http/onboarding.js` → `core/onboarding/onboarding-service.js`; UI `partials/onboarding.html` + `public/scripts/onboarding.js` on Home | session |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |
 | Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`; `/login` only links to the web sign-in), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
 | Sign-in | `/auth/login` page → `/auth/google` → Google → `/auth/google/callback` (`src/auth/routes.js`) | Google OpenID Connect (`src/integrations/google/oauth.js`) |
@@ -100,7 +101,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 |---|---|
 | `decisions` | Meeting **outcomes** (the UI's word): decisions, open questions, risks and notes. `GET /api/decisions?type=` takes one type or several (`open_question,risk`). Fields: `id` per workspace, `space_id`, `type` (see `core/decisions/types.js`), `text`, `tags`, `embedding`, `source`. AI-captured items also have `owner_name`, `due_date` (YYYY-MM-DD), `rationale` and `evidence_quote`. The owner is the person **accountable** for the outcome: a member (`owner_user_id` + `owner_name`) or a name heard in the meeting (`owner_name` only). Outcomes have no due dates: `due_date` only exists on older captures, and new dated commitments become linked `action_items` |
 | `workspace_spaces`, `space_members` | Spaces and explicit space membership |
-| `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links |
+| `workspace_members`, `workspace_admins`, `workspace_invites` | Membership, admins, invite links. `workspace_members.onboarding_seen_at`: when the person finished or skipped the first-run onboarding (`core/onboarding`) |
 | `ai_suggestions`, `meeting_transcripts`, `ai_feedback` | AI extraction queue, uploaded transcripts, approve/reject feedback used as few-shot examples |
 | `workspace_settings` | Per-workspace settings, such as encrypted Jira credentials |
 | `api_keys` | No longer used: API keys and `/api/v1/*` were removed (Sept 2026). Old rows are ignored |

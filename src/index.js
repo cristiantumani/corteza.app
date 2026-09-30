@@ -148,6 +148,9 @@ async function startApp() {
   // Context for the AI: company (admins) and personal, used when reading meetings
   expressApp.use(require('./http/ai-context'));
 
+  // First-run onboarding on Home
+  expressApp.use(require('./http/onboarding'));
+
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {
     res.redirect('/auth/login');
