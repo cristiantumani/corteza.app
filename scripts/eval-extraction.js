@@ -27,6 +27,7 @@
  * Only add real transcripts with the participants' consent, and never commit them to a public repo.
  */
 require('dotenv').config({ quiet: true });
+process.env.POSTHOG_DISABLED = '1'; // eval runs are not product usage
 const fs = require('fs');
 const path = require('path');
 const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../src/services/claude');

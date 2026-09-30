@@ -1,6 +1,7 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
+const analytics = require('./integrations/posthog/client');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
@@ -124,6 +125,9 @@ async function startApp() {
   const sessionMiddleware = createSessionMiddleware();
   expressApp.use(sessionMiddleware);
 
+  // Product analytics: events in a request are attributed to the signed-in user
+  analytics.setupRequestContext(expressApp);
+
   // Public routes (no authentication required)
   expressApp.get('/', redirectToDashboard);
   expressApp.get('/health', healthCheck);
@@ -222,6 +226,8 @@ async function startApp() {
   // AI extraction for web (requires authentication)
   expressApp.use(require('./routes/ai-extract-web'));
 
+  analytics.setupErrorHandler(expressApp);
+
   // Create Slack App with the custom receiver
   const appConfig = {
     receiver: receiver
@@ -274,6 +280,12 @@ async function startApp() {
 
   // Start the server FIRST so Railway can health check it
   await app.start(config.port);
+  // Railway sends SIGTERM on redeploys: send queued analytics events before exiting
+  if (analytics.posthog) {
+    process.once('SIGTERM', () => {
+      analytics.shutdownAnalytics().catch(() => {}).finally(() => process.exit(0));
+    });
+  }
   console.log(`⚡️ Bot running on port ${config.port}!`);
   console.log(`🏥 Health check: http://localhost:${config.port}/health`);
   console.log(`\n🔐 Authentication:`);

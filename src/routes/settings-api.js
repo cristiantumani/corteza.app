@@ -2,6 +2,7 @@ const { getWorkspaceSettings, updateJiraSettings } = require('../services/worksp
 const { testJiraConnection } = require('../services/jira');
 const { isAdmin } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * API endpoints for workspace settings (dashboard access)
@@ -133,6 +134,8 @@ async function saveJiraSettings(req, res) {
       userId,
       userName
     );
+
+    track('jira_integration_configured', { connection_tested: true });
 
     res.json({
       success: true,

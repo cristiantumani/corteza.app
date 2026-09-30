@@ -1,5 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
+const { trackAiGeneration } = require('../integrations/posthog/client');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
 const { getAIFeedbackCollection } = require('../config/database');
 const { LANGUAGE_CODES, detectLanguage, spokenText, languageName } = require('../core/language/detect');
@@ -455,9 +456,17 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
   const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language, contextBlock);
 
   // Call Claude API
+  const callStart = Date.now();
   const response = await callClaudeAPI(prompt);
 
   const decisions = parseDecisionResponse(responseText(response));
+  trackAiGeneration({
+    feature: 'extraction',
+    response,
+    latencyMs: Date.now() - callStart,
+    distinctId: options.userId || null,
+    properties: { item_count: decisions.length, truncated: response.stop_reason === 'max_tokens', workspace_id: workspace_id || null }
+  });
 
   const processingTime = Date.now() - startTime;
 

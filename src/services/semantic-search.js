@@ -2,6 +2,7 @@ const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
+const { trackAiGeneration } = require('../integrations/posthog/client');
 const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');
 const { SAMPLING_MODELS } = require('./claude');
 
@@ -389,7 +390,9 @@ Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources 
     const model = config.claude.model;
     const request = { model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
     if (SAMPLING_MODELS.test(model)) request.temperature = 0.3; // newer models don't take sampling parameters
+    const callStart = Date.now();
     const response = await anthropic.messages.create(request);
+    trackAiGeneration({ feature: 'search_answer', response, latencyMs: Date.now() - callStart, properties: { source_count: allIds.length } });
     const parsed = parseAnswer(
       (response.content || []).filter(block => block.type === 'text').map(block => block.text).join('\n'),
       allIds

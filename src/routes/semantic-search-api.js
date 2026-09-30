@@ -4,6 +4,7 @@ const { canAccessSpace } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
 const { listActionItems } = require('../core/actions/action-service');
 const { selectActionItems } = require('../core/search/action-items');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * Parse query parameters from URL
@@ -196,6 +197,15 @@ async function handleSemanticSearch(req, res) {
     // Without an AI answer, every match counts as used
     if (requestData.conversational === false) usedIds = searchResult.results.all.filter(r => r.matched !== false).map(r => r.id);
     const shown = visibleSources(searchResult.results.all, usedIds);
+
+    track('semantic_search_completed', {
+      search_method: searchResult.searchMethod,
+      result_count: shown.length,
+      used_source_count: usedIds.length,
+      action_item_count: actionItems.length,
+      conversational: requestData.conversational !== false,
+      filters_applied: Boolean(requestData.type || requestData.dateFrom || requestData.dateTo)
+    });
 
     // Return results
     console.log('   📤 Sending response to client...');

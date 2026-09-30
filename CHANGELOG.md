@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Product analytics (PostHog)
+- **Events from the server** (set up with the PostHog wizard, then trimmed): sign-in, Google Meet connected, sync and import, meeting captured (with outcome counts per type) or failed, searches, action items added or updated, onboarding finished or skipped, invites, spaces, and uncaught errors
+- **AI cost per user:** each Claude call is recorded with model, tokens and latency only
+- **No meeting content leaves Corteza:** transcripts, outcome text, questions, answers and context are never sent. PostHog's LLM tracing (which sends prompts) and the OpenTelemetry log exporter from the wizard were removed
+- Off unless `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` are set; `POSTHOG_DISABLED=1` turns it off (the extraction eval does)
+
 ### Fixed - Long meetings losing all their outcomes
 - **Cut-off responses:** when Claude's answer for a long meeting hit the output limit, the whole list failed to parse and the meeting saved nothing. The complete items are now kept, and `CLAUDE_MAX_TOKENS` defaults to 32000 (was 16000)
 - **Eval:** `match` keywords accept alternatives with `|` (`"one pager|una pagina"`), and a missed item captured with another type is shown as "(captured as action_item)"

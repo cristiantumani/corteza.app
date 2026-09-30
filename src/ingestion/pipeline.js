@@ -1,6 +1,7 @@
 const { getDatabase } = require('../config/database');
 const { createDecision } = require('../core/decisions/decision-service');
 const { countByType } = require('../core/decisions/types');
+const { track } = require('../integrations/posthog/client');
 const { createActionItem } = require('../core/actions/action-service');
 const { requestMissingDueDates } = require('../core/actions/due-date-requests');
 const { getWorkspaceMembersCollection } = require('../config/database');
@@ -294,6 +295,17 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
     });
 
     console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} outcome(s), ${actionItems.length} action item(s)`);
+    // Background work (poller, imports): no request, so the owner is passed explicitly
+    track('meeting_captured', {
+      source: transcript.source,
+      manual,
+      word_count: wordCount,
+      outcome_count: decisions.length,
+      action_item_count: actionItems.length,
+      ...Object.fromEntries(Object.entries(countByType(decisions)).map(([type, count]) => [`${type}_count`, count])),
+      language: result.language || null,
+      workspace_id: transcript.workspaceId
+    }, ownerOf(transcript));
 
     try {
       await requestDueDates(actionItems, transcript);
@@ -304,6 +316,7 @@ async function ingestTranscript(transcript, { extract, manual = false, requestDu
   } catch (error) {
     console.error(`❌ Ingestion failed for ${transcript.source} ${transcript.externalId}:`, error.message);
     await ingestions().updateOne(key, { $set: { status: 'failed', error: error.message.slice(0, 500), updated_at: new Date() } });
+    track('meeting_capture_failed', { source: transcript.source, manual, workspace_id: transcript.workspaceId }, ownerOf(transcript));
     return { status: 'failed', decisions: [], actionItems: [], error: error.message };
   }
 }

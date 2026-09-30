@@ -4,6 +4,7 @@ const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
 const { getUserAccessibleSpaces, isAdmin, canCreateInSpace } = require('../services/permissions');
 const { getDecisionsCollection, getWorkspaceMembersCollection } = require('../config/database');
 const actions = require('../core/actions/action-service');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * Action items ("pendientes"): page and API (logic in core/actions).
@@ -85,6 +86,7 @@ router.post('/api/action-items', apiRateLimiter, express.json(), requireSession,
       author: { user_id, name: user_name || null }
     });
     console.log(`✅ Action item ${item.item_id} added to decision #${decision.id} by ${user_id}`);
+    track('action_item_added', { has_due_date: !!item.due_date, owner_count: item.owner_ids.length });
     res.status(201).json({ success: true, item });
   } catch (error) {
     console.error('❌ Failed to add action item:', error);
@@ -127,6 +129,12 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
     const { status, due_date } = req.body || {};
     const updated = await actions.updateActionItem(workspace_id, item.item_id, { status, due_date });
     if (updated?.error) return res.status(400).json({ success: false, error: updated.error });
+    track('action_item_updated', {
+      status_changed_to: status && status !== item.status ? status : null,
+      due_date_changed: due_date !== undefined && due_date !== item.due_date,
+      is_owner: isOwner,
+      overdue: !!item.due_date && item.due_date < new Date().toISOString().slice(0, 10)
+    });
     res.json({ success: true, item: updated });
   } catch (error) {
     console.error('❌ Failed to update action item:', error);

@@ -2,12 +2,13 @@ const express = require('express');
 const { apiRateLimiter } = require('../middleware/auth');
 const { isAdmin } = require('../services/permissions');
 const onboarding = require('../core/onboarding/onboarding-service');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * First-run onboarding on Home (logic in core/onboarding; UI in partials/onboarding.html).
  *
  *   GET  /api/onboarding        { seen, is_admin }   (Home also gets `onboarding_seen` in its preload)
- *   POST /api/onboarding/seen   finished or skipped: don't show it again
+ *   POST /api/onboarding/seen   { how?: 'finished'|'skipped'|'link', step?, steps? }: don't show it again
  */
 const router = express.Router();
 
@@ -30,9 +31,15 @@ router.get('/api/onboarding', apiRateLimiter, requireSession, async (req, res) =
   }
 });
 
-router.post('/api/onboarding/seen', apiRateLimiter, requireSession, async (req, res) => {
+router.post('/api/onboarding/seen', apiRateLimiter, express.json(), requireSession, async (req, res) => {
   try {
     await onboarding.markOnboardingSeen(req.session.user.workspace_id, req.session.user.user_id);
+    const { how, step, steps } = req.body || {};
+    track('onboarding_closed', {
+      how: ['finished', 'skipped', 'link'].includes(how) ? how : 'unknown',
+      step: Number.isInteger(step) ? step : null,
+      steps: Number.isInteger(steps) ? steps : null
+    });
     res.json({ success: true });
   } catch (error) {
     console.error('❌ Failed to save onboarding state:', error);

@@ -14,6 +14,7 @@ const {
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 const { canAccessSpace } = require('../services/permissions');
 const multer = require('multer');
+const { track } = require('../integrations/posthog/client');
 
 const router = express.Router();
 
@@ -159,6 +160,12 @@ router.post('/api/ai/extract-from-text', upload.single('file'), async (req, res)
         error: result.error
       });
     }
+
+    track('ai_transcript_extracted', {
+      input_type: req.file ? 'file' : 'text',
+      suggestion_count: result.suggestions.length,
+      cached: Boolean(result.cached)
+    });
 
     // Return suggestions for user review
     res.json({
@@ -437,6 +444,13 @@ router.post('/api/ai/approve-suggestion', async (req, res) => {
 
     console.log(`✅ Suggestion ${suggestion_id} approved as decision #${nextId}`);
 
+    track('ai_suggestion_approved', {
+      edited: Boolean(edits),
+      decision_type: finalDecision.decision_type,
+      has_epic: Boolean(finalDecision.epic_key),
+      tag_count: finalDecision.tags?.length || 0
+    });
+
     res.json({
       success: true,
       decision_id: nextId,
@@ -509,6 +523,8 @@ router.post('/api/ai/reject-suggestion', async (req, res) => {
     );
 
     console.log(`✅ Suggestion ${suggestion_id} rejected`);
+
+    track('ai_suggestion_rejected', { provided_reason: Boolean(reason) });
 
     res.json({
       success: true,

@@ -14,6 +14,7 @@ const {
 } = require('../services/permissions');
 const { getSlackClient } = require('../config/slack-client');
 const { listSpacesForUser } = require('../core/spaces/list-spaces');
+const { track } = require('../integrations/posthog/client');
 
 const router = express.Router();
 
@@ -145,6 +146,8 @@ router.post('/api/spaces', async (req, res) => {
     await spacesCollection.insertOne(space);
 
     console.log(`✅ Created space: ${spaceId} (${name}) in workspace ${workspace_id} with visibility: ${visibility}`);
+
+    track('space_created', { visibility, has_description: Boolean(space.description) });
 
     // NOTE: Creator is NOT auto-added to private/shared spaces
     // They must explicitly add themselves as a member if they want access
@@ -314,6 +317,13 @@ router.put('/api/spaces/:space_id', async (req, res) => {
 
     console.log(`✅ Updated space: ${space_id}`);
 
+    track('space_updated', {
+      name_updated: name !== undefined,
+      description_updated: description !== undefined,
+      visibility_updated: visibility !== undefined,
+      settings_updated: settings !== undefined
+    });
+
     res.json({
       success: true,
       message: 'Space updated successfully'
@@ -391,6 +401,8 @@ router.delete('/api/spaces/:space_id', async (req, res) => {
     );
 
     console.log(`✅ Archived space: ${space_id} (${space.name})`);
+
+    track('space_archived', { visibility: space.visibility });
 
     res.json({
       success: true,

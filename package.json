@@ -37,6 +37,7 @@
     "node-fetch": "^2.7.0",
     "openai": "^4.77.3",
     "pdf-parse": "^2.4.5",
+    "posthog-node": "^5.54.1",
     "resend": "^6.9.2"
   },
   "devDependencies": {
