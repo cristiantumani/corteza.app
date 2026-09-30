@@ -127,7 +127,7 @@
       <div class="flex items-center justify-between pt-4 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
-            ${getInitials(userName)}
+            ${escapeHtml(getInitials(userName))}
           </div>
           <span class="text-xs font-medium">${escapeHtml(userName)}</span>
         </div>
@@ -244,14 +244,13 @@
   }
 
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // For attribute values (escapeHtml leaves quotes as-is)
+  // Attribute values (escapeHtml already escapes quotes; kept for existing callers)
   function escapeAttr(text) {
-    return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return escapeHtml(text);
   }
 
   // Update header with user info
@@ -263,7 +262,7 @@
       if (h1 && window.currentUser) {
         h1.innerHTML += `
           <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
-            ${window.currentUser.workspace_name} • ${window.currentUser.user_name}
+            ${escapeHtml(window.currentUser.workspace_name)} • ${escapeHtml(window.currentUser.user_name)}
           </span>
           <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
             Logout →

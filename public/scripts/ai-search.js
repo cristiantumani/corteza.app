@@ -346,7 +346,7 @@
       <div class="flex items-center justify-between pt-3 border-t border-outline-variant/50">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
-            ${getInitials(userName)}
+            ${escapeHtml(getInitials(userName))}
           </div>
           <span class="text-xs font-medium">${escapeHtml(displayName)}</span>
         </div>
@@ -513,10 +513,10 @@
       .toUpperCase();
   }
 
+  // Escapes quotes too, so it's safe in attribute values
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   setupExamples();
