@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
+const { SAMPLING_MODELS, responseText } = require('../services/claude');
 const { DEMO_WORKSPACE_ID, DEMO_WORKSPACE_NAME, DEMO_DECISIONS } = require('../data/demo-decisions');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,13 +134,14 @@ Answer as if you're a senior team member who was in all those meetings and knows
 
   try {
     const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
-    const message = await anthropic.messages.create({
-      model: config.claude.model,
-      max_tokens: 400,
-      temperature: 0.8,
-      messages: [{ role: 'user', content: prompt }]
-    });
-    return message.content[0].text;
+    const model = config.claude.model;
+    // Thinking (on by default on current models) counts toward max_tokens
+    /** @type {any} */
+    const request = { model, max_tokens: 16000, messages: [{ role: 'user', content: prompt }] };
+    if (SAMPLING_MODELS.test(model)) request.temperature = 0.8; // newer models reject sampling parameters
+    else request.output_config = { effort: 'low' }; // older models don't take effort
+    const message = await anthropic.messages.create(request);
+    return responseText(message);
   } catch (err) {
     console.error('❌ Demo Claude response failed:', err.message);
     // Fallback on error

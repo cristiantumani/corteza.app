@@ -391,8 +391,10 @@ Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources 
 
   try {
     const model = config.claude.model;
-    const request = { model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] };
+    // Thinking (on by default on current models) counts toward max_tokens
+    const request = { model, max_tokens: 16000, messages: [{ role: 'user', content: prompt }] };
     if (SAMPLING_MODELS.test(model)) request.temperature = 0.3; // newer models don't take sampling parameters
+    else request.output_config = { effort: 'low' }; // a short chat answer; older models don't take effort
     const callStart = Date.now();
     const response = await anthropic.messages.create(request);
     trackAiGeneration({ feature: 'search_answer', response, latencyMs: Date.now() - callStart, properties: { source_count: allIds.length } });

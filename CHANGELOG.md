@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - AI answers in the demo and in Search
+- **Demo answers work again:** the demo sent `temperature`, which current models reject, so every demo question fell back to the plain text answer. It also read only the first block of the reply, which is a thinking block on current models
+- **Search answers no longer get cut off:** thinking counts toward `max_tokens`, and 1000 left too little room for the answer. Now 16000, with `effort: low` on models that support it (a short chat answer)
+
 ### Privacy - No email in the early access link
 - People who sign in without beta access go to `corteza.app/early-access?from=signin`, without their email in the URL (URLs end up in web analytics, server logs and browser history). The form asks for it. The server log no longer prints their email either, only the domain
 
