@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - "Too many requests" while working in the app
+- **API rate limit per person, not per IP:** signed-in people get 1000 API calls per 15 minutes each (Home alone makes about 10 per load, and every confirm or edit refreshes the list). Before, everyone behind the same IP shared 100, so reviewing a handful of cards blocked Home. Requests without a session keep the 100-per-IP limit, and the AI limit (20 per hour) also counts per person now
+
 ### Fixed - PDF uploads
 - **Uploading a PDF transcript works again.** pdf-parse 2 changed its API (a `PDFParse` class instead of a function), so every PDF upload failed with "PDF parsing module failed to load". Found by the new type check
 

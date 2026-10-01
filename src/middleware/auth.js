@@ -3,7 +3,7 @@
  * Protects API endpoints by requiring Slack OAuth authentication
  */
 
-const { rateLimit } = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 /**
  * Middleware to require authentication for API endpoints
@@ -138,12 +138,27 @@ function addSecurityHeaders(req, res, next) {
 }
 
 /**
- * Rate limiting for API endpoints
- * Prevents abuse and DOS attacks
+ * Who a rate limit counts against: the signed-in person (so colleagues behind one office IP
+ * don't share a budget), or the IP when there's no session
+ * @param {import('express').Request} req
+ * @returns {string}
+ */
+function rateLimitKey(req) {
+  const user = req.session?.user;
+  if (user?.user_id) return `user:${user.workspace_id}:${user.user_id}`;
+  return `ip:${ipKeyGenerator(req.ip || '')}`;
+}
+
+const API_LIMIT_SIGNED_IN = 1000; // per person per 15 min: a busy session (Home, editing cards) makes a few hundred
+const API_LIMIT_ANONYMOUS = 100; // per IP per 15 min
+
+/**
+ * Rate limiting for API endpoints (prevents abuse and DoS)
  */
 const apiRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  limit: req => (req.session?.user?.user_id ? API_LIMIT_SIGNED_IN : API_LIMIT_ANONYMOUS),
+  keyGenerator: rateLimitKey,
   message: {
     error: 'Too many requests',
     message: 'You have exceeded the rate limit. Please try again later.'
@@ -176,7 +191,8 @@ const authRateLimiter = rateLimit({
  */
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Limit each IP to 20 AI requests per hour
+  max: 20, // 20 AI requests per hour per person (per IP without a session)
+  keyGenerator: rateLimitKey,
   message: {
     error: 'Too many AI requests',
     message: 'You have exceeded the AI extraction rate limit. Please try again later.'
@@ -192,5 +208,6 @@ module.exports = {
   addSecurityHeaders,
   apiRateLimiter,
   authRateLimiter,
-  aiRateLimiter
+  aiRateLimiter,
+  rateLimitKey
 };
