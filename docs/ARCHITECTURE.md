@@ -89,6 +89,13 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 **Request input** (`src/middleware/input-safety.js`, wired in `src/index.js`): after the session, one `express.json({ limit: '1mb' })` parses every JSON body and `rejectOperatorKeys` answers 400 when a body has a key starting with `$` or `__proto__` at any depth, so `{"id": {"$ne": ""}}` can't turn a lookup into a query. Slack's routes are registered by Bolt before it and keep their raw body. Multipart uploads run the same check after multer. Malformed or oversized JSON gets a JSON 400/413 (`jsonBodyErrors`).
 
+**AI usage and limits** (`core/usage/ai-usage.js`):
+- **Recorded:** every Claude call (extraction, search answers) adds to `ai_usage`, one document per workspace, person and UTC day: calls, input and output tokens, and per-feature totals.
+- **Per hour:** `aiRateLimiter` allows 20 AI requests per hour per signed-in person (per IP without a session). It runs on search, extraction from text and transcript uploads. The general API limit is 1000 requests per 15 minutes per person.
+- **Per day:** `requireAiBudget` returns a 429 with a readable message when the person passed `AI_DAILY_CALLS_PER_USER` or the workspace passed `AI_DAILY_TOKENS_PER_WORKSPACE`. It runs on search, extraction from text and uploads. Slack transcripts check the workspace cap.
+- **Imports and capture:** imports of past meetings are skipped at the workspace cap (`skip_reason: 'ai_budget'`, re-import them the next day). Automatic capture of new meetings is recorded but never blocked.
+- **Input size:** search questions are capped at 1000 characters, and uploads at 5 MB.
+
 **Daily digest** (`jobs/daily-digest.js`, email in `utils/n8n-client.sendDailyDigestEmail`): the one routine email, a morning summary to plan the day.
 - **Replaces** the per-meeting capture email and the per-meeting due date requests.
 - **When:** Mon–Fri at `DAILY_DIGEST_HOUR` (default 8:00) in each person's time zone, within a 4-hour window (a restart doesn't skip a day; nobody gets it in the afternoon).
@@ -168,7 +175,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 
 ### Environment
 
-See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `DAILY_DIGEST_ENABLED` (on unless `false`), `DAILY_DIGEST_HOUR` (local hour, default 8), `DAILY_DIGEST_DEFAULT_TIMEZONE` (default UTC), `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`.
+See `.env.example`. Required today: `MONGODB_URI`, `SESSION_SECRET`, `ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (nobody can sign in without them), `SLACK_SIGNING_SECRET`, and either a Slack bot token or Slack OAuth credentials. The Google OAuth redirect URI is `${BASE_URL}/auth/google/callback`. Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `BASE_URL`, `FEEDBACK_EMAIL`, `WEEKLY_DIGEST_ENABLED`, `DIGEST_HOUR_UTC`, `DAILY_DIGEST_ENABLED` (on unless `false`), `DAILY_DIGEST_HOUR` (local hour, default 8), `DAILY_DIGEST_DEFAULT_TIMEZONE` (default UTC), `MEET_CAPTURE_ENABLED`, `MEET_POLL_INTERVAL_MINUTES`, `BETA_REQUIRED`, `BETA_APPROVAL_SECRET`, `EARLY_ACCESS_URL`, `BETA_REPLY_TO`, `JIRA_*`, `DB_NAME`, `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` (product analytics, off when unset), `POSTHOG_DISABLED`, `AI_DAILY_CALLS_PER_USER` (default 150), `AI_DAILY_TOKENS_PER_WORKSPACE` (default 3,000,000).
 
 ### Migrations
 

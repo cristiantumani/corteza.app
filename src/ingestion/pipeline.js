@@ -186,6 +186,16 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
       return { status: 'skipped', decisions: [], actionItems: [] };
     }
 
+    // Imports of past meetings stop at the workspace's daily AI cap (they can be re-imported
+    // tomorrow); automatic capture of new meetings is never blocked
+    if (manual) {
+      const budget = await require('../core/usage/ai-usage').checkAiBudget(transcript.workspaceId);
+      if (!budget.ok) {
+        await ingestions().updateOne(key, { $set: { status: 'skipped', skip_reason: 'ai_budget', word_count: wordCount, updated_at: new Date() } });
+        return { status: 'skipped', decisions: [], actionItems: [] };
+      }
+    }
+
     const extractDecisions = extract || require('../services/claude').extractDecisionsFromTranscript;
     const result = await extractDecisions(buildExtractionText(transcript), transcript.workspaceId, {
       language: transcript.language || null,

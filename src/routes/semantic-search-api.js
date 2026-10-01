@@ -6,6 +6,8 @@ const { listActionItems } = require('../core/actions/action-service');
 const { selectActionItems } = require('../core/search/action-items');
 const { track } = require('../integrations/posthog/client');
 
+const MAX_QUERY_LENGTH = 1000; // a question, not a document: keeps the AI prompt (and its cost) bounded
+
 /**
  * Parse query parameters from URL
  */
@@ -64,6 +66,9 @@ async function handleSemanticSearch(req, res) {
     console.log(`   - Timestamp: ${new Date().toISOString()}`);
 
     // Validate required fields
+    if (typeof requestData.query === 'string' && requestData.query.length > MAX_QUERY_LENGTH) {
+      return res.status(400).json({ success: false, error: `Questions can be up to ${MAX_QUERY_LENGTH} characters` });
+    }
     if (!requestData.query) {
       return res.status(400).json({
         success: false,
@@ -182,7 +187,8 @@ async function handleSemanticSearch(req, res) {
           requestData.query,
           searchResult.results,
           conversationHistory,
-          actionItems
+          actionItems,
+          { workspaceId: requestData.workspace_id, userId: req.session?.user?.user_id }
         );
         conversationalResponse = answer.text;
         usedIds = answer.usedIds;

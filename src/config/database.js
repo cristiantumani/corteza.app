@@ -158,6 +158,8 @@ async function connectToMongoDB() {
     await db.collection('digest_runs').createIndex({ workspace_id: 1, week_start: 1 }, { unique: true });
     // Daily digest: one check per person per day (jobs/daily-digest.js); the latest check starts the next window
     await db.collection('daily_digests').createIndex({ workspace_id: 1, user_id: 1, day: 1 }, { unique: true });
+    // AI usage per workspace, person and day (core/usage/ai-usage.js)
+    await db.collection('ai_usage').createIndex({ workspace_id: 1, day: 1, user_id: 1 }, { unique: true });
     await db.collection('daily_digests').createIndex({ workspace_id: 1, user_id: 1, checked_at: -1 });
 
     // One default space per workspace (services/spaces.js). Kept separate so existing

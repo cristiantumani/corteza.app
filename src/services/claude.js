@@ -1,6 +1,7 @@
 const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
+const { recordAiUsage } = require('../core/usage/ai-usage');
 const { validateAISuggestion, sanitizeTranscriptText } = require('../middleware/ai-validation');
 const { getAIFeedbackCollection } = require('../config/database');
 const { LANGUAGE_CODES, detectLanguage, spokenText, languageName } = require('../core/language/detect');
@@ -478,6 +479,7 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
     distinctId: options.userId || null,
     properties: { item_count: decisions.length, truncated: response.stop_reason === 'max_tokens', workspace_id: workspace_id || null }
   });
+  await recordAiUsage({ workspaceId: workspace_id || null, userId: options.userId || null, feature: 'extraction', response });
 
   const processingTime = Date.now() - startTime;
 
