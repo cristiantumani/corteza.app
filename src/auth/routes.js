@@ -73,8 +73,8 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
     const result = await signInWithGoogle(identity, { inviteId: oauth.inviteId });
     if (result.error) return loginErrorRedirect(res, result.error);
     if (result.notInBeta) {
-      console.log(`🚪 Sign-in without beta access: ${result.email} → early access form`);
-      return res.redirect(earlyAccessUrl(result.email));
+      console.log(`🚪 Sign-in without beta access (${String(result.email || '').split('@')[1] || 'unknown domain'}) → early access form`);
+      return res.redirect(earlyAccessUrl());
     }
 
     // New session ID on login (prevents session fixation)
