@@ -6,6 +6,7 @@ const {
   getDecisionsCollection
 } = require('../config/database');
 const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../services/claude');
+const { checkAiBudget } = require('../core/usage/ai-usage');
 const { fetchJiraIssue, addJiraComment } = require('../services/jira');
 const { extractTextFromFile } = require('../utils/text-extractors');
 const {
@@ -349,6 +350,10 @@ async function processTranscript(transcriptContent, metadata) {
 
     const insertResult = await transcriptsCollection.insertOne(transcript);
     console.log(`✅ Saved transcript: ${transcriptId}`);
+
+    // Daily AI cap for the workspace (no Corteza user behind a Slack upload)
+    const budget = await checkAiBudget(metadata.workspace_id);
+    if (!budget.ok) throw new Error(budget.message);
 
     // Call Claude API to extract decisions (with few-shot learning from workspace feedback)
     const aiResult = await extractDecisionsFromTranscript(transcriptContent, metadata.workspace_id);

@@ -7,6 +7,7 @@ const MongoInstallationStore = require('./config/installationStore');
 const { createSessionMiddleware } = require('./config/session');
 const { rejectOperatorKeys, jsonBodyErrors } = require('./middleware/input-safety');
 const { requireAuth, requireAuthBrowser, requireWorkspaceAccess, addSecurityHeaders, apiRateLimiter, authRateLimiter, aiRateLimiter } = require('./middleware/auth');
+const { requireAiBudget } = require('./core/usage/ai-usage');
 const { getDecisions, updateDecision, deleteDecision, getStats, healthCheck, submitFeedback, extractDecisionsFromText, checkAdminStatus, createMemory } = require('./routes/api');
 const { handleSemanticSearch, handleSearchSuggestions } = require('./routes/semantic-search-api');
 const { serveDashboard, serveAISearch, serveSettings, redirectToDashboard } = require('./routes/dashboard');
@@ -202,14 +203,14 @@ async function startApp() {
   expressApp.post('/api/feedback', apiRateLimiter, require('express').json(), requireAuth, submitFeedback);
 
   // AI extraction route (session-authenticated, with stricter rate limiting)
-  expressApp.post('/api/extract-decisions', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, extractDecisionsFromText);
+  expressApp.post('/api/extract-decisions', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, requireAiBudget, extractDecisionsFromText);
 
   // Protected routes - API (requires authentication + workspace access + rate limiting)
   expressApp.get('/api/decisions', apiRateLimiter, requireAuth, requireWorkspaceAccess, getDecisions);
   expressApp.put('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, updateDecision);
   expressApp.delete('/api/decisions/:id', apiRateLimiter, requireAuth, requireWorkspaceAccess, deleteDecision);
   expressApp.get('/api/stats', apiRateLimiter, requireAuth, requireWorkspaceAccess, getStats);
-  expressApp.post('/api/semantic-search', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, handleSemanticSearch);
+  expressApp.post('/api/semantic-search', aiRateLimiter, require('express').json(), requireAuth, requireWorkspaceAccess, requireAiBudget, handleSemanticSearch);
   expressApp.get('/api/search-suggestions', apiRateLimiter, requireAuth, requireWorkspaceAccess, handleSearchSuggestions);
   expressApp.post('/api/memory/create', apiRateLimiter, require('express').json(), requireAuth, createMemory);
 
