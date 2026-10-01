@@ -7,7 +7,7 @@ Guide for AI agents (and humans) working on Corteza. Read this first, then `docs
 A team decision log focused on **Google Workspace**:
 
 1. **Automatic capture:** reads Google Meet transcripts and Gemini meeting notes and saves the decisions in them with no human in the loop (Settings → Google Meet).
-2. **Manual capture:** the Chrome extension (`browser-extension/`) and the dashboard's Log Decision form.
+2. **Manual capture:** the Chrome extension (`browser-extension/`) and the dashboard's Log manually form.
 3. **Slack as an input source only:** `/decision` and transcript uploads. Slack must not be used for sign-up, login or identity.
 
 **Sign-in is Google only.** A company's Google Workspace domain is its Corteza workspace.
