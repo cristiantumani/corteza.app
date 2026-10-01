@@ -59,6 +59,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
+| AI usage and daily caps (per person and workspace, `ai_usage`) | `src/core/usage/ai-usage.js` (`recordAiUsage`, `checkAiBudget`, `requireAiBudget`) |
 | Language outcomes are written in (detected from the spoken transcript, or fixed in Settings → Google Meet) | `src/core/language/detect.js`, `outputLanguage` in `src/services/claude.js`; translate saved ones: `scripts/migrations/006-translate-outcomes.js` |
 | Decision types (decision, action_item, open_question, risk, …), outcome counts and labels | `src/core/decisions/types.js` (`countByType`, `describeOutcomes`), `public/scripts/outcome-labels.js` |
 | Action items ("pendientes"): owners, due dates, status, link to decision | `src/core/actions/` (`action-service.js`, `owners.js`) |
@@ -99,6 +100,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 - **Joining a workspace:** only through Google sign-in (same `hd` domain, or an invite link). Never trust the email's domain, only Google's `hd` claim. See `signInWithGoogle` in `src/auth/google-signin.js`.
 - **User IDs:** memberships keep their own `user_id` (legacy Slack/email IDs). The session uses the membership's `user_id`, and decisions reference it.
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.
+- **AI calls are metered.** A new Claude call records itself with `recordAiUsage` (workspace, person, feature), and a route people trigger gets `aiRateLimiter` and `requireAiBudget`. Never add an AI route without them.
 - **Analytics never carries meeting content.** PostHog events (`track` in `src/integrations/posthog/client.js`) hold counts, types and ids. Never send transcripts, outcome text, search questions or answers, or AI context, and don't wrap the AI clients with PostHog's LLM tracing (it sends the prompts).
 - **Secrets:** per-workspace credentials are encrypted with `src/utils/encryption.js`. Never commit keys; `*.pem` and `*.crx` are gitignored.
 - **Performance:**

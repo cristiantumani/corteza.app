@@ -113,7 +113,7 @@
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `Search failed with status ${response.status}`);
+        throw new Error(errorData.message || errorData.error || `Search failed with status ${response.status}`); // message: e.g. the daily AI limit
       }
 
       const data = await response.json();

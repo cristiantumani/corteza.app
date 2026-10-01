@@ -3,6 +3,7 @@ const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
 const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
+const { recordAiUsage } = require('../core/usage/ai-usage');
 const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');
 const { SAMPLING_MODELS } = require('./claude');
 
@@ -342,10 +343,12 @@ const CACHE_VERSION = 5; // v5: open action items are part of the answer
  *
  * @param {string} query - User's question
  * @param {Object} results - Search results ({ all: [...] })
- * @param {Array} conversationHistory - Previous turns [{ role, content }] or [{ query, response }]
+ * @param {Array} [conversationHistory] - Previous turns [{ role, content }] or [{ query, response }]
+ * @param {Object[]} [actionItems] - open action items to answer "what's pending" questions
+ * @param {{ workspaceId?: string, userId?: string }} [usage] - whose AI usage this counts against
  * @returns {Promise<{ text: string, usedIds: number[] }>}
  */
-async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = []) {
+async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = [], usage = {}) {
   const allIds = results.all.map(r => r.id);
   // Without Claude, only real matches can be listed (not the latest outcomes added as candidates)
   const matchedOnly = { ...results, all: results.all.filter(r => r.matched !== false) };
@@ -395,6 +398,7 @@ Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources 
     const callStart = Date.now();
     const response = await anthropic.messages.create(request);
     trackAiGeneration({ feature: 'search_answer', response, latencyMs: Date.now() - callStart, properties: { source_count: allIds.length } });
+    await recordAiUsage({ workspaceId: usage.workspaceId || null, userId: usage.userId || null, feature: 'search_answer', response });
     const parsed = parseAnswer(
       (response.content || []).filter(block => block.type === 'text').map(block => block.text).join('\n'),
       allIds

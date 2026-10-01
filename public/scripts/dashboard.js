@@ -2889,7 +2889,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to analyze notes');
+          throw new Error(data.message || data.error || 'Failed to analyze notes');
         }
 
         if (data.success) {
@@ -3277,7 +3277,7 @@
         document.getElementById('progress-bar').style.width = '100%';
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to process file');
+          throw new Error(data.message || data.error || 'Failed to process file');
         }
 
         console.log('✅ AI extraction complete:', data);

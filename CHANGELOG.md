@@ -12,6 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Demo answers work again:** the demo sent `temperature`, which current models reject, so every demo question fell back to the plain text answer. It also read only the first block of the reply, which is a thinking block on current models
 - **Search answers no longer get cut off:** thinking counts toward `max_tokens`, and 1000 left too little room for the answer. Now 16000, with `effort: low` on models that support it (a short chat answer)
 
+### Added - Daily AI limits per person and workspace
+- **Every AI call is recorded** per workspace, person and day (`ai_usage`): calls and tokens, by feature
+- **Daily caps:** a person can trigger up to 150 AI calls a day, and a workspace can use up to 3M tokens a day (`AI_DAILY_CALLS_PER_USER`, `AI_DAILY_TOKENS_PER_WORKSPACE`). Over a cap, search answers, uploads and extraction say "You reached today's AI limit. It resets at midnight UTC." Imports of past meetings stop and can be re-imported the next day. Automatic capture of new meetings is never blocked
+- **Upload transcript is rate limited** (20 per hour per person). It had no limit before
+- Search questions are capped at 1000 characters
+
 ### Fixed - "Too many requests" while working in the app
 - **API rate limit per person, not per IP:** signed-in people get 1000 API calls per 15 minutes each (Home alone makes about 10 per load, and every confirm or edit refreshes the list). Before, everyone behind the same IP shared 100, so reviewing a handful of cards blocked Home. Requests without a session keep the 100-per-IP limit, and the AI limit (20 per hour) also counts per person now
 
