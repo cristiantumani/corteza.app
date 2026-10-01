@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Import past meetings reaches back 7 days during the beta
+- **Settings → Google Meet → Import past meetings** offers the last 7 days only (the month picker and the 30 and 90 day presets are gone). Every imported meeting is an AI extraction, and importing a month at a time was the biggest AI cost. The server refuses older periods too, and a meeting older than the limit is marked "Too old to import" without being read
+- `MEET_IMPORT_MAX_DAYS` changes the limit (default 7, at most 92). Automatic capture of new meetings is unchanged
+
 ### Privacy - No meeting content or secrets in server logs
 - **Search:** the server no longer logs the question, the request body or the text of the matching outcomes, only ids, scores and the question's length. Search feedback no longer logs the question either
 - **Meetings and extraction:** meeting titles, uploaded file names, outcome text the AI skipped, the AI's raw reply when it can't be parsed, and outcomes edited in Slack are no longer logged (ids, types and lengths instead)
