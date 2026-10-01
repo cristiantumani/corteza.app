@@ -36,9 +36,9 @@ describe('beta approval links', () => {
     assert.equal(beta.verifyApprovalToken(token), null);
   });
 
-  test('early access URL carries the email and where they came from', () => {
-    const url = new URL(beta.earlyAccessUrl('ana+x@acme.com'));
-    assert.equal(url.searchParams.get('email'), 'ana+x@acme.com');
+  test('early access URL says where they came from, never their email', () => {
+    const url = new URL(beta.earlyAccessUrl());
+    assert.equal(url.searchParams.get('email'), null);
     assert.equal(url.searchParams.get('from'), 'signin');
   });
 });

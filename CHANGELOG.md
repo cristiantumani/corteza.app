@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Privacy - No email in the early access link
+- People who sign in without beta access go to `corteza.app/early-access?from=signin`, without their email in the URL (URLs end up in web analytics, server logs and browser history). The form asks for it. The server log no longer prints their email either, only the domain
+
 ### Fixed - "Too many requests" while working in the app
 - **API rate limit per person, not per IP:** signed-in people get 1000 API calls per 15 minutes each (Home alone makes about 10 per load, and every confirm or edit refreshes the list). Before, everyone behind the same IP shared 100, so reviewing a handful of cards blocked Home. Requests without a session keep the 100-per-IP limit, and the AI limit (20 per hour) also counts per person now
 
