@@ -77,7 +77,7 @@ modal → insert into `decisions`, in the workspace's **default space** (`ensure
 
    Only Google's `hd` claim counts as the domain, never the email's domain.
 
-   **Private beta** (`BETA_REQUIRED=true`): the last two cases (a new workspace) only happen for people on the approved list, `beta_access` (an email, or a whole Google domain; `src/core/beta/beta-access.js`). Anyone else is sent to the website's early access form (`EARLY_ACCESS_URL?email=…&from=signin`) and nothing is saved.
+   **Private beta** (`BETA_REQUIRED=true`): the last two cases (a new workspace) only happen for people on the approved list, `beta_access` (an email, or a whole Google domain; `src/core/beta/beta-access.js`). Anyone else is sent to the website's early access form (`EARLY_ACCESS_URL?from=signin`; the email isn't put in the URL, which ends up in analytics and logs) and nothing is saved.
 4. The session is regenerated (new ID) and the user goes to the page they were trying to open, or the dashboard. There are no onboarding questions: the name comes from Google, and company, team size and meeting tool were asked on the website's early access form.
 
 **Approving beta testers:**

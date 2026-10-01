@@ -124,14 +124,14 @@ describe('auth routes', () => {
     assert.match(response.headers.get('location'), /cancelled/);
   });
 
-  test('people without beta access go to the early access form with their email, and get no session', async () => {
+  test('people without beta access go to the early access form (no email in the URL), and get no session', async () => {
     signInResult = { notInBeta: true, email: 'new@other.com' };
     const { cookie, state } = await start();
     const response = await callback(cookie, { code: 'good', state });
 
     const location = new URL(response.headers.get('location'));
     assert.equal(location.origin + location.pathname, 'https://corteza.app/early-access');
-    assert.equal(location.searchParams.get('email'), 'new@other.com');
+    assert.equal(location.searchParams.get('email'), null, 'URLs end up in analytics and logs');
     assert.equal(location.searchParams.get('from'), 'signin');
     const whoami = await (await fetch(`${base}/whoami`, { headers: { cookie } })).json();
     assert.equal(whoami, null);

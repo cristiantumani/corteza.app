@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Privacy - No email in the early access link
+- People who sign in without beta access go to `corteza.app/early-access?from=signin`, without their email in the URL (URLs end up in web analytics, server logs and browser history). The form asks for it. The server log no longer prints their email either, only the domain
+
 ### Added - Daily AI limits per person and workspace
 - **Every AI call is recorded** per workspace, person and day (`ai_usage`): calls and tokens, by feature
 - **Daily caps:** a person can trigger up to 150 AI calls a day, and a workspace can use up to 3M tokens a day (`AI_DAILY_CALLS_PER_USER`, `AI_DAILY_TOKENS_PER_WORKSPACE`). Over a cap, search answers, uploads and extraction say "You reached today's AI limit. It resets at midnight UTC." Imports of past meetings stop and can be re-imported the next day. Automatic capture of new meetings is never blocked

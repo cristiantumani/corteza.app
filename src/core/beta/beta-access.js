@@ -25,10 +25,13 @@ function isBetaRequired() {
   return process.env.BETA_REQUIRED === 'true';
 }
 
-/** Where people who aren't in the beta are sent to request access */
-function earlyAccessUrl(email) {
+/**
+ * Where people who aren't in the beta are sent to request access. No email in the URL:
+ * URLs end up in analytics, server logs and browser history, so the form asks for it.
+ * @returns {string}
+ */
+function earlyAccessUrl() {
   const url = new URL(process.env.EARLY_ACCESS_URL || 'https://corteza.app/early-access');
-  if (email) url.searchParams.set('email', email);
   url.searchParams.set('from', 'signin');
   return url.toString();
 }
