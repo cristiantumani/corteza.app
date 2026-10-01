@@ -16,7 +16,8 @@
     one_on_one: '1:1 meeting (skipped)',
     excluded_title: 'Excluded by title',
     no_transcript: 'No transcript or notes',
-    too_short: 'Too short'
+    too_short: 'Too short',
+    ai_budget: "Daily AI limit reached, import it again tomorrow"
   };
 
   document.addEventListener('DOMContentLoaded', () => {
