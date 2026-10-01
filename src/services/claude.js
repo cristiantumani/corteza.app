@@ -302,11 +302,11 @@ function parseDecisionResponse(claudeResponse) {
     const validDecisions = keepItems(decisions.map(normalizeItem), d => {
       const isValid = validateAISuggestion(d);
       if (!isValid) {
-        console.log(`⚠️  Skipping invalid suggestion:`, d);
+        console.log(`⚠️  Skipping invalid suggestion (${d && d.type})`);
         return false;
       }
       if (d.business_relevance === 'low') {
-        console.log(`🧹 Skipping low-relevance item: ${d.decision_text}`);
+        console.log(`🧹 Skipping low-relevance item (${d.type})`);
         return false;
       }
       return true;
@@ -316,7 +316,7 @@ function parseDecisionResponse(claudeResponse) {
     return validDecisions;
   } catch (error) {
     console.error('❌ Failed to parse Claude response:', error.message);
-    console.error('Response was:', claudeResponse.substring(0, 500));
+    console.error(`   Response was ${claudeResponse.length} chars`);
     return [];
   }
 }

@@ -69,7 +69,7 @@ async function handleFileUpload({ event, client, say, context }) {
     const validation = validateUploadedFile(file);
     if (!validation.valid) {
       // Silently skip if not a supported file type (user probably just sharing a file)
-      console.log(`⏭️  Skipping file "${file.name}": ${validation.error}`);
+      console.log(`⏭️  Skipping uploaded file: ${validation.error}`);
       return;
     }
 
@@ -110,7 +110,7 @@ async function handleFileUpload({ event, client, say, context }) {
       ]
     });
 
-    console.log(`✅ Posted extraction prompt for file "${file.name}" to user ${event.user_id}`);
+    console.log(`✅ Posted extraction prompt for an uploaded file to user ${event.user_id}`);
 
   } catch (error) {
     console.error('❌ Error handling file upload:', error);
@@ -132,7 +132,7 @@ async function handleExtractDecisionsButton({ ack, body, client, say }) {
     const user_id = body.user.id;
     const channel_id = body.channel.id;
 
-    console.log(`🔍 User ${user_id} requested extraction for file: ${file_name}`);
+    console.log(`🔍 User ${user_id} requested extraction for an uploaded file`);
 
     // Post processing message
     await say(`🤖 Analyzing "${file_name}" with AI... This may take a moment.`);
@@ -841,7 +841,7 @@ async function handleRejectModalSubmit({ ack, view, body, client }) {
       text: `✅ Suggestion rejected${rejectionReason ? ' with reason' : ''} and feedback saved for AI learning.`
     });
 
-    console.log(`✅ Suggestion rejected${rejectionReason ? ' with reason: ' + rejectionReason : ''}`);
+    console.log(`✅ Suggestion rejected${rejectionReason ? ' with a reason' : ''}`);
 
   } catch (error) {
     console.error('❌ Error in reject modal submit:', error);
@@ -1007,7 +1007,6 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
         .filter(t => t),
       alternatives: values.alternatives_block.alternatives_input.value || null
     };
-    console.log('>>> Edited data:', editedData);
 
     // Check if user wants to add Jira comment
     const addComment = (values.jira_comment_block.jira_comment_checkbox.selected_options || []).length > 0;
@@ -1042,7 +1041,6 @@ async function handleEditModalSubmit({ ack, view, body, client }) {
       transcript_id: suggestion.meeting_transcript_id
     });
     const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
-    console.log('>>> Meeting title:', meetingTitle);
 
     // Fetch Jira data if epic_key present
     let jiraData = null;
@@ -1452,7 +1450,6 @@ async function handleConnectJiraModalSubmit({ ack, view, body, client }) {
       transcript_id: suggestion.meeting_transcript_id
     });
     const meetingTitle = transcript ? transcript.file_name : 'Unknown meeting';
-    console.log('>>> Meeting title:', meetingTitle);
 
     // Fetch Jira data
     console.log('>>> Fetching Jira data for:', epicKey);

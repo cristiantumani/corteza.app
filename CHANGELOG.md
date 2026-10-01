@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Privacy - No meeting content or secrets in server logs
+- **Search:** the server no longer logs the question, the request body or the text of the matching outcomes, only ids, scores and the question's length. Search feedback no longer logs the question either
+- **Meetings and extraction:** meeting titles, uploaded file names, outcome text the AI skipped, the AI's raw reply when it can't be parsed, and outcomes edited in Slack are no longer logged (ids, types and lengths instead)
+- **Secrets:** the first and last characters of the OpenAI key and a failed Slack installation (with its tokens) are no longer logged
+- **Less noise:** removed the per-request workspace and session lines, and the list of every member's email when a space member is added by an unknown email
+
 ### Fixed - AI answers in the demo and in Search
 - **Demo answers work again:** the demo sent `temperature`, which current models reject, so every demo question fell back to the plain text answer. It also read only the first block of the reply, which is a thinking block on current models
 - **Search answers no longer get cut off:** thinking counts toward `max_tokens`, and 1000 left too little room for the answer. Now 16000, with `effort: low` on models that support it (a short chat answer)

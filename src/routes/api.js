@@ -658,7 +658,7 @@ async function extractDecisionsFromText(req, res) {
       return;
     }
 
-    console.log('🤖 Extracting decisions from:', fileName || 'text', `(${text.length} chars)`);
+    console.log(`🤖 Extracting decisions from ${fileName ? 'a file' : 'text'} (${text.length} chars)`);
 
     // CREDIT OPTIMIZATION: Pass workspace_id for few-shot learning
     const result = await extractDecisionsFromTranscript(text, workspace_id, { userId: req.session?.user?.user_id || null });

@@ -48,22 +48,12 @@ function parseQueryParams(url) {
  * }
  */
 async function handleSemanticSearch(req, res) {
-  console.log('🔍 [ENTRY] handleSemanticSearch called');
-  console.log('   - Request method:', req.method);
-  console.log('   - Request URL:', req.url);
-  console.log('   - Has session:', !!req.session);
-  console.log('   - User ID:', req.session?.user_id);
-  console.log('   - Request body:', req.body);
-
   try {
     // Workspace comes from the session, never from the request body
     const requestData = { ...(req.body || {}), workspace_id: req.session?.user?.workspace_id };
 
-    console.log('🔍 Semantic search request received:');
-    console.log(`   - Query: "${requestData.query}"`);
-    console.log(`   - Workspace ID: ${requestData.workspace_id}`);
-    console.log(`   - Conversational: ${requestData.conversational !== false}`);
-    console.log(`   - Timestamp: ${new Date().toISOString()}`);
+    // Never log the question: it's meeting content
+    console.log(`🔍 Semantic search in ${requestData.workspace_id} (${typeof requestData.query === 'string' ? requestData.query.length : 0} chars)`);
 
     // Validate required fields
     if (typeof requestData.query === 'string' && requestData.query.length > MAX_QUERY_LENGTH) {

@@ -55,7 +55,6 @@ function requireAuthBrowser(req, res, next) {
     return res.redirect(`/auth/login?return=${returnUrl}`);
   }
 
-  console.log(`✅ Session valid for ${req.originalUrl}, user: ${req.session.user.user_name}`);
   // User is authenticated, continue to next middleware
   next();
 }
@@ -65,12 +64,6 @@ function requireAuthBrowser(req, res, next) {
  * Ensures authenticated user can only access their own workspace data
  */
 function requireWorkspaceAccess(req, res, next) {
-  console.log(`🏢 [WORKSPACE] requireWorkspaceAccess check for ${req.originalUrl}`);
-  console.log(`   - Method: ${req.method}`);
-  console.log(`   - Query workspace_id: ${req.query.workspace_id}`);
-  console.log(`   - Body workspace_id: ${req.body?.workspace_id}`);
-  console.log(`   - User workspace_id: ${req.session?.user?.workspace_id}`);
-
   // First check authentication
   if (!req.session || !req.session.user) {
     console.log(`❌ [WORKSPACE] No session/user`);

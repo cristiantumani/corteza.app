@@ -122,7 +122,7 @@ async function loadMeeting(client, record) {
 
   meeting.title = meeting.title || fallbackTitle(meeting.occurredAt);
   for (const { source, error } of failures) {
-    console.warn(`⚠️  Could not read the ${source} of ${record.name} ("${meeting.title}"): ${meet.describeGoogleError(error)}`);
+    console.warn(`⚠️  Could not read the ${source} of ${record.name}: ${meet.describeGoogleError(error)}`);
   }
   if (sections.length === 0 && failures.length > 0) {
     // Nothing readable: surface the first refusal to the caller
