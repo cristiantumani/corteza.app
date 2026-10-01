@@ -39,25 +39,25 @@ Image: `2026-09-29-launch.png`
 >
 > #Productivity #Meetings #GoogleWorkspace #FutureOfWork #AI
 
-## Next: weekly posts
+### 2026-10-01: Action items with an owner, and the morning summary
 
-One per week, each about a single feature. Image ideas are suggestions.
-
-### Week 1: Action items with an owner, and the morning summary
-
-Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, same style as the template).
+Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, same style as the template)
 
 > Most meeting action items die the moment the call ends. Nobody owns them, nobody remembers them.
 >
-> Corteza picks up every "I'll send that by Friday" from your Google Meet calls and assigns it to the right person, with its due date.
+> Some estimates put it at 44%: almost half of the action items from a meeting are never done. They just stay pending, forever.
 >
-> Then, every weekday at 8:00 AM in your own time zone, you get one short email: what's due today, what's overdue, and what your meetings left since yesterday.
+> One of the things Corteza does is pick up every "I'll send it by Friday" from your Google Meet calls and assign it to the right person, with its due date. And every weekday at 8:00 AM, you get one short email with what's due today and what's overdue.
 >
-> No bots in your calls. No notes to take.
+> This is where it all starts. Our mission is to help people get more done, and be happier doing it. We all feel lighter when our pending list fits in a day.
 >
 > 👉 corteza.app/early-access
 >
 > #Productivity #Meetings #GoogleWorkspace
+
+## Next: weekly posts
+
+One per week, each about a single feature. Image ideas are suggestions.
 
 ### Week 2: Ask in plain language
 
