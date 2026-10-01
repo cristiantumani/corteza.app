@@ -43,15 +43,21 @@ Image: `2026-09-29-launch.png`
 
 One per week, each about a single feature. Image ideas are suggestions.
 
-### Week 1: Action items with an owner
+### Week 1: Action items with an owner, and the morning summary
 
-Image: an action item card with owner and due date ("Ana · due Friday"), or a screenshot of Action items.
+Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, same style as the template).
 
-> 44% of meeting action items never get done. Usually because nobody owns them, or nobody remembers them.
+> Most meeting action items die the moment the call ends. Nobody owns them, nobody remembers them.
 >
-> Corteza picks up every "I'll send that by Friday" from your Google Meet calls, assigns it to the right person, and keeps it visible until it's done.
+> Corteza picks up every "I'll send that by Friday" from your Google Meet calls and assigns it to the right person, with its due date.
+>
+> Then, every weekday at 8:00 AM in your own time zone, you get one short email: what's due today, what's overdue, and what your meetings left since yesterday.
+>
+> No bots in your calls. No notes to take.
 >
 > 👉 corteza.app/early-access
+>
+> #Productivity #Meetings #GoogleWorkspace
 
 ### Week 2: Ask in plain language
 
