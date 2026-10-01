@@ -151,7 +151,7 @@
 
       ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">Recent meetings</h4><ul>${recent}</ul>` : '<p>No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, its outcomes show up here within a few minutes.</p>'}
 
-      ${needsReconnect ? '' : renderImportSection(spaceOptions)}
+      ${needsReconnect ? '' : renderImportSection(spaceOptions, data.import_max_days || 7)}
     `;
 
     document.getElementById('gm-save').addEventListener('click', saveSettings);
@@ -186,6 +186,7 @@
     skipped: 'Skipped (too short)',
     no_transcript: 'No transcript or notes',
     not_ready: 'Transcript not ready yet',
+    too_old: 'Too old to import',
     failed: 'Failed',
     queued: 'Waiting…'
   };
@@ -197,33 +198,27 @@
     return date.toISOString().slice(0, 10);
   }
 
-  function renderImportSection(spaceOptions) {
+  /**
+   * @param {string} spaceOptions
+   * @param {number} maxDays - how far back imports can reach (the server checks it too)
+   */
+  function renderImportSection(spaceOptions, maxDays) {
     const today = new Date();
-    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const earliest = new Date(today.getTime() - maxDays * 24 * 60 * 60 * 1000);
     return `
       <div id="gm-import-section" class="mt-8 pt-6 border-t border-outline-variant">
         <h4 class="text-lg font-bold text-on-surface mb-1">Import past meetings</h4>
-        <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture outcomes from.</p>
+        <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture outcomes from. You can import meetings from the last ${Number(maxDays)} days.</p>
 
         <div class="flex flex-wrap items-end gap-4 mb-4">
           <label class="block">
-            <span class="block text-xs mb-1">Month</span>
-            <input id="gm-import-month" type="month" max="${today.toISOString().slice(0, 7)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
-          </label>
-          <span class="pb-3">or</span>
-          <label class="block">
             <span class="block text-xs mb-1">From</span>
-            <input id="gm-import-from" type="date" value="${isoDate(monthAgo)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
+            <input id="gm-import-from" type="date" value="${isoDate(earliest)}" min="${isoDate(earliest)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
           </label>
           <label class="block">
             <span class="block text-xs mb-1">To</span>
-            <input id="gm-import-to" type="date" value="${isoDate(today)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
+            <input id="gm-import-to" type="date" value="${isoDate(today)}" min="${isoDate(earliest)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
           </label>
-          <div class="flex gap-2 pb-1">
-            <button type="button" data-days="7" class="gm-preset text-xs border border-outline-variant rounded-full py-2 px-3 hover:bg-surface-container-low">Last 7 days</button>
-            <button type="button" data-days="30" class="gm-preset text-xs border border-outline-variant rounded-full py-2 px-3 hover:bg-surface-container-low">Last 30 days</button>
-            <button type="button" data-days="90" class="gm-preset text-xs border border-outline-variant rounded-full py-2 px-3 hover:bg-surface-container-low">Last 90 days</button>
-          </div>
           <button id="gm-import-find" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">Find meetings</button>
         </div>
 
@@ -241,22 +236,6 @@
   }
 
   function setupImportSection() {
-    document.getElementById('gm-import-month').addEventListener('change', event => {
-      if (!event.target.value) return;
-      const [year, month] = event.target.value.split('-').map(Number);
-      const first = new Date(Date.UTC(year, month - 1, 1));
-      const last = new Date(Math.min(Date.UTC(year, month, 0), Date.now()));
-      document.getElementById('gm-import-from').value = isoDate(first);
-      document.getElementById('gm-import-to').value = isoDate(last);
-    });
-    document.querySelectorAll('.gm-preset').forEach(button => {
-      button.addEventListener('click', () => {
-        const today = new Date();
-        document.getElementById('gm-import-month').value = '';
-        document.getElementById('gm-import-from').value = isoDate(new Date(today.getTime() - Number(button.dataset.days) * 24 * 60 * 60 * 1000));
-        document.getElementById('gm-import-to').value = isoDate(today);
-      });
-    });
     document.getElementById('gm-import-find').addEventListener('click', () => findMeetings());
     document.getElementById('gm-import-start').addEventListener('click', startImport);
   }

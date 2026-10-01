@@ -12,6 +12,8 @@ console.error = () => {};
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
 process.env.GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
+// The fake meetings are 20-23 days old; one test lowers this to the beta's 7
+process.env.MEET_IMPORT_MAX_DAYS = '92';
 
 const LONG_TEXT = Array(80).fill('We agreed to adopt quarterly planning').join('. ');
 
@@ -25,15 +27,16 @@ describe('Google Meet: import past meetings', { skip }, () => {
   let extractCalls = 0;
   const notified = []; // summary emails "sent" when an import finishes
 
-  // Fake Google data for four meetings in August 2026
+  // Fake Google data for four meetings, 20 to 23 days ago
   const meetings = {
     'conferenceRecords/new': { state: 'ready', title: 'Q3 planning', participantCount: 4 },
     'conferenceRecords/oneonone': { state: 'ready', title: 'Cris / Ana', participantCount: 2 },
     'conferenceRecords/done': { state: 'ready', title: 'Already imported', participantCount: 5 },
     'conferenceRecords/pending': { state: 'pending', title: 'Just ended', participantCount: 3 }
   };
+  const DAY = 24 * 60 * 60 * 1000;
   const records = Object.keys(meetings).map((name, i) => ({
-    name, startTime: `2026-08-1${i}T09:00:00Z`, endTime: `2026-08-1${i}T10:00:00Z`
+    name, startTime: new Date(Date.now() - (23 - i) * DAY).toISOString(), endTime: new Date(Date.now() - (23 - i) * DAY + 60 * 60 * 1000).toISOString()
   }));
 
   const deps = {
@@ -139,7 +142,7 @@ describe('Google Meet: import past meetings', { skip }, () => {
     assert.deepEqual(decisions.map(d => d.text).sort(), ['Decision from Cris / Ana', 'Decision from Q3 planning']);
     assert.ok(decisions.every(d => d.capture === 'ai' && d.space_id));
     const planning = decisions.find(d => d.text === 'Decision from Q3 planning');
-    assert.equal(planning.timestamp, '2026-08-10T09:00:00.000Z', 'dated by the meeting, not the import');
+    assert.equal(planning.timestamp, new Date(records[0].startTime).toISOString(), 'dated by the meeting, not the import');
 
     // The summary email goes out once, to the person who imported
     assert.deepEqual(notified.filter(n => n.importId === job.import_id), [{ email: 'cris@ninja.io', importId: job.import_id, total: 5 }]);
@@ -149,6 +152,20 @@ describe('Google Meet: import past meetings', { skip }, () => {
     // Nobody else can read this job
     assert.equal(await meetImport.getImport('WIMP', 'U2', job.import_id), null);
     assert.equal(await meetImport.getImport('WOTHER', 'U1', job.import_id), null);
+  });
+
+  test('meetings older than the import limit are refused, without reading or extracting them', async () => {
+    process.env.MEET_IMPORT_MAX_DAYS = '7';
+    try {
+      const callsBefore = extractCalls;
+      const job = await meetImport.startImport(connection, ['conferenceRecords/new', 'conferenceRecords/oneonone'], null, deps);
+      const finished = await waitForImport(job.import_id);
+      assert.deepEqual(finished.items.map(i => i.status), ['too_old', 'too_old']);
+      assert.equal(finished.items[0].error, 'You can import meetings from the last 7 days.');
+      assert.equal(extractCalls, callsBefore);
+    } finally {
+      process.env.MEET_IMPORT_MAX_DAYS = '92';
+    }
   });
 
   test('an import interrupted by a restart is resumed', async () => {

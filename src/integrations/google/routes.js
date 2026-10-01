@@ -100,7 +100,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
     // Only this person's meetings: colleagues' meeting titles are private
     const recent = await listRecentForUser(workspace_id, user_id, 'google_meet');
 
-    const { getActiveImport } = require('../../ingestion/meet-import');
+    const { getActiveImport, maxDaysBack } = require('../../ingestion/meet-import');
     const activeImport = await getActiveImport(workspace_id, user_id);
 
     res.json({
@@ -108,6 +108,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       configured: google.isGoogleConfigured(),
       connected: true,
       active_import: activeImport, // an "Import past meetings" job still running, or null
+      import_max_days: maxDaysBack(), // how far back "Import past meetings" reaches
       status: connection.status,
       needs_reconsent: connections.needsReconsent(connection),
       google_email: connection.google_email,

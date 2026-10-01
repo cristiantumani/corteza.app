@@ -310,6 +310,7 @@ async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
 const IMPORT_ITEM_LABELS = {
   already_imported: 'already imported',
   not_ready: 'transcript not ready yet',
+  too_old: 'too old to import',
   no_transcript: 'no transcript or notes',
   failed: 'couldn’t be imported'
 };

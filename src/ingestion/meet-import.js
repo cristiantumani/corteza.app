@@ -27,6 +27,7 @@ const { countByType } = require('../core/decisions/types');
  */
 
 const MAX_RANGE_DAYS = 92;
+const DEFAULT_MAX_DAYS_BACK = 7; // private beta: every imported meeting is an AI extraction we pay for
 const MAX_MEETINGS_LISTED = 200;
 const MAX_MEETINGS_PER_IMPORT = 50;
 const DESCRIBE_CONCURRENCY = 5;
@@ -36,6 +37,30 @@ const MEETING_ID_PATTERN = /^conferenceRecords\/[A-Za-z0-9_-]+$/;
 
 function imports() {
   return getDatabase().collection('meet_imports');
+}
+
+/**
+ * How many days back "Import past meetings" can reach (MEET_IMPORT_MAX_DAYS, default 7)
+ * @returns {number}
+ */
+function maxDaysBack() {
+  const days = parseInt(process.env.MEET_IMPORT_MAX_DAYS || '', 10);
+  return days > 0 ? Math.min(days, MAX_RANGE_DAYS) : DEFAULT_MAX_DAYS_BACK;
+}
+
+/**
+ * Earliest moment an imported meeting can start: midnight UTC, maxDaysBack() days before `now`
+ * @param {Date} [now]
+ * @returns {Date}
+ */
+function importCutoff(now = new Date()) {
+  const day = new Date(now.getTime() - maxDaysBack() * DAY_MS);
+  return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+}
+
+/** What people see when they ask for older meetings */
+function tooOldMessage() {
+  return `You can import meetings from the last ${maxDaysBack()} days.`;
 }
 
 /**
@@ -53,6 +78,7 @@ function parseRange(fromText, toText, now = new Date()) {
   const to = new Date(new Date(`${toText}T00:00:00Z`).getTime() + DAY_MS);
   if (to <= from) return { error: 'The end date must be on or after the start date.' };
   if (from > now) return { error: 'The period is in the future.' };
+  if (from < importCutoff(now)) return { error: tooOldMessage() };
   if ((to.getTime() - from.getTime()) / DAY_MS > MAX_RANGE_DAYS) return { error: `Choose a period of at most ${MAX_RANGE_DAYS} days.` };
   return { from, to };
 }
@@ -213,6 +239,8 @@ async function runImport(importId, deps = {}) {
 
   const client = getClient(connection);
   const space = await resolveTargetSpace(job.workspace_id, job.space_id, connection);
+  // Meetings are checked against the day the import was started (a resumed job keeps its window)
+  const cutoff = importCutoff(new Date(job.created_at || Date.now()));
 
   for (let index = 0; index < job.items.length; index++) {
     const item = job.items[index];
@@ -223,8 +251,12 @@ async function runImport(importId, deps = {}) {
     try {
       const record = await getRecord(client, item.meeting_id);
       step = 'content';
-      const meeting = await loadMeeting(client, record);
-      if (meeting.state !== 'ready') {
+      // The list only offers recent meetings; this stops a hand-made request from importing older ones
+      const tooOld = record.startTime && new Date(record.startTime) < cutoff;
+      const meeting = tooOld ? null : await loadMeeting(client, record);
+      if (tooOld) {
+        result = { status: 'too_old', title: item.title, decisions_created: 0, error: tooOldMessage() };
+      } else if (meeting.state !== 'ready') {
         result = { status: meeting.state === 'pending' ? 'not_ready' : 'no_transcript', title: meeting.title, decisions_created: 0 };
       } else {
         const outcome = await ingest({
@@ -341,6 +373,8 @@ module.exports = {
   getActiveImport,
   importErrorMessage,
   resumeStaleImports,
+  maxDaysBack,
+  importCutoff,
   MAX_RANGE_DAYS,
   MAX_MEETINGS_PER_IMPORT
 };

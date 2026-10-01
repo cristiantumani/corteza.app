@@ -21,7 +21,7 @@ A few minutes after a meeting ends and Google has finished the transcript, its d
 
 For meetings that happened before you connected (for example, all of August 2026):
 
-1. In **Settings → Google Meet → Import past meetings**, pick a **month** or a **from/to** period (up to 92 days), or a preset such as "Last 30 days", then click **Find meetings**.
+1. In **Settings → Google Meet → Import past meetings**, pick a **from/to** period within the last 7 days (`MEET_IMPORT_MAX_DAYS`; 7 during the private beta, since every imported meeting is an AI extraction), then click **Find meetings**. Older meetings are refused by the server too (`too_old`).
 2. Corteza lists your meetings in that period with their date, title, number of participants, whether Google has a **transcript** and/or **Gemini notes**, and whether they were **already imported**.
 3. Tick the meetings you want (or **Select all available**), choose the space, and click **Import selected**. You can import up to 50 at a time.
 4. A progress bar shows each meeting as it's processed, and the result shows how many decisions were captured.
