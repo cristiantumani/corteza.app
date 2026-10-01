@@ -169,7 +169,7 @@ async function handleDecisionModalSubmit({ ack, view, body, client }) {
       console.log(`Fetching Jira: ${epicKey}`);
       jiraData = await fetchJiraIssue(epicKey, workspace_id);
       if (jiraData) {
-        console.log(`✅ Jira: ${jiraData.summary}`);
+        console.log(`✅ Jira: ${epicKey}`);
       }
     }
 

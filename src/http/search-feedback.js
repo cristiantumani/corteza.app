@@ -38,7 +38,7 @@ router.post('/api/search-feedback', apiRateLimiter, express.json(), requireSessi
       { $set: { relevant, updated_at: now }, $setOnInsert: { created_at: now } },
       { upsert: true }
     );
-    console.log(`🔎 Search feedback: #${decisionId} ${relevant ? 'related' : 'not related'} to "${cleanQuery.slice(0, 60)}" (${user_id})`);
+    console.log(`🔎 Search feedback: #${decisionId} ${relevant ? 'related' : 'not related'} (${user_id})`);
     res.json({ success: true });
   } catch (error) {
     console.error('❌ Failed to save search feedback:', error);

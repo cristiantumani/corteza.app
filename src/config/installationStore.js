@@ -41,7 +41,6 @@ class MongoInstallationStore {
     const teamId = installation.team?.id;
     if (!teamId) {
       console.error('❌ Cannot store installation: team.id is missing');
-      console.error('   Installation object:', JSON.stringify(installation, null, 2));
       throw new Error('Invalid installation: team.id is required');
     }
 

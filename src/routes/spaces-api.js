@@ -569,7 +569,7 @@ router.post('/api/spaces/:space_id/members', async (req, res) => {
             workspace_id: workspace_id,
             removed_at: null
           }).toArray();
-          console.log(`📧 All members in workspace ${workspace_id}:`, allMembers.map(m => ({ email: m.email, user_id: m.user_id })));
+          console.log(`📧 No member with that email among ${allMembers.length} in workspace ${workspace_id}`);
 
           return res.status(404).json({
             error: 'User not found in workspace',

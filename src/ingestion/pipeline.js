@@ -303,7 +303,7 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
       $unset: { error: '' }
     });
 
-    console.log(`🧠 Ingested ${transcript.source} "${transcript.title}" for ${transcript.workspaceId}: ${decisions.length} outcome(s), ${actionItems.length} action item(s)`);
+    console.log(`🧠 Ingested ${transcript.source} ${transcript.externalId} for ${transcript.workspaceId}: ${decisions.length} outcome(s), ${actionItems.length} action item(s)`);
     // Background work (poller, imports): no request, so the owner is passed explicitly
     track('meeting_captured', {
       source: transcript.source,

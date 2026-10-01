@@ -193,7 +193,7 @@ router.post('/api/ai/extract-from-text', aiRateLimiter, requireAiBudget, upload.
       });
     }
 
-    console.log(`📄 Processing transcript: "${fileName}" (${transcriptContent.length} chars)`);
+    console.log(`📄 Processing transcript (${transcriptContent.length} chars)`);
 
     // Process the transcript
     const result = await processTranscriptWeb(transcriptContent, {

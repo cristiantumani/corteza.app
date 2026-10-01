@@ -11,9 +11,6 @@ function initializeEmbeddings() {
 
   console.log('🔧 Initializing embeddings service...');
   console.log(`   - OPENAI_API_KEY present: ${apiKey ? 'YES' : 'NO'}`);
-  if (apiKey) {
-    console.log(`   - Key format: ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`);
-  }
 
   if (!apiKey) {
     console.log('⚠️  Semantic search DISABLED (OPENAI_API_KEY not set)');

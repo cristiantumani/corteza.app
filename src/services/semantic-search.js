@@ -175,9 +175,7 @@ async function semanticSearch(query, options = {}) {
 
   try {
     // Generate embedding for the search query
-    console.log(`🔍 Semantic search: "${query}"`);
-    console.log(`   🏢 Workspace ID: ${workspace_id}`);
-    console.log(`   📁 Space ID: ${space_id}`);
+    console.log(`🔍 Semantic search in ${workspace_id}, space ${space_id}`);
 
     const decisionsCollection = getDatabase().collection('decisions');
 
@@ -247,8 +245,6 @@ async function semanticSearch(query, options = {}) {
     let results = await decisionsCollection.aggregate(pipeline).toArray();
 
     console.log(`🔍 Vector search completed:`);
-    console.log(`   - Query: "${query}"`);
-    console.log(`   - Workspace: ${workspace_id}`);
     console.log(`   - Min score: ${minScore}`);
     console.log(`   - Raw results: ${results.length}`);
 
@@ -257,7 +253,7 @@ async function semanticSearch(query, options = {}) {
       console.log(`   - Lowest score: ${(results[results.length - 1].score * 100).toFixed(1)}%`);
       console.log(`   - Sample results:`);
       results.slice(0, 3).forEach(r => {
-        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}% - "${r.text.substring(0, 60)}..."`);
+        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}%`);
       });
     }
 
@@ -288,7 +284,7 @@ async function semanticSearch(query, options = {}) {
     if (lowRelevanceCount > 0) {
       console.log(`   ⚠️  FILTERING OUT ${lowRelevanceCount} results below 70% threshold:`);
       lowRelevanceSample.forEach(r => {
-        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}% - "${r.text.substring(0, 60)}..." (has keyword: ${r.hasKeywordMatch})`);
+        console.log(`     • Decision #${r.id}: ${(r.score * 100).toFixed(1)}% (has keyword: ${r.hasKeywordMatch})`);
       });
     }
 

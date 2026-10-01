@@ -102,6 +102,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.
 - **AI calls are metered.** A new Claude call records itself with `recordAiUsage` (workspace, person, feature), and a route people trigger gets `aiRateLimiter` and `requireAiBudget`. Never add an AI route without them.
 - **Analytics never carries meeting content.** PostHog events (`track` in `src/integrations/posthog/client.js`) hold counts, types and ids. Never send transcripts, outcome text, search questions or answers, or AI context, and don't wrap the AI clients with PostHog's LLM tracing (it sends the prompts).
+- **Logs carry no meeting content or secrets.** Server logs (`console.log`) hold ids, counts, types and lengths: never search questions, transcripts, meeting titles, file names, outcome text, AI replies, request bodies, tokens or keys.
 - **Secrets:** per-workspace credentials are encrypted with `src/utils/encryption.js`. Never commit keys; `*.pem` and `*.crx` are gitignored.
 - **Performance:**
   - Never send `embedding` to the browser; project it out.
