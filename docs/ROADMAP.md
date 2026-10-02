@@ -142,6 +142,7 @@ B4. **Automatic progress detection. This is the moat.**
 - New module: `src/ingestion/linker.js`, called at the end of `ingestTranscript`.
 
 B5. **Pre-meeting brief.**
+- *First step shipped (Oct 2026):* the morning summary's "Prepare for today's meetings" lists today's meetings with the open action items of the people in them (`core/briefs/meeting-prep.js`, `integrations/google/calendar-client.js`). Next: a brief 30 minutes before each meeting.
 - Scope `calendar.events.readonly` (sensitive, not restricted).
 - For recurring events, 30 minutes before start, send an email or Chat message:
   - "Last time you decided…"

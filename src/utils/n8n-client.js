@@ -381,6 +381,8 @@ function dailyDigestSubject(summary) {
   const today = [];
   if (summary.dueToday) today.push(`${summary.dueToday} due today`);
   if (summary.overdue) today.push(`${summary.overdue} overdue`);
+  const prepCount = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.length : 0;
+  if (prepCount) today.push(`${prepCount} meeting${prepCount === 1 ? '' : 's'} to prepare`);
   const since = [];
   if (summary.meetings) since.push(plural(summary.meetings, 'meeting'));
   const decisions = (summary.outcomes && summary.outcomes.decision) || 0;
@@ -406,7 +408,8 @@ function dailyDigestSubject(summary) {
  * @param {string} params.unsubscribe_url
  * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
- *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }], assignedBy: [{ name, count }] }
+ *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }], assignedBy: [{ name, count }],
+ *   meetingPrep: [{ time, title, people, items: [{ item_id, text, due_date, owner }], more }] }
  */
 async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
   const result = await sendEmail({
@@ -479,6 +482,25 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
           ${[itemRows.join(divider) + more, ...reminders].filter(Boolean).join(divider)}
         </table>` : '';
 
+  // Today's meetings: who's in them and the open items with those people (core/briefs/meeting-prep)
+  const prep = Array.isArray(summary.meetingPrep) ? summary.meetingPrep : [];
+  const prepHtml = prep.length ? `
+        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: ${plateHtml ? '28px' : '0'} 0 4px;">Prepare for today's meetings</h2>
+        <p style="font-size: 14px; color: #6b6d78; margin: 0 0 8px;">Open action items with the people you're meeting.</p>
+        ${prep.map(meeting => `
+        <div style="border: 1px solid #ebe7ec; border-radius: 10px; padding: 14px 16px; margin-top: 10px;">
+          <div style="font-size: 15px; font-weight: 700; color: #1b1b1d;">${escapeHtml(meeting.time || '')} · ${escapeHtml(clip(String(meeting.title || 'Meeting'), 80))}</div>
+          <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">With ${escapeHtml(clip((meeting.people || []).join(', '), 120))}</div>
+          ${(meeting.items || []).map(item => `
+          <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
+            <a href="${baseUrl}/actions?item=${encodeURIComponent(item.item_id)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
+            <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : 'You'}${!item.due_date ? '' : summary.today && item.due_date < summary.today
+              ? ` · <span style="color: #ba1a1a; font-weight: 600;">overdue since ${shortDate(item.due_date)}</span>`
+              : ` · due ${shortDate(item.due_date)}`}</div>
+          </div>`).join('')}
+          ${meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">and ${meeting.more} more</div>` : ''}
+        </div>`).join('')}` : '';
+
   const tile = (value, label) => `
             <td style="width: 33%; padding: 14px 6px; text-align: center; background: #f6f3f5; border-radius: 10px;">
               <div style="font-size: 26px; font-weight: 800; color: #1b1b1d;">${value}</div>
@@ -497,6 +519,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
             <h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">Good morning. Here's your day.</h1>
             <p style="font-size: 14px; color: #6b6d78; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
             ${plateHtml}
+            ${prepHtml}
             <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">Since ${since}</h2>
             <table role="presentation" style="width: 100%; border-collapse: separate; border-spacing: 6px 0; margin: 0 -6px;">
               <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>

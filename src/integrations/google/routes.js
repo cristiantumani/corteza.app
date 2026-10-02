@@ -10,7 +10,7 @@ const { track } = require('../posthog/client');
 /**
  * "Connect Google Meet" routes
  *
- *   GET  /integrations/google/connect       start consent (Meet + Drive-Meet scopes, offline access)
+ *   GET  /integrations/google/connect       start consent (Meet + Drive-Meet scopes, optional calendar, offline access)
  *   GET  /integrations/google/callback      Google redirects back here
  *   GET  /api/integrations/google           connection status for the signed-in user (+ active_import: a running import, or null)
  *   PUT  /api/integrations/google/settings  { space_id, skip_one_on_one, exclude_keywords }
@@ -111,6 +111,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       import_max_days: maxDaysBack(), // how far back "Import past meetings" reaches
       status: connection.status,
       needs_reconsent: connections.needsReconsent(connection),
+      calendar_connected: connections.hasCalendar(connection), // optional: meeting prep in the morning summary
       google_email: connection.google_email,
       connected_at: connection.connected_at,
       last_polled_at: connection.last_polled_at,
