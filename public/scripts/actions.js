@@ -8,6 +8,10 @@
  * Items a colleague's meeting assigned to the person since their last visit are marked
  * "New", with a banner saying who; opening the page marks them seen
  * (GET/POST /api/action-items/from-colleagues, core/actions/colleague-assignments).
+ *
+ * An item in a topic thread shows "Part of: <topic> · N questions, M risks", linking to
+ * /questions?topic=<id>; marking it done offers to mark the thread's open questions
+ * answered (close-loop.js).
  */
 (function() {
   'use strict';
@@ -23,6 +27,7 @@
   };
 
   let newIds = null; // items new from colleagues on this visit (null until the first load)
+  const threadById = new Map(); // item_id → its thread summary (PATCH answers don't carry it)
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -107,6 +112,21 @@
     } catch (error) { /* the list still works */ }
   }
 
+  /** "Part of: ISO 27001 · 1 question, 1 risk" */
+  function threadHtml(item) {
+    const thread = item.thread || threadById.get(item.item_id);
+    if (!thread) return '';
+    const counts = [
+      thread.questions ? `${thread.questions} question${thread.questions === 1 ? '' : 's'}` : '',
+      thread.risks ? `${thread.risks} risk${thread.risks === 1 ? '' : 's'}` : ''
+    ].filter(Boolean).join(', ');
+    return `
+      <a href="/questions?topic=${encodeURIComponent(thread.topic_id)}" class="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e3e7fb] text-[#3953bd] text-xs font-semibold hover:underline">
+        <span class="material-symbols-outlined text-sm" aria-hidden="true">contact_support</span>
+        ${thread.topic ? `Part of: ${escapeHtml(thread.topic)}` : 'Linked'}${counts ? ` · ${escapeHtml(counts)}` : ''}
+      </a>`;
+  }
+
   function itemHtml(item) {
     const done = item.status === 'done';
     const cancelled = item.status === 'cancelled';
@@ -118,6 +138,7 @@
           <p class="text-on-surface font-medium ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>
           ${item.rationale ? `<p class="text-sm text-on-surface-variant">Why: ${escapeHtml(item.rationale)}</p>` : ''}
           <div class="flex flex-wrap items-center gap-2">${ownersHtml(item)}</div>
+          ${threadHtml(item)}
           ${sourceHtml(item)}
           ${item.evidence_quote ? `<p class="text-xs italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         </div>
@@ -145,6 +166,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not load action items');
       const items = data.items;
+      for (const item of items) if (item.thread) threadById.set(item.item_id, item.thread);
       // Remember what was new on arrival: the flags clear once the visit marks them seen
       if (!newIds) newIds = new Set(items.filter(item => item.new_from_colleague).map(item => item.item_id));
       document.getElementById('items-count').textContent = `${items.length} action item${items.length === 1 ? '' : 's'}`;
@@ -177,6 +199,7 @@
     }
     const element = document.getElementById(`item-${itemId}`);
     if (element) element.outerHTML = itemHtml(data.item);
+    if (window.CortezaLoop) window.CortezaLoop.offerAnswer(data.linked_questions);
   }
 
   document.addEventListener('change', event => {
@@ -194,6 +217,7 @@
   });
 
   document.addEventListener('DOMContentLoaded', async () => {
+    if (window.CortezaLoop) window.CortezaLoop.init(document.getElementById('loop-notice'), load);
     await load();
     showFromColleagues();
   });

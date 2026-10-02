@@ -105,6 +105,30 @@ function sinceLabel(since, now, timeZone) {
 }
 
 /**
+ * "Next step on: <question>": for each item in a topic thread with an open question the
+ * person can see, the question's text (core/topics). Sets `next_step_on` (string|null) and
+ * drops `topic_id`.
+ * @param {string} workspaceId
+ * @param {{ topic_id?: string|null, next_step_on?: string|null }[]} items
+ * @param {string[]} spaceIds
+ */
+async function addNextStepOn(workspaceId, items, spaceIds) {
+  const topicIds = [...new Set(items.map(item => item.topic_id).filter(Boolean))];
+  const questions = topicIds.length && spaceIds.length
+    ? await getDecisionsCollection().find(
+      { workspace_id: workspaceId, topic_id: { $in: topicIds }, type: 'open_question', space_id: { $in: spaceIds }, resolution_status: { $ne: 'resolved' } },
+      { projection: { _id: 0, topic_id: 1, text: 1 } }
+    ).sort({ id: 1 }).toArray()
+    : [];
+  const byTopic = new Map();
+  for (const question of questions) if (!byTopic.has(question.topic_id)) byTopic.set(question.topic_id, question.text);
+  for (const item of items) {
+    item.next_step_on = (item.topic_id && byTopic.get(item.topic_id)) || null;
+    delete item.topic_id;
+  }
+}
+
+/**
  * One person's numbers since `since`
  * @param {string} workspaceId
  * @param {string} userId
@@ -113,7 +137,8 @@ function sinceLabel(since, now, timeZone) {
  * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
  * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[], assignedBy: { name: string, count: number }[], meetingPrep: Object[] }>}
  *   planItems: the person's open items due today, then the most recently overdue
- *   ({ item_id, text, due_date, meeting }), at most PLAN_ITEMS
+ *   ({ item_id, text, due_date, meeting, next_step_on }), at most PLAN_ITEMS; next_step_on: the open
+ *   question of the item's topic thread, if any
  *   assignedBy: of the new action items, the ones colleagues' meetings assigned them, by colleague
  *   meetingPrep: today's meetings with the open items of the people in them (core/briefs/meeting-prep), each with `time` ('9:30 AM')
  * @param {Object} [options]
@@ -140,7 +165,7 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
       : 0,
     db.collection('action_items').find(
       { workspace_id: workspaceId, ...mine, status: 'open', due_date: { $ne: null, $lte: today } },
-      { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1 } }
+      { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1, topic_id: 1 } }
     ).sort({ due_date: -1, created_at: -1 }).limit(PLAN_ITEMS * 3).toArray(),
     // New ones a colleague's meeting assigned them, by colleague
     db.collection('action_items').aggregate([
@@ -157,9 +182,10 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
     const key = `${String(item.text || '').trim().toLowerCase()}|${item.due_date}`;
     if (!item.text || seen.has(key)) continue;
     seen.add(key);
-    planItems.push({ item_id: item.item_id, text: item.text, due_date: item.due_date, meeting: (item.source && item.source.title) || null });
+    planItems.push({ item_id: item.item_id, text: item.text, due_date: item.due_date, meeting: (item.source && item.source.title) || null, topic_id: item.topic_id || null });
     if (planItems.length === PLAN_ITEMS) break;
   }
+  await addNextStepOn(workspaceId, planItems, spaceIds);
 
   const outcomes = {};
   for (const ingestion of ingestions) {

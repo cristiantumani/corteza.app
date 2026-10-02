@@ -80,6 +80,21 @@ test("the email lists the person's items, escaped, each linking to it in Corteza
   assert.doesNotMatch(html, /See all/, 'every due item is already listed');
 });
 
+test('an item that is a next step on an open question says which one, escaped', () => {
+  const html = dailyDigestHtml({
+    workspace_name: 'Acme', unsubscribe_url: 'u',
+    summary: {
+      dayLabel: 'Friday', today: '2026-10-02', meetings: 0, outcomes: {}, newActionItems: 0, dueToday: 1, overdue: 0, toReview: 0, noDueDate: 0,
+      planItems: [
+        { item_id: 'act_1', text: 'Research the ISO 27001 requirements', due_date: '2026-10-02', meeting: null, next_step_on: 'Should we get <ISO 27001>?' },
+        { item_id: 'act_2', text: 'Send the deck', due_date: '2026-10-02', meeting: null, next_step_on: null }
+      ]
+    }
+  });
+  assert.match(html, /Next step on: Should we get &lt;ISO 27001&gt;\?/);
+  assert.equal(html.match(/Next step on:/g).length, 1);
+});
+
 test('the morning summary footer links to Buy me a coffee', () => {
   const { dailyDigestHtml } = require('../../src/utils/n8n-client');
   const html = dailyDigestHtml({ workspace_name: 'Ninja', unsubscribe_url: 'u', summary: { dayLabel: 'Friday', today: '2026-10-02', meetings: 0, outcomes: {}, newActionItems: 0, dueToday: 1, toReview: 0, overdue: 0, noDueDate: 0, planItems: [] } });

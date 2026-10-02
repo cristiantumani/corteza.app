@@ -178,6 +178,7 @@ Fields for each item:
 - evidence_quote: a short verbatim quote (under 200 characters) from the transcript or notes that supports the item
 - supersedes_hint: if the speakers say this changes or reverses an earlier decision, a short description of what it replaces, otherwise null
 - decision_ref: for an action_item that carries out a decision in your list, the 0-based position of that decision in the array you return; otherwise null. When a decision needs work to happen ("se decide comenzar una investigación técnica, a cargo de Martín y Felipe"), return the decision and an action_item for the work, linked with decision_ref.
+- topic: a short label (2 to 6 words, in the output language) for the subject the item is about. Items about the same subject get exactly the same topic, so a team can follow it as one thread: for example an open question "¿Conviene certificarnos en ISO 27001?", the risk "Sin la certificación podemos perder clientes enterprise" and the action item "Cristian investiga los requisitos de ISO 27001" all get the topic "Certificación ISO 27001". Use a different topic for each distinct subject.
 - epic_key: a Jira-style key like "ABC-123" if one was mentioned, otherwise null
 - tags: 2-5 lowercase keywords
 - confidence: 0.0-1.0; use 0.9 or above only when the commitment is explicit
@@ -386,6 +387,7 @@ function normalizeItem(item) {
     rationale: optionalText(item.rationale, 500),
     evidence_quote: evidence,
     supersedes_hint: optionalText(item.supersedes_hint, 300),
+    topic: optionalText(item.topic, 80),
     context: item.context || evidence || ''
   };
 }

@@ -56,6 +56,8 @@ async function nextDecisionId(workspaceId) {
  * @param {string|null} [params.evidenceQuote] - verbatim quote supporting an AI-captured item
  * @param {string|null} [params.reviewedBy] - user_id of whoever already approved an AI-captured item
  *   (e.g. from the upload review screen): it's saved as confirmed, not waiting for review
+ * @param {string|null} [params.topicId] - thread it belongs to (`top_<hex>`, see core/topics)
+ * @param {string|null} [params.topic] - the thread's label
  * @param {Date|string|null} [params.decidedAt] - when it was decided (e.g. the meeting's start); defaults to now.
  *   Stored as `timestamp`, which the dashboard, search date filters and digest use. `created_at` is always now.
  * @returns {Promise<Object>} The saved decision
@@ -63,7 +65,8 @@ async function nextDecisionId(workspaceId) {
 async function createDecision({
   workspaceId, spaceId, spaceName = null, text, type = 'decision', tags = [], epicKey = null,
   alternatives = null, author, source, capture = 'manual', confidence = null, decidedAt = null,
-  ownerName = null, dueDate = null, rationale = null, evidenceQuote = null, reviewedBy = null
+  ownerName = null, dueDate = null, rationale = null, evidenceQuote = null, reviewedBy = null,
+  topicId = null, topic = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createDecision requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createDecision requires text');
@@ -91,6 +94,8 @@ async function createDecision({
     due_date: typeof dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate : null,
     rationale: rationale || null,
     evidence_quote: evidenceQuote || null,
+    topic_id: topicId || null,
+    topic: topicId && topic ? String(topic).slice(0, 80) : null,
     timestamp: timestamp.toISOString(),
     created_at: now,
     ...(reviewedBy ? { review_status: 'confirmed', reviewed_by: reviewedBy, reviewed_at: now } : {})

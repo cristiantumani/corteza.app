@@ -410,7 +410,7 @@ function dailyDigestSubject(summary) {
  * @param {string} params.unsubscribe_url
  * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
- *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }], assignedBy: [{ name, count }],
+ *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting, next_step_on }], assignedBy: [{ name, count }],
  *   meetingPrep: [{ time, title, people, items: [{ item_id, text, due_date, owner }], more }] }
  */
 async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
@@ -460,7 +460,8 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
     const when = overdue ? `Overdue · was due ${shortDate(item.due_date)}` : 'Due today';
     return row({
       box: overdue ? '#ba1a1a' : '#3953bd',
-      title: escapeHtml(clip(String(item.text), 160)),
+      title: escapeHtml(clip(String(item.text), 160)) + (item.next_step_on
+        ? `<div style="font-size: 13px; color: #3953bd; margin-top: 2px;">Next step on: ${escapeHtml(clip(String(item.next_step_on), 120))}</div>` : ''),
       meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`,
       href: `/actions?item=${encodeURIComponent(item.item_id)}`,
       label: 'Open'

@@ -3,6 +3,7 @@ const { createDecision } = require('../core/decisions/decision-service');
 const { countByType } = require('../core/decisions/types');
 const { track } = require('../integrations/posthog/client');
 const { createActionItem } = require('../core/actions/action-service');
+const { assignTopics } = require('../core/topics/topics');
 const { getWorkspaceMembersCollection } = require('../config/database');
 
 /**
@@ -231,6 +232,10 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         confidence: item.confidence
       }));
 
+    // Threads: items about the same subject (a question, its risk, the next step) share a topic_id
+    const threads = assignTopics([...extractedItems, ...datedFollowUps]);
+    const threadOf = new Map([...extractedItems, ...datedFollowUps].map((item, index) => [item, threads[index]]));
+
     // Decisions (and open questions, risks) first, so action items can link to them
     const decisions = [];
     const decisionIdByIndex = new Map();
@@ -257,7 +262,9 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         source,
         capture: 'ai',
         confidence: extracted.confidence,
-        decidedAt: transcript.occurredAt || null
+        decidedAt: transcript.occurredAt || null,
+        topicId: threadOf.get(extracted)?.topicId || null,
+        topic: threadOf.get(extracted)?.topic || null
       });
       decisions.push(decision);
       decisionIdByIndex.set(index, decision.id);
@@ -285,7 +292,9 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         capture: 'ai',
         confidence: extracted.confidence,
         author: transcript.author,
-        members
+        members,
+        topicId: threadOf.get(extracted)?.topicId || null,
+        topic: threadOf.get(extracted)?.topic || null
       }));
     }
 

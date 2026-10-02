@@ -204,6 +204,8 @@ async function connectToMongoDB() {
     await db.collection('action_items').createIndex({ workspace_id: 1, status: 1, due_date: 1 });
     await db.collection('action_items').createIndex({ workspace_id: 1, owner_ids: 1, status: 1 });
     await db.collection('action_items').createIndex({ workspace_id: 1, decision_id: 1 });
+    await db.collection('action_items').createIndex({ workspace_id: 1, topic_id: 1 }); // topic threads (core/topics)
+    await db.collection('decisions').createIndex({ workspace_id: 1, topic_id: 1 });
     await db.collection('action_items').createIndex({ workspace_id: 1, unseen_by: 1 }); // new items from colleagues (sidebar count)
 
     // Private beta approved list (core/beta): an email or a whole Google domain
