@@ -14,6 +14,8 @@ process.env.GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
 // The fake meetings are 20-23 days old; one test lowers this to the beta's 7
 process.env.MEET_IMPORT_MAX_DAYS = '92';
+// Live extraction, one meeting at a time; the batch test turns batching on through deps
+process.env.AI_BATCH_IMPORTS = 'false';
 
 const LONG_TEXT = Array(80).fill('We agreed to adopt quarterly planning').join('. ');
 
@@ -166,6 +168,64 @@ describe('Google Meet: import past meetings', { skip }, () => {
     } finally {
       process.env.MEET_IMPORT_MAX_DAYS = '92';
     }
+  });
+
+  test('with batching, importable meetings go in one batch, wait while it runs, and are saved when it ends', async () => {
+    // Two new meetings: one the batch answers, one it fails (extracted live instead)
+    for (const name of ['conferenceRecords/batch-ok', 'conferenceRecords/batch-err']) {
+      meetings[name] = { state: 'ready', title: name.endsWith('ok') ? 'Pricing review' : 'Hiring sync', participantCount: 4 };
+      records.push({ name, startTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), endTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 3600000).toISOString() });
+    }
+    const batch = { requests: null, ended: false };
+    const reply = text => ({ model: 'claude-test', stop_reason: 'end_turn', usage: { input_tokens: 1000, output_tokens: 200 }, content: [{ type: 'text', text }] });
+    const batchClient = {
+      create: async requests => { batch.requests = requests; return { id: 'msgbatch_1' }; },
+      retrieve: async () => ({ processing_status: batch.ended ? 'ended' : 'in_progress' }),
+      results: async () => (async function* () {
+        // Any order: keyed by custom_id
+        for (const request of [...batch.requests].reverse()) {
+          yield request.params.messages[0].content.includes('Pricing review')
+            ? { custom_id: request.custom_id, result: { type: 'succeeded', message: reply('[{"decision_type":"decision","decision_text":"Prices go up 10% in January","confidence":0.95,"business_relevance":"high"}]') } }
+            : { custom_id: request.custom_id, result: { type: 'errored', error: { type: 'error', error: { type: 'overloaded_error' } } } };
+        }
+      })()
+    };
+    let liveCalls = 0;
+    const batchDeps = {
+      ...deps,
+      useBatch: true,
+      batchClient,
+      ingest: (transcript, options) => pipeline.ingestTranscript(transcript, {
+        ...options,
+        extract: options.extract || (async () => { liveCalls++; return { decisions: [{ decision_text: `Live decision from ${transcript.title}`, decision_type: 'decision', confidence: 0.9 }] }; })
+      })
+    };
+
+    const job = await meetImport.startImport(connection, ['conferenceRecords/batch-ok', 'conferenceRecords/batch-err', 'conferenceRecords/pending'], null, batchDeps);
+    let waiting;
+    for (let i = 0; i < 100; i++) {
+      waiting = await meetImport.getImport('WIMP', 'U1', job.import_id);
+      if (waiting.items.every(item => item.status !== 'queued')) break;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    assert.equal(batch.requests.length, 2, 'one batch with the two importable meetings');
+    assert.ok(batch.requests.every(r => r.params.system && r.params.max_tokens && !r.params.fallbacks), 'same request as a live call, without fallbacks');
+    assert.deepEqual(waiting.items.map(item => item.status), ['extracting', 'extracting', 'not_ready']);
+    assert.equal(waiting.status, 'running');
+
+    // Still running: nothing is saved yet
+    await meetImport.runImport(job.import_id, batchDeps);
+    assert.equal((await meetImport.getImport('WIMP', 'U1', job.import_id)).status, 'running');
+
+    batch.ended = true;
+    const finished = await meetImport.runImport(job.import_id, batchDeps);
+    assert.equal(finished.status, 'completed');
+    assert.deepEqual(finished.items.map(item => item.status), ['completed', 'completed', 'not_ready']);
+    assert.equal(liveCalls, 1, 'only the request the batch failed is extracted live');
+    const saved = await db.collection('decisions').find({ workspace_id: 'WIMP', 'source_details.external_id': { $in: ['conferenceRecords/batch-ok', 'conferenceRecords/batch-err'] } }).toArray();
+    assert.deepEqual(saved.map(d => d.text).sort(), ['Live decision from Hiring sync', 'Prices go up 10% in January']);
+    const usage = await db.collection('ai_usage').find({ workspace_id: 'WIMP' }).toArray();
+    assert.ok(usage.some(row => row.features && row.features.extraction_batch), 'batch calls are recorded as such');
   });
 
   test('an import interrupted by a restart is resumed', async () => {

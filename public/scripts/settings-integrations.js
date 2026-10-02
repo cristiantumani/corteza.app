@@ -194,6 +194,7 @@
     no_transcript: 'No transcript or notes',
     not_ready: 'Transcript not ready yet',
     too_old: 'Too old to import',
+    extracting: 'Extracting outcomes… (usually a few minutes, can take up to an hour)',
     failed: 'Failed',
     queued: 'Waiting…'
   };
@@ -407,7 +408,9 @@
         </div>`;
 
       if (running) {
-        setTimeout(() => trackImport(importId), 3000);
+        // While the batch runs (items "extracting") results come in all at once: check less often
+        const waitingOnBatch = (job.items || []).some(item => item.status === 'extracting');
+        setTimeout(() => trackImport(importId), waitingOnBatch ? 30000 : 3000);
       } else {
         findMeetings(true); // refresh statuses in the list, keep this summary
       }
