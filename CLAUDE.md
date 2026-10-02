@@ -57,7 +57,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js` |
 | Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
-| Import past Google Meet meetings (list by period, background import jobs) | `src/ingestion/meet-import.js` |
+| Import past Google Meet meetings (list by period, background import jobs, extraction through the Message Batches API at half price) | `src/ingestion/meet-import.js`, `src/ingestion/batch-extraction.js` |
 | AI extraction prompt (Claude) | `src/services/claude.js` |
 | AI usage and daily caps (per person and workspace, `ai_usage`) | `src/core/usage/ai-usage.js` (`recordAiUsage`, `checkAiBudget`, `requireAiBudget`) |
 | Language outcomes are written in (detected from the spoken transcript, or fixed in Settings → Google Meet) | `src/core/language/detect.js`, `outputLanguage` in `src/services/claude.js`; translate saved ones: `scripts/migrations/006-translate-outcomes.js` |

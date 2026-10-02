@@ -197,24 +197,21 @@ const SAMPLING_MODELS = /^claude-(3|[a-z]+-4-[0-6](\b|-))/;
 /** Models that support server-side refusal fallbacks */
 const FALLBACK_MODELS = /^claude-(opus-5|fable-5)/;
 
-/**
- * Calls Claude for extraction. Streams (long transcripts can take a while) and
- * returns the final message. The SDK retries 429/5xx itself.
- * @param {string} prompt - The prompt to send
- * @returns {Promise<Object>} Claude API response (Message)
- */
-async function callClaudeAPI(prompt) {
+/** Anthropic client for extraction calls (the SDK retries 429/5xx itself) */
+function createClient() {
   if (!isClaudeConfigured()) {
     throw new Error('Claude API not configured. Set ANTHROPIC_API_KEY in environment.');
   }
+  return new Anthropic({ apiKey: config.claude.apiKey, timeout: 5 * 60 * 1000, maxRetries: 2 });
+}
 
-  const anthropic = new Anthropic({
-    apiKey: config.claude.apiKey,
-    timeout: 5 * 60 * 1000,
-    maxRetries: 2
-  });
+/**
+ * The Messages API request for one extraction (the same one live and in a batch)
+ * @param {string} prompt - from buildDecisionExtractionPrompt
+ * @returns {any} params for messages.create (untyped: newer fields than this SDK's types)
+ */
+function buildExtractionParams(prompt) {
   const model = config.claude.model;
-  // Untyped on purpose: server-side `fallbacks` and `stop_details` are newer than this SDK's type definitions
   /** @type {any} */
   const request = {
     model,
@@ -223,6 +220,32 @@ async function callClaudeAPI(prompt) {
     messages: [{ role: 'user', content: prompt }]
   };
   if (SAMPLING_MODELS.test(model)) request.temperature = 0.2;
+  return request;
+}
+
+/**
+ * Throws on a refusal and warns when the item list was cut off
+ * @param {any} response - Message
+ */
+function checkResponse(response) {
+  if (response.stop_reason === 'refusal') {
+    throw new Error(`Claude declined to process this transcript${response.stop_details?.category ? ` (${response.stop_details.category})` : ''}`);
+  }
+  if (response.stop_reason === 'max_tokens') {
+    console.warn('⚠️  Claude response hit max_tokens; the item list may be incomplete. Raise CLAUDE_MAX_TOKENS.');
+  }
+}
+
+/**
+ * Calls Claude for extraction. Streams (long transcripts can take a while) and
+ * returns the final message.
+ * @param {string} prompt - The prompt to send
+ * @returns {Promise<Object>} Claude API response (Message)
+ */
+async function callClaudeAPI(prompt) {
+  const anthropic = createClient();
+  const request = buildExtractionParams(prompt);
+  const model = request.model;
 
   console.log(`🤖 Calling Claude API (${model})...`);
   try {
@@ -245,12 +268,7 @@ async function callClaudeAPI(prompt) {
       response = await anthropic.messages.stream(request).finalMessage();
     }
 
-    if (response.stop_reason === 'refusal') {
-      throw new Error(`Claude declined to process this transcript${response.stop_details?.category ? ` (${response.stop_details.category})` : ''}`);
-    }
-    if (response.stop_reason === 'max_tokens') {
-      console.warn('⚠️  Claude response hit max_tokens; the item list may be incomplete. Raise CLAUDE_MAX_TOKENS.');
-    }
+    checkResponse(response);
     console.log('✅ Claude API response received');
     return response;
   } catch (error) {
@@ -414,7 +432,8 @@ function parseLeadingJsonArray(text) {
 }
 
 /**
- * Extracts decisions from meeting transcript using Claude API with few-shot learning
+ * Everything an extraction sends to Claude, before calling it: the prompt (with the person's
+ * review examples and AI context) and the output language
  * @param {string} transcriptText - The meeting transcript content
  * @param {string} workspace_id - Workspace ID for fetching relevant feedback examples
  * @param {Object} [options]
@@ -423,11 +442,9 @@ function parseLeadingJsonArray(text) {
  * @param {string|null} [options.userId] - whose context and review examples to use
  * @param {string|null} [options.personName] - that person's name, for their personal context
  * @param {string} [options.context] - a ready context block (the eval), instead of loading it
- * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean, language }
+ * @returns {Promise<{ prompt: string, language: string|null, usedExamples: boolean }>}
  */
-async function extractDecisionsFromTranscript(transcriptText, workspace_id, options = {}) {
-  const startTime = Date.now();
-
+async function prepareExtraction(transcriptText, workspace_id, options = {}) {
   // Sanitize the transcript text
   const sanitized = sanitizeTranscriptText(transcriptText);
 
@@ -466,36 +483,64 @@ async function extractDecisionsFromTranscript(transcriptText, workspace_id, opti
   const language = outputLanguage(sanitized, options.language);
   if (language) console.log(`🌐 Outcomes will be written in ${languageName(language)}`);
   const prompt = buildDecisionExtractionPrompt(sanitized, approvedExamples, rejectedExamples, language, contextBlock);
+  return { prompt, language, usedExamples: approvedExamples.length > 0 || rejectedExamples.length > 0 };
+}
 
-  // Call Claude API
-  const callStart = Date.now();
-  const response = await callClaudeAPI(prompt);
-
+/**
+ * Turns Claude's reply into extracted items, and records the call (analytics, AI usage)
+ * @param {any} response - Message, from a live call or a batch result
+ * @param {Object} meta
+ * @param {string|null} meta.workspaceId
+ * @param {string|null} [meta.userId]
+ * @param {string|null} [meta.language]
+ * @param {boolean} [meta.usedExamples]
+ * @param {number} [meta.latencyMs]
+ * @param {boolean} [meta.batch] - came from the Message Batches API (half price)
+ * @returns {Promise<{ decisions: Object[], language: string|null, model: string, usedExamples: boolean }>}
+ */
+async function finishExtraction(response, { workspaceId, userId = null, language = null, usedExamples = false, latencyMs = 0, batch = false }) {
+  checkResponse(response);
   const decisions = parseDecisionResponse(responseText(response));
   trackAiGeneration({
     feature: 'extraction',
     response,
-    latencyMs: Date.now() - callStart,
-    distinctId: options.userId || null,
-    properties: { item_count: decisions.length, truncated: response.stop_reason === 'max_tokens', workspace_id: workspace_id || null }
+    latencyMs,
+    distinctId: userId || null,
+    properties: { item_count: decisions.length, truncated: response.stop_reason === 'max_tokens', workspace_id: workspaceId || null, batch }
   });
-  await recordAiUsage({ workspaceId: workspace_id || null, userId: options.userId || null, feature: 'extraction', response });
+  await recordAiUsage({ workspaceId: workspaceId || null, userId: userId || null, feature: batch ? 'extraction_batch' : 'extraction', response });
+  return { decisions, language, model: response.model, usedExamples };
+}
+
+/**
+ * Extracts outcomes from a transcript with one live Claude call (imports can use
+ * ingestion/batch-extraction.js instead, at half the price)
+ * @param {string} transcriptText - The meeting transcript content
+ * @param {string} workspace_id - Workspace ID for fetching relevant feedback examples
+ * @param {Object} [options] - see prepareExtraction
+ * @returns {Promise<Object>} { decisions: Array, processingTime: number, model: string, usedExamples: boolean, language }
+ */
+async function extractDecisionsFromTranscript(transcriptText, workspace_id, options = {}) {
+  const startTime = Date.now();
+  const { prompt, language, usedExamples } = await prepareExtraction(transcriptText, workspace_id, options);
+
+  const callStart = Date.now();
+  const response = await callClaudeAPI(prompt);
+  const result = await finishExtraction(response, {
+    workspaceId: workspace_id || null, userId: options.userId || null, language, usedExamples, latencyMs: Date.now() - callStart
+  });
 
   const processingTime = Date.now() - startTime;
-
   console.log(`⏱️  Processing took ${processingTime}ms`);
-
-  return {
-    decisions,
-    language,
-    processingTime,
-    model: response.model,
-    usedExamples: approvedExamples.length > 0 || rejectedExamples.length > 0
-  };
+  return { ...result, processingTime };
 }
 
 module.exports = {
   extractDecisionsFromTranscript,
+  prepareExtraction,
+  finishExtraction,
+  buildExtractionParams,
+  createClient,
   getApprovedExamples,
   getRejectedExamples,
   isClaudeConfigured,

@@ -6,6 +6,12 @@ const googleMeetSource = require('./sources/google-meet');
 const pipeline = require('./pipeline');
 const { ensurePersonalSpace } = require('../services/spaces');
 const { countByType } = require('../core/decisions/types');
+const batchExtraction = require('./batch-extraction');
+// Loaded when an import runs (the Claude client needs the API config)
+/** @type {typeof import('../services/claude').prepareExtraction} */
+const prepareExtraction = (text, workspaceId, options) => require('../services/claude').prepareExtraction(text, workspaceId, options);
+/** @type {typeof import('../services/claude').finishExtraction} */
+const finishExtraction = (response, meta) => require('../services/claude').finishExtraction(response, meta);
 
 /**
  * Importing past Google Meet meetings ("Settings → Google Meet → Import past meetings").
@@ -13,8 +19,13 @@ const { countByType } = require('../core/decisions/types');
  * 1. findMeetings: lists the user's meetings in a date range with whether a
  *    transcript/Gemini notes exist and whether Corteza already processed them.
  * 2. startImport: the user picks meetings; a job is stored in `meet_imports`
- *    and processed in the background (runImport), one meeting at a time.
- *    The UI polls getImport for progress.
+ *    and processed in the background (runImport). The UI polls getImport for progress.
+ * 3. runImport extracts the importable meetings in one Message Batches request
+ *    (ingestion/batch-extraction.js, half price): items wait as `extracting` while
+ *    the batch runs, and the Meet poller collects the results every 5 minutes
+ *    (resumeStaleImports). The meeting is read from Google again then: transcripts
+ *    are never stored. Without batching (AI_BATCH_IMPORTS=false), or for what the
+ *    batch couldn't take, meetings go through the pipeline one at a time, live.
  *
  * Imports are manual choices, so automatic skip rules (1:1s, title keywords)
  * don't apply, and meetings skipped earlier can be imported. Completed meetings
@@ -209,6 +220,74 @@ function importErrorMessage(error, step, { needsReconsent = false } = {}) {
   return 'Something went wrong reading this meeting. Try importing it again later.';
 }
 
+/** Lets the Meet poller pick the job up again on its next tick (resumeStaleImports) */
+async function releaseLease(importId) {
+  await imports().updateOne({ import_id: importId, status: 'running' }, { $set: { lease_until: new Date(Date.now() - 1), updated_at: new Date() } });
+  return imports().findOne({ import_id: importId });
+}
+
+/**
+ * Prepares the importable meetings of a job and submits them as one extraction batch.
+ * Items that can't be imported get their result now; ones that need no AI call (too short,
+ * already imported, over the AI budget) stay queued for the live path, which skips them
+ * without calling Claude. If the batch can't be created, everything stays queued (live).
+ */
+async function submitBatch(job, { readMeeting, toTranscript, recordResult, connection, deps }) {
+  const { checkAiBudget } = require('../core/usage/ai-usage');
+  const budget = await checkAiBudget(job.workspace_id);
+  const statuses = await pipeline.getStatuses(job.workspace_id, connection.user_id, 'google_meet', job.items.map(item => item.meeting_id));
+
+  const prompts = [];
+  const prepared = [];
+  for (let index = 0; index < job.items.length; index++) {
+    const item = job.items[index];
+    if (item.status !== 'queued') continue;
+    const read = await readMeeting(item);
+    if (read.result) { await recordResult(index, read.result); continue; }
+
+    const transcript = toTranscript(read.meeting, item);
+    const words = (transcript.text || '').split(/\s+/).filter(Boolean).length;
+    if (!budget.ok || words < pipeline.MIN_WORDS || statuses.get(item.meeting_id)?.status === 'completed') continue;
+
+    const extraction = await prepareExtraction(pipeline.buildExtractionText(transcript), job.workspace_id, {
+      language: transcript.language, userId: connection.user_id, personName: connection.user_name
+    });
+    const customId = `m${index}`;
+    prompts.push({ customId, prompt: extraction.prompt });
+    prepared.push({ index, customId, language: extraction.language, usedExamples: extraction.usedExamples, title: read.meeting.title });
+  }
+  if (prompts.length === 0) return;
+
+  let batchId;
+  try {
+    batchId = await batchExtraction.submitExtractionBatch(prompts, { client: deps.batchClient });
+  } catch (error) {
+    console.warn(`⚠️  Meet import ${job.import_id}: batch not created (${error.status || error.message}), extracting live`);
+    return;
+  }
+  const set = { batch: { id: batchId, submitted_at: new Date(), requests: prompts.length, collected_at: null }, updated_at: new Date() };
+  for (const p of prepared) {
+    set[`items.${p.index}.status`] = 'extracting';
+    set[`items.${p.index}.title`] = p.title;
+    set[`items.${p.index}.batch_id`] = p.customId;
+    set[`items.${p.index}.batch_language`] = p.language || null;
+    set[`items.${p.index}.batch_used_examples`] = !!p.usedExamples;
+  }
+  await imports().updateOne({ import_id: job.import_id }, { $set: set });
+}
+
+/** The job's batch results once it ended (null while running; an empty Map if it can't be read: all go live) */
+async function collectBatch(job, deps) {
+  try {
+    return await batchExtraction.fetchExtractionResults(job.batch.id, { client: deps.batchClient });
+  } catch (error) {
+    const ageMs = Date.now() - new Date(job.batch.submitted_at).getTime();
+    console.warn(`⚠️  Meet import ${job.import_id}: reading batch ${job.batch.id} failed (${error.status || error.message})`);
+    // Batches end within 24 hours: after that, stop waiting and extract live
+    return ageMs > 25 * 60 * 60 * 1000 ? new Map() : null;
+  }
+}
+
 /**
  * Processes the queued meetings of an import job (safe to call again: leased and resumable)
  */
@@ -218,7 +297,8 @@ async function runImport(importId, deps = {}) {
     getRecord = meetClient.getConferenceRecord,
     loadMeeting = googleMeetSource.loadMeeting,
     ingest = pipeline.ingestTranscript,
-    notify = notifyImportDone
+    notify = notifyImportDone,
+    useBatch = batchExtraction.batchImportsEnabled()
   } = deps;
 
   const now = () => new Date();
@@ -241,72 +321,116 @@ async function runImport(importId, deps = {}) {
   const space = await resolveTargetSpace(job.workspace_id, job.space_id, connection);
   // Meetings are checked against the day the import was started (a resumed job keeps its window)
   const cutoff = importCutoff(new Date(job.created_at || Date.now()));
+  const author = { user_id: connection.user_id, name: connection.user_name };
+  const language = (connection.settings && connection.settings.language) || null;
 
-  for (let index = 0; index < job.items.length; index++) {
-    const item = job.items[index];
-    if (item.status !== 'queued') continue;
+  /** The meeting as a pipeline Transcript */
+  const toTranscript = (meeting, item) => ({
+    workspaceId: job.workspace_id,
+    source: 'google_meet',
+    externalId: item.meeting_id,
+    title: meeting.title,
+    text: meeting.text,
+    participants: meeting.participants,
+    occurredAt: meeting.occurredAt,
+    url: meeting.url,
+    spaceId: space.space_id,
+    spaceName: space.name,
+    author,
+    language
+  });
 
-    let result;
+  /** Reads one meeting: { meeting } when it can be imported, else { result } saying why not */
+  const readMeeting = async item => {
     let step = 'meeting';
     try {
       const record = await getRecord(client, item.meeting_id);
       step = 'content';
       // The list only offers recent meetings; this stops a hand-made request from importing older ones
-      const tooOld = record.startTime && new Date(record.startTime) < cutoff;
-      const meeting = tooOld ? null : await loadMeeting(client, record);
-      if (tooOld) {
-        result = { status: 'too_old', title: item.title, decisions_created: 0, error: tooOldMessage() };
-      } else if (meeting.state !== 'ready') {
-        result = { status: meeting.state === 'pending' ? 'not_ready' : 'no_transcript', title: meeting.title, decisions_created: 0 };
-      } else {
-        const outcome = await ingest({
-          workspaceId: job.workspace_id,
-          source: 'google_meet',
-          externalId: item.meeting_id,
-          title: meeting.title,
-          text: meeting.text,
-          participants: meeting.participants,
-          occurredAt: meeting.occurredAt,
-          url: meeting.url,
-          spaceId: space.space_id,
-          spaceName: space.name,
-          author: { user_id: connection.user_id, name: connection.user_name },
-          language: (connection.settings && connection.settings.language) || null
-        }, { manual: true });
-        result = {
-          status: outcome.status === 'duplicate' ? 'already_imported' : outcome.status,
-          title: meeting.title,
-          decisions_created: outcome.decisions.length,
-          outcomes_by_type: countByType(outcome.decisions),
-          action_items_created: (outcome.actionItems || []).length,
-          error: outcome.status === 'failed' ? 'Corteza couldn’t extract outcomes right now. Try importing it again later.' : null
-        };
-        if (outcome.error) console.error(`❌ Meet import ${importId}: extraction failed for ${item.meeting_id}: ${outcome.error}`);
+      if (record.startTime && new Date(record.startTime) < cutoff) {
+        return { result: { status: 'too_old', title: item.title, decisions_created: 0, error: tooOldMessage() } };
       }
+      const meeting = await loadMeeting(client, record);
+      if (meeting.state !== 'ready') {
+        return { result: { status: meeting.state === 'pending' ? 'not_ready' : 'no_transcript', title: meeting.title, decisions_created: 0 } };
+      }
+      return { meeting };
     } catch (error) {
       const detail = meetClient.describeGoogleError(error);
       console.error(`❌ Meet import ${importId}: ${item.meeting_id} failed reading the ${error.meetSource || step}: ${detail}`);
-      result = { status: 'failed', title: item.title, decisions_created: 0, error: importErrorMessage(error, step, { needsReconsent: connections.needsReconsent(connection) }) };
+      return { result: { status: 'failed', title: item.title, decisions_created: 0, error: importErrorMessage(error, step, { needsReconsent: connections.needsReconsent(connection) }) } };
     }
+  };
 
-    await imports().updateOne({ import_id: importId }, {
-      $set: {
-        [`items.${index}.status`]: result.status,
-        [`items.${index}.title`]: result.title,
-        [`items.${index}.decisions_created`]: result.decisions_created,
-        [`items.${index}.outcomes_by_type`]: result.outcomes_by_type || {},
-        [`items.${index}.action_items_created`]: result.action_items_created || 0,
-        [`items.${index}.error`]: result.error || null,
-        lease_until: new Date(Date.now() + LEASE_MS),
-        updated_at: now()
-      },
-      $inc: {
-        done: 1,
-        decisions_created: result.decisions_created,
-        action_items_created: result.action_items_created || 0,
-        ...Object.fromEntries(Object.entries(result.outcomes_by_type || {}).map(([type, count]) => [`outcomes_by_type.${type}`, count]))
+  /** Runs a readable meeting through the pipeline (live extraction unless `extract` is given) */
+  const ingestMeeting = async (meeting, item, extract) => {
+    const outcome = await ingest(toTranscript(meeting, item), extract ? { manual: true, extract } : { manual: true });
+    if (outcome.error) console.error(`❌ Meet import ${importId}: extraction failed for ${item.meeting_id}: ${outcome.error}`);
+    return {
+      status: outcome.status === 'duplicate' ? 'already_imported' : outcome.status,
+      title: meeting.title,
+      decisions_created: outcome.decisions.length,
+      outcomes_by_type: countByType(outcome.decisions),
+      action_items_created: (outcome.actionItems || []).length,
+      error: outcome.status === 'failed' ? 'Corteza couldn’t extract outcomes right now. Try importing it again later.' : null
+    };
+  };
+
+  const recordResult = (index, result) => imports().updateOne({ import_id: importId }, {
+    $set: {
+      [`items.${index}.status`]: result.status,
+      [`items.${index}.title`]: result.title,
+      [`items.${index}.decisions_created`]: result.decisions_created,
+      [`items.${index}.outcomes_by_type`]: result.outcomes_by_type || {},
+      [`items.${index}.action_items_created`]: result.action_items_created || 0,
+      [`items.${index}.error`]: result.error || null,
+      lease_until: new Date(Date.now() + LEASE_MS),
+      updated_at: now()
+    },
+    $inc: {
+      done: 1,
+      decisions_created: result.decisions_created,
+      action_items_created: result.action_items_created || 0,
+      ...Object.fromEntries(Object.entries(result.outcomes_by_type || {}).map(([type, count]) => [`outcomes_by_type.${type}`, count]))
+    }
+  });
+
+  // 1. Batch: extract every importable meeting in one Message Batches request (half price)
+  if (!job.batch && useBatch && job.items.some(item => item.status === 'queued')) {
+    await submitBatch(job, { readMeeting, toTranscript, recordResult, connection, deps });
+    return releaseLease(importId);
+  }
+
+  // 2. Batch results: once the batch has ended, save each meeting's outcomes
+  if (job.batch && !job.batch.collected_at) {
+    const results = await collectBatch(job, deps);
+    if (!results) return releaseLease(importId); // still running: the Meet poller checks again
+    for (let index = 0; index < job.items.length; index++) {
+      const item = job.items[index];
+      if (item.status !== 'extracting') continue;
+      const read = await readMeeting(item);
+      if (read.result) { await recordResult(index, read.result); continue; }
+      const answer = results.get(item.batch_id);
+      const extract = answer && answer.message
+        ? async () => finishExtraction(answer.message, { workspaceId: job.workspace_id, userId: connection.user_id, language: item.batch_language || null, usedExamples: !!item.batch_used_examples, batch: true })
+        : null; // errored or expired in the batch: extract it live
+      if (!extract) console.warn(`⚠️  Meet import ${importId}: batch result for ${item.meeting_id} was ${answer ? answer.error : 'missing'}, extracting live`);
+      try {
+        await recordResult(index, await ingestMeeting(read.meeting, item, extract));
+      } catch (error) {
+        console.error(`❌ Meet import ${importId}: saving ${item.meeting_id} failed:`, error.message);
+        await recordResult(index, { status: 'failed', title: read.meeting.title, decisions_created: 0, error: 'Corteza couldn’t extract outcomes right now. Try importing it again later.' });
       }
-    });
+    }
+    await imports().updateOne({ import_id: importId }, { $set: { 'batch.collected_at': now() } });
+  }
+
+  // 3. One at a time, live: without batching, or what the batch didn't take
+  for (let index = 0; index < job.items.length; index++) {
+    const item = job.items[index];
+    if (item.status !== 'queued') continue;
+    const read = await readMeeting(item);
+    await recordResult(index, read.result || await ingestMeeting(read.meeting, item));
   }
 
   // Only the run that marks it completed sends the summary email

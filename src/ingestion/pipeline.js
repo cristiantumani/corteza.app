@@ -343,5 +343,6 @@ module.exports = {
   isHandled,
   getStatuses,
   buildExtractionText,
-  MAX_ATTEMPTS
+  MAX_ATTEMPTS,
+  MIN_WORDS
 };
