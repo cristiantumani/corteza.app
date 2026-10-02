@@ -6,6 +6,7 @@ describe('shared sidebar', () => {
   const pages = [
     ['dashboard-new.html', 'home'],
     ['actions.html', 'actions'],
+    ['questions.html', 'questions'],
     ['ai-search.html', 'search'],
     ['settings-new.html', 'settings']
   ];

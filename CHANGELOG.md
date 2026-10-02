@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Open questions & risks
+- **New page, next to Action items:** "Questions & risks" in the sidebar lists the open questions and risks your meetings left, from your spaces, with why they matter, the quote, the meeting and how long ago they came up. Filter by questions or risks (with open counts) and by status
+- **Close the loop:** "Mark answered" (questions) or "Mark mitigated" (risks), with an optional note on the answer or how it was handled, shown on the item with who closed it and when. "Reopen" puts it back on the list
+
 ### Added - Support Corteza
 - **"Buy me a coffee"** at the top of the sidebar's footer and in the morning summary's footer, a regular link with Buy Me a Coffee's yellow cup as its icon (the only touch of yellow), linking to buymeacoffee.com/corteza.app, so beta testers who find it useful can chip in for the AI costs. A plain link (no third-party widget or script)
 
