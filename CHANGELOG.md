@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - The morning summary prepares you for today's meetings
+- **"Prepare for today's meetings":** with calendar access, the morning summary lists today's meetings (time, title, who's in it) with the open action items involving those people: yours that you share with them or that came from the last meeting with the same name, and the ones they own that you can see. "You have 3 open items with Juan, and you meet him at 11:00"
+- **Calendar access is optional:** new connections are asked for `calendar.events.readonly`; people connected before see "Add calendar access" in Settings → Google Meet. Events are read when the summary is written and never stored. Without it, nothing changes
+- A meeting with items to prepare is reason enough to send the summary; the subject says "N meetings to prepare"
+
 ### Added - Action items colleagues assign you: marked as new, and never twice
 - **"New from a colleague":** when a colleague's meeting (or a colleague, by hand) names you as owner of an action item, Action items shows a banner ("3 new action items assigned to you by colleagues. They came from meetings captured by Martín (2), Ana (1)"), a **New** badge on each one, and the count next to Action items in the sidebar until you open it. The morning summary says it too
 - **Already yours, or already done:** before it reaches you, Corteza checks whether you already have that task: from the same meeting, with the same words, or with the same meaning (OpenAI embeddings), among your items from around the meeting's date. If you have it, the copy doesn't show up again; if you had finished it, the copy is saved as done ("Already done") so the colleague doesn't chase it either. A weekly meeting's recurring task still counts as new each week

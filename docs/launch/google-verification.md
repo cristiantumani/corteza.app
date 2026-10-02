@@ -13,7 +13,9 @@ Corteza reads Meet transcripts and Gemini notes. The Google scopes that allows a
 
 **Before submitting,** check whether `drive.readonly` is still needed. Connect a test account without it, import a meeting that has Gemini notes, and look for `appNotAuthorizedToFile` in the logs. If Google has extended `drive.meet.readonly` to Gemini notes, drop `drive.readonly` from `MEET_SCOPES` in `src/integrations/google/connections.js`. A narrower scope makes verification and the consent screen easier.
 
-Future roadmap items add **sensitive** (not restricted) scopes: `calendar.events.readonly` for pre-meeting briefs and `tasks` for Google Tasks. Add them to the verification request only once the features ship.
+**Optional, sensitive (not restricted):** `https://www.googleapis.com/auth/calendar.events.readonly` reads the person's own events for today when their morning summary is built, to list today's meetings with the open action items of the people in them (`core/briefs/meeting-prep.js`). Events are never stored. Include it in the verification request (justification and demo video: the "Prepare for today's meetings" section). Corteza works without it: people who untick it get no meeting prep.
+
+A future roadmap item adds another sensitive scope: `tasks` for Google Tasks. Add it to the verification request only once the feature ships.
 
 ## Steps
 

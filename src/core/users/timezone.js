@@ -46,6 +46,34 @@ function localTime(now, timeZone) {
 }
 
 /**
+ * Start and end of the local day `now` falls in, as UTC instants
+ * @param {Date} now
+ * @param {string} timeZone - falls back to UTC when invalid
+ * @returns {{ start: Date, end: Date }} end is the next local midnight
+ */
+function localDayBounds(now, timeZone) {
+  const zone = isValidTimeZone(timeZone) ? timeZone : 'UTC';
+  const { date } = localTime(now, zone);
+  // Offset of the zone at a given instant, in ms (local wall clock minus UTC)
+  const offsetAt = instant => {
+    const parts = {};
+    for (const part of new Intl.DateTimeFormat('en-US', {
+      timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+    }).formatToParts(instant)) parts[part.type] = part.value;
+    const wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+    return wall - Math.floor(instant.getTime() / 1000) * 1000;
+  };
+  const midnight = day => {
+    const guess = new Date(`${day}T00:00:00Z`);
+    const first = new Date(guess.getTime() - offsetAt(guess));
+    return new Date(guess.getTime() - offsetAt(first)); // second pass handles a DST change near midnight
+  };
+  const next = new Date(`${date}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return { start: midnight(date), end: midnight(next.toISOString().slice(0, 10)) };
+}
+
+/**
  * Saves a person's time zone
  * @param {string} workspaceId
  * @param {string} userId
@@ -78,4 +106,4 @@ async function getTimeZone(workspaceId, userId) {
   return { timezone, source: timezone ? member.timezone_source || 'auto' : null };
 }
 
-module.exports = { isValidTimeZone, localTime, saveTimeZone, getTimeZone };
+module.exports = { isValidTimeZone, localTime, localDayBounds, saveTimeZone, getTimeZone };

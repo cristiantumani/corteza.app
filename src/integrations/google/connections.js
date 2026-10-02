@@ -21,8 +21,11 @@ const MEET_SCOPES = [
   // them needs Drive read access. Corteza only opens Docs the Meet API links to.
   'https://www.googleapis.com/auth/drive.readonly'
 ];
+// Optional: today's calendar events, to prepare the morning summary for today's meetings
+// (core/briefs/meeting-prep.js). Meet capture works without it.
+const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
 // Also ask for identity so we can check the connected account is the signed-in user
-const CONNECT_SCOPES = ['openid', 'email', ...MEET_SCOPES];
+const CONNECT_SCOPES = ['openid', 'email', ...MEET_SCOPES, CALENDAR_SCOPE];
 
 /** On first connect, also pick up meetings that ended in the previous day */
 const INITIAL_BACKFILL_MS = 24 * 60 * 60 * 1000;
@@ -86,6 +89,11 @@ async function exchangeConnectCode({ code, nonce }) {
 /** True if a connection was made before a scope was added and should be reconnected */
 function needsReconsent(connection) {
   return missingScopes(connection?.scopes || []).length > 0;
+}
+
+/** True when the person let Corteza read their calendar (optional; connected before it existed, or unticked) */
+function hasCalendar(connection) {
+  return Boolean(connection && Array.isArray(connection.scopes) && connection.scopes.includes(CALENDAR_SCOPE));
 }
 
 /** Scopes from MEET_SCOPES the user did not grant (they can untick boxes on the consent screen) */
@@ -223,6 +231,8 @@ module.exports = {
   exchangeConnectCode,
   missingScopes,
   needsReconsent,
+  hasCalendar,
+  CALENDAR_SCOPE,
   saveConnection,
   getConnection,
   listActiveConnections,

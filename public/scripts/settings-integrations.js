@@ -120,6 +120,13 @@
           <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
         </div>` : ''}
       ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">Last check failed: ${escapeHtml(data.last_error)}</p>` : ''}
+      ${needsReconnect ? '' : data.calendar_connected ? `
+        <p class="mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-base text-tertiary" aria-hidden="true">event_available</span>
+          Calendar connected: your morning summary prepares you for today's meetings with the open action items of the people in them.</p>` : `
+        <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+          <strong>Prepare for your meetings.</strong> Let Corteza read your calendar and your morning summary will list today's meetings with the open action items of the people in them. Corteza only reads your own events when it writes the summary and doesn't store them.
+          <a href="/integrations/google/connect" class="font-bold underline ml-1">Add calendar access</a>
+        </div>`}
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <label class="block" data-multi-space>

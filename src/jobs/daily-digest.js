@@ -111,12 +111,15 @@ function sinceLabel(since, now, timeZone) {
  * @param {Date} since
  * @param {Date} now
  * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
- * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[], assignedBy: { name: string, count: number }[] }>}
+ * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[], assignedBy: { name: string, count: number }[], meetingPrep: Object[] }>}
  *   planItems: the person's open items due today, then the most recently overdue
  *   ({ item_id, text, due_date, meeting }), at most PLAN_ITEMS
  *   assignedBy: of the new action items, the ones colleagues' meetings assigned them, by colleague
+ *   meetingPrep: today's meetings with the open items of the people in them (core/briefs/meeting-prep), each with `time` ('9:30 AM')
+ * @param {Object} [options]
+ * @param {Function} [options.meetingPrep] - (workspaceId, userId, { now, timeZone }) => MeetingPrep[] (tests)
  */
-async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UTC') {
+async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UTC', { meetingPrep: loadPrep } = {}) {
   const db = getDatabase();
   const today = localTime(now, timeZone).date;
   const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
@@ -165,12 +168,22 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
     }
   }
   const assignedBy = fromColleagues.map(row => ({ name: row._id || 'A colleague', count: row.count }));
-  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems, assignedBy };
+
+  // Today's meetings with the open items of the people in them (needs calendar access)
+  let meetingPrep = [];
+  try {
+    const prep = await (loadPrep || require('../core/briefs/meeting-prep').getMeetingPrep)(workspaceId, userId, { now, timeZone });
+    const clock = new Intl.DateTimeFormat('en-US', { timeZone: isValidTimeZone(timeZone) ? timeZone : 'UTC', hour: 'numeric', minute: '2-digit' });
+    meetingPrep = prep.map(meeting => ({ ...meeting, time: clock.format(new Date(meeting.start)) }));
+  } catch (error) {
+    console.warn(`⚠️  Meeting prep failed for ${userId} in ${workspaceId}:`, error.message);
+  }
+  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems, assignedBy, meetingPrep };
 }
 
-/** Something new happened, or something is due today: reminders alone never trigger an email */
+/** Something new happened, something is due today, or a meeting today has items to prepare: reminders alone never trigger an email */
 function hasNews(summary) {
-  return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0;
+  return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0 || (summary.meetingPrep || []).length > 0;
 }
 
 /**
