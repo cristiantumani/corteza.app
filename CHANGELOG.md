@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Topic threads for earlier meetings, and dated questions
+- **Backfill (`010-topic-threads.js`):** the dry run grouped most of a meeting into one thread, because any two close items were joined and chained. Now each item joins only the question or risk it's closest to (similarity ≥ 0.6, shown in the dry run), with at most 4 decisions and action items per thread
+- **A question or risk with a date no longer becomes an action item with its own text** (e.g. "¿Cómo rediseñar las páginas de precios…" as a task). Only a dated decision gets a linked action item, as intended
+
 ### Added - Topic threads: a question, its risk and its next step, together
 - **One thread per subject:** when a meeting raises an open question ("Should we get ISO 27001?"), a risk ("We could lose enterprise deals without it") and a next step ("Cristian researches the requirements by Oct 16"), Corteza now saves them as one thread. The AI gives each outcome a short topic, and outcomes of the same meeting about the same subject are linked
 - **Questions & risks:** each card has a **Linked** section with the rest of its thread: the next steps (owner, due date, done or not), the decisions that may answer the question, and its risks, which appear inside the question's card. The topic links to a page with just that thread

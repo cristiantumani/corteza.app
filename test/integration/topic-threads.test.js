@@ -137,7 +137,8 @@ describe('topic threads: pipeline, linked items, close-the-loop suggestions, onl
         { decision_text: '¿Conviene certificarnos en ISO 27001?', decision_type: 'open_question', confidence: 0.9, topic: 'Certificación ISO 27001' },
         { decision_text: 'Podemos perder clientes enterprise', decision_type: 'risk', confidence: 0.8, topic: 'certificacion ISO 27001' },
         { decision_text: 'Cristian investiga los requisitos', decision_type: 'action_item', confidence: 0.9, owner_names: ['Cristian'], topic: 'Certificación ISO 27001' },
-        { decision_text: 'Se contrata un diseñador', decision_type: 'decision', confidence: 0.9, topic: 'Contratación' }
+        { decision_text: 'Se contrata un diseñador', decision_type: 'decision', confidence: 0.9, topic: 'Contratación' },
+        { decision_text: '¿Renovamos con Book antes del viernes?', decision_type: 'open_question', confidence: 0.8, due_date: '2026-10-09', topic: 'Book' }
       ]
     });
     const result = await pipeline.ingestTranscript({
@@ -154,5 +155,6 @@ describe('topic threads: pipeline, linked items, close-the-loop suggestions, onl
     assert.equal(risk.topic_id, question.topic_id);
     assert.equal(items[0].topic_id, question.topic_id);
     assert.equal(hire.topic_id, null, 'a lone subject has no thread');
+    assert.equal(items.length, 1, 'a dated question does not become an action item with the same text');
   });
 });

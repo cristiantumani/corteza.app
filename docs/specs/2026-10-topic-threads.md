@@ -21,7 +21,7 @@ A meeting often produces several outcomes about one subject: an open question ("
    - A decision in the thread is shown as "May answer this question" on the question's card.
 6. **Morning summary.** A due or overdue action item whose thread has an open question shows "Next step on: <question>".
 7. **Privacy.** Linked items follow the same visibility as everything else: only items in spaces the viewer can access, or action items they own. Never a colleague's private item.
-8. **Existing data.** `scripts/migrations/010-topic-threads.js` groups outcomes and action items **from the same meeting** whose embeddings are close (cosine ≥ 0.55 by default, `--threshold`). It's a dry run unless `--apply`; the dry run lists the proposed groups by id (`--show-text` adds the first words of each item, for the operator's own terminal).
+8. **Existing data.** `scripts/migrations/010-topic-threads.js` groups outcomes and action items **from the same meeting**: each open question (or a risk no question is close to) leads a thread, and risks, decisions and action items join the one question or risk their embedding is closest to (cosine ≥ 0.6 by default, `--threshold`), at most 4 decisions and action items per thread. (A first version grouped any close pair, which chained most of a meeting into one thread; see the Oct 2 dry run.) It's a dry run unless `--apply`; the dry run lists the proposed groups by id (`--show-text` adds the first words of each item, for the operator's own terminal).
 
 ## Out of scope (next step)
 
