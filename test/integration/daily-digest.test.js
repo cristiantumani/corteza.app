@@ -68,8 +68,8 @@ describe('daily digest: one summary per person per day, with only their own numb
     const { planItems, ...counts } = summary;
     assert.deepEqual(counts, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1, assignedBy: [], meetingPrep: [] });
     assert.deepEqual(planItems, [
-      { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null },
-      { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync' }
+      { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null, next_step_on: null },
+      { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync', next_step_on: null }
     ], 'their own open items: due today first, then overdue');
   });
 

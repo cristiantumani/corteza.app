@@ -2,15 +2,24 @@
  * Open questions & risks page (/questions): what meetings left unresolved, with a way to
  * mark a question answered or a risk mitigated (with an optional note), and to reopen it.
  * API: src/http/questions-risks.js
+ *
+ * Topic threads (docs/specs/2026-10-topic-threads.md): each card lists the rest of its
+ * thread under "Linked" (next steps, decisions that may answer it, other questions and
+ * risks). With "All" types, a risk whose thread has an open question in the list is shown
+ * inside that question's card. /questions?topic=<id> shows one thread. Answering a question
+ * offers to close its thread's open risks (close-loop.js).
  */
 (function() {
   'use strict';
 
   const params = new URLSearchParams(window.location.search);
+  const topicParam = params.get('topic');
   const state = {
     type: ['open_question', 'risk'].includes(params.get('type')) ? params.get('type') : 'all',
-    status: 'open'
+    status: topicParam ? 'all' : 'open',
+    topic: topicParam && /^top_[0-9a-f]{1,32}$/.test(topicParam) ? topicParam : null
   };
+  const OUTCOME_LABELS = { decision: 'Decision', open_question: 'Question', risk: 'Risk' };
   const LABELS = {
     open_question: { name: 'Open question', resolve: 'Mark answered', resolved: 'Answered', note: 'What was the answer? (optional)', icon: 'contact_support', color: 'bg-[#e3e7fb] text-[#3953bd]' },
     risk: { name: 'Risk', resolve: 'Mark mitigated', resolved: 'Mitigated', note: 'How was it handled? (optional)', icon: 'warning', color: 'bg-[#fff4e5] text-[#8a5300]' }
@@ -61,12 +70,76 @@
     return parts.length ? `<p class="text-xs text-on-surface-variant">${parts.join(' · ')}</p>` : '';
   }
 
-  function itemHtml(item) {
+  function formatDay(value) {
+    const date = new Date(`${value}T00:00:00`);
+    return isNaN(date) ? value : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  /** One linked action item: the next step, its owners, due date and status */
+  function linkedActionHtml(action) {
+    const done = action.status === 'done';
+    const cancelled = action.status === 'cancelled';
+    const overdue = action.status === 'open' && action.due_date && action.due_date < new Date().toISOString().slice(0, 10);
+    const owners = (action.owners || []).map(owner => owner.name).filter(Boolean).join(', ');
+    const meta = [
+      owners || 'No owner',
+      action.due_date ? `${overdue ? 'overdue · ' : 'due '}${formatDay(action.due_date)}` : '',
+      done ? 'done' : cancelled ? 'cancelled' : ''
+    ].filter(Boolean).join(' · ');
+    return `
+      <li class="flex items-start gap-2">
+        <span class="material-symbols-outlined text-base ${done ? 'text-[#1e6b34]' : 'text-on-surface-variant'}" aria-hidden="true">${done ? 'task_alt' : 'radio_button_unchecked'}</span>
+        <span class="text-sm">
+          <span class="text-xs font-semibold text-on-surface-variant">Next step:</span>
+          <a href="/actions?item=${encodeURIComponent(action.item_id)}" class="text-on-surface hover:underline ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(action.text)}</a>
+          <span class="text-xs ${overdue ? 'text-error font-semibold' : 'text-on-surface-variant'}">(${escapeHtml(meta)})</span>
+        </span>
+      </li>`;
+  }
+
+  /** One linked outcome: a decision that may answer the question, or another question or risk */
+  function linkedOutcomeHtml(outcome, parent) {
+    const resolved = outcome.resolution_status === 'resolved';
+    const label = outcome.type === 'decision' && parent.type === 'open_question'
+      ? 'Decision · may answer this question'
+      : (OUTCOME_LABELS[outcome.type] || 'Outcome');
+    const status = outcome.type === 'decision' ? '' : resolved ? (outcome.type === 'risk' ? ' (mitigated)' : ' (answered)') : '';
+    return `
+      <li class="flex items-start gap-2">
+        <span class="material-symbols-outlined text-base text-on-surface-variant" aria-hidden="true">${outcome.type === 'decision' ? 'gavel' : outcome.type === 'risk' ? 'warning' : 'contact_support'}</span>
+        <span class="text-sm">
+          <span class="text-xs font-semibold text-on-surface-variant">${escapeHtml(label)}:</span>
+          <span class="${resolved ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${escapeHtml(outcome.text)}</span><span class="text-xs text-on-surface-variant">${status}</span>
+        </span>
+      </li>`;
+  }
+
+  /** "Linked": risks nested as cards, then decisions, other outcomes and next steps */
+  function linkedHtml(item, nested) {
+    const nestedIds = new Set(nested.map(risk => risk.id));
+    const linked = item.linked || { outcomes: [], actions: [] };
+    const outcomes = linked.outcomes.filter(outcome => !nestedIds.has(outcome.id))
+      .sort((a, b) => (a.type === 'decision' ? 0 : 1) - (b.type === 'decision' ? 0 : 1));
+    if (!nested.length && !outcomes.length && !linked.actions.length) return '';
+    return `
+      <div class="mt-1 border-t border-outline-variant pt-3 flex flex-col gap-2">
+        <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Linked${item.topic ? ` · <a href="/questions?topic=${encodeURIComponent(item.topic_id)}" class="normal-case text-primary hover:underline">${escapeHtml(item.topic)}</a>` : ''}</p>
+        ${nested.map(risk => itemHtml(risk, [], true)).join('')}
+        ${outcomes.length || linked.actions.length ? `<ul class="flex flex-col gap-1.5">${outcomes.map(outcome => linkedOutcomeHtml(outcome, item)).join('')}${linked.actions.map(linkedActionHtml).join('')}</ul>` : ''}
+      </div>`;
+  }
+
+  /**
+   * @param {Object} item
+   * @param {Object[]} [nested] - risks shown inside this question's card
+   * @param {boolean} [isNested] - this card is inside a question's card
+   */
+  function itemHtml(item, nested = [], isNested = false) {
     const label = LABELS[item.type] || LABELS.open_question;
     const resolved = item.resolution_status === 'resolved';
     const by = item.resolved_by && item.resolved_by.name;
     return `
-      <div id="item-${escapeHtml(item.id)}" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 ${resolved ? 'opacity-80' : ''}">
+      <div id="item-${escapeHtml(item.id)}" class="${isNested ? 'bg-surface-container-low rounded-lg p-3' : 'bg-surface-container-lowest border border-outline-variant rounded-xl p-4'} flex flex-col gap-2 ${resolved ? 'opacity-80' : ''}">
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${label.color}">
             <span class="material-symbols-outlined text-sm" aria-hidden="true">${label.icon}</span>${label.name}
@@ -84,13 +157,46 @@
             ? `<button type="button" class="reopen-btn text-sm font-semibold text-primary hover:underline" data-id="${escapeHtml(item.id)}">Reopen</button>`
             : `<button type="button" class="resolve-btn border border-outline-variant rounded-lg py-1.5 px-3 text-sm font-semibold hover:bg-surface-container-low" data-id="${escapeHtml(item.id)}" data-type="${escapeHtml(item.type)}">${label.resolve}</button>`}
         </div>
+        ${isNested ? '' : linkedHtml(item, nested)}
       </div>`;
+  }
+
+  /** With "All" types, a risk goes inside the card of an open question from its thread */
+  function cardsHtml(items) {
+    if (state.type !== 'all') return items.map(item => itemHtml(item)).join('');
+    const questionByTopic = new Map();
+    for (const item of items) {
+      if (item.type === 'open_question' && item.topic_id && item.resolution_status !== 'resolved' && !questionByTopic.has(item.topic_id)) {
+        questionByTopic.set(item.topic_id, item);
+      }
+    }
+    const nestedIn = new Map();
+    const shown = [];
+    for (const item of items) {
+      const host = item.type === 'risk' && item.topic_id ? questionByTopic.get(item.topic_id) : null;
+      if (host) {
+        if (!nestedIn.has(host.id)) nestedIn.set(host.id, []);
+        nestedIn.get(host.id).push(item);
+      } else {
+        shown.push(item);
+      }
+    }
+    return shown.map(item => itemHtml(item, nestedIn.get(item.id) || [])).join('');
+  }
+
+  function renderTopicBanner(topic) {
+    const banner = document.getElementById('topic-banner');
+    if (!banner) return;
+    if (!state.topic) { banner.classList.add('hidden'); return; }
+    banner.innerHTML = `Showing one thread${topic ? `: <strong>${escapeHtml(topic)}</strong>` : ''}. <a href="/questions" class="text-primary font-semibold hover:underline">Show all</a>`;
+    banner.classList.remove('hidden');
   }
 
   async function load() {
     renderFilters();
     const container = document.getElementById('items');
     const query = new URLSearchParams({ type: state.type, status: state.status });
+    if (state.topic) query.set('topic', state.topic);
     try {
       const response = await fetch(`/api/questions-risks?${query}`, { credentials: 'include' });
       if (response.status === 401) {
@@ -100,10 +206,11 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not load open questions and risks');
       renderFilters(data.counts);
+      renderTopicBanner(data.topic);
       const items = data.items;
       document.getElementById('items-count').textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
       container.innerHTML = items.length
-        ? items.map(itemHtml).join('')
+        ? cardsHtml(items)
         : `<p class="text-on-surface-variant">${state.status === 'open' ? 'Nothing open here. Open questions and risks are captured automatically from your meetings.' : 'Nothing matches these filters.'}</p>`;
     } catch (error) {
       container.innerHTML = `<p class="text-error">${escapeHtml(error.message)}</p>`;
@@ -131,6 +238,8 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) alert(data.error || 'Could not save');
+    // An answered question with open risks in its thread: offer to close them too
+    if (response.ok && window.CortezaLoop) window.CortezaLoop.offerMitigate(data.linked_risks);
     return load();
   }
 
@@ -153,5 +262,8 @@
     if (event.target.id === 'status-filter') { state.status = event.target.value; load(); }
   });
 
-  document.addEventListener('DOMContentLoaded', load);
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.CortezaLoop) window.CortezaLoop.init(document.getElementById('loop-notice'), load);
+    load();
+  });
 })();

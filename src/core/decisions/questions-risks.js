@@ -23,7 +23,7 @@ const LIST_LIMIT = 300;
 const PROJECTION = {
   _id: 0, id: 1, type: 1, text: 1, rationale: 1, evidence_quote: 1, owner_name: 1, space_id: 1, space_name: 1,
   source_details: 1, timestamp: 1, capture: 1, review_status: 1, creator: 1,
-  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1
+  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1, topic_id: 1, topic: 1
 };
 
 /**
@@ -33,15 +33,17 @@ const PROJECTION = {
  * @param {string[]} filters.spaceIds - spaces the viewer can access
  * @param {'open_question'|'risk'|'all'} [filters.type='all']
  * @param {'open'|'resolved'|'all'} [filters.status='open']
+ * @param {string|null} [filters.topicId] - only this thread (core/topics)
  * @returns {Promise<{ items: Object[], counts: { open_question: number, risk: number } }>}
  *   counts: open ones by type, whatever the filters (for the tabs)
  */
-async function listQuestionsAndRisks(workspaceId, { spaceIds, type = 'all', status = 'open' }) {
+async function listQuestionsAndRisks(workspaceId, { spaceIds, type = 'all', status = 'open', topicId = null }) {
   const base = { workspace_id: workspaceId, space_id: { $in: spaceIds || [] } };
   /** @type {Record<string, any>} */
   const query = { ...base, type: TYPES.includes(type) ? type : { $in: TYPES } };
   if (status === 'open') query.resolution_status = { $ne: 'resolved' };
   if (status === 'resolved') query.resolution_status = 'resolved';
+  if (topicId) query.topic_id = topicId;
 
   const [items, openCounts] = await Promise.all([
     getDecisionsCollection().find(query, { projection: PROJECTION }).sort({ timestamp: -1, id: -1 }).limit(LIST_LIMIT).toArray(),

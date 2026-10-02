@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Topic threads: a question, its risk and its next step, together
+- **One thread per subject:** when a meeting raises an open question ("Should we get ISO 27001?"), a risk ("We could lose enterprise deals without it") and a next step ("Cristian researches the requirements by Oct 16"), Corteza now saves them as one thread. The AI gives each outcome a short topic, and outcomes of the same meeting about the same subject are linked
+- **Questions & risks:** each card has a **Linked** section with the rest of its thread: the next steps (owner, due date, done or not), the decisions that may answer the question, and its risks, which appear inside the question's card. The topic links to a page with just that thread
+- **Action items:** an item in a thread says "Part of: Certificación ISO 27001 · 1 question, 1 risk", linking to it
+- **Closing the loop, never by itself:** marking a next step done asks "This was a next step on *…*. Mark it answered?", with an optional answer; answering a question asks "Close the linked risk too?". The morning summary shows "Next step on: <question>" under a due or overdue item
+- Linked items follow the usual privacy: you never see a colleague's private items in a thread
+- Earlier meetings: `node scripts/migrations/010-topic-threads.js` (dry run; `--apply` to write) links the items of each meeting that are about the same subject, by meaning
+
 ### Added - Open questions & risks
 - **New page, next to Action items:** "Questions & risks" in the sidebar lists the open questions and risks your meetings left, from your spaces, with why they matter, the quote, the meeting and how long ago they came up. Filter by questions or risks (with open counts) and by status
 - **Close the loop:** "Mark answered" (questions) or "Mark mitigated" (risks), with an optional note on the answer or how it was handled, shown on the item with who closed it and when. "Reopen" puts it back on the list

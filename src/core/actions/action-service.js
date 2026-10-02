@@ -12,7 +12,8 @@ const { resolveOwners, ownersFromUserIds } = require('./owners');
  *   { item_id, workspace_id, space_id, space_name, text,
  *     owners: [{ name, user_id|null, email|null }], owner_ids: [user_id],
  *     due_date: 'YYYY-MM-DD'|null, status: 'open'|'done'|'cancelled',
- *     decision_id|null, source: { type, external_id, title, url, occurred_at },
+ *     decision_id|null, topic_id|null, topic|null (its thread, see core/topics),
+ *     source: { type, external_id, title, url, occurred_at },
  *     rationale, evidence_quote, capture: 'ai'|'manual', confidence,
  *     created_by: { user_id, name }, due_date_requested_at, completed_at, created_at, updated_at,
  *     owner_duplicates: [{ user_id, item_id, status }], unseen_by: [user_id], completed_earlier, embedding }
@@ -44,6 +45,8 @@ function validDate(value) {
  * @param {string[]} [params.ownerUserIds] - members picked by hand (used instead of ownerNames when given)
  * @param {string|null} [params.dueDate] - 'YYYY-MM-DD'
  * @param {number|null} [params.decisionId]
+ * @param {string|null} [params.topicId] - thread it belongs to (`top_<hex>`, see core/topics)
+ * @param {string|null} [params.topic] - the thread's label
  * @param {Object|null} [params.source] - { type, external_id, title, url, occurred_at }
  * @param {string|null} [params.rationale]
  * @param {string|null} [params.evidenceQuote]
@@ -55,7 +58,8 @@ function validDate(value) {
  */
 async function createActionItem({
   workspaceId, spaceId, spaceName = null, text, ownerNames = [], ownerUserIds = null, dueDate = null, decisionId = null,
-  source = null, rationale = null, evidenceQuote = null, capture = 'manual', confidence = null, author = null, members
+  source = null, rationale = null, evidenceQuote = null, capture = 'manual', confidence = null, author = null, members,
+  topicId = null, topic = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createActionItem requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createActionItem requires text');
@@ -75,6 +79,8 @@ async function createActionItem({
     due_date: validDate(dueDate),
     status: 'open',
     decision_id: typeof decisionId === 'number' ? decisionId : null,
+    topic_id: topicId || null,
+    topic: topicId && topic ? String(topic).slice(0, 80) : null,
     source: source ? { ...source } : null,
     rationale: rationale || null,
     evidence_quote: evidenceQuote || null,

@@ -6,6 +6,7 @@ const { getDecisionsCollection, getWorkspaceMembersCollection, getWorkspaceSpace
 const actions = require('../core/actions/action-service');
 const { reviewColleagueAssignments, unseenFromColleagues, markColleagueAssignmentsSeen } = require('../core/actions/colleague-assignments');
 const { getTimeZone, localTime } = require('../core/users/timezone');
+const { withThreadSummaries, openInThread } = require('../core/topics/thread-service');
 const { track } = require('../integrations/posthog/client');
 
 /**
@@ -15,7 +16,9 @@ const { track } = require('../integrations/posthog/client');
  *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|all&due=overdue|today|none|week&decision_id=12
  *   POST  /api/action-items                 { decision_id | space_id, text, owner_user_ids?, due_date? } add one by hand,
  *                                           to a decision or on its own (Log manually → Action item)
- *   PATCH /api/action-items/:itemId         { status?, due_date? }
+ *                                           each item has `thread` ("Part of: <topic> · N questions, M risks") or null
+ *   PATCH /api/action-items/:itemId         { status?, due_date? }; marked done: `linked_questions`, the open
+ *                                           questions of its thread, to offer marking them answered
  *   GET   /api/action-items/from-colleagues  { count, from: [{ name, count }] } new items colleagues assigned to me
  *   POST  /api/action-items/from-colleagues/seen   I opened Action items: they're no longer new
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
@@ -68,7 +71,7 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
       decisionId: Number.isInteger(decisionId) ? decisionId : undefined,
       today: localTime(new Date(), timezone || 'UTC').date
     });
-    res.json({ success: true, items, user_id });
+    res.json({ success: true, items: await withThreadSummaries(workspace_id, items, { spaceIds, viewerId: user_id }), user_id });
   } catch (error) {
     console.error('❌ Failed to list action items:', error);
     res.status(500).json({ success: false, error: 'Failed to load action items' });
@@ -187,13 +190,16 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
     const { status, due_date } = req.body || {};
     const updated = await actions.updateActionItem(workspace_id, item.item_id, { status, due_date });
     if (updated?.error) return res.status(400).json({ success: false, error: updated.error });
+    const linkedQuestions = status === 'done' && item.status !== 'done' && item.topic_id
+      ? await openInThread(workspace_id, item.topic_id, 'open_question', { spaceIds: await getUserAccessibleSpaces(null, workspace_id, user_id) })
+      : [];
     track('action_item_updated', {
       status_changed_to: status && status !== item.status ? status : null,
       due_date_changed: due_date !== undefined && due_date !== item.due_date,
       is_owner: isOwner,
       overdue: !!item.due_date && item.due_date < new Date().toISOString().slice(0, 10)
     });
-    res.json({ success: true, item: updated });
+    res.json({ success: true, item: updated, linked_questions: linkedQuestions });
   } catch (error) {
     console.error('❌ Failed to update action item:', error);
     res.status(500).json({ success: false, error: 'Failed to update action item' });
