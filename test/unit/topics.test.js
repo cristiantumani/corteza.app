@@ -116,19 +116,33 @@ test('the backfill never chains a whole meeting into one thread: each item joins
   assert.ok(trial.filter(item => item.key !== '#1' && item.key !== 'act_x').every(item => item.similarity >= 0.6));
 });
 
-test('the backfill computes embeddings for action items that have none, so they can join a thread', async () => {
-  const { fillMissingEmbeddings, groupCapture } = require('../../scripts/migrations/010-topic-threads');
+test('the backfill compares plain-text embeddings: outcomes in memory only, new action item ones stored', async () => {
+  const { embedTexts, groupCapture } = require('../../scripts/migrations/010-topic-threads');
   const items = [
-    { key: '#297', kind: 'outcome', type: 'open_question', id: 297, text: '¿ISO 27001?', embedding: [1, 0, 0] },
-    { key: 'act_iso', kind: 'action', type: 'action_item', text: 'Investigar requisitos ISO 27001' },
-    { key: 'act_has', kind: 'action', type: 'action_item', text: 'Otra', embedding: [0, 1, 0] }
+    // Stored for search (text repeated, creator, quote): far from the action item's plain text
+    { key: '#297', kind: 'outcome', type: 'open_question', id: 297, text: '¿ISO 27001?', embedding: [0, 0, 1] },
+    { key: 'act_iso', kind: 'action', type: 'action_item', item_id: 'act_iso', text: 'Investigar requisitos ISO 27001' },
+    { key: 'act_has', kind: 'action', type: 'action_item', item_id: 'act_has', text: 'Otra', embedding: [0, 1, 0] }
   ];
   const captures = new Map([['W|S|m', items]]);
-  assert.equal(groupCapture(items, 0.6).length, 0, 'without an embedding the action item cannot join');
+  assert.equal(groupCapture(items, 0.6).length, 0);
   const asked = [];
-  const computed = await fillMissingEmbeddings(captures, async text => { asked.push(text); return [0.95, 0.05, 0]; });
-  assert.equal(computed, 1);
-  assert.deepEqual(asked, ['Investigar requisitos ISO 27001'], 'only items without one');
+  const stored = [];
+  const db = { collection: () => ({ updateOne: async (filter, update) => { stored.push(filter.item_id); } }) };
+  const computed = await embedTexts(captures, async text => { asked.push(text); return /ISO/.test(text) ? [1, 0.05, 0] : [0, 1, 0]; }, { db });
+  assert.equal(computed, 2);
+  assert.deepEqual(asked.sort(), ['Investigar requisitos ISO 27001', '¿ISO 27001?'], 'an action item that has one keeps it');
+  assert.deepEqual(stored, ['act_iso'], 'only the new action item embedding is stored; outcomes keep their search one');
   assert.deepEqual(groupCapture(items, 0.6)[0].map(item => item.key), ['#297', 'act_iso']);
-  assert.equal(await fillMissingEmbeddings(captures, null), 0, 'embeddings off: nothing computed');
+  assert.equal(await embedTexts(captures, null), 0, 'embeddings off: nothing computed');
+});
+
+test('an action item that carries out a decision in a thread follows it, even with its own embedding', () => {
+  const { groupCapture } = require('../../scripts/migrations/010-topic-threads');
+  const groups = groupCapture([
+    { key: '#9', kind: 'outcome', type: 'decision', id: 9, text: 'Ensayo general', embedding: [1, 0, 0] },
+    { key: '#12', kind: 'outcome', type: 'risk', id: 12, text: '45 minutos', embedding: [0.9, 0.3, 0] },
+    { key: 'act_f', kind: 'action', type: 'action_item', decision_id: 9, text: 'Felipe organiza el ensayo', embedding: [0, 0, 1] }
+  ], 0.6);
+  assert.deepEqual(groups[0].map(item => item.key), ['#9', '#12', 'act_f']);
 });
