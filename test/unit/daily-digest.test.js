@@ -79,3 +79,9 @@ test("the email lists the person's items, escaped, each linking to it in Corteza
   assert.match(html, /was due Sep 28/);
   assert.doesNotMatch(html, /See all/, 'every due item is already listed');
 });
+
+test('the morning summary footer links to Buy me a coffee', () => {
+  const { dailyDigestHtml } = require('../../src/utils/n8n-client');
+  const html = dailyDigestHtml({ workspace_name: 'Ninja', unsubscribe_url: 'u', summary: { dayLabel: 'Friday', today: '2026-10-02', meetings: 0, outcomes: {}, newActionItems: 0, dueToday: 1, toReview: 0, overdue: 0, noDueDate: 0, planItems: [] } });
+  assert.match(html, /href="https:\/\/buymeacoffee\.com\/corteza\.app"/);
+});

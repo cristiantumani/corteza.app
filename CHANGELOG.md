@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Support Corteza
+- **"Support Corteza"** in the app sidebar and a "Buy me a coffee ☕" line in the morning summary's footer link to buymeacoffee.com/corteza.app, so beta testers who find it useful can chip in for the AI costs. A plain link (no third-party widget or script)
+
 ### Added - The morning summary prepares you for today's meetings
 - **"Prepare for today's meetings":** with calendar access, the morning summary lists today's meetings (time, title, who's in it) with the open action items involving those people: yours that you share with them or that came from the last meeting with the same name, and the ones they own that you can see. "You have 3 open items with Juan, and you meet him at 11:00"
 - **Calendar access is optional:** new connections are asked for `calendar.events.readonly`; people connected before see "Add calendar access" in Settings → Google Meet. Events are read when the summary is written and never stored. Without it, nothing changes
