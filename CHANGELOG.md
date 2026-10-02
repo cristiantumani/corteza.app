@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Action items colleagues assign you: marked as new, and never twice
+- **"New from a colleague":** when a colleague's meeting (or a colleague, by hand) names you as owner of an action item, Action items shows a banner ("3 new action items assigned to you by colleagues. They came from meetings captured by Martín (2), Ana (1)"), a **New** badge on each one, and the count next to Action items in the sidebar until you open it. The morning summary says it too
+- **Already yours, or already done:** before it reaches you, Corteza checks whether you already have that task: from the same meeting, with the same words, or with the same meaning (OpenAI embeddings), among your items from around the meeting's date. If you have it, the copy doesn't show up again; if you had finished it, the copy is saved as done ("Already done") so the colleague doesn't chase it either. A weekly meeting's recurring task still counts as new each week
+- `ACTION_DUPLICATE_SIMILARITY` tunes how alike two items must be (default 0.86). For items saved before this: `node scripts/migrations/009-review-colleague-assignments.js --apply`
+
 ### Changed - Import past meetings reaches back 7 days during the beta
 - **Settings → Google Meet → Import past meetings** offers the last 7 days only (the month picker and the 30 and 90 day presets are gone). Every imported meeting is an AI extraction, and importing a month at a time was the biggest AI cost. The server refuses older periods too, and a meeting older than the limit is marked "Too old to import" without being read
 - `MEET_IMPORT_MAX_DAYS` changes the limit (default 7, at most 92). Automatic capture of new meetings is unchanged

@@ -66,7 +66,7 @@ describe('daily digest: one summary per person per day, with only their own numb
   test("a person's numbers: meetings and outcomes since the last one (not imports), new items, due today, reminders", async () => {
     const summary = await digest.buildDailySummary(WS, 'UA', hoursAgo(24), WEDNESDAY_MORNING, 'America/Santiago');
     const { planItems, ...counts } = summary;
-    assert.deepEqual(counts, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1 });
+    assert.deepEqual(counts, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1, assignedBy: [] });
     assert.deepEqual(planItems, [
       { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null },
       { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync' }

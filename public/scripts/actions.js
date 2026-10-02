@@ -4,6 +4,10 @@
  *
  * /actions?item=<id> (link in the "when will this be done?" email) shows that
  * item and focuses its due date field.
+ *
+ * Items a colleague's meeting assigned to the person since their last visit are marked
+ * "New", with a banner saying who; opening the page marks them seen
+ * (GET/POST /api/action-items/from-colleagues, core/actions/colleague-assignments).
  */
 (function() {
   'use strict';
@@ -17,6 +21,8 @@
     status: focusItemId ? 'all' : 'open',
     due: dueParam
   };
+
+  let newIds = null; // items new from colleagues on this visit (null until the first load)
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -77,6 +83,30 @@
     return parts.length ? `<p class="text-xs text-on-surface-variant">${parts.join(' · ')}</p>` : '';
   }
 
+  function badgesHtml(item) {
+    const badges = [];
+    if (newIds && newIds.has(item.item_id)) {
+      const by = item.created_by && item.created_by.name;
+      badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold">New</span><span class="text-xs text-on-surface-variant">Assigned to you from ${by ? `${escapeHtml(by)}’s` : 'a colleague’s'} meeting</span>`);
+    }
+    if (item.completed_earlier) badges.push('<span class="text-xs text-on-surface-variant">Already done: the owner had finished it before this meeting was captured</span>');
+    return badges.length ? `<div class="flex flex-wrap items-center gap-2">${badges.join('')}</div>` : '';
+  }
+
+  /** Who assigned the new items: "Martín (3), Ana (1)" */
+  async function showFromColleagues() {
+    const banner = document.getElementById('from-colleagues');
+    try {
+      const response = await fetch('/api/action-items/from-colleagues', { credentials: 'include' });
+      const data = response.ok ? await response.json() : null;
+      if (!banner || !data || !data.count) return;
+      const people = data.from.map(row => `${escapeHtml(row.name)} (${row.count})`).join(', ');
+      banner.innerHTML = `<strong>${data.count} new action item${data.count === 1 ? '' : 's'} assigned to you by colleagues.</strong> They came from meetings captured by ${people}, and are marked <strong>New</strong> below. If one is already done, mark it done.`;
+      banner.classList.remove('hidden');
+      fetch('/api/action-items/from-colleagues/seen', { method: 'POST', credentials: 'include' }).catch(() => {});
+    } catch (error) { /* the list still works */ }
+  }
+
   function itemHtml(item) {
     const done = item.status === 'done';
     const cancelled = item.status === 'cancelled';
@@ -84,6 +114,7 @@
       <div id="item-${escapeHtml(item.item_id)}" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex gap-4 items-start ${item.item_id === focusItemId ? 'ring-2 ring-primary' : ''}">
         <input type="checkbox" class="done-toggle mt-1 w-5 h-5 rounded" data-id="${escapeHtml(item.item_id)}" ${done ? 'checked' : ''} ${cancelled ? 'disabled' : ''} aria-label="Done">
         <div class="flex-1 min-w-0 flex flex-col gap-2">
+          ${badgesHtml(item)}
           <p class="text-on-surface font-medium ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>
           ${item.rationale ? `<p class="text-sm text-on-surface-variant">Why: ${escapeHtml(item.rationale)}</p>` : ''}
           <div class="flex flex-wrap items-center gap-2">${ownersHtml(item)}</div>
@@ -114,6 +145,8 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not load action items');
       const items = data.items;
+      // Remember what was new on arrival: the flags clear once the visit marks them seen
+      if (!newIds) newIds = new Set(items.filter(item => item.new_from_colleague).map(item => item.item_id));
       document.getElementById('items-count').textContent = `${items.length} action item${items.length === 1 ? '' : 's'}`;
       container.innerHTML = items.length
         ? items.map(itemHtml).join('')
@@ -160,5 +193,8 @@
     if (button) { state.owner = button.dataset.owner; load(); }
   });
 
-  document.addEventListener('DOMContentLoaded', load);
+  document.addEventListener('DOMContentLoaded', async () => {
+    await load();
+    showFromColleagues();
+  });
 })();
