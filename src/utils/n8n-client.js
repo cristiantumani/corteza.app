@@ -535,8 +535,8 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
           </div>
         </div>
         <p style="max-width: 580px; margin: 20px auto 0; font-size: 12px; color: #8a8c96; text-align: center;">
-          Finding Corteza useful? It helps pay for the AI.<br>
-          <a href="${SUPPORT_URL}" style="display: inline-block; margin: 8px 0 14px; padding: 8px 16px; background: #FFDD00; color: #000; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;">☕ Buy me a coffee</a><br>
+          Finding Corteza useful?
+          <a href="${SUPPORT_URL}" style="color: #3953bd; font-weight: 600; text-decoration: none; white-space: nowrap;"><img src="${baseUrl}/images/bmc-cup.png" alt="" width="10" height="14" style="vertical-align: -2px; margin-right: 4px; border: 0;">Buy me a coffee</a>, it helps pay for the AI.<br><br>
           One email each weekday morning, only when there's something new or due. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
           Change the time zone in Settings, or <a href="${unsubscribe_url}" style="color: #8a8c96;">unsubscribe from morning summaries</a>.
         </p>
