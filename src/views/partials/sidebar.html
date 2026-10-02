@@ -36,6 +36,17 @@
   }
   /* Space controls only matter with 2+ spaces; pages set body.single-space when there's one */
   body.single-space [data-multi-space] { display: none !important; }
+  /* Buy Me a Coffee's own colors, so it reads as their button */
+  .corteza-sidebar .sb-coffee {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    height: 2.5rem; padding: 0 0.75rem; margin-bottom: 0.5rem; border-radius: 0.5rem;
+    background: #FFDD00; color: #000; font-size: 0.875rem; font-weight: 700; text-decoration: none;
+    transition: filter 150ms, transform 150ms;
+  }
+  .corteza-sidebar .sb-coffee:hover { filter: brightness(0.95); transform: translateY(-1px); }
+  .corteza-sidebar .sb-coffee .material-symbols-outlined {
+    font-size: 1.25rem !important; font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+  }
   .corteza-sidebar .sb-footer {
     display: flex; flex-direction: column; gap: 0.25rem;
     margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4e1e8;
@@ -63,6 +74,10 @@
   </nav>
 
   <div class="sb-footer">
+    <!-- Beta testers can chip in for the AI costs (a plain link: the CSP allows no third-party widgets) -->
+    <a class="sb-coffee" href="https://buymeacoffee.com/corteza.app" target="_blank" rel="noopener">
+      <span class="material-symbols-outlined" aria-hidden="true">local_cafe</span>Buy me a coffee
+    </a>
     <!-- Opens the Log modal where the page has it (Home, Search); elsewhere goes to Home with ?log=1 -->
     <a class="sb-link" href="/dashboard?log=1"
        onclick="if (typeof window.openLogMemoryModal === 'function') { event.preventDefault(); window.openLogMemoryModal(); }">
@@ -72,10 +87,6 @@
     <a class="sb-link" href="/dashboard?tour=1"
        onclick="if (window.CortezaOnboarding) { event.preventDefault(); window.CortezaOnboarding.open(); }">
       <span class="material-symbols-outlined" aria-hidden="true">help</span>How it works
-    </a>
-    <!-- Beta testers can chip in for the AI costs (a plain link: the CSP allows no third-party widgets) -->
-    <a class="sb-link" href="https://buymeacoffee.com/corteza.app" target="_blank" rel="noopener">
-      <span class="material-symbols-outlined" aria-hidden="true">local_cafe</span>Support Corteza
     </a>
     <a class="sb-link" href="/auth/logout">
       <span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out
