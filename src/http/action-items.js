@@ -4,6 +4,7 @@ const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
 const { getUserAccessibleSpaces, isAdmin, canCreateInSpace } = require('../services/permissions');
 const { getDecisionsCollection, getWorkspaceMembersCollection, getWorkspaceSpacesCollection } = require('../config/database');
 const actions = require('../core/actions/action-service');
+const { reviewColleagueAssignments, unseenFromColleagues, markColleagueAssignmentsSeen } = require('../core/actions/colleague-assignments');
 const { getTimeZone, localTime } = require('../core/users/timezone');
 const { track } = require('../integrations/posthog/client');
 
@@ -15,6 +16,8 @@ const { track } = require('../integrations/posthog/client');
  *   POST  /api/action-items                 { decision_id | space_id, text, owner_user_ids?, due_date? } add one by hand,
  *                                           to a decision or on its own (Log manually → Action item)
  *   PATCH /api/action-items/:itemId         { status?, due_date? }
+ *   GET   /api/action-items/from-colleagues  { count, from: [{ name, count }] } new items colleagues assigned to me
+ *   POST  /api/action-items/from-colleagues/seen   I opened Action items: they're no longer new
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
  *
  * Visibility follows spaces: people see items in spaces they can access, plus the items they own
@@ -113,12 +116,39 @@ router.post('/api/action-items', apiRateLimiter, express.json(), requireSession,
       capture: 'manual',
       author: { user_id, name: user_name || null }
     });
+    // Owners other than the person adding it see it as new, assigned by them
+    await reviewColleagueAssignments([item], { checkDuplicates: false });
+    delete item.unseen_by;
+    delete item.owner_duplicates;
     console.log(`✅ Action item ${item.item_id} added ${decision ? `to decision #${decision.id}` : 'on its own'} by ${user_id}`);
     track('action_item_added', { has_due_date: !!item.due_date, owner_count: item.owner_ids.length, linked: !!decision });
     res.status(201).json({ success: true, item });
   } catch (error) {
     console.error('❌ Failed to add action item:', error);
     res.status(500).json({ success: false, error: 'Failed to add action item' });
+  }
+});
+
+/** Action items colleagues assigned to the signed-in person that they haven't seen: { count, from: [{ name, count }] } */
+router.get('/api/action-items/from-colleagues', apiRateLimiter, requireSession, async (req, res) => {
+  try {
+    const { workspace_id, user_id } = req.session.user;
+    res.json({ success: true, ...(await unseenFromColleagues(workspace_id, user_id)) });
+  } catch (error) {
+    console.error('❌ Failed to count new action items from colleagues:', error);
+    res.status(500).json({ success: false, error: 'Failed to load new action items' });
+  }
+});
+
+/** The person opened Action items: what colleagues assigned them is no longer new */
+router.post('/api/action-items/from-colleagues/seen', apiRateLimiter, requireSession, async (req, res) => {
+  try {
+    const { workspace_id, user_id } = req.session.user;
+    const seen = await markColleagueAssignmentsSeen(workspace_id, user_id);
+    res.json({ success: true, seen });
+  } catch (error) {
+    console.error('❌ Failed to mark action items as seen:', error);
+    res.status(500).json({ success: false, error: 'Failed to update' });
   }
 });
 

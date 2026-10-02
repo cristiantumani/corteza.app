@@ -14,10 +14,15 @@ const { resolveOwners, ownersFromUserIds } = require('./owners');
  *     due_date: 'YYYY-MM-DD'|null, status: 'open'|'done'|'cancelled',
  *     decision_id|null, source: { type, external_id, title, url, occurred_at },
  *     rationale, evidence_quote, capture: 'ai'|'manual', confidence,
- *     created_by: { user_id, name }, due_date_requested_at, completed_at, created_at, updated_at }
+ *     created_by: { user_id, name }, due_date_requested_at, completed_at, created_at, updated_at,
+ *     owner_duplicates: [{ user_id, item_id, status }], unseen_by: [user_id], completed_earlier, embedding }
+ *   (the last four: see colleague-assignments.js)
  */
 
 const STATUSES = ['open', 'done', 'cancelled'];
+/** Never sent to the browser: the embedding is large, owner_duplicates and unseen_by name colleagues' items and ids */
+const LIST_PROJECTION = { _id: 0, embedding: 0, owner_duplicates: 0 };
+const PUBLIC_PROJECTION = { ...LIST_PROJECTION, unseen_by: 0 };
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function collection() {
@@ -98,13 +103,14 @@ async function createActionItem({
  * @param {number} [filters.decisionId]
  * @param {Date} [filters.now]
  * @param {string} [filters.today] - 'YYYY-MM-DD' in the viewer's time zone (default: UTC date of `now`)
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Object[]>} each with `new_from_colleague` (true when a colleague's meeting assigned it to the viewer and they haven't seen it)
  */
 async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, status = 'open', due, decisionId, now = new Date(), today: localToday } = {}) {
   const query = { workspace_id: workspaceId, space_id: { $in: spaceIds || [] } };
   if (viewerId) {
     delete query.space_id;
-    query.$or = [{ space_id: { $in: spaceIds || [] } }, { owner_ids: viewerId }];
+    // An item that duplicates one the viewer already has (colleague-assignments) only shows through their own copy
+    query.$or = [{ space_id: { $in: spaceIds || [] } }, { owner_ids: viewerId, 'owner_duplicates.user_id': { $ne: viewerId } }];
   }
   if (ownerId) query.owner_ids = ownerId;
   if (STATUSES.includes(status)) query.status = status;
@@ -119,8 +125,13 @@ async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, statu
   if (due === 'none') query.due_date = null;
   if (due === 'week') query.due_date = { $ne: null, $gte: today, $lte: inAWeek };
 
-  let items = await collection().find(query, { projection: { _id: 0 } }).sort({ created_at: -1 }).limit(500).toArray();
+  let items = await collection().find(query, { projection: LIST_PROJECTION }).sort({ created_at: -1 }).limit(500).toArray();
   if (viewerId) items = await withoutColleaguesCopies(workspaceId, viewerId, spaceIds || [], items);
+  for (const item of items) {
+    // A colleague's meeting assigned it to the viewer and they haven't opened Action items since
+    item.new_from_colleague = Boolean(viewerId && Array.isArray(item.unseen_by) && item.unseen_by.includes(viewerId));
+    delete item.unseen_by;
+  }
   return items.sort((a, b) => {
     if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
     if (a.due_date) return -1;
@@ -152,7 +163,7 @@ async function withoutColleaguesCopies(workspaceId, viewerId, spaceIds, items) {
 
 /** One action item of a workspace, or null */
 async function getActionItem(workspaceId, itemId) {
-  return collection().findOne({ workspace_id: workspaceId, item_id: itemId }, { projection: { _id: 0 } });
+  return collection().findOne({ workspace_id: workspaceId, item_id: itemId }, { projection: PUBLIC_PROJECTION });
 }
 
 /**
@@ -176,7 +187,7 @@ async function updateActionItem(workspaceId, itemId, changes = {}) {
   return collection().findOneAndUpdate(
     { workspace_id: workspaceId, item_id: itemId },
     { $set: set },
-    { returnDocument: 'after', projection: { _id: 0 } }
+    { returnDocument: 'after', projection: PUBLIC_PROJECTION }
   );
 }
 

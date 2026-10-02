@@ -171,9 +171,10 @@ function buildExtractionText(transcript) {
  * @param {Object} [options]
  * @param {Function} [options.extract] - (text, workspaceId) => { decisions } (defaults to Claude)
  * @param {boolean} [options.manual] - chosen by a person (see claim)
+ * @param {Function} [options.reviewAssignments] - (actionItems) => checks colleagues' items (defaults to core/actions/colleague-assignments)
  * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], actionItems: Object[], error?: string }>}
  */
-async function ingestTranscript(transcript, { extract, manual = false } = {}) {
+async function ingestTranscript(transcript, { extract, manual = false, reviewAssignments: reviewOverride } = {}) {
   const ingestion = await claim(transcript, manual);
   if (!ingestion) return { status: 'duplicate', decisions: [], actionItems: [] };
 
@@ -286,6 +287,16 @@ async function ingestTranscript(transcript, { extract, manual = false } = {}) {
         author: transcript.author,
         members
       }));
+    }
+
+    // Items for colleagues named in this meeting: skip the ones they already have, flag the rest as new for them
+    if (actionItems.length > 0) {
+      try {
+        const reviewAssignments = reviewOverride || require('../core/actions/colleague-assignments').reviewColleagueAssignments;
+        await reviewAssignments(actionItems);
+      } catch (error) {
+        console.warn(`⚠️  Checking colleagues' action items failed for ${transcript.externalId}:`, error.message);
+      }
     }
 
     await ingestions().updateOne(key, {

@@ -111,31 +111,40 @@ function sinceLabel(since, now, timeZone) {
  * @param {Date} since
  * @param {Date} now
  * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
- * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[] }>}
+ * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[], assignedBy: { name: string, count: number }[] }>}
  *   planItems: the person's open items due today, then the most recently overdue
  *   ({ item_id, text, due_date, meeting }), at most PLAN_ITEMS
+ *   assignedBy: of the new action items, the ones colleagues' meetings assigned them, by colleague
  */
 async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UTC') {
   const db = getDatabase();
   const today = localTime(now, timeZone).date;
   const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
+  // Their items, without copies of ones they already had (core/actions/colleague-assignments)
+  const mine = { owner_ids: userId, 'owner_duplicates.user_id': { $ne: userId } };
 
-  const [ingestions, newActionItems, dueToday, overdue, noDueDate, toReview, dueItems] = await Promise.all([
+  const [ingestions, newActionItems, dueToday, overdue, noDueDate, toReview, dueItems, fromColleagues] = await Promise.all([
     db.collection('ingestions').find(
       { workspace_id: workspaceId, user_id: userId, status: 'completed', manual: { $ne: true }, completed_at: { $gte: since, $lte: now } },
       { projection: { outcomes_by_type: 1 } }
     ).toArray(),
-    db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, created_at: { $gte: since, $lte: now } }),
-    db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: today }),
-    db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: { $ne: null, $lt: today } }),
-    db.collection('action_items').countDocuments({ workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: null }),
+    db.collection('action_items').countDocuments({ workspace_id: workspaceId, ...mine, created_at: { $gte: since, $lte: now } }),
+    db.collection('action_items').countDocuments({ workspace_id: workspaceId, ...mine, status: 'open', due_date: today }),
+    db.collection('action_items').countDocuments({ workspace_id: workspaceId, ...mine, status: 'open', due_date: { $ne: null, $lt: today } }),
+    db.collection('action_items').countDocuments({ workspace_id: workspaceId, ...mine, status: 'open', due_date: null }),
     spaceIds.length
       ? getDecisionsCollection().countDocuments({ workspace_id: workspaceId, space_id: { $in: spaceIds }, ...PENDING_REVIEW })
       : 0,
     db.collection('action_items').find(
-      { workspace_id: workspaceId, owner_ids: userId, status: 'open', due_date: { $ne: null, $lte: today } },
+      { workspace_id: workspaceId, ...mine, status: 'open', due_date: { $ne: null, $lte: today } },
       { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1 } }
-    ).sort({ due_date: -1, created_at: -1 }).limit(PLAN_ITEMS * 3).toArray()
+    ).sort({ due_date: -1, created_at: -1 }).limit(PLAN_ITEMS * 3).toArray(),
+    // New ones a colleague's meeting assigned them, by colleague
+    db.collection('action_items').aggregate([
+      { $match: { workspace_id: workspaceId, ...mine, created_at: { $gte: since, $lte: now }, 'created_by.user_id': { $nin: [userId, null] } } },
+      { $group: { _id: '$created_by.name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]).toArray()
   ]);
 
   // Colleagues in the same meeting each capture the item: show it once
@@ -155,7 +164,8 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
       outcomes[type] = (outcomes[type] || 0) + count;
     }
   }
-  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems };
+  const assignedBy = fromColleagues.map(row => ({ name: row._id || 'A colleague', count: row.count }));
+  return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems, assignedBy };
 }
 
 /** Something new happened, or something is due today: reminders alone never trigger an email */

@@ -357,6 +357,21 @@ async function sendImportSummaryEmail({ email, job }) {
 }
 
 /**
+ * "Assigned to you by colleagues" line of the morning digest: action items that colleagues'
+ * meetings named the person as owner of (core/actions/colleague-assignments). Names only, no text.
+ * @param {{ name: string, count: number }[]} [assignedBy]
+ * @returns {string} HTML, empty when there are none
+ */
+function assignedByHtml(assignedBy) {
+  if (!Array.isArray(assignedBy) || assignedBy.length === 0) return '';
+  const total = assignedBy.reduce((sum, row) => sum + row.count, 0);
+  const names = assignedBy.map(row => `${escapeHtml(row.name)} (${row.count})`).join(', ');
+  return `<p style="font-size: 14px; color: #1b1b1d; background: #eef1fb; border-radius: 8px; padding: 10px 14px; margin: 12px 0 0;">
+              <strong>${total} new action item${total === 1 ? '' : 's'} assigned to you by colleagues.</strong> They came from meetings captured by ${names}.
+            </p>`;
+}
+
+/**
  * Subject line of the morning digest: the numbers since the last one, most important first
  * @param {Object} summary - see sendDailyDigestEmail
  * @returns {string}
@@ -391,7 +406,7 @@ function dailyDigestSubject(summary) {
  * @param {string} params.unsubscribe_url
  * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
- *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }] }
+ *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting }], assignedBy: [{ name, count }] }
  */
 async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
   const result = await sendEmail({
@@ -487,6 +502,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
               <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>
             </table>
             ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
+            ${assignedByHtml(summary.assignedBy)}
             <a href="${baseUrl}/actions"
                style="display: inline-block; margin-top: 28px; background: #3953bd; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
               Plan my day in Corteza →
