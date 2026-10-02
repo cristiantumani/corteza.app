@@ -89,3 +89,29 @@ test('the backfill groups a capture\'s close items around a question or risk, an
   assert.equal(groupCapture(items, 0.99).length, 1, 'identical embeddings still group');
   assert.deepEqual(groupCapture(items, 0.99)[0].map(item => item.key), ['#1', 'act_a']);
 });
+
+test('the backfill never chains a whole meeting into one thread: each item joins its closest question or risk, at most 4 per thread', () => {
+  const { groupCapture } = require('../../scripts/migrations/010-topic-threads');
+  // Two subjects, and a "bridge" item halfway between them that single-link grouping would chain through
+  const a = [1, 0, 0];
+  const b = [0, 1, 0];
+  const near = (v, noise) => v.map((x, i) => x + (i === 2 ? noise : 0));
+  const items = [
+    { key: '#1', kind: 'outcome', type: 'open_question', id: 1, text: 'Free trial?', embedding: a },
+    { key: '#2', kind: 'outcome', type: 'open_question', id: 2, text: 'People Day?', embedding: b },
+    { key: '#3', kind: 'outcome', type: 'decision', id: 3, text: 'bridge', embedding: [0.7, 0.72, 0] },
+    ...[4, 5, 6, 7, 8].map(id => ({ key: `#${id}`, kind: 'outcome', type: 'decision', id, text: `trial ${id}`, embedding: near(a, id / 10) })),
+    { key: 'act_x', kind: 'action', type: 'action_item', decision_id: 4, text: 'no embedding' },
+    { key: '#9', kind: 'outcome', type: 'risk', id: 9, text: 'People Day risk', embedding: near(b, 0.2) }
+  ];
+  const groups = groupCapture(items, 0.6);
+  assert.equal(groups.length, 2, 'two subjects, two threads');
+  const trial = groups.find(group => group[0].key === '#1');
+  const people = groups.find(group => group[0].key === '#2');
+  assert.deepEqual(people.map(item => item.key), ['#2', '#3', '#9'], 'the bridge joins only its closest question');
+  const attached = trial.filter(item => item.type === 'decision');
+  assert.equal(attached.length, 4, 'at most 4 decisions and action items, the closest ones');
+  assert.ok(!trial.some(item => item.key === '#8'), 'the farthest one is left out');
+  assert.ok(trial.some(item => item.key === 'act_x'), 'an action item without embedding follows its decision');
+  assert.ok(trial.filter(item => item.key !== '#1' && item.key !== 'act_x').every(item => item.similarity >= 0.6));
+});

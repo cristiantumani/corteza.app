@@ -215,13 +215,14 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
     const extractedItems = result.decisions || [];
 
     // Due dates belong to action items, not to decisions: a dated commitment the AI
-    // attached to a decision (with no action item of its own) becomes a linked action item
+    // attached to a decision (with no action item of its own) becomes a linked action item.
+    // Only decisions: a dated question or risk ("decide by Friday") isn't a task to copy word for word
     const linkedIndexes = new Set(extractedItems
       .filter(item => item.decision_type === 'action_item' && Number.isInteger(item.decision_ref))
       .map(item => item.decision_ref));
     const datedFollowUps = extractedItems
       .map((item, index) => ({ item, index }))
-      .filter(({ item, index }) => item.decision_type !== 'action_item' && item.due_date && !linkedIndexes.has(index))
+      .filter(({ item, index }) => item.decision_type === 'decision' && item.due_date && !linkedIndexes.has(index))
       .map(({ item, index }) => ({
         decision_type: 'action_item',
         decision_text: item.decision_text,
