@@ -6,7 +6,8 @@
  * (or a risk no question is close to) leads a thread. Risks, decisions and action items join
  * the one question or risk their embedding is closest to, when cosine ≥ --threshold
  * (default 0.6), and a thread takes at most 4 decisions and action items: the closest ones.
- * An action item without an embedding follows the decision it carries out (`decision_id`).
+ * Action items with no embedding get one (OpenAI, stored with --apply); one that still has
+ * none follows the decision it carries out (`decision_id`).
  * Only threads with a question or a risk are created: those have a loop to close. A
  * thread's label is its question (or risk), shortened. The dry run shows each item's
  * similarity, to tune --threshold.
@@ -139,6 +140,35 @@ async function loadCaptures(db, days) {
   return captures;
 }
 
+/**
+ * Embeddings for action items that have none (only items a colleague's meeting assigned got
+ * one, see core/actions/colleague-assignments). Same model as the rest; with --apply they're
+ * stored on the item, as colleague-assignments does. Costs a fraction of a cent per hundred.
+ * @param {Map<string, Object[]>} captures
+ * @param {((text: string) => Promise<number[]>)|null} embed
+ * @param {{ db?: import('mongodb').Db|null }} [options] - stores them when given
+ * @returns {Promise<number>} how many were computed
+ */
+async function fillMissingEmbeddings(captures, embed, { db = null } = {}) {
+  if (!embed) return 0;
+  const missing = [...captures.values()].flat().filter(item => item.kind === 'action' && !(Array.isArray(item.embedding) && item.embedding.length));
+  let computed = 0;
+  for (let i = 0; i < missing.length; i += 10) {
+    await Promise.all(missing.slice(i, i + 10).map(async item => {
+      try {
+        const embedding = await embed(item.text);
+        if (!Array.isArray(embedding) || !embedding.length) return;
+        item.embedding = embedding;
+        computed++;
+        if (db) await db.collection('action_items').updateOne({ item_id: item.item_id }, { $set: { embedding } });
+      } catch (error) {
+        console.warn(`⚠️  Embedding failed for ${item.item_id}: ${error.message}`);
+      }
+    }));
+  }
+  return computed;
+}
+
 async function main() {
   const apply = process.argv.includes('--apply');
   const showText = process.argv.includes('--show-text');
@@ -149,6 +179,13 @@ async function main() {
   await connectToMongoDB();
   const db = getDatabase();
   const captures = await loadCaptures(db, days);
+  const embeddings = require('../../src/services/embeddings');
+  embeddings.initializeEmbeddings();
+  const embed = embeddings.isEmbeddingsEnabled() ? text => embeddings.generateQueryEmbedding(text) : null;
+  const computed = await fillMissingEmbeddings(captures, embed, { db: apply ? db : null });
+  console.log(embed
+    ? `   ${computed} action item(s) had no embedding: computed${apply ? ' and stored' : ' (stored only with --apply)'}`
+    : '   ⚠️  Embeddings are off (no OpenAI key): action items without one only follow their decision');
   console.log(`${apply ? '✍️  APPLY' : '🔎 DRY RUN'}: ${captures.size} capture(s) from the last ${days} days, threshold ${threshold}`);
 
   let threads = 0;
@@ -180,4 +217,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { groupCapture, labelFor, loadCaptures };
+module.exports = { groupCapture, labelFor, loadCaptures, fillMissingEmbeddings };

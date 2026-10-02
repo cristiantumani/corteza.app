@@ -115,3 +115,20 @@ test('the backfill never chains a whole meeting into one thread: each item joins
   assert.ok(trial.some(item => item.key === 'act_x'), 'an action item without embedding follows its decision');
   assert.ok(trial.filter(item => item.key !== '#1' && item.key !== 'act_x').every(item => item.similarity >= 0.6));
 });
+
+test('the backfill computes embeddings for action items that have none, so they can join a thread', async () => {
+  const { fillMissingEmbeddings, groupCapture } = require('../../scripts/migrations/010-topic-threads');
+  const items = [
+    { key: '#297', kind: 'outcome', type: 'open_question', id: 297, text: '¿ISO 27001?', embedding: [1, 0, 0] },
+    { key: 'act_iso', kind: 'action', type: 'action_item', text: 'Investigar requisitos ISO 27001' },
+    { key: 'act_has', kind: 'action', type: 'action_item', text: 'Otra', embedding: [0, 1, 0] }
+  ];
+  const captures = new Map([['W|S|m', items]]);
+  assert.equal(groupCapture(items, 0.6).length, 0, 'without an embedding the action item cannot join');
+  const asked = [];
+  const computed = await fillMissingEmbeddings(captures, async text => { asked.push(text); return [0.95, 0.05, 0]; });
+  assert.equal(computed, 1);
+  assert.deepEqual(asked, ['Investigar requisitos ISO 27001'], 'only items without one');
+  assert.deepEqual(groupCapture(items, 0.6)[0].map(item => item.key), ['#297', 'act_iso']);
+  assert.equal(await fillMissingEmbeddings(captures, null), 0, 'embeddings off: nothing computed');
+});

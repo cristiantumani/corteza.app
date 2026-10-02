@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Fixed - Topic threads for earlier meetings, and dated questions
-- **Backfill (`010-topic-threads.js`):** the dry run grouped most of a meeting into one thread, because any two close items were joined and chained. Now each item joins only the question or risk it's closest to (similarity ≥ 0.6, shown in the dry run), with at most 4 decisions and action items per thread
+- **Backfill (`010-topic-threads.js`):** the dry run grouped most of a meeting into one thread, because any two close items were joined and chained. Now each item joins only the question or risk it's closest to (similarity ≥ 0.6, shown in the dry run), with at most 4 decisions and action items per thread. Action items without an embedding (only ones a colleague's meeting assigned had one) get one first, so a next step like "investigate the ISO 27001 requirements" joins its question
 - **A question or risk with a date no longer becomes an action item with its own text** (e.g. "¿Cómo rediseñar las páginas de precios…" as a task). Only a dated decision gets a linked action item, as intended
 
 ### Added - Topic threads: a question, its risk and its next step, together
