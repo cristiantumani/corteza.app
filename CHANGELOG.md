@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Support Corteza
+- **"Support Corteza"** in the app sidebar and a "Buy me a coffee ☕" line in the morning summary's footer link to buymeacoffee.com/corteza.app, so beta testers who find it useful can chip in for the AI costs. A plain link (no third-party widget or script)
+
 ### Changed - Importing past meetings costs half as much
 - **Batch extraction:** an import sends all its meetings to Claude in one Message Batches request, billed at 50% of the normal price. Settings shows "Extracting outcomes…" while it runs (usually a few minutes, up to an hour), the outcomes are saved when it ends, and the summary email goes out then. People can leave the page as before
 - Same prompt and model as before, so the same quality. A meeting the batch couldn't answer is extracted the normal way. Transcripts are still never stored: each meeting is read from Google again when the results arrive

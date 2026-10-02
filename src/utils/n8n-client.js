@@ -7,6 +7,8 @@ const fetch = globalThis.fetch || require('node-fetch');
 const { describeOutcomes } = require('../core/decisions/types');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
+/** Where beta testers can chip in for the AI costs (morning summary footer; the app sidebar links it too) */
+const SUPPORT_URL = 'https://buymeacoffee.com/corteza.app';
 
 /**
  * Sends one email through Resend
@@ -533,6 +535,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
           </div>
         </div>
         <p style="max-width: 580px; margin: 20px auto 0; font-size: 12px; color: #8a8c96; text-align: center;">
+          Finding Corteza useful? <a href="${SUPPORT_URL}" style="color: #3953bd; font-weight: 600;">Buy me a coffee ☕</a>, it helps pay for the AI.<br><br>
           One email each weekday morning, only when there's something new or due. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
           Change the time zone in Settings, or <a href="${unsubscribe_url}" style="color: #8a8c96;">unsubscribe from morning summaries</a>.
         </p>
