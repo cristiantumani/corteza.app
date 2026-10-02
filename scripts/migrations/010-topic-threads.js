@@ -6,8 +6,8 @@
  * (or a risk no question is close to) leads a thread. Risks, decisions and action items join
  * the one question or risk their embedding is closest to, when cosine ≥ --threshold
  * (default 0.6), and a thread takes at most 4 decisions and action items: the closest ones.
- * Action items with no embedding get one (OpenAI, stored with --apply); one that still has
- * none follows the decision it carries out (`decision_id`).
+ * Items are compared by plain-text embeddings (see embedTexts). An action item that carries
+ * out a decision in a thread (`decision_id`) follows it there.
  * Only threads with a question or a risk are created: those have a loop to close. A
  * thread's label is its question (or risk), shortened. The dry run shows each item's
  * similarity, to tune --threshold.
@@ -37,7 +37,7 @@ const MAX_ATTACHED = 4;
  * joins the question it's closest to, or roots its own thread. Every other item (decision,
  * action item) joins only the one question or risk it's closest to, and at most
  * MAX_ATTACHED per thread, so items never chain into one thread per meeting. An action item
- * without an embedding follows the decision it carries out (`decision_id`).
+ * that didn't join one follows the decision it carries out (`decision_id`).
  * @param {{ key: string, kind: 'outcome'|'action', type: string, id?: number, decision_id?: number|null, text: string, embedding?: number[] }[]} items
  * @param {number} threshold - minimum cosine similarity to join a thread
  * @returns {Object[][]} groups of at least two items, each led by a question or risk; every
@@ -85,9 +85,9 @@ function groupCapture(items, threshold) {
     list.push({ item, similarity });
     placed.set(item, root);
   }
-  // An action item with no embedding of its own follows its decision
+  // An action item that carries out a decision in a thread follows it there
   for (const item of others) {
-    if (item.kind !== 'action' || item.embedding || typeof item.decision_id !== 'number') continue;
+    if (item.kind !== 'action' || placed.has(item) || typeof item.decision_id !== 'number') continue;
     const decision = others.find(other => other.kind === 'outcome' && other.id === item.decision_id);
     const root = decision && placed.get(decision);
     if (root) members.get(root).push({ item, similarity: null });
@@ -141,28 +141,32 @@ async function loadCaptures(db, days) {
 }
 
 /**
- * Embeddings for action items that have none (only items a colleague's meeting assigned got
- * one, see core/actions/colleague-assignments). Same model as the rest; with --apply they're
- * stored on the item, as colleague-assignments does. Costs a fraction of a cent per hundred.
+ * Embeddings to compare items by: the plain text of each, all with the same model, so
+ * similarities are comparable. Outcomes' stored embeddings are built for search (text
+ * repeated, tags, creator, quote, meeting title) and score low against an action item's
+ * plain text, so outcomes are embedded again here, in memory only (search keeps its own).
+ * Action items reuse theirs (plain text, from colleague-assignments) or get one, stored
+ * with `db` as colleague-assignments does. A fraction of a cent per hundred items.
  * @param {Map<string, Object[]>} captures
  * @param {((text: string) => Promise<number[]>)|null} embed
- * @param {{ db?: import('mongodb').Db|null }} [options] - stores them when given
+ * @param {{ db?: import('mongodb').Db|null }} [options] - stores new action item embeddings when given
  * @returns {Promise<number>} how many were computed
  */
-async function fillMissingEmbeddings(captures, embed, { db = null } = {}) {
+async function embedTexts(captures, embed, { db = null } = {}) {
   if (!embed) return 0;
-  const missing = [...captures.values()].flat().filter(item => item.kind === 'action' && !(Array.isArray(item.embedding) && item.embedding.length));
+  const hasOwn = item => item.kind === 'action' && Array.isArray(item.embedding) && item.embedding.length > 0;
+  const todo = [...captures.values()].flat().filter(item => !hasOwn(item));
   let computed = 0;
-  for (let i = 0; i < missing.length; i += 10) {
-    await Promise.all(missing.slice(i, i + 10).map(async item => {
+  for (let i = 0; i < todo.length; i += 10) {
+    await Promise.all(todo.slice(i, i + 10).map(async item => {
       try {
         const embedding = await embed(item.text);
         if (!Array.isArray(embedding) || !embedding.length) return;
         item.embedding = embedding;
         computed++;
-        if (db) await db.collection('action_items').updateOne({ item_id: item.item_id }, { $set: { embedding } });
+        if (db && item.kind === 'action') await db.collection('action_items').updateOne({ item_id: item.item_id }, { $set: { embedding } });
       } catch (error) {
-        console.warn(`⚠️  Embedding failed for ${item.item_id}: ${error.message}`);
+        console.warn(`⚠️  Embedding failed for ${item.key}: ${error.message}`);
       }
     }));
   }
@@ -182,10 +186,10 @@ async function main() {
   const embeddings = require('../../src/services/embeddings');
   embeddings.initializeEmbeddings();
   const embed = embeddings.isEmbeddingsEnabled() ? text => embeddings.generateQueryEmbedding(text) : null;
-  const computed = await fillMissingEmbeddings(captures, embed, { db: apply ? db : null });
+  const computed = await embedTexts(captures, embed, { db: apply ? db : null });
   console.log(embed
-    ? `   ${computed} action item(s) had no embedding: computed${apply ? ' and stored' : ' (stored only with --apply)'}`
-    : '   ⚠️  Embeddings are off (no OpenAI key): action items without one only follow their decision');
+    ? `   ${computed} plain-text embedding(s) computed to compare items (new action item ones stored only with --apply)`
+    : '   ⚠️  Embeddings are off (no OpenAI key): stored embeddings are used, and action items without one only follow their decision');
   console.log(`${apply ? '✍️  APPLY' : '🔎 DRY RUN'}: ${captures.size} capture(s) from the last ${days} days, threshold ${threshold}`);
 
   let threads = 0;
@@ -217,4 +221,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { groupCapture, labelFor, loadCaptures, fillMissingEmbeddings };
+module.exports = { groupCapture, labelFor, loadCaptures, embedTexts };
