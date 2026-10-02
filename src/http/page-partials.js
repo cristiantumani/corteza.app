@@ -15,7 +15,7 @@ const onboardingHTML = fs.readFileSync(path.join(views, 'partials/onboarding.htm
 
 /**
  * The sidebar with one link marked as the current page
- * @param {'home'|'actions'|'search'|'settings'} active
+ * @param {'home'|'actions'|'questions'|'search'|'settings'} active
  * @returns {string}
  */
 function sidebar(active) {
@@ -26,7 +26,7 @@ function sidebar(active) {
  * Reads a view once and fills in its partials
  * @param {string} file - file name in src/views
  * @param {Object} [options]
- * @param {'home'|'actions'|'search'|'settings'} [options.active] - sidebar link to mark as current
+ * @param {'home'|'actions'|'questions'|'search'|'settings'} [options.active] - sidebar link to mark as current
  * @returns {string}
  */
 function renderView(file, { active } = {}) {

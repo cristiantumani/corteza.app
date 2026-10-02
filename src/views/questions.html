@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open questions & risks - Corteza</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=5">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e4e2e4;
+            border-radius: 10px;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface overflow-hidden">
+    <!-- SideNavBar -->
+<!-- SIDEBAR -->
+
+    <!-- TopAppBar -->
+    <header class="fixed top-0 right-0 left-64 h-16 z-10 flex items-center justify-between px-6 bg-surface border-b border-outline-variant shadow-sm">
+        <h2 class="text-2xl font-bold text-on-surface">Open questions &amp; risks</h2>
+    </header>
+
+    <!-- Main: list and filters (public/scripts/questions.js) -->
+    <main class="ml-64 pt-16 h-screen overflow-y-auto bg-background">
+        <div class="max-w-[1100px] mx-auto p-8">
+            <p class="text-on-surface-variant mb-6">What your meetings left unresolved: questions that still need an answer, and risks to keep an eye on.</p>
+
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="Type">
+                    <button type="button" data-type="all" class="type-filter px-4 py-2 text-sm font-semibold">All</button>
+                    <button type="button" data-type="open_question" class="type-filter px-4 py-2 text-sm font-semibold">Questions <span data-count="open_question"></span></button>
+                    <button type="button" data-type="risk" class="type-filter px-4 py-2 text-sm font-semibold">Risks <span data-count="risk"></span></button>
+                </div>
+                <select id="status-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm" aria-label="Status">
+                    <option value="open">Open</option>
+                    <option value="resolved">Answered or mitigated</option>
+                    <option value="all">All</option>
+                </select>
+                <span id="items-count" class="text-sm text-on-surface-variant"></span>
+            </div>
+
+            <div id="items" class="flex flex-col gap-3">
+                <p class="text-on-surface-variant">Loading…</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="/scripts/questions.js?v=1"></script>
+</body>
+</html>
