@@ -291,9 +291,7 @@ async function processTranscriptWeb(transcriptContent, metadata) {
       file_name: metadata.file_name,
       file_type: metadata.file_type,
       file_size: metadata.file_size,
-      content: transcriptContent,
-      content_hash: contentHash,
-      content_preview: transcriptContent.substring(0, 500),
+      content_hash: contentHash, // the text itself is never stored, only its hash
       word_count: wordCount,
       uploaded_by: metadata.user_id,
       uploaded_by_name: metadata.user_name,

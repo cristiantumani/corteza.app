@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - Uploaded transcripts are no longer stored
+- Transcripts uploaded by hand (web upload, Slack files) were saved whole in the database although nothing used the text. Now only the outcomes are kept, plus the file name, word count and a hash to detect duplicate uploads, like automatic Meet capture
+- `scripts/migrations/011-remove-uploaded-transcript-text.js` deletes the text of earlier uploads (dry run unless `--apply`)
+
 ### Changed - The beta welcome email comes from a person
 - The "You're in: welcome to the Corteza beta" email is sent from `Cristian from Corteza <cristian@corteza.app>` instead of `noreply@`, so a tester can just reply. `BETA_FROM` changes the sender; `BETA_REPLY_TO` still sends replies elsewhere (it no longer falls back to `FEEDBACK_EMAIL`). Digests, imports and invites still come from `noreply@corteza.app`
 
