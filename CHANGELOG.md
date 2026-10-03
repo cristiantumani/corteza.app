@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - The beta welcome email comes from a person
+- The "You're in: welcome to the Corteza beta" email is sent from `Cristian from Corteza <cristian@corteza.app>` instead of `noreply@`, so a tester can just reply. `BETA_FROM` changes the sender; `BETA_REPLY_TO` still sends replies elsewhere (it no longer falls back to `FEEDBACK_EMAIL`). Digests, imports and invites still come from `noreply@corteza.app`
+
 ### Removed - Old Braintrust evals
 - The `evals/` search and conversational evals (Braintrust), their `npm run eval*` scripts and the `BRAINTRUST_API_KEY` / `TEST_WORKSPACE_ID` variables. They were no longer run; extraction quality is measured with `scripts/eval-extraction.js`. Setup notes stay in `docs/archive/AI_EVALS_SETUP.md`
 

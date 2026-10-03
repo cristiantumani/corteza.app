@@ -25,7 +25,8 @@ async function approveBetaTester({ email, name, company, approvedVia }) {
       email: entry.email,
       name: entry.name || name,
       login_url: `${config.app.baseUrl}/auth/login`,
-      reply_to: (process.env.BETA_REPLY_TO || process.env.FEEDBACK_EMAIL || '').split(',')[0].trim() || undefined
+      // Sent from Cristian's address, so replies reach him; BETA_REPLY_TO sends them elsewhere
+      reply_to: (process.env.BETA_REPLY_TO || '').split(',')[0].trim() || undefined
     });
     return { alreadyApproved, welcome: 'sent' };
   } catch (error) {
