@@ -176,14 +176,18 @@ async function deleteAllWorkspaceData(req, res) {
       suggestionsResult,
       transcriptsResult,
       feedbackResult,
-      installationResult
+      installationResult,
+      actionItemsResult
     ] = await Promise.all([
       decisionsCollection.deleteMany({ workspace_id }),
       aiSuggestionsCollection.deleteMany({ workspace_id }),
       meetingTranscriptsCollection.deleteMany({ workspace_id }),
       aiFeedbackCollection.deleteMany({ workspace_id }),
-      installationsCollection.deleteMany({ team_id: workspace_id })
+      installationsCollection.deleteMany({ team_id: workspace_id }),
+      db.collection('action_items').deleteMany({ workspace_id })
     ]);
+    // Crypto-shredding: whatever is left (backups included) can no longer be decrypted
+    const keysDestroyed = await require('../core/crypto/keys').destroyWorkspaceKeys(workspace_id);
 
     const deletionSummary = {
       workspace_id,
@@ -193,14 +197,17 @@ async function deleteAllWorkspaceData(req, res) {
         ai_suggestions: suggestionsResult.deletedCount,
         meeting_transcripts: transcriptsResult.deletedCount,
         ai_feedback: feedbackResult.deletedCount,
-        installation: installationResult.deletedCount > 0 ? 'yes' : 'no'
+        installation: installationResult.deletedCount > 0 ? 'yes' : 'no',
+        action_items: actionItemsResult.deletedCount,
+        encryption_keys_destroyed: keysDestroyed
       },
       total_records_deleted:
         decisionsResult.deletedCount +
         suggestionsResult.deletedCount +
         transcriptsResult.deletedCount +
         feedbackResult.deletedCount +
-        installationResult.deletedCount
+        installationResult.deletedCount +
+        actionItemsResult.deletedCount
     };
 
     console.log(`✅ GDPR deletion completed for workspace: ${workspace_id}`);

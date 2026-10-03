@@ -21,8 +21,8 @@ describe('db-size script', { skip }, () => {
     db = require('../../src/config/database').getDatabase();
     dbSize = require('../../scripts/db-size');
     await db.collection('decisions').insertMany([
-      { id: 1, text: 'with a vector', embedding: Array.from({ length: 1536 }, (_, i) => i / 1536) },
-      { id: 2, text: 'without one' }
+      { workspace_id: 'W1', id: 1, text: 'with a vector', embedding: Array.from({ length: 1536 }, (_, i) => i / 1536) },
+      { workspace_id: 'W1', id: 2, text: 'without one' }
     ]);
   });
 

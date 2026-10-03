@@ -3,6 +3,8 @@ const config = require('./environment');
 
 let mongoClient = null;
 let db = null;
+/** The database without the field-encryption layer (keys, migrations) */
+let rawDb = null;
 let decisionsCollection = null;
 let aiSuggestionsCollection = null;
 let meetingTranscriptsCollection = null;
@@ -43,7 +45,11 @@ async function connectToMongoDB() {
     mongoClient = client;
     console.log('✅ Connected to MongoDB!');
 
-    db = client.db(config.mongodb.dbName);
+    // Content fields are sealed on write and opened on read (core/crypto); rawDb skips that layer
+    const { wrapDatabase } = require('../core/crypto/collections');
+    require('../core/crypto/keys').assertConfigured();
+    rawDb = client.db(config.mongodb.dbName);
+    db = wrapDatabase(rawDb);
     decisionsCollection = db.collection('decisions');
     aiSuggestionsCollection = db.collection('ai_suggestions');
     meetingTranscriptsCollection = db.collection('meeting_transcripts');
@@ -57,7 +63,8 @@ async function connectToMongoDB() {
     workspaceMembersCollection = db.collection('workspace_members');
 
     // Create indexes for decisions collection
-    await decisionsCollection.createIndex({ text: 'text', tags: 'text' });
+    // Outcome text is encrypted (core/crypto), so the old text index can't work: keyword search runs in memory
+    await decisionsCollection.dropIndex('text_text_tags_text').catch(() => {});
     await decisionsCollection.createIndex({ timestamp: -1 });
 
     // Create indexes for AI suggestions collection
@@ -199,6 +206,9 @@ async function connectToMongoDB() {
     await db.collection('meet_imports').createIndex({ status: 1, lease_until: 1 });
     await db.collection('meet_imports').createIndex({ workspace_id: 1, user_id: 1, status: 1, created_at: -1 });
 
+    // Per-workspace encryption keys (core/crypto/keys.js)
+    await rawDb.collection('workspace_keys').createIndex({ workspace_id: 1, key_id: 1 }, { unique: true });
+
     // Action items (core/actions)
     await db.collection('action_items').createIndex({ item_id: 1 }, { unique: true });
     await db.collection('action_items').createIndex({ workspace_id: 1, status: 1, due_date: 1 });
@@ -239,6 +249,17 @@ function getDecisionsCollection() {
 /**
  * Returns the database instance
  */
+/**
+ * The database without field encryption: values come back sealed. Only for core/crypto and migrations.
+ * @returns {import('mongodb').Db}
+ */
+function getRawDatabase() {
+  if (!rawDb) {
+    throw new Error('Database not initialized. Call connectToMongoDB first.');
+  }
+  return rawDb;
+}
+
 function getDatabase() {
   if (!db) {
     throw new Error('Database not initialized. Call connectToMongoDB first.');
@@ -351,6 +372,8 @@ async function closeMongoDB() {
     await mongoClient.close();
     mongoClient = null;
     db = null;
+    rawDb = null;
+    require('../core/crypto/keys').clearKeyCache();
   }
 }
 
@@ -359,6 +382,7 @@ module.exports = {
   closeMongoDB,
   getDecisionsCollection,
   getDatabase,
+  getRawDatabase,
   getAISuggestionsCollection,
   getMeetingTranscriptsCollection,
   getAIFeedbackCollection,

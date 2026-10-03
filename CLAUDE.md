@@ -87,6 +87,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Context for the AI (company: description, glossary, documents, admins edit; personal: role, focus, glossary) and how it reaches the extraction prompt | `src/core/context/context-service.js` (`buildContextBlock`), `src/http/ai-context.js`; used by `extractDecisionsFromTranscript` (options `userId`, `personName`, or a ready `context` string in the eval) |
 | Chrome extension | `browser-extension/` |
 | DB migrations (manual, idempotent) | `scripts/migrations/` |
+| Field encryption of meeting content (per-workspace keys wrapped by `DATA_KEK`, transparent collection wrapper, crypto-shredding) | `src/core/crypto/` (`keys.js`, `fields.js`, `collections.js`, `aead.js`); spec `docs/specs/2026-10-workspace-encryption.md`; existing data: `scripts/migrations/012-encrypt-workspace-data.js` |
 | Tests | `test/unit/`, `test/integration/`, helper `test/helpers/db.js` |
 | Old docs (historical, may be wrong) | `docs/archive/` |
 
@@ -106,6 +107,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 - **New code goes in the target layout** (`src/core`, `src/integrations`, `src/auth`; see `docs/ARCHITECTURE.md`). Older code in `src/routes` and `src/services` moves there over time.
 - **AI calls are metered.** A new Claude call records itself with `recordAiUsage` (workspace, person, feature), and a route people trigger gets `aiRateLimiter` and `requireAiBudget`. Never add an AI route without them.
 - **Analytics never carries meeting content.** PostHog events (`track` in `src/integrations/posthog/client.js`) hold counts, types and ids. Never send transcripts, outcome text, search questions or answers, or AI context, and don't wrap the AI clients with PostHog's LLM tracing (it sends the prompts).
+- **Meeting content is encrypted per workspace** (`src/core/crypto/`, fields in `fields.js`). `getDatabase()` and the collection getters encrypt and decrypt for you. Never filter a query on an encrypted field (`text`, `rationale`, `evidence_quote`, titles…): it can't match ciphertext (CI throws). Filter on ids/dates in the database, then match text in memory (see `KEYWORD_SEARCH_LIMIT`). `getRawDatabase()` only for `core/crypto` and migrations. A new content field goes in `FIELD_PATHS`.
 - **Transcripts are never stored**, whatever the source (Meet, uploads, Slack): only outcomes, plus a transcript's hash, file name and counts.
 - **Logs carry no meeting content or secrets.** Server logs (`console.log`) hold ids, counts, types and lengths: never search questions, transcripts, meeting titles, file names, outcome text, AI replies, request bodies, tokens or keys.
 - **Secrets:** per-workspace credentials are encrypted with `src/utils/encryption.js`. Never commit keys; `*.pem` and `*.crx` are gitignored.
