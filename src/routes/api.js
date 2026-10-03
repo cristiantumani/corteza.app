@@ -8,6 +8,7 @@ const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
 const { DECISION_TYPES } = require('../core/decisions/types');
 const { PENDING_REVIEW } = require('../core/decisions/review-service');
 const { jsonBody } = require('../middleware/input-safety');
+const { KEYWORD_SEARCH_LIMIT, foldText } = require('../core/search/relevance');
 
 /**
  * Security: Escapes regex special characters to prevent ReDoS attacks
@@ -116,14 +117,8 @@ async function getDecisions(req, res) {
       // Security: Escape regex to prevent ReDoS attacks
       filter.epic_key = { $regex: escapeRegex(validated.epic), $options: 'i' };
     }
-    if (validated.search) {
-      // Security: Escape regex to prevent ReDoS attacks
-      const escapedSearch = escapeRegex(validated.search);
-      filter.$or = [
-        { text: { $regex: escapedSearch, $options: 'i' } },
-        { tags: { $regex: escapedSearch, $options: 'i' } }
-      ];
-    }
+    // Search matches text and tags in memory: outcome text is encrypted in the database (core/crypto)
+    const search = validated.search ? foldText(validated.search) : '';
 
     // Date range filtering
     if (validated.date_from || validated.date_to) {
@@ -137,16 +132,31 @@ async function getDecisions(req, res) {
     }
 
     const decisionsCollection = getDecisionsCollection();
-    const [decisions, total, pendingReview] = await Promise.all([
-      decisionsCollection
-        .find(filter, { projection: { embedding: 0 } }) // embeddings are large and only used server-side
+    let decisions;
+    let total;
+    let pendingReview;
+    if (search) {
+      // The space's newest outcomes, matched in memory, then paginated
+      const recent = await decisionsCollection
+        .find(filter, { projection: { embedding: 0 } })
         .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      decisionsCollection.countDocuments(filter),
-      decisionsCollection.countDocuments(pendingFilter)
-    ]);
+        .limit(KEYWORD_SEARCH_LIMIT)
+        .toArray();
+      const matches = recent.filter(decision => foldText(decision.text).includes(search)
+        || (decision.tags || []).some(tag => foldText(tag).includes(search)));
+      [decisions, total, pendingReview] = [matches.slice(skip, skip + limit), matches.length, await decisionsCollection.countDocuments(pendingFilter)];
+    } else {
+      [decisions, total, pendingReview] = await Promise.all([
+        decisionsCollection
+          .find(filter, { projection: { embedding: 0 } }) // embeddings are large and only used server-side
+          .sort({ timestamp: -1 })
+          .skip(skip)
+          .limit(limit)
+          .toArray(),
+        decisionsCollection.countDocuments(filter),
+        decisionsCollection.countDocuments(pendingFilter)
+      ]);
+    }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({

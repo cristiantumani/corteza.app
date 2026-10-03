@@ -4,6 +4,7 @@ const { validateEpicKey, validateTags } = require('../middleware/validation');
 const config = require('../config/environment');
 const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../services/embeddings');
 const { ensureDefaultSpace } = require('../services/spaces');
+const { KEYWORD_SEARCH_LIMIT, foldText } = require('../core/search/relevance');
 
 /**
  * /decision command handler - Opens modal to log a decision
@@ -335,17 +336,16 @@ async function handleSearchCommand(args, say, decisionsCollection, workspace_id)
     return;
   }
 
-  const results = await decisionsCollection
-    .find({
-      workspace_id: workspace_id,
-      $or: [
-        { text: { $regex: keyword, $options: 'i' } },
-        { tags: { $regex: keyword, $options: 'i' } }
-      ]
-    })
+  // Matched in memory over the newest outcomes: their text is encrypted in the database (core/crypto)
+  const needle = foldText(keyword);
+  const recent = await decisionsCollection
+    .find({ workspace_id: workspace_id }, { projection: { embedding: 0 } })
     .sort({ timestamp: -1 })
-    .limit(10)
+    .limit(KEYWORD_SEARCH_LIMIT)
     .toArray();
+  const results = recent
+    .filter(decision => foldText(decision.text).includes(needle) || (decision.tags || []).some(tag => foldText(tag).includes(needle)))
+    .slice(0, 10);
 
   if (results.length === 0) {
     await say(`🔍 No results`);

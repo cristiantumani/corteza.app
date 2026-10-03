@@ -163,7 +163,9 @@ describe('Action items: service, due date requests, API', { skip }, () => {
 
     const mine = await request('GET', '/api/action-items?owner=me');
     assert.ok(mine.body.items.some(item => item.item_id === added.body.item.item_id), 'it shows in Action items');
-    assert.equal(await db.collection('decisions').countDocuments({ workspace_id: 'WACT', text: 'Enviar propuesta a Carolina' }), 0, 'not saved as an outcome');
+    // Outcome text may be encrypted in the database: compare after reading
+    const outcomes = await db.collection('decisions').find({ workspace_id: 'WACT' }).toArray();
+    assert.ok(!outcomes.some(outcome => outcome.text === 'Enviar propuesta a Carolina'), 'not saved as an outcome');
 
     assert.equal((await request('POST', '/api/action-items', { text: 'x' })).status, 400, 'a space is needed');
     assert.equal((await request('POST', '/api/action-items', { space_id: { $ne: '' }, text: 'x' })).status, 400);

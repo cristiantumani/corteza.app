@@ -58,6 +58,13 @@ function extractKeywords(query) {
   return [...new Set(words)];
 }
 
+/**
+ * Keyword search reads at most this many of a space's newest outcomes and matches them in memory:
+ * outcome text is encrypted in the database (core/crypto), so it can't be searched there.
+ * Semantic search (embeddings) still covers everything.
+ */
+const KEYWORD_SEARCH_LIMIT = 2000;
+
 function escapeRegex(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -109,6 +116,8 @@ function accentInsensitivePattern(keyword) {
 }
 
 module.exports = {
+  KEYWORD_SEARCH_LIMIT,
+  foldText: normalize,
   STOP_WORDS,
   normalize,
   extractKeywords,

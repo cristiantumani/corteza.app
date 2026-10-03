@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security - Meeting content encrypted per company
+- **Each company's meeting content is encrypted with its own key** before it reaches the database: outcomes and action items (text, why, quotes, notes, topics), meeting titles, the context given to the AI, and review suggestions. A copy of the database or a backup is unreadable on its own. Keys are stored wrapped by a master key kept outside the database (`DATA_KEK`)
+- **Nothing changes on screen:** pages, emails, the AI and search by meaning work as before. Keyword search now looks through the newest 2,000 outcomes of a space
+- **Deleting a company's data destroys its key,** so nothing can be recovered, backups included. The deletion now removes action items too
+- Turned on with `FIELD_ENCRYPTION=on` + `DATA_KEK`; existing data is encrypted with `scripts/migrations/012-encrypt-workspace-data.js` (dry run, `--apply`, `--check`)
+
 ### Security - Uploaded transcripts are no longer stored
 - Transcripts uploaded by hand (web upload, Slack files) were saved whole in the database although nothing used the text. Now only the outcomes are kept, plus the file name, word count and a hash to detect duplicate uploads, like automatic Meet capture
 - `scripts/migrations/011-remove-uploaded-transcript-text.js` deletes the text of earlier uploads (dry run unless `--apply`)

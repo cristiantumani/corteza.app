@@ -1,6 +1,6 @@
 # Per-workspace encryption of meeting content
 
-**Status:** proposed (Oct 3, 2026) · **Owner:** Cristian · **Linear:** COR-40 · **Roadmap:** A1/A6 (ready to sell)
+**Status:** approved (Oct 3, 2026), phase 1 built · **Owner:** Cristian · **Linear:** COR-40 · **Roadmap:** A1/A6 (ready to sell)
 
 ## Problem
 
@@ -87,8 +87,16 @@ Stays readable, with the reason:
   - the migration encrypts, is idempotent and `--check` reports 0.
 - **Whole suite with encryption on:** CI runs all tests with `FIELD_ENCRYPTION=on`, so every feature is exercised against encrypted data.
 
-## Open questions (decide before building)
+## Decisions (Oct 3, 2026)
 
-1. **KEK:** environment variable first, KMS in phase 2 (recommended: ships sooner, KMS adds about US$1/month), or KMS from day 1?
-2. **Owner names and tags:** keep them plain in phase 1 (recommended), or encrypt them now and move name and tag filtering into memory?
-3. **Keyword search cap:** is searching the newest 2,000 outcomes per space acceptable? Semantic search still covers everything.
+1. **KEK:** the `DATA_KEK` environment variable in Railway (free) for phase 1; Google Cloud KMS in phase 2 (a few cents a month), when customers ask for it or more people get Railway access.
+2. **Owner names and tags:** stay plain in phase 1.
+3. **Keyword search:** the newest 2,000 outcomes per space, matched in memory.
+
+## As built (phase 1)
+
+- `src/core/crypto/`: `aead.js` (value format), `keys.js` (DEKs in `workspace_keys`, wrapped by `DATA_KEK`, cached 10 min), `fields.js` (field map, seal/open), `collections.js` (the wrapper). `config/database.js` wraps the Db, so `getDatabase()` and the collection getters are encrypted; `getRawDatabase()` skips the layer (keys, migrations).
+- Values are opened wherever they appear in a result (projections, aggregations); writes are sealed in `insertOne`, `insertMany`, `replaceOne`, `updateOne`, `updateMany` and `findOneAndUpdate` (`$set`, `$setOnInsert`, `$push`). An update that doesn't say its workspace reads it from the matched document.
+- Keyword search in memory: `services/semantic-search.js` (`keywordSearch`), `routes/api.js` (`GET /api/decisions?search=`), `routes/slack.js` (search command). The `{ text, tags }` text index is dropped.
+- GDPR workspace deletion also deletes action items and destroys the workspace's keys.
+- CI runs the whole suite twice: plain and with `FIELD_ENCRYPTION=on` + `FIELD_ENCRYPTION_STRICT=true`.

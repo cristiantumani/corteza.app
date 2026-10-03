@@ -4,7 +4,7 @@ const { Anthropic } = require('@anthropic-ai/sdk');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
 const { recordAiUsage } = require('../core/usage/ai-usage');
-const { extractKeywords, matchedKeywords, requiredMatches, accentInsensitivePattern } = require('../core/search/relevance');
+const { extractKeywords, matchedKeywords, requiredMatches, KEYWORD_SEARCH_LIMIT } = require('../core/search/relevance');
 const { SAMPLING_MODELS } = require('./claude');
 
 // Fields a search result carries (never `embedding`): enough to show the full source in Search
@@ -700,21 +700,11 @@ async function keywordSearch(query, options = {}) {
   const empty = { highlyRelevant: [], relevant: [], somewhatRelevant: [], all: [] };
   if (keywords.length === 0) return empty;
 
-  const orConditions = keywords.flatMap(keyword => {
-    const pattern = accentInsensitivePattern(keyword);
-    return [
-      { text: { $regex: pattern, $options: 'i' } },
-      { tags: { $regex: pattern, $options: 'i' } },
-      { rationale: { $regex: pattern, $options: 'i' } },
-      { 'source_details.title': { $regex: pattern, $options: 'i' } },
-      { epic_key: { $regex: pattern, $options: 'i' } }
-    ];
-  });
-
+  // Outcome text is encrypted (core/crypto): read the space's newest outcomes and match keywords in memory
+  /** @type {Record<string, any>} */
   const filter = {
     workspace_id,
-    space_id,  // SECURITY FIX: Filter search by space
-    $or: orConditions
+    space_id  // SECURITY FIX: Filter search by space
   };
   if (excludeIds.length) filter.id = { $nin: excludeIds };
   if (type) filter.type = type;
@@ -727,7 +717,7 @@ async function keywordSearch(query, options = {}) {
   const candidates = await getDecisionsCollection()
     .find(filter, { projection: RESULT_PROJECTION })
     .sort({ timestamp: -1 })
-    .limit(200)
+    .limit(KEYWORD_SEARCH_LIMIT)
     .toArray();
 
   const needed = requiredMatches(keywords.length);
