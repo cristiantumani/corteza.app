@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - The beta welcome email comes from a person
+- The "You're in: welcome to the Corteza beta" email is sent from `Cristian from Corteza <cristian@corteza.app>` instead of `noreply@`, so a tester can just reply. `BETA_FROM` changes the sender; `BETA_REPLY_TO` still sends replies elsewhere (it no longer falls back to `FEEDBACK_EMAIL`). Digests, imports and invites still come from `noreply@corteza.app`
+
 ### Fixed - Topic threads for earlier meetings, and dated questions
 - **Backfill (`010-topic-threads.js`):** the dry run grouped most of a meeting into one thread, because any two close items were joined and chained. Now each item joins only the question or risk it's closest to (similarity ≥ 0.6, shown in the dry run), with at most 4 decisions and action items per thread. Items are compared by embeddings of their plain text (outcomes' stored ones are built for search and scored action items too low), so a next step like "investigate the ISO 27001 requirements" joins its question; an action item that carries out a decision in a thread follows it there
 - **A question or risk with a date no longer becomes an action item with its own text** (e.g. "¿Cómo rediseñar las páginas de precios…" as a task). Only a dated decision gets a linked action item, as intended

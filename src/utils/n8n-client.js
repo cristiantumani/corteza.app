@@ -9,6 +9,17 @@ const { describeOutcomes } = require('../core/decisions/types');
 const RESEND_API_URL = 'https://api.resend.com/emails';
 /** Where beta testers can chip in for the AI costs (morning summary footer; the app sidebar links it too) */
 const SUPPORT_URL = 'https://buymeacoffee.com/corteza.app';
+/** Automatic emails (digests, imports, invites) */
+const DEFAULT_FROM = 'Corteza <noreply@corteza.app>';
+
+/**
+ * Sender of the beta welcome email: a person, so testers can write back. Replies to
+ * cristian@corteza.app are forwarded to the founder's inbox. BETA_FROM overrides it.
+ * @returns {string}
+ */
+function betaFrom() {
+  return (process.env.BETA_FROM || '').trim() || 'Cristian from Corteza <cristian@corteza.app>';
+}
 
 /**
  * Sends one email through Resend
@@ -16,11 +27,12 @@ const SUPPORT_URL = 'https://buymeacoffee.com/corteza.app';
  * @param {string} params.to
  * @param {string} params.subject
  * @param {string} params.html
+ * @param {string} [params.from] - default DEFAULT_FROM (noreply)
  * @param {string} [params.replyTo]
  * @param {Object<string, string>} [params.headers] - e.g. List-Unsubscribe
  * @returns {Promise<{ id: string }>}
  */
-async function sendEmail({ to, subject, html, replyTo, headers }) {
+async function sendEmail({ to, subject, html, from, replyTo, headers }) {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
@@ -38,7 +50,7 @@ async function sendEmail({ to, subject, html, replyTo, headers }) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Corteza <noreply@corteza.app>',
+        from: from || DEFAULT_FROM,
         to: [to],
         subject,
         html,
@@ -269,17 +281,19 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
 }
 
 /**
- * Welcomes an approved beta tester and invites them to sign in with Google
+ * Welcomes an approved beta tester and invites them to sign in with Google. Sent from
+ * Cristian's address (betaFrom), not noreply, so a reply reaches him
  * @param {Object} params
  * @param {string} params.email - the address they requested access with
  * @param {string} [params.name] - first name
  * @param {string} params.login_url
- * @param {string} [params.reply_to] - the team's address, so replies reach a person
+ * @param {string} [params.reply_to] - another address for replies (default: the sender)
  */
 async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
   const result = await sendEmail({
     to: email,
     subject: 'You’re in: welcome to the Corteza beta',
+    from: betaFrom(),
     replyTo: reply_to || undefined,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #111; line-height: 1.6;">
@@ -548,6 +562,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
 module.exports = {
   sendImportSummaryEmail,
   sendBetaWelcomeEmail,
+  betaFrom,
   sendDailyDigestEmail,
   dailyDigestHtml,
   dailyDigestSubject,
