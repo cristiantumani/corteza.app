@@ -333,9 +333,7 @@ async function processTranscript(transcriptContent, metadata) {
       file_type: metadata.file_type,
       file_size: metadata.file_size,
       slack_file_id: metadata.slack_file_id,
-      content: transcriptContent,
-      content_hash: contentHash,  // CREDIT OPTIMIZATION: Store hash for duplicate detection
-      content_preview: transcriptContent.substring(0, 500),
+      content_hash: contentHash,  // duplicate detection; the text itself is never stored, only its hash
       word_count: wordCount,
       uploaded_by: metadata.user_id,
       uploaded_by_name: metadata.user_name,
