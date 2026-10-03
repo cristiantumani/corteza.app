@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Developer - Design skill for Claude Code
+- **`/corteza-design`** (`.claude/skills/corteza-design/`): Corteza's design standard in one place, written for a senior product designer who challenges the product as well as the pixels: design philosophy, product principles, wording, Tailwind tokens, component recipes, responsive and interaction rules, accessibility, technical constraints, a review method and P0–P2 severities, plus the known gaps
+- **`scripts/preview.js`** serves the real pages with fake data and takes desktop (1440px) and mobile (390px) screenshots of every page, without a database or Google sign-in; states `default`, `empty`, `onboarding`, `member`; reports console errors and horizontal overflow
+- `.gitignore` now commits `.claude/skills/` and `.claude/agents/`; local Claude settings stay out
+
 ### Security - Meeting content encrypted per company
 - **Each company's meeting content is encrypted with its own key** before it reaches the database: outcomes and action items (text, why, quotes, notes, topics), meeting titles, the context given to the AI, and review suggestions. A copy of the database or a backup is unreadable on its own. Keys are stored wrapped by a master key kept outside the database (`DATA_KEK`)
 - **Nothing changes on screen:** pages, emails, the AI and search by meaning work as before. Keyword search now looks through the newest 2,000 outcomes of a space

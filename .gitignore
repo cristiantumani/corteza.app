@@ -48,11 +48,15 @@ temp/
 *.tmp
 *.temp
 
-# AI/Development artifacts
-.claude/
+# AI/Development artifacts (local Claude settings stay out; shared skills and agents are committed)
+.claude/*
+!.claude/skills/
+!.claude/agents/
 *.code-workspace
 
 # Browser extension builds and signing keys (never commit)
 *.pem
 *.crx
 browser-extension/*.zip
+# Screenshots from .claude/skills/corteza-design/scripts/preview.js
+ui-preview/
