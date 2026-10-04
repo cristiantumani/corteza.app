@@ -114,6 +114,15 @@ const routes = {
   'GET /api/workspace-admins': { success: true, admins: [{ user_id: 'U1', user_name: 'Ana Rojas' }] },
   'GET /api/ai/pending-suggestions': { success: true, suggestions: [] },
   'GET /api/me/timezone': { success: true, timezone: user.timezone, automatic: true },
+  'GET /api/me/digest-voice': {
+    success: true, voice: 'sarcastic', chosen: null, default_voice: 'sarcastic', workspace_enabled: true, is_admin: true,
+    voices: ['classic', 'sergeant', 'sarcastic'],
+    samples: require('../../../../src/core/digest/voice').SAMPLES
+  },
+  'PUT /api/me/digest-voice': req => ({
+    success: true, voice: req.body.voice, chosen: req.body.voice, default_voice: 'sarcastic', workspace_enabled: true,
+    voices: ['classic', 'sergeant', 'sarcastic'], samples: require('../../../../src/core/digest/voice').SAMPLES
+  }),
   'POST /api/semantic-search': {
     success: true,
     response: 'Se decidió lanzar el plan anual con 20% de descuento desde el 1 de noviembre. Bruno es responsable, y falta confirmar que el proveedor de pagos soporte cobro anual.',

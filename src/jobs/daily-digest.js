@@ -3,6 +3,8 @@ const { getUserAccessibleSpaces } = require('../services/permissions');
 const { PENDING_REVIEW } = require('../core/decisions/review-service');
 const { isValidTimeZone, localTime } = require('../core/users/timezone');
 const { getUnsubscribeUrl } = require('./weekly-digest');
+const voice = require('../core/digest/voice');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * Daily digest: one morning email per person with what happened since their last one, to
@@ -32,6 +34,10 @@ const { getUnsubscribeUrl } = require('./weekly-digest');
  * Monday's email covers the weekend. Each person/day (their local date) is claimed with a
  * unique insert into `daily_digests`, so it's sent once even with several app instances.
  *
+ * Morning partner (core/digest/voice): unless the person picked Classic (or their workspace
+ * turned personalities off), a personality's line for the day becomes the subject and opens
+ * the email. `daily_digests` keeps the voice, situation, line id and language, never the text.
+ *
  * On by default when RESEND_API_KEY is set; DAILY_DIGEST_ENABLED=false turns it off.
  * People opt out with the link in the email (`daily_digest_opt_out` on the membership).
  */
@@ -41,6 +47,8 @@ const MAX_WINDOW_MS = 72 * 60 * 60 * 1000;
 const DEFAULT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const SEND_WINDOW_HOURS = 4;
 const PLAN_ITEMS = 5;
+/** A colleague's meeting assigned it this recently: the partner never names it (the owner may be wrong) */
+const RECENT_ASSIGNMENT_MS = 24 * 60 * 60 * 1000;
 
 function digestHour() {
   const hour = parseInt(process.env.DAILY_DIGEST_HOUR || '8', 10);
@@ -137,8 +145,9 @@ async function addNextStepOn(workspaceId, items, spaceIds) {
  * @param {string} [timeZone] - "today" (due today, overdue) is the person's local date
  * @returns {Promise<{ meetings: number, outcomes: Object, newActionItems: number, dueToday: number, toReview: number, overdue: number, noDueDate: number, planItems: Object[], assignedBy: { name: string, count: number }[], meetingPrep: Object[] }>}
  *   planItems: the person's open items due today, then the most recently overdue
- *   ({ item_id, text, due_date, meeting, next_step_on }), at most PLAN_ITEMS; next_step_on: the open
- *   question of the item's topic thread, if any
+ *   ({ item_id, text, due_date, meeting, next_step_on, recent_from_colleague }), at most PLAN_ITEMS; next_step_on:
+ *   the open question of the item's topic thread, if any; recent_from_colleague: a colleague's meeting assigned it
+ *   in the last 24 hours
  *   assignedBy: of the new action items, the ones colleagues' meetings assigned them, by colleague
  *   meetingPrep: today's meetings with the open items of the people in them (core/briefs/meeting-prep), each with `time` ('9:30 AM')
  * @param {Object} [options]
@@ -165,7 +174,7 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
       : 0,
     db.collection('action_items').find(
       { workspace_id: workspaceId, ...mine, status: 'open', due_date: { $ne: null, $lte: today } },
-      { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1, topic_id: 1 } }
+      { projection: { _id: 0, item_id: 1, text: 1, due_date: 1, 'source.title': 1, topic_id: 1, 'created_by.user_id': 1, created_at: 1 } }
     ).sort({ due_date: -1, created_at: -1 }).limit(PLAN_ITEMS * 3).toArray(),
     // New ones a colleague's meeting assigned them, by colleague
     db.collection('action_items').aggregate([
@@ -182,7 +191,11 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
     const key = `${String(item.text || '').trim().toLowerCase()}|${item.due_date}`;
     if (!item.text || seen.has(key)) continue;
     seen.add(key);
-    planItems.push({ item_id: item.item_id, text: item.text, due_date: item.due_date, meeting: (item.source && item.source.title) || null, topic_id: item.topic_id || null });
+    const byColleague = !!(item.created_by && item.created_by.user_id && item.created_by.user_id !== userId);
+    planItems.push({
+      item_id: item.item_id, text: item.text, due_date: item.due_date, meeting: (item.source && item.source.title) || null, topic_id: item.topic_id || null,
+      recent_from_colleague: byColleague && !!item.created_at && now.getTime() - new Date(item.created_at).getTime() < RECENT_ASSIGNMENT_MS
+    });
     if (planItems.length === PLAN_ITEMS) break;
   }
   await addNextStepOn(workspaceId, planItems, spaceIds);
@@ -210,6 +223,40 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
 /** Something new happened, something is due today, or a meeting today has items to prepare: reminders alone never trigger an email */
 function hasNews(summary) {
   return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0 || (summary.meetingPrep || []).length > 0;
+}
+
+/**
+ * The partner's line for one person's summary, or null for Classic
+ * @param {Object} params
+ * @param {'classic'|'sergeant'|'sarcastic'} params.voiceName
+ * @param {Object} params.summary - from buildDailySummary
+ * @param {Date} params.now
+ * @param {string} params.timeZone
+ * @param {string|null} params.languageSetting - the person's Meet "Write outcomes in" setting
+ * @param {{ line_id?: string, language?: string }[]} params.recent - their recent summaries, newest first
+ * @returns {{ voice: string, situation: string, language: 'en'|'es', id: string, subject: string, opener: string, followUp: string }|null}
+ */
+function buildPartner({ voiceName, summary, now, timeZone, languageSetting, recent }) {
+  if (!voice.PARTNER_VOICES.includes(voiceName)) return null;
+  const situation = voice.pickSituation(summary);
+  const items = summary.planItems || [];
+  const texts = [...items.map(item => item.text), ...(summary.meetingPrep || []).flatMap(meeting => (meeting.items || []).map(item => item.text))];
+  const language = voice.pickLanguage({ setting: languageSetting, texts, previous: (recent[0] && recent[0].language) || null });
+  const today = localTime(now, timeZone).date;
+  // The item a line may name: overdue first (or due today), never one a colleague's meeting just assigned
+  const named = items.find(item => !item.recent_from_colleague && (situation === 'due_today' ? item.due_date === today : item.due_date < today));
+  const line = voice.pickLine({
+    voice: /** @type {'sergeant'|'sarcastic'} */ (voiceName),
+    situation,
+    language,
+    recentLineIds: recent.map(row => row.line_id).filter(Boolean),
+    vars: {
+      count: situation === 'due_today' ? summary.dueToday : summary.overdue,
+      weekday: now.toLocaleDateString(language === 'es' ? 'es-CL' : 'en-US', { weekday: 'long', timeZone }),
+      item: named ? named.text : null
+    }
+  });
+  return { voice: voiceName, situation, language, ...line };
 }
 
 /**
@@ -246,8 +293,17 @@ async function claimDay(workspaceId, userId, day, now) {
 async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
   const members = await getWorkspaceMembersCollection().find(
     { removed_at: null, email: { $nin: [null, ''] } },
-    { projection: { workspace_id: 1, user_id: 1, email: 1, workspace_name: 1, timezone: 1, daily_digest_opt_out: 1 } }
+    { projection: { workspace_id: 1, user_id: 1, email: 1, workspace_name: 1, timezone: 1, daily_digest_opt_out: 1, digest_voice: 1 } }
   ).toArray();
+  // Workspace switch for personalities, and each person's Meet language setting (one query each)
+  const workspaceIds = [...new Set(members.map(member => member.workspace_id))];
+  const db = getDatabase();
+  const [workspaces, connections] = await Promise.all([
+    db.collection('workspaces').find({ workspace_id: { $in: workspaceIds } }, { projection: { _id: 0, workspace_id: 1, digest_voices_enabled: 1 } }).toArray(),
+    db.collection('google_connections').find({ workspace_id: { $in: workspaceIds } }, { projection: { _id: 0, workspace_id: 1, user_id: 1, 'settings.language': 1 } }).toArray()
+  ]);
+  const workspaceOf = new Map(workspaces.map(workspace => [workspace.workspace_id, workspace]));
+  const languageOf = new Map(connections.map(connection => [`${connection.workspace_id}|${connection.user_id}`, (connection.settings && connection.settings.language) || null]));
   // Opted-out members still count for their workspace's usual time zone
   const timeZoneOf = timeZoneResolver(members);
 
@@ -265,6 +321,16 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
       const summary = await buildDailySummary(member.workspace_id, member.user_id, since, now, timeZone);
       if (!hasNews(summary)) continue;
 
+      const voiceName = voice.resolveVoice(member, workspaceOf.get(member.workspace_id) || null);
+      const recent = voiceName === 'classic' ? [] : await db.collection('daily_digests').find(
+        { workspace_id: member.workspace_id, user_id: member.user_id, sent: true, checked_at: { $gte: new Date(now.getTime() - voice.REPEAT_DAYS * 24 * 3600 * 1000) } },
+        { projection: { _id: 0, line_id: 1, language: 1 } }
+      ).sort({ checked_at: -1 }).toArray();
+      const partner = buildPartner({
+        voiceName, summary, now, timeZone, recent,
+        languageSetting: languageOf.get(`${member.workspace_id}|${member.user_id}`) || null
+      });
+
       await send({
         email: member.email,
         workspace_name: member.workspace_name || member.workspace_id,
@@ -274,13 +340,19 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
           dayLabel: now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
           since: sinceLabel(since, now, timeZone)
         },
-        unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily')
+        unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily'),
+        partner
       });
       await getDatabase().collection('daily_digests').updateOne(
         { workspace_id: member.workspace_id, user_id: member.user_id, day },
         // Counts only: the items' text isn't kept
-        { $set: { sent: true, sent_at: new Date(), summary: { ...summary, planItems: summary.planItems.length }, timezone: timeZone } }
+        // The partner's ids only, never the line's text
+        { $set: {
+          sent: true, sent_at: new Date(), summary: { ...summary, planItems: summary.planItems.length }, timezone: timeZone,
+          voice: voiceName, situation: partner ? partner.situation : null, line_id: partner ? partner.id : null, language: partner ? partner.language : null
+        } }
       );
+      track('daily_digest_sent', { voice: voiceName, situation: partner ? partner.situation : voice.pickSituation(summary), language: partner ? partner.language : null }, member.user_id);
       sent++;
     } catch (error) {
       console.error(`❌ Daily digest failed for ${member.user_id} in ${member.workspace_id}:`, error.message);
@@ -317,6 +389,7 @@ module.exports = {
   runDailyDigest,
   buildDailySummary,
   digestDay,
+  buildPartner,
   hasNews,
   sinceLabel,
   timeZoneResolver

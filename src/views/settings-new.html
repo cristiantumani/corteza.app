@@ -160,6 +160,18 @@
                         <option value="">Loading…</option>
                     </select>
                     <span id="timezone-status" class="text-xs text-on-surface-variant mt-2"></span>
+
+                    <!-- Morning partner: the voice of the summary (public/scripts/settings-digest-voice.js, docs/specs/2026-10-morning-partner.md) -->
+                    <fieldset id="digest-voice" class="mt-8 border-0 p-0 m-0 min-w-0">
+                        <legend class="text-sm font-semibold text-on-surface mb-1">Your morning partner</legend>
+                        <p class="text-sm text-on-surface-variant mb-3">Who writes your summary. A partner opens it with a line about your day; your list stays the same.</p>
+                        <div id="digest-voice-options" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                        <span id="digest-voice-status" class="text-xs text-on-surface-variant mt-2 block" role="status"></span>
+                        <label id="digest-voice-admin" class="hidden mt-4 flex items-center gap-2 text-sm text-on-surface">
+                            <input type="checkbox" id="digest-voices-enabled" class="w-4 h-4 accent-primary">
+                            Allow morning partners in this workspace <span class="text-on-surface-variant">(admins only; off means everyone gets Classic)</span>
+                        </label>
+                    </fieldset>
                 </section>
 
                 <!-- Account (Google sign-in) -->
@@ -380,5 +392,6 @@
     <script src="/scripts/settings-integrations.js?v=12"></script>
     <script src="/scripts/settings-context.js?v=2"></script>
     <script src="/scripts/settings-timezone.js?v=1"></script>
+    <script src="/scripts/settings-digest-voice.js?v=1"></script>
 </body>
 </html>
