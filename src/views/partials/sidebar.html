@@ -42,6 +42,39 @@
     display: flex; flex-direction: column; gap: 0.25rem;
     margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4e1e8;
   }
+
+  /* Phones (public/scripts/mobile-nav.js): the sidebar is a drawer opened from the top bar,
+     and the page takes the full width. Pages keep their desktop classes (ml-64, left-64). */
+  .cz-menu-btn, .cz-mobile-header { display: none; }
+  @media (max-width: 767px) {
+    .corteza-sidebar {
+      z-index: 40; visibility: hidden; transform: translateX(-100%);
+      transition: transform 200ms ease, visibility 200ms;
+    }
+    body.cz-nav-open .corteza-sidebar { visibility: visible; transform: none; box-shadow: 0 0 32px rgba(27, 27, 29, 0.25); }
+    .corteza-sidebar .sb-link { height: 2.75rem; }
+    .cz-nav-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(27, 27, 29, 0.4); }
+    .cz-menu-btn {
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+      width: 2.75rem; height: 2.75rem; margin-left: -0.5rem; border: 0; border-radius: 0.5rem;
+      background: none; color: #1b1b1d; cursor: pointer;
+    }
+    .cz-menu-btn:hover { background: #ebe7ec; }
+    .cz-menu-btn .material-symbols-outlined { font-size: 1.5rem !important; }
+    .cz-mobile-header {
+      display: flex; align-items: center; gap: 0.5rem; position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      height: 3.5rem; padding: 0 1rem; background: #fcf8fb; border-bottom: 1px solid #e4e1e8;
+    }
+    .cz-mobile-brand { font: 800 1.125rem/1 'Inter', sans-serif; letter-spacing: -0.02em; color: #1b1b1d; text-decoration: none; }
+    body .ml-64 { margin-left: 0 !important; }
+    body .left-64 { left: 0 !important; }
+    body > header.fixed { width: auto !important; padding-left: 1rem !important; padding-right: 1rem !important; gap: 0.5rem; }
+    body > header.fixed > .cz-menu-btn + * { margin-right: auto; } /* the page title sits next to the menu button */
+    main > div.p-8 { padding: 1.25rem 1rem !important; }
+    #main-content.p-12 { padding: 1.25rem 1rem !important; }
+    body.cz-own-header #main-content { padding-top: 4.75rem !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { .corteza-sidebar { transition: none; } }
 </style>
 <aside class="corteza-sidebar" aria-label="Main navigation">
   <a class="sb-brand" href="/dashboard">
@@ -87,6 +120,8 @@
     </a>
   </div>
 </aside>
+<!-- Phone layout: the sidebar as a drawer -->
+<script src="/scripts/mobile-nav.js?v=1" defer></script>
 <!-- Reports the browser's time zone (daily summary at 8:00 local time) -->
 <script src="/scripts/timezone.js?v=1" defer></script>
 <!-- Count of new action items colleagues assigned (core/actions/colleague-assignments) -->

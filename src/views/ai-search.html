@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=6">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=7">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link rel="stylesheet" href="/styles/dashboard.css?v=5">
@@ -45,6 +45,9 @@
             background: linear-gradient(to top, #fcf8fb 90%, transparent);
             padding: 20px 48px 32px;
             z-index: 30;
+        }
+        @media (max-width: 767px) {
+            .prompt-container { left: 0; padding: 12px 16px 16px; }
         }
     </style>
 
@@ -213,7 +216,7 @@
 <script src="/scripts/people.js?v=2"></script>
 <script src="/scripts/decision-actions.js?v=2"></script>
 <script src="/scripts/inline-edit.js?v=3"></script>
-<script src="/scripts/dashboard.js?v=29"></script>
+<script src="/scripts/dashboard.js?v=30"></script>
 <script src="/scripts/ai-search.js?v=10"></script>
 
 <!-- Initialize Space Context Indicator -->

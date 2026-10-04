@@ -668,7 +668,9 @@
 
     function closeDeleteModal() {
       deleteTargetId = null;
-      document.getElementById('delete-modal').classList.remove('active');
+      const modal = document.getElementById('delete-modal');
+      if (!modal) return; // not on every page (Search has none); Esc must still close the detail
+      modal.classList.remove('active');
 
       // Reset delete button state in case modal was closed during deletion
       const deleteBtn = document.querySelector('.modal-btn-delete');

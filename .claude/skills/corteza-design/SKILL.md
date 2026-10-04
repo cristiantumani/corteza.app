@@ -471,7 +471,7 @@ Shared sidebar:
 
 `src/views/partials/sidebar.html`
 
-16rem, injected by `renderView`.
+16rem, injected by `renderView`. Below 768px it becomes a drawer opened from a menu button at the start of the page's top bar (`public/scripts/mobile-nav.js`; the phone CSS is in the partial). A new page keeps the same frame: `ml-64` on `main`, a fixed `header` with `left-64`, so the phone rules apply to it.
 
 Main content max width:
 
@@ -779,7 +779,6 @@ Known screenshot artifacts (not bugs): the fixed sidebar's background stops at t
 
 Already known; report them again only with a concrete proposal or if something got worse:
 
-- **No mobile layout.** The sidebar is always 16rem and fixed; at 390px it covers most of the screen, and every app page overflows horizontally.
 - **Three generations of CSS.** Home, Search and the demo still load `public/styles/dashboard.css` (2,200+ lines) and `dashboard-minimal.css`; newer pages use only Tailwind. Modal styles are copied per page.
 - **Inconsistent page headers:** Home has a search top bar, Action items and Settings a title bar, Search none.
 - **Search** uses a purple gradient hero and "Synthesized Intelligence" / "Evidence Sources" wording; relevance shows "0%".
