@@ -126,9 +126,9 @@
     const recent = (data.recent_meetings || []).slice(0, 5);
     const recentHtml = recent.length
       ? `<ul class="divide-y divide-outline-variant/50">${recent.map(meeting => `
-          <li class="flex items-center justify-between gap-4 py-2 text-sm">
+          <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-4 py-2 text-sm">
             <span class="text-on-surface truncate">${escapeHtml(meeting.title || 'Meeting')}</span>
-            <span class="whitespace-nowrap text-on-surface-variant">${escapeHtml(meetingOutcome(meeting))} · ${escapeHtml(timeAgo(meeting.updated_at))}</span>
+            <span class="sm:whitespace-nowrap text-on-surface-variant">${escapeHtml(meetingOutcome(meeting))} · ${escapeHtml(timeAgo(meeting.updated_at))}</span>
           </li>`).join('')}</ul>`
       : '<p class="text-sm text-on-surface-variant">No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, it shows up here within a few minutes. You can also import past meetings.</p>';
 

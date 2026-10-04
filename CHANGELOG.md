@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Corteza works on a phone
+- **Below 768px the sidebar is a drawer:** a menu button at the start of each page's top bar opens it over the page; a link, the backdrop or Esc closes it, and focus moves into it and back. Pages take the full width, with no sideways scrolling on any page (it was up to 423px at 390px wide)
+- Phone-specific fixes: Action items puts the due date and status under the text instead of squeezing it to one word per line; meeting lists on Home and Settings stack the title over its result; Home's list controls wrap; the signed-in name and avatar in the top bar show on desktop only; Search's question box spans the screen
+- Esc on Search now closes the source detail (it failed looking for a delete dialog Search doesn't have)
+
 ### Fixed - Trust bugs from the UX audit
 - **Delete all data works again.** Settings never sent the confirmation the server requires (`confirm=DELETE_ALL_DATA`), so every attempt failed with "Confirmation required". Errors now show inside the dialog instead of a browser alert, the button says "Deleting…", and the text says exactly what is deleted
 - **Members no longer see admin-only actions** ("Delete All Data", "Create Invite Link") that the server refused with a 403. They show for workspace admins only

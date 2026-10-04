@@ -131,7 +131,7 @@
     const done = item.status === 'done';
     const cancelled = item.status === 'cancelled';
     return `
-      <div id="item-${escapeHtml(item.item_id)}" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex gap-4 items-start ${item.item_id === focusItemId ? 'ring-2 ring-primary' : ''}">
+      <div id="item-${escapeHtml(item.item_id)}" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-wrap sm:flex-nowrap gap-x-4 gap-y-3 items-start ${item.item_id === focusItemId ? 'ring-2 ring-primary' : ''}">
         <input type="checkbox" class="done-toggle mt-1 w-5 h-5 rounded" data-id="${escapeHtml(item.item_id)}" ${done ? 'checked' : ''} ${cancelled ? 'disabled' : ''} aria-label="Done">
         <div class="flex-1 min-w-0 flex flex-col gap-2">
           ${badgesHtml(item)}
@@ -142,7 +142,8 @@
           ${sourceHtml(item)}
           ${item.evidence_quote ? `<p class="text-xs italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         </div>
-        <div class="flex flex-col items-end gap-2">
+        <!-- Due date and status: beside the text on wider screens, under it on a phone -->
+        <div class="w-full sm:w-auto pl-9 sm:pl-0 flex flex-wrap sm:flex-col items-center sm:items-end gap-2">
           ${dueHtml(item)}
           <select class="status-select bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 text-xs" data-id="${escapeHtml(item.item_id)}" aria-label="Status">
             ${['open', 'done', 'cancelled'].map(status => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status[0].toUpperCase() + status.slice(1)}</option>`).join('')}

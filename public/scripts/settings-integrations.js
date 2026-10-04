@@ -97,7 +97,7 @@
         ? countLabel(m.decisions_created, m.action_items_created, m.outcomes_by_type)
         : m.status === 'skipped' ? (SKIP_REASONS[m.skip_reason] || 'Skipped')
           : m.status === 'failed' ? 'Failed (will retry)' : 'Processing';
-      return `<li class="flex justify-between gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || 'Meeting')}</span><span class="whitespace-nowrap">${escapeHtml(status)}</span></li>`;
+      return `<li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || 'Meeting')}</span><span class="sm:whitespace-nowrap">${escapeHtml(status)}</span></li>`;
     }).join('');
 
     body().innerHTML = `
@@ -390,9 +390,9 @@
       const percent = job.total ? Math.round((job.done / job.total) * 100) : 0;
 
       const items = job.items.map(item => `
-        <li class="flex justify-between gap-4 py-1">
+        <li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-1">
           <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || 'Meeting')}</span>
-          <span class="whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created, item.outcomes_by_type)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
+          <span class="sm:whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created, item.outcomes_by_type)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
         </li>`).join('');
 
       const running = job.status === 'running';
