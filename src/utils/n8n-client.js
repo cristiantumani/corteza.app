@@ -426,12 +426,15 @@ function dailyDigestSubject(summary) {
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
  *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting, next_step_on }], assignedBy: [{ name, count }],
  *   meetingPrep: [{ time, title, people, items: [{ item_id, text, due_date, owner }], more }] }
+ * @param {{ voice: string, subject: string, opener: string, followUp: string }|null} [params.partner] - the
+ *   morning partner's line (core/digest/voice): it becomes the subject and opens the email, and the counts
+ *   move to the preheader. null for Classic
  */
-async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url }) {
+async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url, partner = null }) {
   const result = await sendEmail({
     to: email,
-    subject: dailyDigestSubject(summary),
-    html: dailyDigestHtml({ workspace_name, summary, unsubscribe_url }),
+    subject: partner ? partner.subject : dailyDigestSubject(summary),
+    html: dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner }),
     headers: {
       'List-Unsubscribe': `<${unsubscribe_url}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
@@ -441,12 +444,17 @@ async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscrib
 }
 
 /**
- * HTML of the morning summary (see sendDailyDigestEmail)
- * @param {{ workspace_name: string, summary: Object, unsubscribe_url: string }} params
+ * HTML of the morning summary (see sendDailyDigestEmail). Without a partner it's the Classic email.
+ * @param {{ workspace_name: string, summary: Object, unsubscribe_url: string, partner?: { voice: string, opener: string, followUp: string }|null }} params
  * @returns {string}
  */
-function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
-  const baseUrl = process.env.BASE_URL || 'https://app.corteza.app';
+function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = null }) {
+  const appUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  // With a partner, links say which voice brought the click (?src=digest&voice=…); Classic links stay as they were
+  const link = path => (partner
+    ? `${appUrl}${path}${path.includes('?') ? '&' : '?'}src=digest&voice=${encodeURIComponent(partner.voice)}`
+    : `${appUrl}${path}`);
+  const baseUrl = appUrl;
   const outcomes = summary.outcomes || {};
   const decisions = outcomes.decision || 0;
   const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 });
@@ -455,7 +463,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
   const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
 
   const button = (href, label) => `
-              <a href="${baseUrl}${href}" style="display: inline-block; white-space: nowrap; padding: 7px 14px; border: 1px solid #c5c6d0; border-radius: 6px; color: #1b1b1d; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(label)}</a>`;
+              <a href="${link(href)}" style="display: inline-block; white-space: nowrap; padding: 7px 14px; border: 1px solid #c5c6d0; border-radius: 6px; color: #1b1b1d; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(label)}</a>`;
   const row = ({ box, title, meta, href, label }) => `
           <tr>
             <td style="width: 26px; padding: 14px 0; vertical-align: top;">
@@ -476,7 +484,9 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
       box: overdue ? '#ba1a1a' : '#3953bd',
       title: escapeHtml(clip(String(item.text), 160)) + (item.next_step_on
         ? `<div style="font-size: 13px; color: #3953bd; margin-top: 2px;">Next step on: ${escapeHtml(clip(String(item.next_step_on), 120))}</div>` : ''),
-      meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`,
+      meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`
+        // The AI may have picked the wrong owner: with a partner pushing, offer the way out (owners change in Corteza)
+        + (partner ? ` · <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #6b6d78;">Not mine?</a>` : ''),
       href: `/actions?item=${encodeURIComponent(item.item_id)}`,
       label: 'Open'
     });
@@ -485,7 +495,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
   const allDue = summary.dueToday && summary.overdue ? '/actions' : `/actions?due=${summary.overdue ? 'overdue' : 'today'}`;
   const more = dueCount > items.length ? `
           <tr><td colspan="3" style="padding: 0 0 14px 26px;">
-            <a href="${baseUrl}${allDue}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">See all ${dueCount} due or overdue →</a>
+            <a href="${link(allDue)}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">See all ${dueCount} due or overdue →</a>
           </td></tr>` : '';
   const reminders = [
     summary.toReview ? row({ box: '#c5c6d0', title: `${summary.toReview} ${plural(summary.toReview, 'outcome')} to review`, meta: 'Confirm the right ones, dismiss the rest', href: '/dashboard?review=pending', label: 'Review' }) : '',
@@ -510,7 +520,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
           <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">With ${escapeHtml(clip((meeting.people || []).join(', '), 120))}</div>
           ${(meeting.items || []).map(item => `
           <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
-            <a href="${baseUrl}/actions?item=${encodeURIComponent(item.item_id)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
+            <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
             <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : 'You'}${!item.due_date ? '' : summary.today && item.due_date < summary.today
               ? ` · <span style="color: #ba1a1a; font-weight: 600;">overdue since ${shortDate(item.due_date)}</span>`
               : ` · due ${shortDate(item.due_date)}`}</div>
@@ -524,16 +534,23 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
               <div style="font-size: 13px; color: #6b6d78;">${escapeHtml(label)}</div>
             </td>`;
   const since = escapeHtml(summary.since || 'yesterday');
+  // Partner: its line opens the email; the counts (Classic's subject) become the inbox preview text
+  const preheader = partner ? `
+        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escapeHtml(dailyDigestSubject(summary))}</div>` : '';
+  const heading = partner
+    ? `<h1 style="font-size: 21px; font-weight: 700; margin: 0 0 6px;">${escapeHtml(partner.opener)}</h1>
+            <p style="font-size: 16px; color: #1b1b1d; margin: 0 0 8px;">${escapeHtml(partner.followUp)}</p>`
+    : '<h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">Good morning. Here\'s your day.</h1>';
 
   return `
-      <div style="background: #eef1fb; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b1b1d;">
+      <div style="background: #eef1fb; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b1b1d;">${preheader}
         <div style="max-width: 580px; margin: 0 auto; background: #fff; border: 1px solid #e4e1e8; border-top: 6px solid #3953bd; border-radius: 12px; overflow: hidden;">
           <div style="padding: 20px 28px; border-bottom: 1px solid #ebe7ec;">
             <img src="https://corteza.app/favicon-96x96.png" alt="" width="24" height="24" style="vertical-align: middle; border-radius: 6px; margin-right: 10px;" />
             <span style="font-size: 17px; font-weight: 700; vertical-align: middle;">Your morning summary</span>
           </div>
           <div style="padding: 24px 28px 28px;">
-            <h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">Good morning. Here's your day.</h1>
+            ${heading}
             <p style="font-size: 14px; color: #6b6d78; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
             ${plateHtml}
             ${prepHtml}
@@ -543,7 +560,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url }) {
             </table>
             ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
             ${assignedByHtml(summary.assignedBy)}
-            <a href="${baseUrl}/actions"
+            <a href="${link('/actions')}"
                style="display: inline-block; margin-top: 28px; background: #3953bd; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
               Plan my day in Corteza →
             </a>

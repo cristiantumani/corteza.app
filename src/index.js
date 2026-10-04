@@ -170,6 +170,7 @@ async function startApp() {
 
   // Each person's time zone (the daily summary goes out at 8:00 local time)
   expressApp.use(require('./http/timezone'));
+  expressApp.use(require('./http/digest-voice'));
 
   // Get started: sign up with Google (Slack is only an input source, not a way to sign up)
   expressApp.get('/get-started', (req, res) => {

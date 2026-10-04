@@ -100,3 +100,28 @@ test('the morning summary footer links to Buy me a coffee', () => {
   const html = dailyDigestHtml({ workspace_name: 'Ninja', unsubscribe_url: 'u', summary: { dayLabel: 'Friday', today: '2026-10-02', meetings: 0, outcomes: {}, newActionItems: 0, dueToday: 1, toReview: 0, overdue: 0, noDueDate: 0, planItems: [] } });
   assert.match(html, /href="https:\/\/buymeacoffee\.com\/corteza\.app"/);
 });
+
+test('with a morning partner, its line is the subject and opens the email; the counts move to the preheader', () => {
+  const { dailyDigestHtml } = require('../../src/utils/n8n-client');
+  const summary = {
+    dayLabel: 'Monday, October 5', today: '2026-10-05', since: 'Friday', meetings: 1, outcomes: { decision: 1 },
+    newActionItems: 0, dueToday: 0, toReview: 0, overdue: 1, noDueDate: 0, assignedBy: [], meetingPrep: [],
+    planItems: [{ item_id: 'a1', text: 'Send the <deck>', due_date: '2026-10-01', meeting: null, next_step_on: null }]
+  };
+  const params = { workspace_name: 'Acme', summary, unsubscribe_url: 'https://x/u' };
+  const classic = dailyDigestHtml(params);
+  assert.equal(dailyDigestHtml({ ...params, partner: null }), classic);
+  assert.ok(classic.includes('Good morning. Here'));
+  assert.ok(!classic.includes('src=digest'), 'Classic links are unchanged');
+  assert.ok(!classic.includes('Not mine?'));
+
+  const partner = { voice: 'sarcastic', subject: 'An <overdue> item sends its regards.', opener: 'An <overdue> item sends its regards.', followUp: 'It’s been very patient.' };
+  const html = dailyDigestHtml({ ...params, partner });
+  assert.ok(html.includes('An &lt;overdue&gt; item sends its regards.'), 'the opener, escaped');
+  assert.ok(html.includes('It’s been very patient.'));
+  assert.ok(!html.includes('Good morning. Here'));
+  assert.ok(html.includes('display: none; max-height: 0;') && html.includes('Your day: 1 overdue'), 'the counts are the preheader');
+  assert.ok(html.includes('Send the &lt;deck&gt;'), 'the list is unchanged');
+  assert.ok(html.includes('/actions?item=a1&src=digest&voice=sarcastic'), 'clicks say which voice brought them');
+  assert.ok(html.includes('Not mine?'));
+});

@@ -68,8 +68,8 @@ describe('daily digest: one summary per person per day, with only their own numb
     const { planItems, ...counts } = summary;
     assert.deepEqual(counts, { meetings: 2, outcomes: { decision: 3, risk: 1 }, newActionItems: 1, dueToday: 1, toReview: 1, overdue: 1, noDueDate: 1, assignedBy: [], meetingPrep: [] });
     assert.deepEqual(planItems, [
-      { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null, next_step_on: null },
-      { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync', next_step_on: null }
+      { item_id: 'a4', text: 'Review the header copy', due_date: '2026-09-30', meeting: null, next_step_on: null, recent_from_colleague: false },
+      { item_id: 'a1', text: 'Send the pricing proposal', due_date: '2026-09-20', meeting: 'Weekly sync', next_step_on: null, recent_from_colleague: false }
     ], 'their own open items: due today first, then overdue');
   });
 
@@ -102,6 +102,15 @@ describe('daily digest: one summary per person per day, with only their own numb
     assert.equal(saved.sent, true);
     assert.equal(saved.timezone, 'America/Santiago');
     assert.equal(saved.summary.planItems, 2, 'only the count is kept, not the text');
+
+    // Morning partner: nobody picked one, so the default (Sarcastic) writes it
+    assert.equal(sent[0].partner.voice, 'sarcastic');
+    assert.equal(sent[0].partner.situation, 'overdue_few', '1 overdue');
+    assert.equal(sent[0].partner.language, 'en', 'detected from the items, in English');
+    assert.equal(saved.voice, 'sarcastic');
+    assert.equal(saved.situation, 'overdue_few');
+    assert.match(saved.line_id, /^sarcastic\.en\.overdue_few\.\d+$/);
+    assert.ok(!JSON.stringify(saved).includes(sent[0].partner.subject), "the line's text is never stored");
   });
 
   test("each person gets it at 8:00 their time", async () => {
@@ -116,5 +125,36 @@ describe('daily digest: one summary per person per day, with only their own numb
     const thursday = new Date('2026-10-01T11:10:00Z');
     await digest.runDailyDigest(thursday, { send: async params => { sent.push(params); } });
     assert.deepEqual(sent, [], "yesterday's meetings are not news today (and Ana's item was due yesterday)");
+  });
+
+  test('the partner follows the person\'s pick, their Meet language, and the workspace switch', async () => {
+    const FRIDAY = new Date('2026-10-02T11:10:00Z');
+    await db.collection('workspace_members').insertMany([
+      { workspace_id: WS, user_id: 'UF', user_name: 'Fede', email: 'fede@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago', digest_voice: 'sergeant' },
+      { workspace_id: WS, user_id: 'UG', user_name: 'Gabi', email: 'gabi@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago', digest_voice: 'classic' },
+      { workspace_id: 'WOFF', user_id: 'UE', user_name: 'Eva', email: 'eva@other.com', workspace_name: 'Other', removed_at: null, timezone: 'America/Santiago', digest_voice: 'sarcastic' }
+    ]);
+    await db.collection('workspaces').insertOne({ workspace_id: 'WOFF', name: 'Other', digest_voices_enabled: false });
+    await db.collection('google_connections').insertOne({ workspace_id: WS, user_id: 'UF', settings: { language: 'es' } });
+    const dueToday = (workspaceId, userId, id) => ({
+      workspace_id: workspaceId, item_id: id, text: 'Enviar la propuesta', owner_ids: [userId], status: 'open', due_date: '2026-10-02',
+      created_at: new Date(FRIDAY.getTime() - 3600 * 1000), created_by: { user_id: userId, name: 'x' }
+    });
+    await db.collection('action_items').insertMany([dueToday(WS, 'UF', 'f1'), dueToday(WS, 'UG', 'g1'), dueToday('WOFF', 'UE', 'e1')]);
+
+    const sent = [];
+    await digest.runDailyDigest(FRIDAY, { send: async params => { sent.push(params); } });
+    const byEmail = Object.fromEntries(sent.map(params => [params.email, params]));
+    assert.deepEqual(Object.keys(byEmail).sort(), ['eva@other.com', 'fede@acme.com', 'gabi@acme.com']);
+
+    const fede = byEmail['fede@acme.com'].partner;
+    assert.equal(fede.voice, 'sergeant');
+    assert.equal(fede.situation, 'due_today');
+    assert.equal(fede.language, 'es', 'their Meet "Write outcomes in" setting');
+    assert.equal(byEmail['gabi@acme.com'].partner, null, 'picked Classic');
+    assert.equal(byEmail['eva@other.com'].partner, null, 'their workspace turned personalities off');
+    const eva = await db.collection('daily_digests').findOne({ workspace_id: 'WOFF', user_id: 'UE' });
+    assert.equal(eva.voice, 'classic');
+    assert.equal(eva.line_id, null);
   });
 });

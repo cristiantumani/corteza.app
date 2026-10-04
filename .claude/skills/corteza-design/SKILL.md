@@ -354,6 +354,21 @@ Removed features stay removed. Do not reintroduce:
 
 unless explicitly requested.
 
+## Voice and personality (the morning partner)
+
+The daily summary can be written by a personality (The Sergeant, The Sarcastic Colleague; `src/core/digest/lines/`, spec `docs/specs/2026-10-morning-partner.md`). Every line follows these rules:
+
+- **Push the work, never the person.** Speak to effort and the task, never to someone's worth, looks, health or intelligence.
+- **No swearing, no insults**, nothing about bodies, politics, religion or groups of people.
+- **Short:** one line plus one follow-up at most. The subject stays under ~70 characters.
+- **Funny comes from the situation**, not from mocking anyone.
+- **When in doubt, kinder.** With 6 or more overdue (`overloaded`) the partner stops pushing and helps triage.
+- **Never push over something the AI may have gotten wrong:** a line never names an item a colleague's meeting assigned in the last 24 hours.
+- **Written per language, not translated.** Spanish uses neutral Spanish with "tú" and no gendered adjectives for the reader ("Hay atraso", not "Vas atrasado").
+- The voice lives only in that person's summary: never in the app UI, capture emails, the weekly digest or anything colleagues receive.
+
+Add lines at the end of a list (a line's id is its position). Review them with `scripts/preview-digest.js`.
+
 ---
 
 # 4. Visual foundations
@@ -770,6 +785,8 @@ node .claude/skills/corteza-design/scripts/preview.js --serve                # j
 ```
 
 It writes `<page>-<desktop|mobile>.png` and `report.json` (console errors, horizontal overflow in px, API calls with no fixture). Look at the PNGs with the Read tool. To preview a state that isn't there (a long title, 40 items, an error), edit `fixtures.js`.
+
+`scripts/preview-digest.js` renders the morning summary email for every morning partner × situation × language, plus Classic, and an `index.html` listing every line (default `./ui-preview/digest`).
 
 Known screenshot artifacts (not bugs): the fixed sidebar's background stops at the first viewport height, and fixed elements (Search's question box) are drawn where they sit in the first viewport.
 

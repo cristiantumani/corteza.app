@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Morning partner (COR-47)
+- The morning summary can be written by a personality: **The Sergeant** (tough love) or **The Sarcastic Colleague** (dry irony). Its line for the day is the subject and opens the email; the counts move to the inbox preview, and the list stays the same
+- Lines fit the day (all clear, due today, a few / a pile / too many overdue, meeting prep), in English and Spanish, never repeated within 14 days. With 6 or more overdue the partner stops pushing and helps triage. No swearing, and it never names an item a colleague's meeting just assigned
+- Settings → Morning summary → **Your morning partner**: Classic, The Sergeant or The Sarcastic Colleague, with a sample of each. Admins can turn partners off for the workspace
+- During the beta, people who haven't picked one get The Sarcastic Colleague (`DIGEST_DEFAULT_VOICE` changes that)
+- With a partner, each item gets a "Not mine?" link, and email links say which voice brought the click
+
 ### Changed - Risk and open question cards
 - **A risk** shows the risk, who raised it (new `raised_by`, captured from the meeting), the date, and **Mitigation**: "Mark as mitigated" with how, then who closed it and when, with Reopen. No accountable person
 - **An open question** shows the question, its **Answer** ("Mark as answered" with the answer, or Reopen), the date and who has to answer it (Accountable)
