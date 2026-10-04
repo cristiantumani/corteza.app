@@ -155,6 +155,7 @@ async function startApp() {
 
   // Action items ("pendientes"): page and API
   expressApp.use(require('./http/action-items'));
+  expressApp.use(require('./http/home'));
   expressApp.use(require('./http/questions-risks'));
 
   // Confirm / dismiss AI-captured outcomes

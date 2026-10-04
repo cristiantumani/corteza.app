@@ -1,15 +1,13 @@
 /**
  * Home: automatic capture from Google Meet comes first.
  *
- * - #capture-panel: connect Google Meet (if not connected), or capture status,
- *   "Check now", "Import past meetings" and the latest processed meetings. While an
- *   import runs on the server it shows its progress (refreshed every 10 s) and, when
- *   it finishes, reloads the outcomes and action items.
- * - #my-actions-panel: the signed-in user's open action items.
- * - #open-items-panel: the latest open questions and risks in the current space.
+ * - #capture-panel: connect Google Meet (if not connected), or the capture status in one
+ *   line with "Check now", "Import past meetings" and the latest processed meetings folded
+ *   away. While an import runs on the server it shows its progress (refreshed every 10 s)
+ *   and, when it finishes, refreshes the overview and the outcomes list.
+ *   (What I owe and what's open live in the overview: public/scripts/home-overview.js.)
  *
- * APIs: GET /api/integrations/google, POST /api/integrations/google/sync,
- *       GET /api/action-items?owner=me&status=open, GET /api/decisions?type=open_question,risk
+ * APIs: GET /api/integrations/google, POST /api/integrations/google/sync
  * Counts use the "outcomes" wording from outcome-labels.js.
  * Manual capture (Log manually / Upload) stays available as secondary actions.
  */
@@ -100,6 +98,8 @@
       </div>`;
   }
 
+  const refreshOverview = () => document.dispatchEvent(new CustomEvent('corteza:home-refresh'));
+
   let importPoll = null;
   let importRunning = false;
 
@@ -109,10 +109,10 @@
     if (importRunning && !running) {
       if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
       if (typeof window.fetchStats === 'function') window.fetchStats();
-      loadMyActions();
+      refreshOverview();
       const result = document.getElementById('capture-sync-result');
       if (result) {
-        result.textContent = 'Import finished. Your outcomes are below.';
+        result.textContent = 'Import finished. Your overview is up to date.';
         result.className = 'text-sm text-tertiary';
       }
     }
@@ -133,7 +133,7 @@
       : '<p class="text-sm text-on-surface-variant">No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, it shows up here within a few minutes. You can also import past meetings.</p>';
 
     panel().innerHTML = `
-      <div class="rounded-xl bg-surface-container-lowest border border-outline-variant p-6 shadow-sm h-full flex flex-col gap-4">
+      <div class="rounded-xl bg-surface-container-lowest border border-outline-variant px-4 py-3 flex flex-col gap-3">
         ${needsReconnect ? `
           <div class="p-3 rounded-lg bg-error-container text-on-error-container text-sm">
             ${escapeHtml(data.last_error || 'Google access stopped working, so meetings are not being captured.')}
@@ -144,33 +144,27 @@
             Reconnect once to let Corteza read Gemini notes too.
             <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
           </div>` : ''}
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="w-2.5 h-2.5 rounded-full ${needsReconnect ? 'bg-error' : 'bg-tertiary'}"></span>
-              <h3 class="text-lg font-semibold text-on-surface">${needsReconnect ? 'Automatic capture paused' : 'Capturing automatically from Google Meet'}</h3>
-            </div>
-            <p class="text-sm text-on-surface-variant">${escapeHtml(data.google_email || '')} · last checked ${escapeHtml(timeAgo(data.last_polled_at))} · ${escapeHtml(capturedTotals(data))} from ${plural(data.meetings_processed || 0, 'meeting')}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button id="capture-sync" type="button" class="border border-outline-variant text-on-surface font-semibold text-sm py-2 px-4 rounded-lg hover:bg-surface-container-low transition-all" ${needsReconnect ? 'disabled' : ''}>
-              <span class="material-symbols-outlined align-middle text-base">refresh</span> Check now
-            </button>
-            <a href="/settings#import" class="bg-primary text-on-primary font-semibold text-sm py-2 px-4 rounded-lg hover:opacity-90 transition-all">
-              <span class="material-symbols-outlined align-middle text-base">history</span> Import past meetings
-            </a>
-            <a href="/settings#integrations" class="text-on-surface-variant text-sm py-2 px-2 hover:text-primary" title="Capture settings">
-              <span class="material-symbols-outlined align-middle">tune</span>
-            </a>
-          </div>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0 ${needsReconnect ? 'bg-error' : 'bg-tertiary'}" aria-hidden="true"></span>
+          <span class="font-semibold text-on-surface">${needsReconnect ? 'Automatic capture paused' : 'Capturing from Google Meet'}</span>
+          <span class="text-on-surface-variant">checked ${escapeHtml(timeAgo(data.last_polled_at))} · ${escapeHtml(capturedTotals(data))} from ${plural(data.meetings_processed || 0, 'meeting')}</span>
+          <span class="flex flex-wrap items-center gap-x-4 gap-y-1 sm:ml-auto">
+            <button id="capture-sync" type="button" class="font-semibold text-primary hover:underline disabled:opacity-50" ${needsReconnect ? 'disabled' : ''}>Check now</button>
+            <a href="/settings#import" class="font-semibold text-primary hover:underline">Import past meetings</a>
+            <button id="capture-meetings-toggle" type="button" aria-expanded="false" aria-controls="capture-meetings" class="font-semibold text-on-surface-variant hover:text-primary">Latest meetings</button>
+          </span>
         </div>
         ${importProgressHtml(data.active_import)}
         <p id="capture-sync-result" class="hidden text-sm"></p>
-        <div>
-          <h4 class="text-sm font-semibold text-on-surface mb-1">Latest meetings</h4>
-          ${recentHtml}
-        </div>
+        <div id="capture-meetings" hidden>${recentHtml}</div>
       </div>`;
+
+    const toggle = document.getElementById('capture-meetings-toggle');
+    toggle.addEventListener('click', () => {
+      const list = document.getElementById('capture-meetings');
+      list.hidden = !list.hidden;
+      toggle.setAttribute('aria-expanded', String(!list.hidden));
+    });
 
     const syncButton = document.getElementById('capture-sync');
     if (syncButton) syncButton.addEventListener('click', checkNow);
@@ -197,13 +191,14 @@
       if (data.meetings_processed && typeof window.fetchDecisions === 'function') {
         window.fetchDecisions();
         if (typeof window.fetchStats === 'function') window.fetchStats();
-        loadMyActions();
+        refreshOverview();
       }
     } catch (error) {
       result.textContent = error.message;
       result.className = 'text-sm text-error';
       button.disabled = false;
       button.textContent = 'Check now';
+      result.classList.remove('hidden');
     }
   }
 
@@ -224,96 +219,5 @@
     }
   }
 
-  async function loadMyActions() {
-    const container = document.getElementById('my-actions-panel');
-    if (!container) return;
-    try {
-      const response = await fetch('/api/action-items?owner=me&status=open', { credentials: 'include' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load');
-      const items = data.items || [];
-      const today = new Date().toISOString().slice(0, 10);
-      const overdue = items.filter(item => item.due_date && item.due_date < today).length;
-      const undated = items.filter(item => !item.due_date).length;
-
-      container.innerHTML = `
-        <div class="rounded-xl bg-surface-container-lowest border border-outline-variant p-6 shadow-sm h-full flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-on-surface">My action items</h3>
-            <a href="/actions" class="text-sm text-primary font-semibold hover:underline">View all</a>
-          </div>
-          <div class="flex gap-4 text-sm">
-            <span><strong class="text-2xl text-on-surface">${items.length}</strong> open</span>
-            ${overdue ? `<span class="text-error"><strong class="text-2xl">${overdue}</strong> overdue</span>` : ''}
-            ${undated ? `<span class="text-on-surface-variant"><strong class="text-2xl">${undated}</strong> no date</span>` : ''}
-          </div>
-          ${items.length ? `<ul class="flex flex-col gap-2 text-sm">${items.slice(0, 4).map(item => `
-            <li class="flex justify-between gap-3">
-              <a href="/actions?item=${encodeURIComponent(item.item_id)}" class="text-on-surface hover:text-primary line-clamp-2">${escapeHtml(item.text)}</a>
-              <span class="whitespace-nowrap ${item.due_date && item.due_date < today ? 'text-error' : 'text-on-surface-variant'}">${item.due_date ? escapeHtml(new Date(`${item.due_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) : 'No date'}</span>
-            </li>`).join('')}</ul>`
-            : '<p class="text-sm text-on-surface-variant">Nothing assigned to you. Action items from your meetings will show up here.</p>'}
-        </div>`;
-    } catch (error) {
-      container.innerHTML = `<div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Couldn't load your action items.</div>`;
-    }
-  }
-
-  const OPEN_ITEM_TYPES = {
-    open_question: { label: 'Open question', icon: 'help', color: 'text-primary' },
-    risk: { label: 'Risk', icon: 'warning', color: 'text-error' }
-  };
-
-  /** Latest open questions and risks in the space the Home shows; hidden when there are none */
-  async function loadOpenItems({ spaceId, workspaceId }) {
-    const container = document.getElementById('open-items-panel');
-    if (!container || !spaceId) return;
-    try {
-      const params = new URLSearchParams({ workspace_id: workspaceId, space_id: spaceId, type: 'open_question,risk', limit: '5' });
-      const response = await fetch(`/api/decisions?${params}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to load');
-      const data = await response.json();
-      const items = data.decisions || [];
-      const total = data.pagination ? data.pagination.total : items.length;
-      if (items.length === 0) {
-        container.classList.add('hidden');
-        return;
-      }
-      container.classList.remove('hidden');
-      container.innerHTML = `
-        <div class="rounded-xl bg-surface-container-lowest border border-outline-variant p-6 shadow-sm flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-on-surface">Open questions &amp; risks</h3>
-            <span class="text-sm text-on-surface-variant">${total}</span>
-          </div>
-          <ul class="flex flex-col gap-2 text-sm">${items.map(item => {
-            const type = OPEN_ITEM_TYPES[item.type] || OPEN_ITEM_TYPES.open_question;
-            return `
-            <li class="flex gap-2">
-              <span class="material-symbols-outlined text-base ${type.color}" title="${type.label}">${type.icon}</span>
-              <button type="button" data-open-item="${escapeHtml(item.id)}" class="text-left text-on-surface hover:text-primary line-clamp-2">${escapeHtml(item.text)}</button>
-            </li>`;
-          }).join('')}</ul>
-        </div>`;
-      container.querySelectorAll('[data-open-item]').forEach(button => {
-        button.addEventListener('click', () => {
-          const item = items.find(i => String(i.id) === button.dataset.openItem);
-          if (item && typeof window.openDecision === 'function') window.openDecision(item);
-        });
-      });
-    } catch (error) {
-      container.classList.add('hidden');
-    }
-  }
-
-  // Refresh whenever the list reloads (space change, new captures, edits)
-  document.addEventListener('corteza:decisions-loaded', event => loadOpenItems(event.detail));
-
-  // An action item was added by hand (decision detail): it may be mine
-  document.addEventListener('corteza:action-items-changed', () => loadMyActions());
-
-  document.addEventListener('DOMContentLoaded', () => {
-    loadCapture();
-    loadMyActions();
-  });
+  document.addEventListener('DOMContentLoaded', loadCapture);
 })();

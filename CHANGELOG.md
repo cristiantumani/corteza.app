@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Home answers the three questions (COR-41)
+- **One sentence on top** says what happened in the last 24 hours and what needs you now (overdue, to review), each count a link
+- **Ask across meetings from Home:** the same search as the Search page, with the answer and the sources it used shown in place, and "Open in Search" to keep going
+- **Review queue:** AI-captured outcomes one at a time with their quote and meeting; Confirm, Dismiss (with undo), Skip, or "Confirm all from this meeting"
+- **Three columns:** What I owe (tick to mark done, with undo), Still open (questions and risks with their age) and Decided (confirmed or logged by hand)
+- Google Meet status takes one line; the previous list with its filters moved to an **All outcomes** tab. The top bar lost its filter box and the notification bell that did nothing
+- `GET /api/home` returns it all in one request, limited to the spaces the person can access
+
 ### Fixed - Corteza works on a phone
 - **Below 768px the sidebar is a drawer:** a menu button at the start of each page's top bar opens it over the page; a link, the backdrop or Esc closes it, and focus moves into it and back. Pages take the full width, with no sideways scrolling on any page (it was up to 423px at 390px wide)
 - Phone-specific fixes: Action items puts the due date and status under the text instead of squeezing it to one word per line; meeting lists on Home and Settings stack the title over its result; Home's list controls wrap; the signed-in name and avatar in the top bar show on desktop only; Search's question box spans the screen
