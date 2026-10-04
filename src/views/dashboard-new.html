@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=7">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=8">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link rel="stylesheet" href="/styles/dashboard.css?v=5">
@@ -51,22 +51,10 @@
         <select id="space-filter" data-multi-space class="bg-surface-container-low border border-outline-variant rounded-full py-2 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none space-selector-required">
             <!-- No "All Spaces" option - populated by JavaScript -->
         </select>
-
-        <!-- Search Input -->
-        <div class="relative flex-1 max-w-xl">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-60">search</span>
-            <input id="search" oninput="applyFilters()" class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none" placeholder="Search outcomes..." type="text">
-        </div>
     </div>
 
-    <!-- Who is signed in: desktop only (on a phone the top bar keeps the menu and search) -->
+    <!-- Who is signed in: desktop only (on a phone the top bar keeps the menu) -->
     <div class="hidden md:flex items-center gap-4">
-        <button class="p-2 rounded-full hover:bg-surface-container-low transition-colors">
-            <span class="material-symbols-outlined">notifications</span>
-        </button>
-
-        <div class="h-8 w-px bg-outline-variant"></div>
-
         <div class="flex items-center gap-2">
             <div class="text-right">
                 <p class="text-sm font-medium text-on-surface" id="header-user">-</p>
@@ -78,11 +66,11 @@
 
 <!-- Main Content -->
 <main class="ml-64 mt-16 p-12 min-h-screen" id="main-content">
-    <div class="max-w-[1440px] mx-auto">
-        <!-- Header -->
-        <div class="mb-8">
-            <h2 class="text-4xl font-bold mb-2 tracking-tight">Home</h2>
-            <p class="text-lg text-on-surface-variant max-w-2xl">The outcomes of your Google Meet meetings, captured automatically: decisions, action items, open questions and risks.</p>
+    <div class="max-w-[1100px] mx-auto flex flex-col gap-6">
+        <!-- Header: one sentence on the last 24 hours and what needs you (public/scripts/home-overview.js) -->
+        <div class="flex flex-col gap-2">
+            <h1 class="text-2xl font-bold text-on-surface">Home</h1>
+            <p id="home-summary" class="text-on-surface-variant max-w-3xl" aria-live="polite">Loading your day…</p>
         </div>
 
         <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
@@ -94,19 +82,45 @@
             <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">Review</button>
         </div>
 
-        <!-- Automatic capture first; manual capture is secondary (public/scripts/home-capture.js) -->
-        <div class="grid grid-cols-12 gap-6 mb-12">
-            <section id="capture-panel" class="col-span-12 lg:col-span-8">
-                <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading automatic capture…</div>
-            </section>
-            <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                <section id="my-actions-panel">
-                    <div class="rounded-xl border border-outline-variant p-6 text-sm text-on-surface-variant">Loading your action items…</div>
-                </section>
-                <section id="open-items-panel" class="hidden"></section>
-            </div>
+        <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="Home views">
+            <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">Overview</button>
+            <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">All outcomes</button>
         </div>
 
+        <!-- Overview: ask, capture status, review queue and the three questions -->
+        <section id="home-overview" role="tabpanel" aria-label="Overview" class="flex flex-col gap-6">
+            <form id="home-ask" class="flex gap-2" role="search">
+                <label for="home-ask-input" class="sr-only">Ask about your meetings</label>
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-variation-settings: 'FILL' 0" aria-hidden="true">search</span>
+                    <input id="home-ask-input" type="search" maxlength="500" autocomplete="off" placeholder="Ask about decisions, pending action items, people…" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-10 pr-3 text-base focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                </div>
+                <button type="submit" class="bg-primary text-on-primary rounded-lg px-5 text-sm font-semibold hover:bg-on-primary-fixed-variant disabled:opacity-50">Ask</button>
+            </form>
+            <div id="home-ask-result" hidden></div>
+
+            <!-- Google Meet capture status in one line (public/scripts/home-capture.js) -->
+            <section id="capture-panel">
+                <div class="rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">Loading automatic capture…</div>
+            </section>
+
+            <section id="home-review" class="hidden flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Outcomes to review"></section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+                <section id="home-owe" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="What I owe">
+                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                </section>
+                <section id="home-open" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Still open">
+                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                </section>
+                <section id="home-decided" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Decided">
+                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                </section>
+            </div>
+        </section>
+
+        <!-- All outcomes: the full list with its filters (public/scripts/dashboard.js) -->
+        <section id="home-all" role="tabpanel" aria-label="All outcomes" class="hidden">
         <!-- Outcomes list: decisions by default; "All outcomes" also shows open questions, risks and notes -->
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h4 class="text-2xl font-semibold" id="outcomes-title">Recent decisions</h4>
@@ -117,6 +131,8 @@
                 <button type="button" onclick="openFileUploadModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Upload a transcript file">
                     <span class="material-symbols-outlined text-base">upload_file</span> Upload transcript
                 </button>
+                <label for="search" class="sr-only">Filter outcomes</label>
+                <input id="search" type="search" oninput="applyFilters()" placeholder="Filter…" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none w-40">
                 <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     <option value="">All outcomes</option>
                     <option value="decision" selected>Decisions</option>
@@ -143,6 +159,7 @@
             <p class="text-sm text-on-surface-variant mb-4">They appear automatically after your Google Meet meetings, once Google Meet is connected.</p>
             <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Or log one manually</button>
         </div>
+        </section>
     </div>
 </main>
 
@@ -431,7 +448,8 @@
 <script src="/scripts/log-action-item.js?v=1"></script>
 <script src="/scripts/inline-edit.js?v=3"></script>
 <script src="/scripts/outcome-labels.js?v=1"></script>
-<script src="/scripts/home-capture.js?v=5"></script>
+<script src="/scripts/home-capture.js?v=6"></script>
+<script src="/scripts/home-overview.js?v=1"></script>
 <script src="/scripts/onboarding.js?v=2"></script>
 <script>
     // Additional UI enhancements for new design

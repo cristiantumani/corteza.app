@@ -60,6 +60,11 @@ function routesFor(state) {
     routes['GET /api/action-items/from-colleagues'] = { success: true, count: 0, from: [] };
     routes['GET /api/questions-risks'] = { success: true, items: [], counts: {} };
     routes['GET /api/integrations/google'] = { success: true, configured: true, connected: false };
+    routes['GET /api/home'] = {
+      success: true, since: new Date().toISOString(),
+      summary: { new_outcomes: 0, meetings: 0, overdue: 0, due_today: 0, open_action_items: 0, to_review: 0, open_questions: 0, open_risks: 0 },
+      owe: [], open: [], decided: [], review: []
+    };
   }
   routes['GET /auth/me'] = { authenticated: true, user };
   return { routes, user };

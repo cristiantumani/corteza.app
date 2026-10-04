@@ -24,7 +24,7 @@ const people = [
   { user_id: 'U3', name: 'Carla Méndez', email: 'carla@acme.example' }
 ];
 
-const meet = title => ({ type: 'google_meet', title, url: 'https://meet.google.com/abc-defg-hij' });
+const meet = title => ({ type: 'google_meet', title, url: 'https://meet.google.com/abc-defg-hij', external_id: `conferenceRecords/${title.length}` });
 
 const decisions = [
   { id: 101, type: 'decision', text: 'Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre', rationale: 'El 60% de los clientes pidió pago anual en las entrevistas', evidence_quote: 'Si lo dejamos en 20% seguimos sobre el margen objetivo', owner_name: 'Bruno Díaz', owner_user_id: 'U2', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
@@ -83,6 +83,23 @@ const routes = {
     const type = req.query.type || 'all';
     const items = questionsRisks.filter(i => type === 'all' || i.type === type);
     return { success: true, items, counts: { all: questionsRisks.length, open_question: 1, risk: 2 } };
+  },
+  'GET /api/home': () => {
+    const pending = decisions.filter(d => d.capture === 'ai' && !d.review_status);
+    const open = actionItems.filter(i => i.status === 'open');
+    const todayStr = date(0);
+    return {
+      success: true,
+      since: iso(day),
+      summary: {
+        new_outcomes: 3, meetings: 1, overdue: open.filter(i => i.due_date && i.due_date < todayStr).length,
+        due_today: 0, open_action_items: open.length, to_review: pending.length, open_questions: 1, open_risks: 2
+      },
+      owe: open.map(i => ({ item_id: i.item_id, text: i.text, due_date: i.due_date, owners: i.owners, source: i.source, new_from_colleague: !!i.unseen })),
+      open: questionsRisks,
+      decided: decisions.filter(d => d.type === 'decision' && (d.capture !== 'ai' || d.review_status === 'confirmed')),
+      review: pending
+    };
   },
   'GET /api/integrations/google': google,
   'GET /api/integrations/google/meetings': { success: true, meetings: [], truncated: false },
