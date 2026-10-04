@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=5">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=6">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
@@ -227,7 +227,8 @@
                                     <span class="material-symbols-outlined">download</span>
                                 </button>
                             </div>
-                            <div class="flex items-center justify-between p-4 bg-error-container rounded-lg border border-error">
+                            <!-- Workspace admins only (settings-new.js shows it); the API refuses everyone else -->
+                            <div data-admin-only class="hidden flex items-center justify-between p-4 bg-error-container rounded-lg border border-error">
                                 <div>
                                     <p class="text-sm font-bold text-on-error-container">Delete All Data</p>
                                     <p class="text-xs text-on-error-container/70">Permanently remove all workspace data.</p>
@@ -239,8 +240,8 @@
                         </div>
                     </section>
 
-                    <!-- Team Invitations -->
-                    <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <!-- Team Invitations: workspace admins only (settings-new.js shows it) -->
+                    <section data-admin-only class="hidden bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                         <div class="mb-6">
                             <h3 class="text-2xl font-bold text-on-surface mb-1">Team Invitations</h3>
                             <p class="text-sm text-on-surface-variant">Create invite links to add new team members to your workspace.</p>
@@ -355,15 +356,16 @@
                 </button>
             </div>
             <div class="mb-6">
-                <p class="text-sm text-on-surface-variant mb-4">This action will permanently delete all decisions, spaces, and settings for your workspace. This cannot be undone.</p>
+                <p class="text-sm text-on-surface-variant mb-4">This permanently deletes every outcome, action item and AI suggestion in your workspace, for everyone in it, and destroys its encryption key. It can't be undone.</p>
                 <label class="block text-sm font-medium mb-2">Type "DELETE" to confirm</label>
-                <input id="delete-confirmation" type="text" class="w-full bg-surface-container-low border border-error rounded-lg p-3 outline-none focus:border-error">
+                <input id="delete-confirmation" type="text" autocomplete="off" class="w-full bg-surface-container-low border border-error rounded-lg p-3 outline-none focus:border-error">
+                <p id="delete-data-error" class="hidden mt-3 text-sm text-error" role="alert"></p>
             </div>
             <div class="flex gap-3">
                 <button onclick="closeDeleteDataModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
                     Cancel
                 </button>
-                <button onclick="deleteAllData()" class="flex-1 bg-error text-on-error font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+                <button id="delete-data-button" onclick="deleteAllData()" class="flex-1 bg-error text-on-error disabled:opacity-50 font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
                     Delete Everything
                 </button>
             </div>
@@ -373,7 +375,7 @@
     <script>
         var WORKSPACE_ID = '<WORKSPACE_ID>';
     </script>
-    <script src="/scripts/settings-new.js?v=5"></script>
+    <script src="/scripts/settings-new.js?v=6"></script>
     <script src="/scripts/outcome-labels.js?v=1"></script>
     <script src="/scripts/settings-integrations.js?v=11"></script>
     <script src="/scripts/settings-context.js?v=2"></script>
