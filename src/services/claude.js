@@ -173,6 +173,7 @@ Fields for each item:
 - decision_type: "decision" | "action_item" | "open_question" | "risk"
 - decision_text: one or two sentences that make sense on their own to someone who missed the meeting, in the output language (see "Language" below). State the outcome itself, the way it would read in a decision log, not a narration of the conversation. Write "Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel", not "Se propuso iniciar una investigación…" or "Cristian propuso…"; write "Launch moves to October 22", not "The team discussed moving the launch". Who proposed or said what belongs in evidence_quote. For action items, name the owner and the task ("Ana envía el deck de precios antes del viernes"). If something was only proposed and not agreed, it is not a decision.
 - owner_names: the people responsible, as named in the meeting (for example ["Martín Marchant", "Felipe Silva"]); [] if nobody was named
+- raised_by: for an open_question or a risk, the person who raised it, as named in the meeting; null if it isn't clear who did, and null for other types
 - due_date: "YYYY-MM-DD" if a deadline was stated; resolve relative dates ("next Friday") from the meeting date given in the header; otherwise null
 - rationale: why this was decided or needed, in one or two sentences. Include context from anywhere in the meeting that led to it, such as a strategy, goal, problem or constraint presented earlier ("A raíz de la nueva estrategia presentada…"), even if it was not said in the same sentence. null if the meeting gives no reason.
 - evidence_quote: a short verbatim quote (under 200 characters) from the transcript or notes that supports the item
@@ -381,6 +382,7 @@ function normalizeItem(item) {
     ...item,
     owner_names: ownerNames,
     owner_name: ownerNames[0] || null,
+    raised_by: ['open_question', 'risk'].includes(item.decision_type) ? optionalText(item.raised_by, 100) : null,
     decision_ref: Number.isInteger(item.decision_ref) && item.decision_ref >= 0 ? item.decision_ref : null,
     business_relevance: ['high', 'medium', 'low'].includes(item.business_relevance) ? item.business_relevance : null,
     due_date: typeof item.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.due_date) ? item.due_date : null,

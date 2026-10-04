@@ -69,6 +69,22 @@ describe('Google Meet capture: pipeline, decision ids, poller', { skip }, () => 
     }
   });
 
+  test('a risk keeps who raised it', async () => {
+    const space = await spaces.ensureDefaultSpace('WRAISE');
+    const extract = fakeExtract([
+      { decision_text: 'Without ISO 27001 we may lose enterprise deals', decision_type: 'risk', confidence: 0.9, owner_names: [], raised_by: 'Carla' }
+    ]);
+    const result = await pipeline.ingestTranscript({
+      workspaceId: 'WRAISE', source: 'google_meet', externalId: 'conferenceRecords/raise', title: 'Sales sync',
+      text: LONG_TEXT, participants: ['Carla', 'Ana'], occurredAt: '2026-09-27T09:00:00Z',
+      spaceId: space.space_id, spaceName: space.name, author: { user_id: 'U1', name: 'Ana' }
+    }, { extract });
+    assert.equal(result.status, 'completed', result.error);
+    const risk = await db.collection('decisions').findOne({ workspace_id: 'WRAISE' });
+    assert.equal(risk.raised_by, 'Carla');
+    assert.equal(risk.creator, 'Ana', 'the creator is still whose meeting it was');
+  });
+
   test('decisions keep who is accountable but no due date; a dated commitment becomes a linked action item', async () => {
     const space = await spaces.ensureDefaultSpace('WACC');
     await db.collection('workspace_members').insertOne({ workspace_id: 'WACC', user_id: 'U1', user_name: 'Paola Díaz', email: 'pao@acme.com', removed_at: null });

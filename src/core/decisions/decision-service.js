@@ -51,6 +51,7 @@ async function nextDecisionId(workspaceId) {
  * @param {'ai'|'manual'} [params.capture='manual']
  * @param {number|null} [params.confidence] - AI confidence 0–1
  * @param {string|null} [params.ownerName] - who is responsible, as named in the meeting
+ * @param {string|null} [params.raisedBy] - who raised an open question or risk, as named in the meeting
  * @param {string|null} [params.dueDate] - 'YYYY-MM-DD' deadline, if one was stated
  * @param {string|null} [params.rationale] - why it was decided
  * @param {string|null} [params.evidenceQuote] - verbatim quote supporting an AI-captured item
@@ -65,7 +66,7 @@ async function nextDecisionId(workspaceId) {
 async function createDecision({
   workspaceId, spaceId, spaceName = null, text, type = 'decision', tags = [], epicKey = null,
   alternatives = null, author, source, capture = 'manual', confidence = null, decidedAt = null,
-  ownerName = null, dueDate = null, rationale = null, evidenceQuote = null, reviewedBy = null,
+  ownerName = null, raisedBy = null, dueDate = null, rationale = null, evidenceQuote = null, reviewedBy = null,
   topicId = null, topic = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createDecision requires workspaceId and spaceId');
@@ -91,6 +92,7 @@ async function createDecision({
     capture,
     confidence: typeof confidence === 'number' ? confidence : null,
     owner_name: ownerName || null,
+    raised_by: typeof raisedBy === 'string' && raisedBy.trim() ? raisedBy.trim().slice(0, 100) : null,
     due_date: typeof dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate : null,
     rationale: rationale || null,
     evidence_quote: evidenceQuote || null,

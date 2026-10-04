@@ -748,19 +748,117 @@
       section.style.display = parts.length ? 'block' : 'none';
     }
 
+    /** Open questions and risks get their own card: an answer or a mitigation instead of a "why" and tags */
+    const RESOLVABLE_TYPES = ['open_question', 'risk'];
+
+    /** Who the card names under the outcome: who raised a risk, who added anything else */
+    function renderDetailPeople(decision) {
+      const container = document.getElementById('detail-creator-container');
+      const label = document.getElementById('detail-creator-label');
+      const value = document.getElementById('detail-creator');
+      if (!container || !label || !value) return;
+      let name = decision.creator || '';
+      let text = 'Added by';
+      if (decision.type === 'risk') { name = decision.raised_by || ''; text = 'Raised by'; }
+      if (decision.type === 'open_question') name = ''; // a question shows who has to answer it (Accountable)
+      label.textContent = text;
+      value.textContent = name;
+      container.style.display = name ? '' : 'none';
+
+      // Accountable: who has to answer a question, or makes a decision happen; risks have none
+      const help = document.getElementById('detail-owner-help');
+      if (help) {
+        help.textContent = decision.type === 'open_question'
+          ? 'Who has to get this answered.'
+          : 'Who makes sure this gets done. Tasks and their owners go in Action items.';
+      }
+      if (decision.type === 'risk') {
+        const owner = document.getElementById('detail-owner-container');
+        if (owner) owner.style.display = 'none';
+      }
+    }
+
+    /**
+     * Answer (open question) or mitigation (risk): what closes it, with Reopen.
+     * Saved through /api/questions-risks/:id/resolve and /reopen, the same as the Questions & risks page.
+     */
+    function renderDetailResolution(decision, canResolve, rerender) {
+      const section = document.getElementById('detail-resolution-section');
+      const label = document.getElementById('detail-resolution-label');
+      const box = document.getElementById('detail-resolution');
+      if (!section || !label || !box) return;
+      if (!RESOLVABLE_TYPES.includes(decision.type)) {
+        section.style.display = 'none';
+        return;
+      }
+      const isRisk = decision.type === 'risk';
+      label.textContent = isRisk ? 'Mitigation' : 'Answer';
+      section.style.display = 'block';
+
+      if (decision.resolution_status === 'resolved') {
+        const by = decision.resolved_by && decision.resolved_by.name ? ` by ${escapeHtml(decision.resolved_by.name)}` : '';
+        const when = decision.resolved_at ? ` · ${escapeHtml(new Date(decision.resolved_at).toLocaleDateString())}` : '';
+        box.innerHTML = `
+          ${decision.resolution_note ? `<p class="m-0 mb-2 whitespace-pre-wrap">${escapeHtml(decision.resolution_note)}</p>` : ''}
+          <p class="m-0 text-sm text-on-surface-variant">${isRisk ? 'Mitigated' : 'Answered'}${by}${when}</p>
+          ${canResolve ? '<button type="button" class="mt-2 text-sm text-primary hover:underline" data-resolution="reopen">Reopen</button>' : ''}
+          <p class="m-0 mt-1 text-sm text-error" data-resolution-error role="alert"></p>`;
+      } else if (canResolve) {
+        box.innerHTML = `
+          <p class="m-0 mb-2 text-sm text-on-surface-variant">${isRisk ? 'Still open. When it no longer threatens the work, close it and say how.' : 'Not answered yet.'}</p>
+          <label class="sr-only" for="detail-resolution-note">${isRisk ? 'How it was mitigated' : 'The answer'}</label>
+          <textarea id="detail-resolution-note" class="inline-edit-input" rows="2" maxlength="1000"
+            placeholder="${isRisk ? 'How it was mitigated (optional), e.g. we got the ISO 27001 certification' : 'The answer (optional)'}"></textarea>
+          <button type="button" class="mt-2 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold" data-resolution="resolve">${isRisk ? 'Mark as mitigated' : 'Mark as answered'}</button>
+          <p class="m-0 mt-1 text-sm text-error" data-resolution-error role="alert"></p>`;
+      } else {
+        box.innerHTML = `<p class="m-0 text-sm text-on-surface-variant">${isRisk ? 'Still open.' : 'Not answered yet.'}</p>`;
+      }
+
+      for (const button of box.querySelectorAll('[data-resolution]')) {
+        button.onclick = async () => {
+          const action = button.dataset.resolution;
+          const error = box.querySelector('[data-resolution-error]');
+          const noteInput = document.getElementById('detail-resolution-note');
+          button.disabled = true;
+          if (error) error.textContent = '';
+          try {
+            const response = await fetch(`/api/questions-risks/${encodeURIComponent(decision.id)}/${action}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify(action === 'resolve' ? { note: noteInput ? noteInput.value : '' } : {})
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t save');
+            Object.assign(decision, {
+              resolution_status: data.resolution_status, resolution_note: data.resolution_note,
+              resolved_by: data.resolved_by, resolved_at: data.resolved_at
+            });
+            detailChanged = true;
+            document.dispatchEvent(new CustomEvent('corteza:home-refresh'));
+            rerender();
+          } catch (err) {
+            button.disabled = false;
+            if (error) error.textContent = `${err.message}. Try again.`;
+          }
+        };
+      }
+    }
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
+      if (!decision) return;
 
       // Title names the item's type: "Context #92", "Action item #93"
       const typeLabel = TYPE_TITLES[decision.type] || 'Decision';
       document.getElementById('detail-title').textContent = `${typeLabel} #${decision.id}`;
 
-      // Set decision text
+      // The outcome itself, labeled with its type ("Risk", "Open question")
+      const contentLabel = document.getElementById('detail-content-label');
+      if (contentLabel) contentLabel.textContent = typeLabel;
       document.getElementById('detail-decision-text').textContent = decision.text;
-
-      // Set type with badge
-      document.getElementById('detail-type').innerHTML = `<span class="badge badge-${escapeHtml(decision.type)}">${escapeHtml(typeLabel)}</span>`;
 
       // Why, owner and due date (AI extraction v2); hidden when missing
       showDetailField('detail-rationale-section', 'detail-rationale', decision.rationale);
@@ -777,8 +875,8 @@
         loadDecisionActionItems(decision.id);
       }
 
-      // Set creator and date
-      document.getElementById('detail-creator').textContent = decision.creator;
+      // Who raised or added it, and when
+      renderDetailPeople(decision);
       document.getElementById('detail-date').textContent = new Date(decision.timestamp).toLocaleString();
 
       // Check if user can edit this decision
@@ -827,17 +925,22 @@
         document.getElementById('detail-epic-section').style.display = 'none';
       }
 
-      // Handle tags
-      if (decision.tags && Array.isArray(decision.tags) && decision.tags.length > 0) {
-        document.getElementById('detail-tags-section').style.display = 'block';
-        // Security: Escape HTML in tags to prevent XSS
-        document.getElementById('detail-tags').innerHTML = decision.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
-      } else {
-        document.getElementById('detail-tags-section').style.display = 'none';
-      }
-
       // Confirm / dismiss for AI-captured outcomes nobody reviewed (public/scripts/outcome-review.js)
       if (window.CortezaReview) window.CortezaReview.renderDetail(decision);
+
+      // Re-render this same outcome after a change. Looked up by id: the list may have been
+      // reloaded while the modal was open (an item opened from Home isn't in it at all)
+      const rerender = () => {
+        let current = allDecisions.findIndex(d => d.id === decision.id);
+        if (current < 0) {
+          allDecisions.push(decision);
+          current = allDecisions.length - 1;
+        }
+        openDetailModal(current);
+      };
+
+      // Answer or mitigation: anyone who can see an open question or risk can close it (questions-risks API)
+      renderDetailResolution(decision, true, rerender);
 
       // Click a field to edit it in place (public/scripts/inline-edit.js)
       if (window.CortezaInlineEdit) {
@@ -847,7 +950,7 @@
           workspaceId: WORKSPACE_ID,
           onSaved: () => {
             detailChanged = true;
-            openDetailModal(index);
+            rerender();
             showNotification('✅ Saved');
           }
         });
