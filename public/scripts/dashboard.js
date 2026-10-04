@@ -720,6 +720,32 @@
       }
     }
 
+    /**
+     * Evidence for the outcome: the supporting quote and the meeting it came from, so whoever
+     * confirms or dismisses an AI capture can judge it. Shared by Home and Search.
+     */
+    function renderDetailEvidence(decision) {
+      const section = document.getElementById('detail-evidence-section');
+      const box = document.getElementById('detail-evidence');
+      if (!section || !box) return;
+      const parts = [];
+      if (decision.evidence_quote) {
+        parts.push(`<p class="m-0 italic text-on-surface">“${escapeHtml(decision.evidence_quote)}”</p>`);
+      }
+      const source = decision.source_details;
+      if (source && source.title) {
+        const label = source.type === 'google_meet' ? 'Google Meet' : 'Source';
+        const url = source.url && /^https:\/\//.test(source.url) ? source.url : null;
+        const title = url
+          ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-primary hover:underline">${escapeHtml(source.title)}</a>`
+          : escapeHtml(source.title);
+        const date = decision.timestamp ? ` · ${escapeHtml(new Date(decision.timestamp).toLocaleDateString())}` : '';
+        parts.push(`<p class="m-0 text-sm text-on-surface-variant">${label}: ${title}${date}</p>`);
+      }
+      box.innerHTML = parts.join('');
+      section.style.display = parts.length ? 'block' : 'none';
+    }
+
     function openDetailModal(index) {
       currentDecisionIndex = index;
       const decision = allDecisions[index];
@@ -736,6 +762,7 @@
 
       // Why, owner and due date (AI extraction v2); hidden when missing
       showDetailField('detail-rationale-section', 'detail-rationale', decision.rationale);
+      renderDetailEvidence(decision);
       showDetailField('detail-owner-container', 'detail-owner', decision.owner_name);
       showDetailField('detail-due-container', 'detail-due',
         decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);

@@ -24,6 +24,12 @@
       <div class="content" id="detail-rationale"></div>
     </div>
 
+    <!-- Where an AI-captured outcome came from: the supporting quote and the meeting (dashboard.js renderDetailEvidence) -->
+    <div class="detail-section" id="detail-evidence-section" style="display: none;">
+      <h3>Evidence</h3>
+      <div class="content flex flex-col gap-2" id="detail-evidence"></div>
+    </div>
+
     <div class="detail-section" id="detail-actions-section" style="display: none;">
       <h3>Action items</h3>
       <div class="content" id="detail-actions"></div>
@@ -51,10 +57,6 @@
       <div class="detail-item" id="detail-due-container" style="display: none;">
         <label>Due (older capture)</label>
         <div class="value" id="detail-due"></div>
-      </div>
-      <div class="detail-item" id="detail-confidence-container" style="display: none;">
-        <label>AI Confidence</label>
-        <div class="value" id="detail-confidence"></div>
       </div>
     </div>
 

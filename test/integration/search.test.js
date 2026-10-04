@@ -27,7 +27,7 @@ describe('Search: keyword relevance, excluded sources, feedback', { skip }, () =
     search = require('../../src/services/semantic-search');
     await db.collection('decisions').insertMany([
       doc(1, 'Presentar al directorio de Buk tres escenarios en octubre'),
-      doc(2, 'Buk renueva el contrato en octubre', { source_details: { title: 'Reunión con Buk' } }),
+      doc(2, 'Buk renueva el contrato en octubre', { source_details: { title: 'Reunión con Buk' }, capture: 'ai', review_status: 'confirmed', evidence_quote: 'Renovamos en octubre' }),
       doc(3, 'Confirmar el presupuesto de marketing con el equipo'),
       doc(4, 'El directorio aprueba el plan anual'),
       doc(5, 'Octubre: lanzamiento en Chile', { space_id: 'sp2' })
@@ -51,6 +51,9 @@ describe('Search: keyword relevance, excluded sources, feedback', { skip }, () =
     assert.deepEqual(results.all.map(r => r.id), [1, 2], '#3 only shares "con", #4 only "directorio", #5 is another space');
     assert.equal(results.all[0].score, 1, 'all three keywords');
     assert.ok(results.all.every(r => r.embedding === undefined), 'embeddings are never sent');
+    const second = results.all.find(r => r.id === 2);
+    assert.equal(second.review_status, 'confirmed', 'Search shows whether an AI capture was reviewed');
+    assert.equal(second.evidence_quote, 'Renovamos en octubre', 'and its supporting quote');
 
     const without = await search.keywordSearch(query, { workspace_id: 'WSRCH', space_id: 'sp1', excludeIds: [1] });
     assert.deepEqual(without.all.map(r => r.id), [2], 'sources marked unrelated are left out');

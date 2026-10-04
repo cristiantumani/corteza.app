@@ -6,9 +6,12 @@
 
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', async () => {
-    await checkAuth();
+    const user = await checkAuth();
     await loadSpaces();
-    await loadInvites();
+    // Deleting everyone's data and inviting people are a workspace admin's; the API refuses others
+    const admin = !!(user && user.is_admin);
+    document.querySelectorAll('[data-admin-only]').forEach(el => el.classList.toggle('hidden', !admin));
+    if (admin) await loadInvites();
   });
 
   async function checkAuth() {
@@ -29,6 +32,7 @@
       // Update avatar
       const initials = getInitials(displayName);
       document.getElementById('user-avatar').textContent = initials;
+      return user;
 
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -448,33 +452,43 @@
   window.closeDeleteDataModal = function() {
     document.getElementById('delete-data-modal').classList.remove('active');
     document.getElementById('delete-confirmation').value = '';
+    showDeleteError('');
   };
 
-  window.deleteAllData = async function() {
-    const confirmation = document.getElementById('delete-confirmation').value;
+  function showDeleteError(message) {
+    const error = document.getElementById('delete-data-error');
+    error.textContent = message;
+    error.classList.toggle('hidden', !message);
+  }
 
+  window.deleteAllData = async function() {
+    const confirmation = document.getElementById('delete-confirmation').value.trim();
     if (confirmation !== 'DELETE') {
-      alert('Please type DELETE to confirm');
+      showDeleteError('Type DELETE to confirm.');
       return;
     }
 
+    const button = document.getElementById('delete-data-button');
+    const label = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Deleting…';
+    showDeleteError('');
+
     try {
-      const response = await fetch(`/api/gdpr/delete-all?workspace_id=${WORKSPACE_ID}`, {
+      // confirm=DELETE_ALL_DATA is the server's own check that this was meant (routes/gdpr.js)
+      const response = await fetch(`/api/gdpr/delete-all?workspace_id=${encodeURIComponent(WORKSPACE_ID)}&confirm=DELETE_ALL_DATA`, {
         method: 'DELETE'
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'The data could not be deleted. Try again.');
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete data');
-      }
-
-      alert('All workspace data deleted. You will be logged out.');
-      window.location.href = '/auth/logout';
-
+      button.textContent = 'Deleted. Signing you out…';
+      setTimeout(() => { window.location.href = '/auth/logout'; }, 1500);
     } catch (error) {
-      console.error('Error deleting data:', error);
-      alert('Failed to delete data: ' + error.message);
+      console.error('Error deleting data:', error.message);
+      showDeleteError(error.message === 'Failed to fetch' ? 'Could not reach Corteza. Check your connection and try again.' : error.message);
+      button.disabled = false;
+      button.textContent = label;
     }
   };
 

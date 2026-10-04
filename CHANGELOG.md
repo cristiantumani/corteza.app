@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Trust bugs from the UX audit
+- **Delete all data works again.** Settings never sent the confirmation the server requires (`confirm=DELETE_ALL_DATA`), so every attempt failed with "Confirmation required". Errors now show inside the dialog instead of a browser alert, the button says "Deleting…", and the text says exactly what is deleted
+- **Members no longer see admin-only actions** ("Delete All Data", "Create Invite Link") that the server refused with a 403. They show for workspace admins only
+- **The outcome detail shows its evidence:** the supporting quote and the meeting it came from (with a link and date), on Home and Search. The empty "AI Confidence" field is gone
+- **Search sources show what to trust:** no more similarity percentage ("0%"); each source shows its type, "Needs review" when the AI capture wasn't confirmed, the full outcome, its quote and its meeting. The answer line says how many of its sources are not reviewed yet
+
 ### Developer - UX auditor agent
 - **`ux-auditor`** (`.claude/agents/ux-auditor.md`): a read-only Claude Code subagent that audits one page or flow against `/corteza-design` (screenshots with fake data, reads the page's code) and reports P0–P2 findings plus product proposals. Meant to run one per page, in parallel
 

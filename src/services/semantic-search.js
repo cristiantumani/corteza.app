@@ -11,7 +11,7 @@ const { SAMPLING_MODELS } = require('./claude');
 const RESULT_PROJECTION = {
   _id: 0, id: 1, text: 1, type: 1, category: 1, epic_key: 1, jira_data: 1, tags: 1, alternatives: 1,
   rationale: 1, owner_name: 1, owner_user_id: 1, due_date: 1, evidence_quote: 1, source_details: 1,
-  capture: 1, confidence: 1, creator: 1, user_id: 1, channel_id: 1, timestamp: 1, workspace_id: 1,
+  capture: 1, review_status: 1, confidence: 1, creator: 1, user_id: 1, channel_id: 1, timestamp: 1, workspace_id: 1,
   space_id: 1, space_name: 1
 };
 

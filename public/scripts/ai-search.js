@@ -174,7 +174,8 @@
     resultsCount.textContent = total === 0
       ? (actionCount ? `${actionCount} open action item${actionCount !== 1 ? 's' : ''}` : 'No matching sources')
       : `Based on ${usedCount} source${usedCount !== 1 ? 's' : ''}${total > usedCount ? ` (${total - usedCount} other match${total - usedCount !== 1 ? 'es' : ''})` : ''}`
-        + (excludedIds.length ? ` · ${excludedIds.length} left out` : '');
+        + (excludedIds.length ? ` · ${excludedIds.length} left out` : '')
+        + notReviewedNote(usedSources(data));
     renderExcludedBanner();
 
     const timestamp = document.getElementById('search-timestamp');
@@ -190,6 +191,12 @@
 
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** " · 1 not reviewed yet": the answer rests on AI captures nobody confirmed */
+  function notReviewedNote(sources) {
+    const pending = sources.filter(needsReview).length;
+    return pending ? ` · ${pending} not reviewed yet` : '';
   }
 
   /** Open action items the question is about ("What's pending from Ana?"), most urgent first */
@@ -308,50 +315,48 @@
     }
   }
 
+  const TYPE_LABELS = { decision: 'Decision', action_item: 'Action item', open_question: 'Open question', risk: 'Risk' };
+
+  /** AI-captured and nobody confirmed it yet (outcome-review.js uses the same rule) */
+  function needsReview(decision) {
+    return decision.capture === 'ai' && !decision.review_status;
+  }
+
+  /**
+   * A source: type and review status, the outcome, its supporting quote and the meeting it came from.
+   * No similarity percentage: it says how close the wording is, not whether the answer is right.
+   */
   function createEvidenceCard(decision) {
     const card = document.createElement('div');
     const verdict = feedback.get(decision.id);
-    card.className = `evidence-card border border-outline-variant rounded-xl p-5 cursor-pointer${verdict === false ? ' evidence-card-unrelated' : ''}`;
+    card.className = `evidence-card border border-outline-variant rounded-xl p-5 cursor-pointer flex flex-col gap-2${verdict === false ? ' evidence-card-unrelated' : ''}`;
     card.dataset.sourceId = decision.id;
     card.onclick = () => openSource(decision);
 
-    const title = decision.text.split('\n')[0];
-    const preview = getTruncatedText(decision.text, 150);
     const date = new Date(decision.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const score = decision.score ? Math.round(decision.score * 100) : 0;
-
-    // Get user name (try user_name first, then creator as fallback)
-    const userName = decision.user_name || decision.creator || 'Unknown User';
-    const displayName = userName ? userName.split(' ')[0] : 'Unknown'; // First name only
-
-    // Score color
-    let scoreColor = 'text-on-surface-variant';
-    if (score >= 80) scoreColor = 'text-tertiary';
-    else if (score >= 60) scoreColor = 'text-primary';
+    const typeLabel = TYPE_LABELS[decision.type] || decision.type;
+    const status = needsReview(decision)
+      ? '<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">Needs review</span>'
+      : '';
+    const source = decision.source_details;
+    const sourceLine = source && source.title
+      ? `${source.type === 'google_meet' ? 'Google Meet' : 'Source'}: ${escapeHtml(source.title)} · ${escapeHtml(date)}`
+      : `${escapeHtml(decision.creator || 'Logged manually')} · ${escapeHtml(date)}`;
 
     card.innerHTML = `
-      <div class="flex items-start justify-between mb-3">
+      <div class="flex items-start justify-between gap-2">
         <div class="flex gap-2 flex-wrap">
-          ${decision.space_name ? `<span class="px-2 py-1 rounded-md bg-secondary-container/20 text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
-          <span class="px-2 py-1 rounded-md bg-primary-container/10 text-xs font-semibold text-primary">${escapeHtml(decision.type)}</span>
+          <span data-multi-space class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">${escapeHtml(decision.space_name || '')}</span>
+          <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">${escapeHtml(typeLabel)}</span>
+          ${status}
         </div>
         ${verdict === false
           ? '<span class="text-xs font-bold text-error">Not related</span>'
-          : verdict === true ? '<span class="text-xs font-bold text-tertiary">✓ Related</span>' : `<span class="text-xs font-bold ${scoreColor}">${score}%</span>`}
+          : verdict === true ? '<span class="text-xs font-bold text-tertiary">Related</span>' : ''}
       </div>
-
-      <h5 class="font-bold text-base mb-2 line-clamp-2">${escapeHtml(title)}</h5>
-      <p class="text-sm text-on-surface-variant line-clamp-3 mb-3">${escapeHtml(preview)}</p>
-
-      <div class="flex items-center justify-between pt-3 border-t border-outline-variant/50">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 bg-surface-container text-primary rounded-full flex items-center justify-center font-bold text-xs">
-            ${escapeHtml(getInitials(userName))}
-          </div>
-          <span class="text-xs font-medium">${escapeHtml(displayName)}</span>
-        </div>
-        <span class="text-xs text-on-surface-variant">${date}</span>
-      </div>
+      <p class="font-medium text-on-surface line-clamp-4">${escapeHtml(decision.text)}</p>
+      ${decision.evidence_quote ? `<p class="text-sm italic text-on-surface-variant line-clamp-3">“${escapeHtml(decision.evidence_quote)}”</p>` : ''}
+      <p class="text-xs text-on-surface-variant">${sourceLine}</p>
     `;
 
     return card;
@@ -488,30 +493,6 @@
   }
 
   // Utility functions
-  function getTruncatedText(text, maxLength = 150) {
-    const lines = text.split('\n');
-    const preview = lines.slice(1).join(' ').trim() || lines[0];
-    return preview.substring(0, maxLength) + (preview.length > maxLength ? '...' : '');
-  }
-
-  function getInitials(name) {
-    if (!name) return 'U';
-
-    const parts = name.split(' ').filter(p => p.length > 0);
-    if (parts.length === 0) return 'U';
-
-    if (parts.length === 1) {
-      // Single word - take first 2 chars
-      return parts[0].substring(0, 2).toUpperCase();
-    }
-
-    // Multiple words - take first char of first 2 words
-    return parts
-      .slice(0, 2)
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  }
 
   // Escapes quotes too, so it's safe in attribute values
   function escapeHtml(text) {
