@@ -101,3 +101,10 @@ test('a response cut off at max_tokens keeps the complete items', () => {
   assert.deepEqual(parseDecisionResponse(cut).map(item => item.decision_text), ['Launch on the 15th', 'Ana sends the deck']);
   assert.throws(() => parseLeadingJsonArray('[{"decision_text": "cut in the first ite'));
 });
+
+test('who raised an open question or risk is kept, only for those types', () => {
+  const { normalizeItem } = require('../../src/services/claude');
+  assert.equal(normalizeItem({ decision_text: 'x', decision_type: 'risk', raised_by: ' Carla ' }).raised_by, 'Carla');
+  assert.equal(normalizeItem({ decision_text: 'x', decision_type: 'open_question', raised_by: '' }).raised_by, null);
+  assert.equal(normalizeItem({ decision_text: 'x', decision_type: 'decision', raised_by: 'Carla' }).raised_by, null);
+});

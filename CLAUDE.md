@@ -75,7 +75,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | App sidebar (one for every page: Home, Action items, Questions & risks, Search, Settings) | `src/views/partials/sidebar.html`, injected at `<!-- SIDEBAR -->` by `renderView` in `src/http/page-partials.js`. Change it there, never per page |
 | First-run onboarding on Home (4 steps: connect Meet, Search, Action items, company context for admins; once per person, reopened from the sidebar's "How it works") | `src/views/partials/onboarding.html` (injected at `<!-- ONBOARDING -->` by `renderView`), `public/scripts/onboarding.js`, `src/http/onboarding.js`, `src/core/onboarding/onboarding-service.js` |
 | Confirm / dismiss AI-captured outcomes (Needs review, undo, dismiss reasons that feed the extraction's examples) | `src/core/decisions/review-service.js`, `src/http/decision-review.js`, `public/scripts/outcome-review.js` |
-| Outcome detail modal (shared by Home and Search) | `src/views/partials/detail-modal.html`, injected at `<!-- DETAIL_MODAL -->` by `renderView` in `src/http/page-partials.js` |
+| Outcome detail modal (shared by Home and Search; per type: a risk shows who raised it and its mitigation, an open question its answer and who has to answer it) | `src/views/partials/detail-modal.html`, injected at `<!-- DETAIL_MODAL -->` by `renderView` in `src/http/page-partials.js`; filled by `openDetailModal` in `public/scripts/dashboard.js` |
 | File/transcript parsing (txt, md, vtt, srt, pdf, docx) | `src/utils/text-extractors.js` |
 | Web transcript extraction + suggestion review | `src/routes/ai-extract-web.js` |
 | Slack commands and Slack transcript flow | `src/routes/slack.js`, `src/routes/ai-decisions.js` |

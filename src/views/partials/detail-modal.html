@@ -15,7 +15,7 @@
     <div class="detail-relevance" id="detail-relevance" style="display: none;"></div>
 
     <div class="detail-section">
-      <h3>Content</h3>
+      <h3 id="detail-content-label">Decision</h3>
       <div class="content" id="detail-decision-text"></div>
     </div>
 
@@ -30,18 +30,21 @@
       <div class="content flex flex-col gap-2" id="detail-evidence"></div>
     </div>
 
+    <!-- Open questions and risks: the answer, or whether the risk was mitigated (dashboard.js renderDetailResolution) -->
+    <div class="detail-section" id="detail-resolution-section" style="display: none;">
+      <h3 id="detail-resolution-label">Answer</h3>
+      <div class="content" id="detail-resolution"></div>
+    </div>
+
     <div class="detail-section" id="detail-actions-section" style="display: none;">
       <h3>Action items</h3>
       <div class="content" id="detail-actions"></div>
     </div>
 
     <div class="detail-grid">
-      <div class="detail-item">
-        <label>Type</label>
-        <div class="value" id="detail-type"></div>
-      </div>
-      <div class="detail-item">
-        <label>Creator</label>
+      <!-- Added by (decisions), raised by (risks); hidden when nobody is known -->
+      <div class="detail-item" id="detail-creator-container">
+        <label id="detail-creator-label">Added by</label>
         <div class="value" id="detail-creator"></div>
       </div>
       <div class="detail-item">
@@ -49,9 +52,9 @@
         <div class="value" id="detail-date"></div>
       </div>
       <div class="detail-item" id="detail-owner-container" style="display: none;">
-        <label title="Who makes sure this gets done. Tasks and their owners go in Action items.">Accountable</label>
+        <label>Accountable</label>
         <div class="value" id="detail-owner"></div>
-        <p class="detail-help">Who makes sure this gets done. Tasks and their owners go in Action items.</p>
+        <p class="detail-help" id="detail-owner-help">Who makes sure this gets done. Tasks and their owners go in Action items.</p>
       </div>
       <!-- Older captures only: decisions no longer have due dates (they belong to action items) -->
       <div class="detail-item" id="detail-due-container" style="display: none;">
@@ -70,9 +73,5 @@
       <div class="content" id="detail-epic-info"></div>
     </div>
 
-    <div class="detail-section" id="detail-tags-section" style="display: none;">
-      <h3>Tags</h3>
-      <div class="content" id="detail-tags"></div>
-    </div>
   </div>
 </div>

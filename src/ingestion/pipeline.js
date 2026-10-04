@@ -257,6 +257,7 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         ].filter(Boolean).join('\n\n'),
         // Accountable person; when there's a date, the owner goes to the linked action item instead
         ownerName: extracted.due_date ? null : (extracted.owner_name || (extracted.owner_names || [])[0] || null),
+        raisedBy: extracted.raised_by || null,
         rationale: extracted.rationale || null,
         evidenceQuote: extracted.evidence_quote || null,
         author: transcript.author,

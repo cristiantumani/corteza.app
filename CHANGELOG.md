@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Risk and open question cards
+- **A risk** shows the risk, who raised it (new `raised_by`, captured from the meeting), the date, and **Mitigation**: "Mark as mitigated" with how, then who closed it and when, with Reopen. No accountable person
+- **An open question** shows the question, its **Answer** ("Mark as answered" with the answer, or Reopen), the date and who has to answer it (Accountable)
+- Every outcome card names its type above the text instead of "Content", drops the Type box (the title says it) and the Tags field, and only asks for a "why" on decisions
+- Fixed: editing a field of an outcome opened from Home failed with "Cannot read properties of undefined" and left the field stuck (Esc didn't cancel). Home's "Still open" now opens the whole outcome, with its creator and why
+
 ### Changed - Home answers the three questions (COR-41)
 - **One sentence on top** says what happened in the last 24 hours and what needs you now (overdue, to review), each count a link
 - **Ask across meetings from Home:** the same search as the Search page, with the answer and the sources it used shown in place, and "Open in Search" to keep going

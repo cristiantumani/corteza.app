@@ -29,7 +29,7 @@ const meet = title => ({ type: 'google_meet', title, url: 'https://meet.google.c
 const decisions = [
   { id: 101, type: 'decision', text: 'Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre', rationale: 'El 60% de los clientes pidió pago anual en las entrevistas', evidence_quote: 'Si lo dejamos en 20% seguimos sobre el margen objetivo', owner_name: 'Bruno Díaz', owner_user_id: 'U2', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
   { id: 102, type: 'open_question', text: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
-  { id: 103, type: 'risk', text: 'El proveedor de pagos podría no soportar cobro anual antes de noviembre', rationale: 'Sin cobro anual el lanzamiento se atrasa', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pagos'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
+  { id: 103, type: 'risk', text: 'El proveedor de pagos podría no soportar cobro anual antes de noviembre', raised_by: 'Carla Méndez', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pagos'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
   { id: 104, type: 'decision', text: 'Mover la reunión semanal de operaciones a los martes 9:30', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: [], timestamp: iso(26 * 3600 * 1000), source_details: meet('Weekly Ops') },
   { id: 105, type: 'decision', text: 'Usar Linear como única herramienta de seguimiento del equipo de producto y dejar de usar la planilla compartida', rationale: 'Hoy hay tareas duplicadas en dos lugares', capture: 'manual', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['producto', 'herramientas'], timestamp: iso(3 * day) },
   { id: 106, type: 'risk', text: 'La migración de datos de clientes antiguos puede tomar más de dos semanas', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: [], timestamp: iso(5 * day), source_details: meet('Revisión técnica') }
@@ -122,6 +122,11 @@ const routes = {
     action_items: actionItems.slice(0, 2)
   },
   'POST /api/me/timezone': { success: true },
+  'POST /api/questions-risks/103/resolve': req => ({
+    success: true, resolution_status: 'resolved', resolution_note: (req.body && req.body.note) || null,
+    resolved_by: { user_id: user.user_id, name: user.user_name }, resolved_at: new Date().toISOString(), linked_risks: []
+  }),
+  'POST /api/questions-risks/103/reopen': { success: true, resolution_status: 'open', resolution_note: null, resolved_by: null, resolved_at: null },
   'POST /api/action-items/from-colleagues/seen': { success: true, seen: 1 }
 };
 

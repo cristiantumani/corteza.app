@@ -84,6 +84,8 @@ describe('Home overview: summary, what I owe, what is open, decided, review queu
     });
     assert.deepEqual(overview.owe.map(item => item.text), ['Overdue one', 'Due today', 'Due later', 'No date'], 'mine only, most urgent first');
     assert.deepEqual(overview.open.map(item => item.id), [2, 3], 'open questions and risks, newest first; answered ones left out');
+    assert.equal(overview.open[0].creator, 'Ana Rojas', 'open items carry the whole outcome, for the detail modal');
+    assert.equal(overview.open[0].user_id, 'U1');
     assert.deepEqual(overview.decided.map(d => d.id), [4, 5], 'confirmed or logged by hand, newest first; nothing waiting for review');
     assert.deepEqual(overview.review.map(d => d.id), [1, 2]);
     assert.equal(overview.review[0].evidence_quote, '20% keeps the margin', 'the queue carries the evidence');

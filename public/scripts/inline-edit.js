@@ -1,10 +1,12 @@
 /**
  * Click-to-edit for the outcome detail modal (#detail-modal).
  *
- * Clicking a field (content, why, type, accountable person, tags, meeting context,
- * Jira epic) turns it into an input. Enter (Ctrl/⌘+Enter in text areas) or
+ * Clicking a field (content, why, accountable person, meeting context, Jira epic)
+ * turns it into an input. The type is changed from the Edit button. Enter (Ctrl/⌘+Enter in text areas) or
  * clicking away saves just that field with PUT /api/decisions/:id; Esc cancels.
- * Empty optional fields show an "Add …" prompt so they can be filled in.
+ * Empty optional fields show an "Add …" prompt so they can be filled in, except the ones
+ * an outcome type doesn't use (`skipTypes`: a risk has no accountable person, and the why of
+ * a question or risk is usually in its own text).
  * The accountable person is picked from the workspace members (people.js) and saved as
  * owner_user_id. Due dates belong to action items (decision-actions.js), not to outcomes.
  *
@@ -13,24 +15,18 @@
 (function() {
   'use strict';
 
-  const TYPE_OPTIONS = [
-    ['decision', 'Decision'], ['open_question', 'Open question'], ['risk', 'Risk'],
-    ['action_item', 'Action item'], ['context', 'Context'], ['explanation', 'Explanation'],
-    ['learning', 'Learning'], ['assumption', 'Assumption']
-  ];
-
   /**
    * key: field in the decision and in the PUT body
    * valueId / sectionId: element that shows the value / wrapper hidden when empty
-   * input: textarea | text | date | select | member
+   * input: textarea | text | member
    * prompt: shown when the field is empty (optional fields only)
+   * noPromptTypes: outcome types where an empty field stays hidden (editable once it has a value)
+   * skipTypes: outcome types that don't use the field (not editable there)
    */
   const FIELDS = [
     { key: 'text', valueId: 'detail-decision-text', input: 'textarea', required: true },
-    { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'Add why' },
-    { key: 'type', valueId: 'detail-type', input: 'select' },
-    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add who’s accountable' },
-    { key: 'tags', valueId: 'detail-tags', sectionId: 'detail-tags-section', input: 'text', prompt: 'Add tags', hint: 'Separate tags with commas' },
+    { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'Add why', noPromptTypes: ['open_question', 'risk'] },
+    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add who’s accountable', skipTypes: ['risk'] },
     { key: 'alternatives', valueId: 'detail-meeting-info', sectionId: 'detail-meeting-section', input: 'textarea' },
     { key: 'epic_key', valueId: 'detail-epic-info', sectionId: 'detail-epic-section', input: 'text', hint: 'Jira epic key, e.g. PROJ-12' }
   ];
@@ -40,7 +36,6 @@
 
   function inputValue(field, decision) {
     const value = decision[field.key];
-    if (field.key === 'tags') return Array.isArray(value) ? value.join(', ') : '';
     return value == null ? '' : String(value);
   }
 
@@ -53,10 +48,6 @@
       return raw || null;
     }
     const trimmed = raw.trim();
-    if (field.key === 'tags') {
-      const tags = trimmed ? trimmed.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];
-      return tags.join(',') === (decision.tags || []).join(',') ? undefined : tags;
-    }
     const current = decision[field.key] == null ? '' : String(decision[field.key]);
     if (trimmed === current) return undefined;
     return trimmed === '' ? null : trimmed;
@@ -85,9 +76,6 @@
     if (field.input === 'textarea') {
       input = document.createElement('textarea');
       input.rows = field.key === 'text' ? 4 : 3;
-    } else if (field.input === 'select') {
-      input = document.createElement('select');
-      for (const [value, label] of TYPE_OPTIONS) input.add(new Option(label, value));
     } else {
       input = document.createElement('input');
       input.type = field.input;
@@ -112,7 +100,7 @@
     hint.textContent = `${field.hint ? `${field.hint} · ` : ''}${saveKey} to save · Esc to cancel`;
     element.replaceChildren(input, hint);
     input.focus();
-    if (input.select && field.input !== 'select' && field.input !== 'date') input.select();
+    if (input.select && field.input !== 'member') input.select();
 
     let done = false;
     const finish = async save => {
@@ -137,7 +125,7 @@
       }
     });
     input.addEventListener('blur', () => finish(true));
-    if (field.input === 'select' || field.input === 'member') input.addEventListener('change', () => finish(true));
+    if (field.input === 'member') input.addEventListener('change', () => finish(true));
   }
 
   function cancelEdit() {
@@ -177,14 +165,19 @@
         decision[field.key] = field.key in saved ? saved[field.key] : value;
       }
       if (field.key === 'epic_key') decision.jira_data = saved.jira_data || null;
-      editing = null;
-      onSaved(field.key);
-      return true;
     } catch (error) {
       hint.textContent = `${error.message}. Esc to cancel.`;
       hint.classList.add('inline-edit-error');
       return false;
     }
+    // Saved: redraw the modal. A failure here isn't a failed save, and must not leave the field stuck
+    editing = null;
+    try {
+      onSaved(field.key);
+    } catch (error) {
+      console.error('Could not refresh the outcome after saving:', error);
+    }
+    return true;
   }
 
   /**
@@ -205,11 +198,13 @@
       element.removeAttribute('tabindex');
       element.removeAttribute('title');
       if (!canModify) continue;
+      if (field.skipTypes && field.skipTypes.includes(decision.type)) continue;
 
       const section = field.sectionId ? document.getElementById(field.sectionId) : null;
       const isEmpty = inputValue(field, decision) === '';
       if (isEmpty && section) {
         if (!field.prompt) continue; // only shown when it has a value
+        if (field.noPromptTypes && field.noPromptTypes.includes(decision.type)) continue;
         section.style.display = '';
         element.innerHTML = `<span class="inline-edit-prompt">+ ${field.prompt}</span>`;
       }
