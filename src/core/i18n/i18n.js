@@ -110,11 +110,17 @@ function localizeHtml(html, lang) {
 /**
  * A page rendered once per language at startup
  * @param {string} html - with {{t:key}} placeholders
- * @returns {(req: Object) => string} the page in the request's language
+ * @returns {(req: Object) => string} the page in the request's language (and remembers the browser's
+ *   language for emails when the signed-in person hasn't picked one)
  */
 function localizedPage(html) {
   const pages = Object.fromEntries(LANGUAGES.map(lang => [lang, localizeHtml(html, lang)]));
-  return req => pages[requestLanguage(req)];
+  return req => {
+    const lang = requestLanguage(req);
+    // Emails can't ask the browser: remember its language (core/users/language; lazy, it needs the database)
+    require('../users/language').rememberBrowserLanguage(req, lang);
+    return pages[lang];
+  };
 }
 
 module.exports = {

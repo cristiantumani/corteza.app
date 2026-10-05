@@ -3,6 +3,7 @@ const { apiRateLimiter } = require('../middleware/auth');
 const { verifyApprovalToken } = require('../core/beta/beta-access');
 const { approveBetaTester } = require('../core/beta/approve');
 const { escapeHtml } = require('../utils/n8n-client');
+const { requestLanguage } = require('../core/i18n/i18n');
 
 /**
  * Approve a beta tester from the team's "new early access request" email.
@@ -50,7 +51,8 @@ router.post('/beta/approve', apiRateLimiter, async (req, res) => {
   if (!tester) return res.status(400).send(invalidLink);
 
   try {
-    const result = await approveBetaTester({ ...tester, approvedVia: 'email_link' });
+    // Welcome email in the approver's language (the founder approves the people they talk to)
+    const result = await approveBetaTester({ ...tester, approvedVia: 'email_link', lang: requestLanguage(req) });
     const email = `<strong>${escapeHtml(tester.email)}</strong>`;
     const messages = {
       sent: `Welcome email sent to ${email}.`,

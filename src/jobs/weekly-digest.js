@@ -7,6 +7,7 @@ const {
 } = require('../config/database');
 const { getUserAccessibleSpaces } = require('../services/permissions');
 const { sendWeeklyDigestEmail } = require('../utils/n8n-client');
+const { memberLanguage } = require('../core/users/language');
 
 /**
  * Weekly decision digest, replacing the n8n "Weekly Team Digest" workflow.
@@ -154,7 +155,8 @@ async function sendWorkspaceDigest(workspaceId, period) {
         email: member.email,
         workspace_name: member.workspace_name || workspaceId,
         stats: buildDigestStats(decisions, previousCount, spaceNames, period.label),
-        unsubscribe_url: getUnsubscribeUrl(workspaceId, member.user_id)
+        unsubscribe_url: getUnsubscribeUrl(workspaceId, member.user_id),
+        lang: memberLanguage(member) || 'en'
       });
       sent++;
     } catch (error) {

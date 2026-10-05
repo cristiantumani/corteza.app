@@ -131,7 +131,7 @@ describe('daily digest: one summary per person per day, with only their own numb
     const FRIDAY = new Date('2026-10-02T11:10:00Z');
     await db.collection('workspace_members').insertMany([
       { workspace_id: WS, user_id: 'UF', user_name: 'Fede', email: 'fede@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago', digest_voice: 'sergeant' },
-      { workspace_id: WS, user_id: 'UG', user_name: 'Gabi', email: 'gabi@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago', digest_voice: 'classic' },
+      { workspace_id: WS, user_id: 'UG', user_name: 'Gabi', email: 'gabi@acme.com', workspace_name: 'Acme', removed_at: null, timezone: 'America/Santiago', digest_voice: 'classic', browser_language: 'es' },
       { workspace_id: 'WOFF', user_id: 'UE', user_name: 'Eva', email: 'eva@other.com', workspace_name: 'Other', removed_at: null, timezone: 'America/Santiago', digest_voice: 'sarcastic' }
     ]);
     await db.collection('workspaces').insertOne({ workspace_id: 'WOFF', name: 'Other', digest_voices_enabled: false });
@@ -152,6 +152,10 @@ describe('daily digest: one summary per person per day, with only their own numb
     assert.equal(fede.situation, 'due_today');
     assert.equal(fede.language, 'es', 'their Meet "Write outcomes in" setting');
     assert.equal(byEmail['gabi@acme.com'].partner, null, 'picked Classic');
+    assert.equal(byEmail['fede@acme.com'].lang, 'es', 'the whole email follows the partner\'s language');
+    assert.equal(byEmail['gabi@acme.com'].lang, 'es', 'their browser\'s language, remembered from the app');
+    assert.equal(byEmail['gabi@acme.com'].summary.since, 'ayer');
+    assert.equal(byEmail['eva@other.com'].lang, 'en', 'nothing known: English');
     assert.equal(byEmail['eva@other.com'].partner, null, 'their workspace turned personalities off');
     const eva = await db.collection('daily_digests').findOne({ workspace_id: 'WOFF', user_id: 'UE' });
     assert.equal(eva.voice, 'classic');

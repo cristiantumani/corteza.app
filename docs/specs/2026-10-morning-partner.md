@@ -46,7 +46,7 @@ The daily summary (`src/jobs/daily-digest.js`) is useful, but it reads like ever
 8. **Language.**
    - Each personality has its own voice in **English and Spanish**, written for each language, not translated.
    - The language is the person's Meet "Write outcomes in" setting when it's English or Spanish. Otherwise it's detected from the items in the email (`src/core/language/detect.js`), then the language of their previous summary, falling back to English.
-   - The rest of the email stays in English, like the app.
+   - Since the app speaks Spanish (docs/specs/2026-10-i18n.md), the whole email uses the person's language, and the partner's line follows it; the guess above only applies when their language isn't known.
 9. **No AI at launch.** The library is fixed text, so there's no cost and the tone is under control. Personalizing lines with a model (Haiku, metered with `recordAiUsage`, with guardrails) is a later step, and only if the library wears out.
 10. **Measure** (counts and ids only, never text):
     - PostHog `daily_digest_sent` gets `voice` and `situation`.

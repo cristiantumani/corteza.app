@@ -45,9 +45,12 @@ const rows = [];
 const write = (name, html) => fs.writeFileSync(path.join(out, name), html);
 for (const situation of voice.SITUATIONS) {
   const summary = summaryFor(situation);
-  const file = `classic-${situation}.html`;
-  write(file, dailyDigestHtml({ workspace_name: 'Acme', summary, unsubscribe_url: '#' }));
-  rows.push({ voice: 'classic', language: 'en', situation, file, subject: dailyDigestSubject(summary), followUp: '' });
+  for (const language of voice.LANGUAGES) {
+    const file = `classic-${language}-${situation}.html`;
+    const localized = { ...summary, since: language === 'es' ? 'el viernes' : 'Friday', dayLabel: language === 'es' ? 'lunes, 5 de octubre' : 'Monday, October 5' };
+    write(file, dailyDigestHtml({ workspace_name: 'Acme', summary: localized, unsubscribe_url: '#', lang: language }));
+    rows.push({ voice: 'classic', language, situation, file, subject: dailyDigestSubject(localized, language), followUp: '' });
+  }
   for (const name of voice.PARTNER_VOICES) {
     for (const language of voice.LANGUAGES) {
       const lines = voice.LIBRARY[name][language][situation];
@@ -60,7 +63,8 @@ for (const situation of voice.SITUATIONS) {
           })
         };
         const fileName = `${name}-${language}-${situation}-${index}.html`;
-        if (index === 0) write(fileName, dailyDigestHtml({ workspace_name: 'Acme', summary, unsubscribe_url: '#', partner }));
+        const localized = { ...summary, since: language === 'es' ? 'el viernes' : 'Friday', dayLabel: language === 'es' ? 'lunes, 5 de octubre' : 'Monday, October 5' };
+        if (index === 0) write(fileName, dailyDigestHtml({ workspace_name: 'Acme', summary: localized, unsubscribe_url: '#', partner, lang: language }));
         rows.push({ voice: name, language, situation, file: index === 0 ? fileName : null, subject: partner.subject, followUp: partner.followUp });
       });
     }

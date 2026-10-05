@@ -847,5 +847,160 @@
     "subtitle": "Your team’s decisions, captured from your meetings.",
     "google": "Continue with Google",
     "note": "Sign in with your work Google account. Colleagues on the same Google Workspace domain join the same Corteza workspace automatically."
+  },
+  "email": {
+    "digest": {
+      "subject": {
+        "dueToday": {
+          "one": "{count} due today",
+          "other": "{count} due today"
+        },
+        "overdue": {
+          "one": "{count} overdue",
+          "other": "{count} overdue"
+        },
+        "prep": {
+          "one": "{count} meeting to prepare",
+          "other": "{count} meetings to prepare"
+        },
+        "newActionItems": {
+          "one": "{count} new action item",
+          "other": "{count} new action items"
+        },
+        "yourDay": "Your day: {items}",
+        "since": "since {since}: {items}",
+        "plan": "Plan your day with Corteza"
+      },
+      "yesterday": "yesterday",
+      "overdueWas": "Overdue · was due {date}",
+      "nextStepOn": "Next step on: {question}",
+      "notMine": "Not mine?",
+      "open": "Open",
+      "seeAll": "See all {count} due or overdue →",
+      "toReview": {
+        "one": "{count} outcome to review",
+        "other": "{count} outcomes to review"
+      },
+      "toReviewHelp": "Confirm the right ones, dismiss the rest",
+      "noDueDate": {
+        "one": "{count} action item without a due date",
+        "other": "{count} action items without a due date"
+      },
+      "noDueDateHelp": "Set a date so they don’t slip",
+      "setDates": "Set dates",
+      "plate": "On your plate today",
+      "prep": "Prepare for today’s meetings",
+      "prepHelp": "Open action items with the people you’re meeting.",
+      "with": "With {people}",
+      "you": "You",
+      "overdueSince": "overdue since {date}",
+      "dueOn": "due {date}",
+      "more": {
+        "one": "and {count} more",
+        "other": "and {count} more"
+      },
+      "sinceHeading": "Since {since}",
+      "goodMorning": "Good morning. Here’s your day.",
+      "tile": {
+        "meetings": {
+          "one": "meeting",
+          "other": "meetings"
+        },
+        "decisions": {
+          "one": "decision",
+          "other": "decisions"
+        },
+        "newActionItems": {
+          "one": "new action item",
+          "other": "new action items"
+        }
+      },
+      "alsoCaptured": "Also captured: {outcomes}.",
+      "planButton": "Plan my day in Corteza →",
+      "footer": {
+        "useful": "Finding Corteza useful?",
+        "helps": ", it helps pay for the AI.",
+        "why": "One email each weekday morning, only when there’s something new or due. You get it because you’re a member of {workspace} on Corteza.",
+        "change": "Change the time zone in Settings, or",
+        "unsubscribe": "unsubscribe from morning summaries"
+      },
+      "assignedFrom": "They came from meetings captured by {names}."
+    },
+    "invite": {
+      "subject": "{name} invited you to join {workspace} on Corteza",
+      "title": "You’re invited!",
+      "bodyMember": "{name} has invited you to join {workspace} on Corteza as a member.",
+      "bodyAdmin": "{name} has invited you to join {workspace} on Corteza as an admin.",
+      "accept": "Accept invitation →",
+      "expires": {
+        "one": "This invitation expires in {count} day. If you didn’t expect this, you can safely ignore this email.",
+        "other": "This invitation expires in {count} days. If you didn’t expect this, you can safely ignore this email."
+      }
+    },
+    "weekly": {
+      "subject": {
+        "one": "Weekly digest: {count} decision in {workspace}",
+        "other": "Weekly digest: {count} decisions in {workspace}"
+      },
+      "title": "Your weekly decision digest",
+      "vsPrevious": {
+        "one": "{count} vs previous week",
+        "other": "{count} vs previous week"
+      },
+      "same": "Same as previous week",
+      "logged": {
+        "one": "decision logged",
+        "other": "decisions logged"
+      },
+      "latest": "Latest decisions",
+      "byType": "By type",
+      "contributors": "Top contributors",
+      "tags": "Top tags",
+      "why": "You get this because you’re a member of {workspace} on Corteza.",
+      "unsubscribe": "Unsubscribe from weekly digests"
+    },
+    "welcome": {
+      "subject": "You’re in: welcome to the Corteza beta",
+      "title": "Welcome to the beta!",
+      "titleNamed": "Welcome to the beta, {name}!",
+      "body": "You’re one of the first teams on Corteza. From your next meeting on, decisions stick, commitments get followed until they’re done, and every meeting gets a little better.",
+      "signIn": "Sign in with the Google account for {email} to set up your workspace. It takes a couple of minutes.",
+      "button": "Sign in with Google →",
+      "reply": "Questions or feedback? Just reply to this email, it reaches us directly.",
+      "team": "The Corteza team"
+    },
+    "import": {
+      "none": "no outcomes",
+      "status": {
+        "already_imported": "already imported",
+        "not_ready": "transcript not ready yet",
+        "too_old": "too old to import",
+        "no_transcript": "no transcript or notes",
+        "failed": "couldn’t be imported"
+      },
+      "subject": "Import done: {outcomes} from {meetings}",
+      "title": "Your import is done",
+      "body": "Corteza captured {outcomes} from {meetings}. They’re saved in your space. Confirm the ones that are right and dismiss the rest: Corteza learns from it.",
+      "review": "Review in Corteza →"
+    }
+  },
+  "unsubscribe": {
+    "invalidTitle": "Link not valid",
+    "invalidBody": "This unsubscribe link is invalid or incomplete. Please use the link from your most recent digest email.",
+    "daily": {
+      "confirmTitle": "Unsubscribe from daily summaries?",
+      "confirmBody": "You’ll stop getting daily summaries for this workspace.",
+      "doneBody": "You won’t get daily summaries for {workspace} anymore."
+    },
+    "weekly": {
+      "confirmTitle": "Unsubscribe from weekly digests?",
+      "confirmBody": "You’ll stop getting weekly digests for this workspace.",
+      "doneBody": "You won’t get weekly digests for {workspace} anymore."
+    },
+    "button": "Unsubscribe",
+    "thisWorkspace": "this workspace",
+    "doneTitle": "You’re unsubscribed",
+    "errorTitle": "Something went wrong",
+    "errorBody": "Please try again in a moment."
   }
 }

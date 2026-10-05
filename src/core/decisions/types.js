@@ -47,14 +47,17 @@ function countByType(items) {
 /**
  * "3 decisions, 1 open question and 2 action items"
  * @param {Object<string, number>} counts - from countByType, plus action_item if tracked separately
+ * @param {string} [lang] - 'en' | 'es' (public/i18n, key outcomeCounts)
  * @returns {string} empty string when there is nothing
  */
-function describeOutcomes(counts) {
+function describeOutcomes(counts, lang = 'en') {
+  // Lazy: core/i18n reads the dictionaries from disk
+  const { translate } = require('../i18n/i18n');
   const parts = Object.keys(OUTCOME_LABELS)
     .filter(type => counts[type] > 0)
-    .map(type => `${counts[type]} ${OUTCOME_LABELS[type][counts[type] === 1 ? 0 : 1]}`);
+    .map(type => translate(lang, `outcomeCounts.${type}`, { count: counts[type] }));
   if (parts.length <= 1) return parts.join('');
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  return translate(lang, 'outcomeCounts.list', { items: parts.slice(0, -1).join(', '), last: parts[parts.length - 1] });
 }
 
 module.exports = { DECISION_TYPES, EXTRACTED_TYPES, OUTCOME_LABELS, outcomeGroup, countByType, describeOutcomes };
