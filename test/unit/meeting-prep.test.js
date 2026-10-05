@@ -73,7 +73,7 @@ test('the morning summary has a "prepare for today\'s meetings" section, escaped
     meetingPrep: [{ time: '11:00 AM', title: 'Weekly <Comercial>', people: ['Juan Pérez'], items: [{ item_id: 'm1', text: 'Send the deck', due_date: '2026-10-03', owner: null }, { item_id: 'o1', text: 'Sign <b>', due_date: null, owner: 'Juan' }], more: 1 }]
   };
   const html = dailyDigestHtml({ workspace_name: 'Ninja', unsubscribe_url: 'u', summary });
-  assert.match(html, /Prepare for today's meetings/);
+  assert.match(html, /Prepare for today’s meetings/);
   assert.match(html, /11:00 AM · Weekly &lt;Comercial&gt;/);
   assert.match(html, /With Juan Pérez/);
   assert.match(html, /Sign &lt;b&gt;/);

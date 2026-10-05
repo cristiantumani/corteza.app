@@ -449,7 +449,8 @@ async function runImport(importId, deps = {}) {
 async function notifyImportDone(connection, job) {
   if (!process.env.RESEND_API_KEY || !connection.google_email) return;
   const { sendImportSummaryEmail } = require('../utils/n8n-client');
-  await sendImportSummaryEmail({ email: connection.google_email, job });
+  const lang = await require('../core/users/language').getEmailLanguage(connection.workspace_id, connection.user_id);
+  await sendImportSummaryEmail({ email: connection.google_email, job, lang });
 }
 
 /**

@@ -847,5 +847,160 @@
     "subtitle": "Las decisiones de tu equipo, capturadas de tus reuniones.",
     "google": "Continuar con Google",
     "note": "Entra con tu cuenta de Google del trabajo. Tus colegas del mismo dominio de Google Workspace se suman automáticamente a la misma organización en Corteza."
+  },
+  "email": {
+    "digest": {
+      "subject": {
+        "dueToday": {
+          "one": "{count} vence hoy",
+          "other": "{count} vencen hoy"
+        },
+        "overdue": {
+          "one": "{count} atrasado",
+          "other": "{count} atrasados"
+        },
+        "prep": {
+          "one": "{count} reunión que preparar",
+          "other": "{count} reuniones que preparar"
+        },
+        "newActionItems": {
+          "one": "{count} pendiente nuevo",
+          "other": "{count} pendientes nuevos"
+        },
+        "yourDay": "Tu día: {items}",
+        "since": "desde {since}: {items}",
+        "plan": "Planifica tu día con Corteza"
+      },
+      "yesterday": "ayer",
+      "overdueWas": "Atrasado · vencía el {date}",
+      "nextStepOn": "Siguiente paso para: {question}",
+      "notMine": "¿No es mío?",
+      "open": "Abrir",
+      "seeAll": "Ver los {count} que vencen o están atrasados →",
+      "toReview": {
+        "one": "{count} resultado por revisar",
+        "other": "{count} resultados por revisar"
+      },
+      "toReviewHelp": "Confirma los correctos y descarta el resto",
+      "noDueDate": {
+        "one": "{count} pendiente sin fecha",
+        "other": "{count} pendientes sin fecha"
+      },
+      "noDueDateHelp": "Ponles fecha para que no se pierdan",
+      "setDates": "Poner fechas",
+      "plate": "Lo que tienes hoy",
+      "prep": "Prepárate para las reuniones de hoy",
+      "prepHelp": "Pendientes abiertos con las personas con quienes te reúnes.",
+      "with": "Con {people}",
+      "you": "Tú",
+      "overdueSince": "atrasado desde el {date}",
+      "dueOn": "vence el {date}",
+      "more": {
+        "one": "y {count} más",
+        "other": "y {count} más"
+      },
+      "sinceHeading": "Desde {since}",
+      "goodMorning": "Buenos días. Este es tu día.",
+      "tile": {
+        "meetings": {
+          "one": "reunión",
+          "other": "reuniones"
+        },
+        "decisions": {
+          "one": "decisión",
+          "other": "decisiones"
+        },
+        "newActionItems": {
+          "one": "pendiente nuevo",
+          "other": "pendientes nuevos"
+        }
+      },
+      "alsoCaptured": "También se capturó: {outcomes}.",
+      "planButton": "Planificar mi día en Corteza →",
+      "footer": {
+        "useful": "¿Te sirve Corteza?",
+        "helps": ", ayuda a pagar la IA.",
+        "why": "Un correo cada mañana de lunes a viernes, solo cuando hay algo nuevo o que vence. Lo recibes porque eres parte de {workspace} en Corteza.",
+        "change": "Cambia la zona horaria en Configuración, o",
+        "unsubscribe": "date de baja de los resúmenes de la mañana"
+      },
+      "assignedFrom": "Vienen de reuniones capturadas por {names}."
+    },
+    "invite": {
+      "subject": "{name} te invitó a {workspace} en Corteza",
+      "title": "¡Te invitaron!",
+      "bodyMember": "{name} te invitó a unirte a {workspace} en Corteza como miembro.",
+      "bodyAdmin": "{name} te invitó a unirte a {workspace} en Corteza como admin.",
+      "accept": "Aceptar invitación →",
+      "expires": {
+        "one": "Esta invitación vence en {count} día. Si no la esperabas, puedes ignorar este correo.",
+        "other": "Esta invitación vence en {count} días. Si no la esperabas, puedes ignorar este correo."
+      }
+    },
+    "weekly": {
+      "subject": {
+        "one": "Resumen semanal: {count} decisión en {workspace}",
+        "other": "Resumen semanal: {count} decisiones en {workspace}"
+      },
+      "title": "Tu resumen semanal de decisiones",
+      "vsPrevious": {
+        "one": "{count} vs. la semana anterior",
+        "other": "{count} vs. la semana anterior"
+      },
+      "same": "Igual que la semana anterior",
+      "logged": {
+        "one": "decisión registrada",
+        "other": "decisiones registradas"
+      },
+      "latest": "Últimas decisiones",
+      "byType": "Por tipo",
+      "contributors": "Quienes más aportaron",
+      "tags": "Etiquetas principales",
+      "why": "Lo recibes porque eres parte de {workspace} en Corteza.",
+      "unsubscribe": "Date de baja de los resúmenes semanales"
+    },
+    "welcome": {
+      "subject": "Ya tienes acceso: te damos la bienvenida a la beta de Corteza",
+      "title": "¡Te damos la bienvenida a la beta!",
+      "titleNamed": "¡Te damos la bienvenida a la beta, {name}!",
+      "body": "Eres de los primeros equipos en Corteza. Desde tu próxima reunión, las decisiones se quedan, los compromisos se siguen hasta cumplirse y cada reunión mejora un poco.",
+      "signIn": "Entra con la cuenta de Google de {email} para configurar tu organización. Toma un par de minutos.",
+      "button": "Entrar con Google →",
+      "reply": "¿Preguntas o comentarios? Responde este correo, nos llega directo.",
+      "team": "El equipo de Corteza"
+    },
+    "import": {
+      "none": "ningún resultado",
+      "status": {
+        "already_imported": "ya importada",
+        "not_ready": "la transcripción aún no está lista",
+        "too_old": "demasiado antigua para importar",
+        "no_transcript": "sin transcripción ni notas",
+        "failed": "no se pudo importar"
+      },
+      "subject": "Importación lista: {outcomes} de {meetings}",
+      "title": "Tu importación está lista",
+      "body": "Corteza capturó {outcomes} de {meetings}. Quedaron guardados en tu espacio. Confirma los correctos y descarta el resto: Corteza aprende de eso.",
+      "review": "Revisar en Corteza →"
+    }
+  },
+  "unsubscribe": {
+    "invalidTitle": "Enlace no válido",
+    "invalidBody": "Este enlace para darte de baja no es válido o está incompleto. Usa el enlace de tu correo más reciente.",
+    "daily": {
+      "confirmTitle": "¿Darte de baja de los resúmenes de la mañana?",
+      "confirmBody": "Dejarás de recibir los resúmenes de la mañana de esta organización.",
+      "doneBody": "Ya no recibirás los resúmenes de la mañana de {workspace}."
+    },
+    "weekly": {
+      "confirmTitle": "¿Darte de baja de los resúmenes semanales?",
+      "confirmBody": "Dejarás de recibir los resúmenes semanales de esta organización.",
+      "doneBody": "Ya no recibirás los resúmenes semanales de {workspace}."
+    },
+    "button": "Darme de baja",
+    "thisWorkspace": "esta organización",
+    "doneTitle": "Listo, te diste de baja",
+    "errorTitle": "Algo salió mal",
+    "errorBody": "Inténtalo de nuevo en un momento."
   }
 }

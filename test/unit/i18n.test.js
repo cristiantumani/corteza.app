@@ -87,3 +87,29 @@ test('every app page renders in both languages with no key left unfilled', () =>
     }
   }
 });
+
+test('the other emails in Spanish', async () => {
+  const mailer = require('../../src/utils/n8n-client');
+  const sent = [];
+  const realFetch = global.fetch;
+  const saved = process.env.RESEND_API_KEY;
+  process.env.RESEND_API_KEY = 'test';
+  global.fetch = async (url, options) => { sent.push(JSON.parse(options.body)); return { ok: true, json: async () => ({ id: 'e1' }) }; };
+  try {
+    await mailer.sendImportSummaryEmail({ email: 'a@x.co', lang: 'es', job: { total: 2, outcomes_by_type: { decision: 3 }, action_items_created: 1, items: [{ title: 'Reunión', status: 'too_old' }] } });
+    await mailer.sendInviteEmail({ email: 'b@x.co', inviter_name: 'Ana', workspace_name: 'Acme', role: 'member', invite_url: 'https://x/i', expires_days: 7, lang: 'es' });
+    await mailer.sendBetaWelcomeEmail({ email: 'c@x.co', name: 'Lucía', login_url: 'https://x/l', lang: 'es' });
+    await mailer.sendWeeklyDigestEmail({ email: 'd@x.co', workspace_name: 'Acme', unsubscribe_url: 'u', lang: 'es', stats: { thisWeek: 3, change: 1, periodLabel: '28 sept – 4 oct', recent: [], byType: [['decision', 3]], topContributors: [], topTags: [] } });
+  } finally {
+    global.fetch = realFetch;
+    if (saved === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = saved;
+  }
+  assert.equal(sent[0].subject, 'Importación lista: 3 decisiones y 1 pendiente de 2 reuniones');
+  assert.ok(sent[0].html.includes('demasiado antigua para importar'));
+  assert.equal(sent[1].subject, 'Ana te invitó a Acme en Corteza');
+  assert.ok(sent[1].html.includes('<strong>Ana</strong> te invitó a unirte a <strong>Acme</strong>'));
+  assert.equal(sent[2].subject, 'Ya tienes acceso: te damos la bienvenida a la beta de Corteza');
+  assert.ok(sent[2].html.includes('¡Te damos la bienvenida a la beta, Lucía!'));
+  assert.equal(sent[3].subject, 'Resumen semanal: 3 decisiones en Acme');
+  assert.ok(sent[3].html.includes('Decisión') && sent[3].html.includes('vs. la semana anterior'));
+});

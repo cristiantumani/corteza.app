@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Corteza in Spanish (part 3: emails)
+- Emails arrive in the recipient's language: the morning summary (the partner's line too), import summary, weekly digest, invitations (in the inviter's language) and the beta welcome (in the approver's language, or `--lang es`). The unsubscribe pages too
+- People who never picked a language get emails in their browser's language: the app remembers it when they open a page
+
 ### Added - Corteza in Spanish (part 2)
 - In Spanish now: Action items, Questions & risks, Search, Settings (Google Meet, importing past meetings, context for the AI, morning partner, spaces, invitations, data) and the sign-in page. Only the emails remain
 - Old wording replaced while translating: "Synthesized Intelligence" is now "Answer", "Evidence Sources" is "Sources", and the "Enterprise Edition" footer is gone

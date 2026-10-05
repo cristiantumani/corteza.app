@@ -2,9 +2,16 @@
  * Sends emails via Resend REST API directly (no SDK dependency)
  */
 
-// Use native fetch (Node 18+) or fall back to node-fetch v2
-const fetch = globalThis.fetch || require('node-fetch');
+// Native fetch (Node 18+) or node-fetch v2, looked up per call (tests replace globalThis.fetch)
+/** @param {string} url @param {Object} options */
+const fetch = (url, options) => (globalThis.fetch || require('node-fetch'))(url, options);
 const { describeOutcomes } = require('../core/decisions/types');
+const { translate } = require('../core/i18n/i18n');
+
+/** Texts of one email in the recipient's language (public/i18n, keys email.*) */
+const textsIn = lang => (key, vars) => translate(lang, key, vars);
+/** Locale for dates in an email */
+const localeOf = lang => (lang === 'es' ? 'es' : 'en-US');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 /** Where beta testers can chip in for the AI costs (morning summary footer; the app sidebar links it too) */
@@ -144,32 +151,33 @@ async function sendReengagementEmail({ email, workspace_name, install_date }) {
 }
 
 /**
- * Sends workspace invitation email via Resend
+ * Sends workspace invitation email via Resend, in the inviter's language (lang)
  */
-async function sendInviteEmail({ email, inviter_name, workspace_name, role, invite_url, expires_days }) {
+async function sendInviteEmail({ email, inviter_name, workspace_name, role, invite_url, expires_days, lang = 'en' }) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('⚠️  RESEND_API_KEY not configured — skipping invite email');
     return { success: false, reason: 'resend_not_configured' };
   }
 
-  const roleDescription = role === 'admin' ? 'an admin' : 'a member';
+  const t = textsIn(lang);
+  const bold = text => `<strong>${escapeHtml(text)}</strong>`;
 
   const result = await sendEmail({
     to: email,
-    subject: `${inviter_name} invited you to join ${workspace_name} on Corteza`,
+    subject: t('email.invite.subject', { name: inviter_name, workspace: workspace_name }),
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; color: #111;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">You're invited! 🎉</h1>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${escapeHtml(t('email.invite.title'))} 🎉</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
-          <strong>${inviter_name}</strong> has invited you to join <strong>${workspace_name}</strong> on Corteza as ${roleDescription}.
+          ${escapeHtml(t(role === 'admin' ? 'email.invite.bodyAdmin' : 'email.invite.bodyMember')).replace('{name}', bold(inviter_name)).replace('{workspace}', bold(workspace_name))}
         </p>
-        <a href="${invite_url}"
+        <a href="${escapeHtml(invite_url)}"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Accept invitation →
+          ${escapeHtml(t('email.invite.accept'))}
         </a>
         <p style="font-size: 13px; color: #999; margin: 32px 0 0;">
-          This invitation expires in ${expires_days} days. If you didn't expect this, you can safely ignore this email.
+          ${escapeHtml(t('email.invite.expires', { count: expires_days }))}
         </p>
       </div>
     `
@@ -223,12 +231,15 @@ async function sendFeedbackNotificationEmail({ to, type, feedback, user_name, us
  * @param {string} params.workspace_name
  * @param {Object} params.stats - Output of buildDigestStats (jobs/weekly-digest.js)
  * @param {string} params.unsubscribe_url - Signed link that turns the digest off for this member
+ * @param {string} [params.lang] - the member's language
  */
-async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe_url }) {
+async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe_url, lang = 'en' }) {
+  const t = textsIn(lang);
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
   const changeText = stats.change > 0
-    ? `▲ ${stats.change} vs previous week`
-    : stats.change < 0 ? `▼ ${Math.abs(stats.change)} vs previous week` : 'Same as previous week';
+    ? `▲ ${t('email.weekly.vsPrevious', { count: stats.change })}`
+    : stats.change < 0 ? `▼ ${t('email.weekly.vsPrevious', { count: Math.abs(stats.change) })}` : t('email.weekly.same');
+  const typeName = type => (['decision', 'action_item', 'open_question', 'risk', 'explanation', 'context', 'learning', 'assumption'].includes(type) ? t(`types.${type}`) : type);
 
   const row = (label, value) =>
     `<tr><td style="padding: 6px 0; color: #555;">${escapeHtml(label)}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(value)}</td></tr>`;
@@ -240,36 +251,36 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
   const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px;">Your weekly decision digest</h1>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px;">${escapeHtml(t('email.weekly.title'))}</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(stats.periodLabel)}</p>
 
         <div style="background: #f6f8fa; border-radius: 12px; padding: 20px; text-align: center;">
           <div style="font-size: 36px; font-weight: 800;">${stats.thisWeek}</div>
-          <div style="font-size: 14px; color: #555;">decision${stats.thisWeek === 1 ? '' : 's'} logged · ${escapeHtml(changeText)}</div>
+          <div style="font-size: 14px; color: #555;">${escapeHtml(t('email.weekly.logged', { count: stats.thisWeek }))} · ${escapeHtml(changeText)}</div>
         </div>
-        ${section('Latest decisions', stats.recent.length ? `<ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.5;">${stats.recent.map(d =>
+        ${section(escapeHtml(t('email.weekly.latest')), stats.recent.length ? `<ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.5;">${stats.recent.map(d =>
           `<li style="margin-bottom: 8px;">${escapeHtml(d.text)} <span style="color: #888;">— ${escapeHtml(d.creator)}${d.space ? `, ${escapeHtml(d.space)}` : ''}</span></li>`
         ).join('')}</ul>` : '')}
-        ${section('By type', stats.byType.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.byType.map(([type, count]) => row(type, count)).join('')}</table>` : '')}
-        ${section('Top contributors', stats.topContributors.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.topContributors.map(([name, count]) => row(name, count)).join('')}</table>` : '')}
-        ${section('Top tags', stats.topTags.length ? `<p style="margin: 0; font-size: 13px; line-height: 2;">${stats.topTags.map(([tag, count]) =>
+        ${section(escapeHtml(t('email.weekly.byType')), stats.byType.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.byType.map(([type, count]) => row(typeName(type), count)).join('')}</table>` : '')}
+        ${section(escapeHtml(t('email.weekly.contributors')), stats.topContributors.length ? `<table style="width: 100%; font-size: 14px; border-collapse: collapse;">${stats.topContributors.map(([name, count]) => row(name, count)).join('')}</table>` : '')}
+        ${section(escapeHtml(t('email.weekly.tags')), stats.topTags.length ? `<p style="margin: 0; font-size: 13px; line-height: 2;">${stats.topTags.map(([tag, count]) =>
           `<span style="background: #eef0ff; color: #3f3fb0; border-radius: 12px; padding: 4px 10px; margin-right: 6px; white-space: nowrap;">${escapeHtml(tag)} (${count})</span>`
         ).join('')}</p>` : '')}
 
         <a href="${dashboardUrl}/dashboard"
            style="display: inline-block; margin-top: 32px; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Open dashboard →
+          ${escapeHtml(t('meet.import.openHome'))}
         </a>
         <p style="font-size: 12px; color: #999; margin: 32px 0 0;">
-          You get this because you're a member of ${escapeHtml(workspace_name)} on Corteza.
-          <a href="${unsubscribe_url}" style="color: #999;">Unsubscribe from weekly digests</a>.
+          ${escapeHtml(t('email.weekly.why', { workspace: workspace_name }))}
+          <a href="${unsubscribe_url}" style="color: #999;">${escapeHtml(t('email.weekly.unsubscribe'))}</a>.
         </p>
       </div>
     `;
 
   const result = await sendEmail({
     to: email,
-    subject: `Weekly digest: ${stats.thisWeek} decision${stats.thisWeek === 1 ? '' : 's'} in ${workspace_name}`,
+    subject: t('email.weekly.subject', { count: stats.thisWeek, workspace: workspace_name }),
     html,
     headers: {
       'List-Unsubscribe': `<${unsubscribe_url}>`,
@@ -288,33 +299,33 @@ async function sendWeeklyDigestEmail({ email, workspace_name, stats, unsubscribe
  * @param {string} [params.name] - first name
  * @param {string} params.login_url
  * @param {string} [params.reply_to] - another address for replies (default: the sender)
+ * @param {string} [params.lang] - 'en' | 'es'
  */
-async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
+async function sendBetaWelcomeEmail({ email, name, login_url, reply_to, lang = 'en' }) {
+  const t = textsIn(lang);
   const result = await sendEmail({
     to: email,
-    subject: 'You’re in: welcome to the Corteza beta',
+    subject: t('email.welcome.subject'),
     from: betaFrom(),
     replyTo: reply_to || undefined,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #111; line-height: 1.6;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px;">Welcome to the beta${name ? `, ${escapeHtml(name)}` : ''}!</h1>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px;">${escapeHtml(name ? t('email.welcome.titleNamed', { name }) : t('email.welcome.title'))}</h1>
         <p style="font-size: 15px; margin: 0 0 16px;">
-          You’re one of the first teams on Corteza. From your next meeting on, decisions stick,
-          commitments get followed until they’re done, and every meeting gets a little better.
+          ${escapeHtml(t('email.welcome.body'))}
         </p>
         <p style="font-size: 15px; margin: 0 0 28px;">
-          Sign in with the Google account for <strong>${escapeHtml(email)}</strong> to set up your workspace.
-          It takes a couple of minutes.
+          ${escapeHtml(t('email.welcome.signIn')).replace('{email}', `<strong>${escapeHtml(email)}</strong>`)}
         </p>
         <a href="${escapeHtml(login_url)}"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Sign in with Google →
+          ${escapeHtml(t('email.welcome.button'))}
         </a>
         <p style="font-size: 15px; margin: 32px 0 0;">
-          Questions or feedback? Just reply to this email, it reaches us directly.
+          ${escapeHtml(t('email.welcome.reply'))}
         </p>
-        <p style="font-size: 15px; margin: 16px 0 0;">The Corteza team</p>
+        <p style="font-size: 15px; margin: 16px 0 0;">${escapeHtml(t('email.welcome.team'))}</p>
       </div>
     `
   });
@@ -323,46 +334,42 @@ async function sendBetaWelcomeEmail({ email, name, login_url, reply_to }) {
   return { success: true, email_id: result.id };
 }
 
-const IMPORT_ITEM_LABELS = {
-  already_imported: 'already imported',
-  not_ready: 'transcript not ready yet',
-  too_old: 'too old to import',
-  no_transcript: 'no transcript or notes',
-  failed: 'couldn’t be imported'
-};
+const IMPORT_ITEM_STATUSES = ['already_imported', 'not_ready', 'too_old', 'no_transcript', 'failed'];
 
 /**
  * Tells someone their "Import past meetings" job finished, with what it captured
  * @param {Object} params
  * @param {string} params.email
  * @param {Object} params.job - finished meet_imports document: { total, items, outcomes_by_type, action_items_created }
+ * @param {string} [params.lang] - the person's language
  */
-async function sendImportSummaryEmail({ email, job }) {
+async function sendImportSummaryEmail({ email, job, lang = 'en' }) {
+  const t = textsIn(lang);
   const dashboardUrl = process.env.BASE_URL || 'https://app.corteza.app';
   const counts = { ...(job.outcomes_by_type || {}), action_item: job.action_items_created || 0 };
-  const summary = describeOutcomes(counts) || 'no outcomes';
-  const meetings = `${job.total} meeting${job.total === 1 ? '' : 's'}`;
+  const summary = describeOutcomes(counts, lang) || t('email.import.none');
+  const meetings = t('capture.meetings', { count: job.total });
   const rows = (job.items || []).map(item => {
     const result = item.status === 'completed'
-      ? (describeOutcomes({ ...(item.outcomes_by_type || {}), action_item: item.action_items_created || 0 }) || 'no outcomes')
-      : (IMPORT_ITEM_LABELS[item.status] || item.status);
-    return `<tr><td style="padding: 6px 12px 6px 0; vertical-align: top;">${escapeHtml(item.title || 'Meeting')}</td><td style="padding: 6px 0; color: ${item.status === 'failed' ? '#b3261e' : '#666'}; white-space: nowrap; vertical-align: top;">${escapeHtml(result)}</td></tr>`;
+      ? (describeOutcomes({ ...(item.outcomes_by_type || {}), action_item: item.action_items_created || 0 }, lang) || t('email.import.none'))
+      : (IMPORT_ITEM_STATUSES.includes(item.status) ? t(`email.import.status.${item.status}`) : item.status);
+    return `<tr><td style="padding: 6px 12px 6px 0; vertical-align: top;">${escapeHtml(item.title || t('capture.meeting'))}</td><td style="padding: 6px 0; color: ${item.status === 'failed' ? '#b3261e' : '#666'}; white-space: nowrap; vertical-align: top;">${escapeHtml(result)}</td></tr>`;
   }).join('');
 
   const result = await sendEmail({
     to: email,
-    subject: `Import done: ${summary} from ${meetings}`,
+    subject: t('email.import.subject', { outcomes: summary, meetings }),
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111;">
         <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
-        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">Your import is done</h1>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">${escapeHtml(t('email.import.title'))}</h1>
         <p style="font-size: 15px; color: #555; margin: 0 0 24px;">
-          Corteza captured <strong>${escapeHtml(summary)}</strong> from ${escapeHtml(meetings)}. They're saved in your space. Confirm the ones that are right and dismiss the rest: Corteza learns from it.
+          ${escapeHtml(t('email.import.body', { meetings })).replace('{outcomes}', `<strong>${escapeHtml(summary)}</strong>`)}
         </p>
         <table style="border-collapse: collapse; font-size: 14px; width: 100%; margin: 0 0 28px;">${rows}</table>
         <a href="${dashboardUrl}/dashboard?review=pending"
            style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
-          Review in Corteza →
+          ${escapeHtml(t('email.import.review'))}
         </a>
       </div>
     `
@@ -376,39 +383,42 @@ async function sendImportSummaryEmail({ email, job }) {
  * "Assigned to you by colleagues" line of the morning digest: action items that colleagues'
  * meetings named the person as owner of (core/actions/colleague-assignments). Names only, no text.
  * @param {{ name: string, count: number }[]} [assignedBy]
+ * @param {string} [lang]
  * @returns {string} HTML, empty when there are none
  */
-function assignedByHtml(assignedBy) {
+function assignedByHtml(assignedBy, lang = 'en') {
   if (!Array.isArray(assignedBy) || assignedBy.length === 0) return '';
+  const t = textsIn(lang);
   const total = assignedBy.reduce((sum, row) => sum + row.count, 0);
   const names = assignedBy.map(row => `${escapeHtml(row.name)} (${row.count})`).join(', ');
   return `<p style="font-size: 14px; color: #1b1b1d; background: #eef1fb; border-radius: 8px; padding: 10px 14px; margin: 12px 0 0;">
-              <strong>${total} new action item${total === 1 ? '' : 's'} assigned to you by colleagues.</strong> They came from meetings captured by ${names}.
+              <strong>${escapeHtml(t('actions.fromColleagues.title', { count: total }))}</strong> ${escapeHtml(t('email.digest.assignedFrom')).replace('{names}', names)}
             </p>`;
 }
 
 /**
  * Subject line of the morning digest: the numbers since the last one, most important first
  * @param {Object} summary - see sendDailyDigestEmail
+ * @param {string} [lang] - the recipient's language
  * @returns {string}
  */
-function dailyDigestSubject(summary) {
-  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+function dailyDigestSubject(summary, lang = 'en') {
+  const t = textsIn(lang);
   const today = [];
-  if (summary.dueToday) today.push(`${summary.dueToday} due today`);
-  if (summary.overdue) today.push(`${summary.overdue} overdue`);
+  if (summary.dueToday) today.push(t('email.digest.subject.dueToday', { count: summary.dueToday }));
+  if (summary.overdue) today.push(t('email.digest.subject.overdue', { count: summary.overdue }));
   const prepCount = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.length : 0;
-  if (prepCount) today.push(`${prepCount} meeting${prepCount === 1 ? '' : 's'} to prepare`);
+  if (prepCount) today.push(t('email.digest.subject.prep', { count: prepCount }));
   const since = [];
-  if (summary.meetings) since.push(plural(summary.meetings, 'meeting'));
+  if (summary.meetings) since.push(t('capture.meetings', { count: summary.meetings }));
   const decisions = (summary.outcomes && summary.outcomes.decision) || 0;
-  if (decisions) since.push(plural(decisions, 'decision'));
-  if (summary.newActionItems) since.push(plural(summary.newActionItems, 'new action item'));
+  if (decisions) since.push(t('outcomeCounts.decision', { count: decisions }));
+  if (summary.newActionItems) since.push(t('email.digest.subject.newActionItems', { count: summary.newActionItems }));
 
   const parts = [];
-  if (today.length) parts.push(`Your day: ${today.join(', ')}`);
-  if (since.length) parts.push(`since ${summary.since || 'yesterday'}: ${since.join(', ')}`);
-  if (!parts.length) return 'Plan your day with Corteza';
+  if (today.length) parts.push(t('email.digest.subject.yourDay', { items: today.join(', ') }));
+  if (since.length) parts.push(t('email.digest.subject.since', { since: summary.since || t('email.digest.yesterday'), items: since.join(', ') }));
+  if (!parts.length) return t('email.digest.subject.plan');
   const subject = parts.join(' · ');
   return subject.charAt(0).toUpperCase() + subject.slice(1);
 }
@@ -429,12 +439,13 @@ function dailyDigestSubject(summary) {
  * @param {{ voice: string, subject: string, opener: string, followUp: string }|null} [params.partner] - the
  *   morning partner's line (core/digest/voice): it becomes the subject and opens the email, and the counts
  *   move to the preheader. null for Classic
+ * @param {string} [params.lang] - the recipient's language ('en' | 'es')
  */
-async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url, partner = null }) {
+async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscribe_url, partner = null, lang = 'en' }) {
   const result = await sendEmail({
     to: email,
-    subject: partner ? partner.subject : dailyDigestSubject(summary),
-    html: dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner }),
+    subject: partner ? partner.subject : dailyDigestSubject(summary, lang),
+    html: dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner, lang }),
     headers: {
       'List-Unsubscribe': `<${unsubscribe_url}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
@@ -445,10 +456,11 @@ async function sendDailyDigestEmail({ email, workspace_name, summary, unsubscrib
 
 /**
  * HTML of the morning summary (see sendDailyDigestEmail). Without a partner it's the Classic email.
- * @param {{ workspace_name: string, summary: Object, unsubscribe_url: string, partner?: { voice: string, opener: string, followUp: string }|null }} params
+ * @param {{ workspace_name: string, summary: Object, unsubscribe_url: string, partner?: { voice: string, opener: string, followUp: string }|null, lang?: string }} params
  * @returns {string}
  */
-function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = null }) {
+function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = null, lang = 'en' }) {
+  const t = textsIn(lang);
   const appUrl = process.env.BASE_URL || 'https://app.corteza.app';
   // With a partner, links say which voice brought the click (?src=digest&voice=…); Classic links stay as they were
   const link = path => (partner
@@ -457,9 +469,8 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
   const baseUrl = appUrl;
   const outcomes = summary.outcomes || {};
   const decisions = outcomes.decision || 0;
-  const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 });
-  const plural = (count, word) => `${word}${count === 1 ? '' : 's'}`;
-  const shortDate = date => new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const otherOutcomes = describeOutcomes({ ...outcomes, decision: 0 }, lang);
+  const shortDate = date => new Date(`${date}T12:00:00Z`).toLocaleDateString(localeOf(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
 
   const button = (href, label) => `
@@ -479,32 +490,32 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
   const items = Array.isArray(summary.planItems) ? summary.planItems : [];
   const itemRows = items.map(item => {
     const overdue = summary.today && item.due_date < summary.today;
-    const when = overdue ? `Overdue · was due ${shortDate(item.due_date)}` : 'Due today';
+    const when = overdue ? t('email.digest.overdueWas', { date: shortDate(item.due_date) }) : t('due.today');
     return row({
       box: overdue ? '#ba1a1a' : '#3953bd',
       title: escapeHtml(clip(String(item.text), 160)) + (item.next_step_on
-        ? `<div style="font-size: 13px; color: #3953bd; margin-top: 2px;">Next step on: ${escapeHtml(clip(String(item.next_step_on), 120))}</div>` : ''),
+        ? `<div style="font-size: 13px; color: #3953bd; margin-top: 2px;">${escapeHtml(t('email.digest.nextStepOn', { question: clip(String(item.next_step_on), 120) }))}</div>` : ''),
       meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`
         // The AI may have picked the wrong owner: with a partner pushing, offer the way out (owners change in Corteza)
-        + (partner ? ` · <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #6b6d78;">Not mine?</a>` : ''),
+        + (partner ? ` · <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #6b6d78;">${escapeHtml(t('email.digest.notMine'))}</a>` : ''),
       href: `/actions?item=${encodeURIComponent(item.item_id)}`,
-      label: 'Open'
+      label: t('email.digest.open')
     });
   });
   const dueCount = (summary.dueToday || 0) + (summary.overdue || 0);
   const allDue = summary.dueToday && summary.overdue ? '/actions' : `/actions?due=${summary.overdue ? 'overdue' : 'today'}`;
   const more = dueCount > items.length ? `
           <tr><td colspan="3" style="padding: 0 0 14px 26px;">
-            <a href="${link(allDue)}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">See all ${dueCount} due or overdue →</a>
+            <a href="${link(allDue)}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(t('email.digest.seeAll', { count: dueCount }))}</a>
           </td></tr>` : '';
   const reminders = [
-    summary.toReview ? row({ box: '#c5c6d0', title: `${summary.toReview} ${plural(summary.toReview, 'outcome')} to review`, meta: 'Confirm the right ones, dismiss the rest', href: '/dashboard?review=pending', label: 'Review' }) : '',
-    summary.noDueDate ? row({ box: '#c5c6d0', title: `${summary.noDueDate} action ${plural(summary.noDueDate, 'item')} without a due date`, meta: 'Set a date so they don’t slip', href: '/actions?due=none', label: 'Set dates' }) : ''
+    summary.toReview ? row({ box: '#c5c6d0', title: escapeHtml(t('email.digest.toReview', { count: summary.toReview })), meta: escapeHtml(t('email.digest.toReviewHelp')), href: '/dashboard?review=pending', label: t('common.review') }) : '',
+    summary.noDueDate ? row({ box: '#c5c6d0', title: escapeHtml(t('email.digest.noDueDate', { count: summary.noDueDate })), meta: escapeHtml(t('email.digest.noDueDateHelp')), href: '/actions?due=none', label: t('email.digest.setDates') }) : ''
   ].filter(Boolean);
 
   const divider = '<tr><td colspan="3" style="border-top: 1px solid #ebe7ec; font-size: 0; line-height: 0;">&nbsp;</td></tr>';
   const plateHtml = itemRows.length || reminders.length ? `
-        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: 0 0 4px;">On your plate today</h2>
+        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: 0 0 4px;">${escapeHtml(t('email.digest.plate'))}</h2>
         <table role="presentation" style="width: 100%; border-collapse: collapse;">
           ${[itemRows.join(divider) + more, ...reminders].filter(Boolean).join(divider)}
         </table>` : '';
@@ -512,20 +523,20 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
   // Today's meetings: who's in them and the open items with those people (core/briefs/meeting-prep)
   const prep = Array.isArray(summary.meetingPrep) ? summary.meetingPrep : [];
   const prepHtml = prep.length ? `
-        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: ${plateHtml ? '28px' : '0'} 0 4px;">Prepare for today's meetings</h2>
-        <p style="font-size: 14px; color: #6b6d78; margin: 0 0 8px;">Open action items with the people you're meeting.</p>
+        <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: ${plateHtml ? '28px' : '0'} 0 4px;">${escapeHtml(t('email.digest.prep'))}</h2>
+        <p style="font-size: 14px; color: #6b6d78; margin: 0 0 8px;">${escapeHtml(t('email.digest.prepHelp'))}</p>
         ${prep.map(meeting => `
         <div style="border: 1px solid #ebe7ec; border-radius: 10px; padding: 14px 16px; margin-top: 10px;">
-          <div style="font-size: 15px; font-weight: 700; color: #1b1b1d;">${escapeHtml(meeting.time || '')} · ${escapeHtml(clip(String(meeting.title || 'Meeting'), 80))}</div>
-          <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">With ${escapeHtml(clip((meeting.people || []).join(', '), 120))}</div>
+          <div style="font-size: 15px; font-weight: 700; color: #1b1b1d;">${escapeHtml(meeting.time || '')} · ${escapeHtml(clip(String(meeting.title || t('capture.meeting')), 80))}</div>
+          <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">${escapeHtml(t('email.digest.with', { people: clip((meeting.people || []).join(', '), 120) }))}</div>
           ${(meeting.items || []).map(item => `
           <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
             <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
-            <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : 'You'}${!item.due_date ? '' : summary.today && item.due_date < summary.today
-              ? ` · <span style="color: #ba1a1a; font-weight: 600;">overdue since ${shortDate(item.due_date)}</span>`
-              : ` · due ${shortDate(item.due_date)}`}</div>
+            <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : escapeHtml(t('email.digest.you'))}${!item.due_date ? '' : summary.today && item.due_date < summary.today
+              ? ` · <span style="color: #ba1a1a; font-weight: 600;">${escapeHtml(t('email.digest.overdueSince', { date: shortDate(item.due_date) }))}</span>`
+              : ` · ${escapeHtml(t('email.digest.dueOn', { date: shortDate(item.due_date) }))}`}</div>
           </div>`).join('')}
-          ${meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">and ${meeting.more} more</div>` : ''}
+          ${meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">${escapeHtml(t('email.digest.more', { count: meeting.more }))}</div>` : ''}
         </div>`).join('')}` : '';
 
   const tile = (value, label) => `
@@ -533,44 +544,44 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
               <div style="font-size: 26px; font-weight: 800; color: #1b1b1d;">${value}</div>
               <div style="font-size: 13px; color: #6b6d78;">${escapeHtml(label)}</div>
             </td>`;
-  const since = escapeHtml(summary.since || 'yesterday');
+  const since = escapeHtml(t('email.digest.sinceHeading', { since: summary.since || t('email.digest.yesterday') }));
   // Partner: its line opens the email; the counts (Classic's subject) become the inbox preview text
   const preheader = partner ? `
-        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escapeHtml(dailyDigestSubject(summary))}</div>` : '';
+        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escapeHtml(dailyDigestSubject(summary, lang))}</div>` : '';
   const heading = partner
     ? `<h1 style="font-size: 21px; font-weight: 700; margin: 0 0 6px;">${escapeHtml(partner.opener)}</h1>
             <p style="font-size: 16px; color: #1b1b1d; margin: 0 0 8px;">${escapeHtml(partner.followUp)}</p>`
-    : '<h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">Good morning. Here\'s your day.</h1>';
+    : `<h1 style="font-size: 21px; font-weight: 700; margin: 0 0 4px;">${escapeHtml(t('email.digest.goodMorning'))}</h1>`;
 
   return `
       <div style="background: #eef1fb; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b1b1d;">${preheader}
         <div style="max-width: 580px; margin: 0 auto; background: #fff; border: 1px solid #e4e1e8; border-top: 6px solid #3953bd; border-radius: 12px; overflow: hidden;">
           <div style="padding: 20px 28px; border-bottom: 1px solid #ebe7ec;">
             <img src="https://corteza.app/favicon-96x96.png" alt="" width="24" height="24" style="vertical-align: middle; border-radius: 6px; margin-right: 10px;" />
-            <span style="font-size: 17px; font-weight: 700; vertical-align: middle;">Your morning summary</span>
+            <span style="font-size: 17px; font-weight: 700; vertical-align: middle;">${escapeHtml(t('settings.summary.title'))}</span>
           </div>
           <div style="padding: 24px 28px 28px;">
             ${heading}
             <p style="font-size: 14px; color: #6b6d78; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
             ${plateHtml}
             ${prepHtml}
-            <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">Since ${since}</h2>
+            <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">${since}</h2>
             <table role="presentation" style="width: 100%; border-collapse: separate; border-spacing: 6px 0; margin: 0 -6px;">
-              <tr>${tile(summary.meetings, plural(summary.meetings, 'meeting'))}${tile(decisions, plural(decisions, 'decision'))}${tile(summary.newActionItems, `new action ${plural(summary.newActionItems, 'item')}`)}</tr>
+              <tr>${tile(summary.meetings, t('email.digest.tile.meetings', { count: summary.meetings }))}${tile(decisions, t('email.digest.tile.decisions', { count: decisions }))}${tile(summary.newActionItems, t('email.digest.tile.newActionItems', { count: summary.newActionItems }))}</tr>
             </table>
-            ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">Also captured: ${escapeHtml(otherOutcomes)}.</p>` : ''}
-            ${assignedByHtml(summary.assignedBy)}
+            ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">${escapeHtml(t('email.digest.alsoCaptured', { outcomes: otherOutcomes }))}</p>` : ''}
+            ${assignedByHtml(summary.assignedBy, lang)}
             <a href="${link('/actions')}"
                style="display: inline-block; margin-top: 28px; background: #3953bd; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
-              Plan my day in Corteza →
+              ${escapeHtml(t('email.digest.planButton'))}
             </a>
           </div>
         </div>
         <p style="max-width: 580px; margin: 20px auto 0; font-size: 12px; color: #8a8c96; text-align: center;">
-          Finding Corteza useful?
-          <a href="${SUPPORT_URL}" style="color: #3953bd; font-weight: 600; text-decoration: none; white-space: nowrap;"><img src="${baseUrl}/images/bmc-cup.png" alt="" width="10" height="14" style="vertical-align: -2px; margin-right: 4px; border: 0;">Buy me a coffee</a>, it helps pay for the AI.<br><br>
-          One email each weekday morning, only when there's something new or due. You get it because you're a member of ${escapeHtml(workspace_name)} on Corteza.
-          Change the time zone in Settings, or <a href="${unsubscribe_url}" style="color: #8a8c96;">unsubscribe from morning summaries</a>.
+          ${escapeHtml(t('email.digest.footer.useful'))}
+          <a href="${SUPPORT_URL}" style="color: #3953bd; font-weight: 600; text-decoration: none; white-space: nowrap;"><img src="${baseUrl}/images/bmc-cup.png" alt="" width="10" height="14" style="vertical-align: -2px; margin-right: 4px; border: 0;">${escapeHtml(t('nav.coffee'))}</a>${escapeHtml(t('email.digest.footer.helps'))}<br><br>
+          ${escapeHtml(t('email.digest.footer.why', { workspace: workspace_name }))}
+          ${escapeHtml(t('email.digest.footer.change'))} <a href="${unsubscribe_url}" style="color: #8a8c96;">${escapeHtml(t('email.digest.footer.unsubscribe'))}</a>.
         </p>
       </div>
     `;

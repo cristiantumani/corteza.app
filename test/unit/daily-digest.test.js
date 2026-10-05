@@ -125,3 +125,20 @@ test('with a morning partner, its line is the subject and opens the email; the c
   assert.ok(html.includes('/actions?item=a1&src=digest&voice=sarcastic'), 'clicks say which voice brought them');
   assert.ok(html.includes('Not mine?'));
 });
+
+test('in Spanish: the whole summary, subject and dates', () => {
+  const { dailyDigestHtml, dailyDigestSubject } = require('../../src/utils/n8n-client');
+  const summary = {
+    dayLabel: 'lunes, 5 de octubre', today: '2026-10-05', since: 'el viernes', meetings: 2, outcomes: { decision: 1, risk: 1 },
+    newActionItems: 1, dueToday: 1, toReview: 2, overdue: 1, noDueDate: 1, assignedBy: [{ name: 'Bruno', count: 1 }], meetingPrep: [],
+    planItems: [{ item_id: 'a1', text: 'Enviar la propuesta', due_date: '2026-10-01', meeting: null, next_step_on: '¿Quién aprueba?' }]
+  };
+  assert.equal(dailyDigestSubject(summary, 'es'), 'Tu día: 1 vence hoy, 1 atrasado · desde el viernes: 2 reuniones, 1 decisión, 1 pendiente nuevo');
+  const html = dailyDigestHtml({ workspace_name: 'Acme', summary, unsubscribe_url: 'https://x/u', lang: 'es' });
+  for (const text of ['Buenos días. Este es tu día.', 'Lo que tienes hoy', 'Atrasado · vencía el 1 oct', 'Siguiente paso para: ¿Quién aprueba?',
+    '2 resultados por revisar', '1 pendiente sin fecha', 'Desde el viernes', 'También se capturó: 1 riesgo.', '1 pendiente nuevo que te asignaron tus colegas.',
+    'Planificar mi día en Corteza', 'date de baja de los resúmenes de la mañana']) {
+    assert.ok(html.includes(text), `missing: ${text}`);
+  }
+  assert.ok(!/Good morning|On your plate|Overdue/.test(html), 'no English left');
+});

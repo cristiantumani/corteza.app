@@ -27,6 +27,8 @@ declare module 'express-session' {
     isDemo: boolean;
     /** Google sign-in in progress (src/auth/routes.js) */
     oauth: { state: string; nonce: string; started_at: number; inviteId?: string | null; returnTo?: string | null };
+    /** Browser language last saved on the membership (core/users/language rememberBrowserLanguage) */
+    browser_language: 'en' | 'es';
     /** "Connect Google Meet" in progress (src/integrations/google/routes.js) */
     googleConnect: { state: string; nonce: string; started_at: number };
   }

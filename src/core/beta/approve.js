@@ -11,9 +11,10 @@ const beta = require('./beta-access');
  * @param {string} [params.name]
  * @param {string} [params.company]
  * @param {string} params.approvedVia - 'email_link' | 'script'
+ * @param {'en'|'es'} [params.lang] - language of the welcome email
  * @returns {Promise<{ alreadyApproved: boolean, welcome: 'sent'|'already_sent'|'failed'|'not_configured', error?: string }>}
  */
-async function approveBetaTester({ email, name, company, approvedVia }) {
+async function approveBetaTester({ email, name, company, approvedVia, lang = 'en' }) {
   const { entry, alreadyApproved } = await beta.approve({ email, name, company, approvedVia });
   console.log(`🎟️  Beta ${alreadyApproved ? 'already approved' : 'approved'}: ${entry.email} (${approvedVia})`);
 
@@ -26,7 +27,8 @@ async function approveBetaTester({ email, name, company, approvedVia }) {
       name: entry.name || name,
       login_url: `${config.app.baseUrl}/auth/login`,
       // Sent from Cristian's address, so replies reach him; BETA_REPLY_TO sends them elsewhere
-      reply_to: (process.env.BETA_REPLY_TO || '').split(',')[0].trim() || undefined
+      reply_to: (process.env.BETA_REPLY_TO || '').split(',')[0].trim() || undefined,
+      lang
     });
     return { alreadyApproved, welcome: 'sent' };
   } catch (error) {

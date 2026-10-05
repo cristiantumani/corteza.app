@@ -55,9 +55,19 @@ describe('app language: picked in Settings, else the browser\'s', { skip }, () =
     assert.equal((await db.collection('workspace_members').findOne({ user_id: 'UL' })).language, 'en');
     assert.equal(await require('../../src/core/users/language').getLanguage('WL', 'UL'), 'en', 'what sign-in reads');
 
+    const { getEmailLanguage, rememberBrowserLanguage } = require('../../src/core/users/language');
+    assert.equal(await getEmailLanguage('WL', 'UL'), 'en', 'emails use the pick');
+
     body = await (await call('PUT', { language: null }, { 'Accept-Language': 'es' })).json();
     assert.deepEqual([body.language, body.chosen], ['es', null], 'back to the browser\'s');
     assert.equal(session.user.language, undefined);
     assert.equal((await db.collection('workspace_members').findOne({ user_id: 'UL' })).language, undefined);
+
+    // Without a pick, opening a page remembers the browser's language for emails
+    const req = { session: { user: { workspace_id: 'WL', user_id: 'UL' } } };
+    rememberBrowserLanguage(req, 'es');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    assert.equal((await db.collection('workspace_members').findOne({ user_id: 'UL' })).browser_language, 'es');
+    assert.equal(await require('../../src/core/users/language').getEmailLanguage('WL', 'UL'), 'es');
   });
 });

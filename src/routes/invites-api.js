@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { getWorkspaceInvitesCollection, getWorkspaceMembersCollection, getWorkspaceAdminsCollection } = require('../config/database');
 const { sendInviteEmail } = require('../utils/n8n-client');
+const { requestLanguage } = require('../core/i18n/i18n');
 const { getUsableInvite, acceptInvite } = require('../core/invites/invite-service');
 const { track } = require('../integrations/posthog/client');
 
@@ -113,7 +114,8 @@ router.post('/api/invites', async (req, res) => {
           role: role,
           invite_url: inviteUrl,
           expires_days: expires_in_days || 30,
-          space_name: spaceName  // Include space name if inviting to specific space
+          space_name: spaceName, // Include space name if inviting to specific space
+          lang: requestLanguage(req) // the inviter's language: the new person has none yet
         });
         emailSent = emailResult.success;
         console.log('📧 Invite email sent to:', email, spaceName ? `(space: ${spaceName})` : '');

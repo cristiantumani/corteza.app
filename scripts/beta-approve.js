@@ -5,6 +5,7 @@
  * Usage:
  *   node scripts/beta-approve.js ana@acme.com                     # approve an email
  *   node scripts/beta-approve.js ana@acme.com --name Ana --welcome  # ...and send the welcome email
+ *   node scripts/beta-approve.js ana@acme.com --welcome --lang es    # the welcome email in Spanish (default English)
  *   node scripts/beta-approve.js acme.com                          # approve a whole Google Workspace domain
  *   node scripts/beta-approve.js --list                            # show the approved list
  */
@@ -21,7 +22,7 @@ function argument(name) {
 async function main() {
   const target = (process.argv[2] || '').trim().toLowerCase();
   if (!target || (target.startsWith('--') && target !== '--list')) {
-    console.error('Usage: node scripts/beta-approve.js <email|domain> [--name <first name>] [--welcome] | --list');
+    console.error('Usage: node scripts/beta-approve.js <email|domain> [--name <first name>] [--welcome] [--lang es] | --list');
     process.exit(1);
   }
 
@@ -34,7 +35,7 @@ async function main() {
     console.log(`\n${entries.length} approved`);
   } else if (target.includes('@')) {
     if (process.argv.includes('--welcome')) {
-      const result = await approveBetaTester({ email: target, name: argument('name'), approvedVia: 'script' });
+      const result = await approveBetaTester({ email: target, name: argument('name'), approvedVia: 'script', lang: argument('lang') === 'es' ? 'es' : 'en' });
       console.log(`Welcome email: ${result.welcome}${result.error ? ` (${result.error})` : ''}`);
     } else {
       const { alreadyApproved } = await beta.approve({ email: target, name: argument('name'), approvedVia: 'script' });
