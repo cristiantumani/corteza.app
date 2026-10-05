@@ -10,10 +10,11 @@ const { VOICES, SAMPLES, defaultVoice, resolveVoice } = require('./voice');
  * A person's morning partner setting, for Settings
  * @param {string} workspaceId
  * @param {string} userId
+ * @param {'en'|'es'} [lang] - language of the sample lines
  * @returns {Promise<{ voice: string, chosen: string|null, default_voice: string, workspace_enabled: boolean, voices: string[], samples: Record<string, string> }>}
  *   voice: what tomorrow's summary uses; chosen: what the person picked (null: never picked)
  */
-async function getVoiceSetting(workspaceId, userId) {
+async function getVoiceSetting(workspaceId, userId, lang = 'en') {
   const [member, workspace] = await Promise.all([
     getWorkspaceMembersCollection().findOne({ workspace_id: workspaceId, user_id: userId }, { projection: { _id: 0, digest_voice: 1 } }),
     getDatabase().collection('workspaces').findOne({ workspace_id: workspaceId }, { projection: { _id: 0, digest_voices_enabled: 1 } })
@@ -25,7 +26,7 @@ async function getVoiceSetting(workspaceId, userId) {
     default_voice: defaultVoice(),
     workspace_enabled: !workspace || workspace.digest_voices_enabled !== false,
     voices: [...VOICES],
-    samples: SAMPLES
+    samples: SAMPLES[lang] || SAMPLES.en
   };
 }
 

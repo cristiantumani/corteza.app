@@ -5,12 +5,13 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
 
   const $ = id => document.getElementById(id);
   const VOICES = {
-    classic: { name: 'Classic', about: 'The plain summary: your numbers and your list.' },
-    sergeant: { name: 'The Sergeant', about: 'Tough love. Short, direct, no excuses.' },
-    sarcastic: { name: 'The Sarcastic Colleague', about: 'Dry irony about your to-do list. Never about you.' }
+    classic: { name: t('settings.partner.classic'), about: t('settings.partner.classicAbout') },
+    sergeant: { name: t('settings.partner.sergeant'), about: t('settings.partner.sergeantAbout') },
+    sarcastic: { name: t('settings.partner.sarcastic'), about: t('settings.partner.sarcasticAbout') }
   };
   let state = null;
 
@@ -48,7 +49,7 @@
       input.addEventListener('change', () => save(key));
       const name = document.createElement('span');
       name.className = 'font-semibold text-on-surface';
-      name.textContent = voice.name + (state.chosen === null && state.default_voice === key && !disabled ? ' (current)' : '');
+      name.textContent = voice.name + (state.chosen === null && state.default_voice === key && !disabled ? ` ${t('settings.partner.current')}` : '');
       top.append(input, name);
 
       const about = document.createElement('span');
@@ -60,7 +61,7 @@
       label.append(top, about, sample);
       box.appendChild(label);
     }
-    if (disabled) setStatus('Turned off by your workspace admin. Your summary is Classic.');
+    if (disabled) setStatus(t('settings.partner.turnedOff'));
 
     const admin = $('digest-voice-admin');
     if (state.is_admin) {
@@ -75,16 +76,16 @@
     try {
       const response = await fetch('/api/me/digest-voice', { credentials: 'include' });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t load');
+      if (!response.ok || !data.success) throw new Error(data.error || t('common.loadFailed'));
       state = data;
       render();
     } catch (error) {
-      setStatus(`${error.message}. Reload the page to try again.`, true);
+      setStatus(t('settings.partner.reload', { error: error.message }), true);
     }
   }
 
   async function save(voice) {
-    setStatus('Saving…');
+    setStatus(t('common.saving'));
     try {
       const response = await fetch('/api/me/digest-voice', {
         method: 'PUT',
@@ -93,18 +94,18 @@
         body: JSON.stringify({ voice })
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t save');
+      if (!response.ok || !data.success) throw new Error(data.error || t('common.couldNotSave'));
       state = { ...state, ...data };
       render();
-      setStatus(`Saved. Your next summary comes from ${VOICES[voice].name}.`);
+      setStatus(t('settings.partner.saved', { name: VOICES[voice].name }));
     } catch (error) {
       render();
-      setStatus(`${error.message}. Try again.`, true);
+      setStatus(t('common.tryAgain', { error: error.message }), true);
     }
   }
 
   async function saveWorkspace(enabled) {
-    setStatus('Saving…');
+    setStatus(t('common.saving'));
     try {
       const response = await fetch('/api/workspace/digest-voices', {
         method: 'PUT',
@@ -113,13 +114,13 @@
         body: JSON.stringify({ enabled })
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t save');
+      if (!response.ok || !data.success) throw new Error(data.error || t('common.couldNotSave'));
       state.workspace_enabled = enabled;
       render();
-      setStatus(enabled ? 'Morning partners are on for this workspace.' : 'Morning partners are off: everyone gets Classic.');
+      setStatus(t(enabled ? 'settings.partner.on' : 'settings.partner.off'));
     } catch (error) {
       $('digest-voices-enabled').checked = state.workspace_enabled;
-      setStatus(`${error.message}. Try again.`, true);
+      setStatus(t('common.tryAgain', { error: error.message }), true);
     }
   }
 })();

@@ -11,6 +11,8 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   const params = new URLSearchParams(window.location.search);
   const topicParam = params.get('topic');
@@ -19,10 +21,10 @@
     status: topicParam ? 'all' : 'open',
     topic: topicParam && /^top_[0-9a-f]{1,32}$/.test(topicParam) ? topicParam : null
   };
-  const OUTCOME_LABELS = { decision: 'Decision', open_question: 'Question', risk: 'Risk' };
+  const OUTCOME_LABELS = { decision: t('types.short.decision'), open_question: t('types.short.open_question'), risk: t('types.short.risk') };
   const LABELS = {
-    open_question: { name: 'Open question', resolve: 'Mark answered', resolved: 'Answered', note: 'What was the answer? (optional)', icon: 'contact_support', color: 'bg-[#e3e7fb] text-[#3953bd]' },
-    risk: { name: 'Risk', resolve: 'Mark mitigated', resolved: 'Mitigated', note: 'How was it handled? (optional)', icon: 'warning', color: 'bg-[#fff4e5] text-[#8a5300]' }
+    open_question: { name: t('types.open_question'), resolve: t('detail.markAnswered'), resolved: t('detail.answered'), resolvedBy: 'detail.answeredBy', note: t('loop.answerPlaceholder'), icon: 'contact_support', color: 'bg-[#e3e7fb] text-[#3953bd]' },
+    risk: { name: t('types.risk'), resolve: t('detail.markMitigated'), resolved: t('detail.mitigated'), resolvedBy: 'detail.mitigatedBy', note: t('questions.mitigationPlaceholder'), icon: 'warning', color: 'bg-[#fff4e5] text-[#8a5300]' }
   };
 
   function escapeHtml(value) {
@@ -31,15 +33,15 @@
 
   function formatDate(value) {
     const date = new Date(value);
-    return isNaN(date) ? '' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return isNaN(date) ? '' : date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   function age(value) {
     const days = Math.floor((Date.now() - new Date(value).getTime()) / 86400000);
     if (!(days >= 0)) return '';
-    if (days === 0) return 'today';
-    if (days === 1) return 'yesterday';
-    return `${days} days ago`;
+    if (days === 0) return t('time.today');
+    if (days === 1) return t('time.yesterday');
+    return t('time.daysAgo', { count: days });
   }
 
   function renderFilters(counts) {
@@ -65,14 +67,14 @@
         ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-primary hover:underline">${escapeHtml(source.title)}</a>`
         : escapeHtml(source.title));
     }
-    if (item.timestamp) parts.push(`raised ${escapeHtml(age(item.timestamp))} (${escapeHtml(formatDate(item.timestamp))})`);
-    if (item.owner_name) parts.push(`Owner: ${escapeHtml(item.owner_name)}`);
+    if (item.timestamp) parts.push(escapeHtml(`${t('home.open.raised', { when: age(item.timestamp) })} (${formatDate(item.timestamp)})`));
+    if (item.owner_name) parts.push(escapeHtml(t('outcomes.card.accountable', { name: item.owner_name })));
     return parts.length ? `<p class="text-xs text-on-surface-variant">${parts.join(' · ')}</p>` : '';
   }
 
   function formatDay(value) {
     const date = new Date(`${value}T00:00:00`);
-    return isNaN(date) ? value : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return isNaN(date) ? value : date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
   }
 
   /** One linked action item: the next step, its owners, due date and status */
@@ -82,15 +84,15 @@
     const overdue = action.status === 'open' && action.due_date && action.due_date < new Date().toISOString().slice(0, 10);
     const owners = (action.owners || []).map(owner => owner.name).filter(Boolean).join(', ');
     const meta = [
-      owners || 'No owner',
-      action.due_date ? `${overdue ? 'overdue · ' : 'due '}${formatDay(action.due_date)}` : '',
-      done ? 'done' : cancelled ? 'cancelled' : ''
+      owners || t('detail.noOwner'),
+      action.due_date ? t(overdue ? 'due.overdueOn' : 'due.on', { date: formatDay(action.due_date) }).toLowerCase() : '',
+      done ? t('actions.statusOne.done').toLowerCase() : cancelled ? t('actions.statusOne.cancelled').toLowerCase() : ''
     ].filter(Boolean).join(' · ');
     return `
       <li class="flex items-start gap-2">
         <span class="material-symbols-outlined text-base ${done ? 'text-[#1e6b34]' : 'text-on-surface-variant'}" aria-hidden="true">${done ? 'task_alt' : 'radio_button_unchecked'}</span>
         <span class="text-sm">
-          <span class="text-xs font-semibold text-on-surface-variant">Next step:</span>
+          <span class="text-xs font-semibold text-on-surface-variant">${escapeHtml(t('questions.nextStep'))}</span>
           <a href="/actions?item=${encodeURIComponent(action.item_id)}" class="text-on-surface hover:underline ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(action.text)}</a>
           <span class="text-xs ${overdue ? 'text-error font-semibold' : 'text-on-surface-variant'}">(${escapeHtml(meta)})</span>
         </span>
@@ -101,9 +103,9 @@
   function linkedOutcomeHtml(outcome, parent) {
     const resolved = outcome.resolution_status === 'resolved';
     const label = outcome.type === 'decision' && parent.type === 'open_question'
-      ? 'Decision · may answer this question'
-      : (OUTCOME_LABELS[outcome.type] || 'Outcome');
-    const status = outcome.type === 'decision' ? '' : resolved ? (outcome.type === 'risk' ? ' (mitigated)' : ' (answered)') : '';
+      ? t('questions.mayAnswer')
+      : (OUTCOME_LABELS[outcome.type] || t('detail.title'));
+    const status = outcome.type === 'decision' || !resolved ? '' : ` (${t(outcome.type === 'risk' ? 'detail.mitigated' : 'detail.answered').toLowerCase()})`;
     return `
       <li class="flex items-start gap-2">
         <span class="material-symbols-outlined text-base text-on-surface-variant" aria-hidden="true">${outcome.type === 'decision' ? 'gavel' : outcome.type === 'risk' ? 'warning' : 'contact_support'}</span>
@@ -123,7 +125,7 @@
     if (!nested.length && !outcomes.length && !linked.actions.length) return '';
     return `
       <div class="mt-1 border-t border-outline-variant pt-3 flex flex-col gap-2">
-        <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Linked${item.topic ? ` · <a href="/questions?topic=${encodeURIComponent(item.topic_id)}" class="normal-case text-primary hover:underline">${escapeHtml(item.topic)}</a>` : ''}</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">${escapeHtml(t('actions.linked'))}${item.topic ? ` · <a href="/questions?topic=${encodeURIComponent(item.topic_id)}" class="normal-case text-primary hover:underline">${escapeHtml(item.topic)}</a>` : ''}</p>
         ${nested.map(risk => itemHtml(risk, [], true)).join('')}
         ${outcomes.length || linked.actions.length ? `<ul class="flex flex-col gap-1.5">${outcomes.map(outcome => linkedOutcomeHtml(outcome, item)).join('')}${linked.actions.map(linkedActionHtml).join('')}</ul>` : ''}
       </div>`;
@@ -142,20 +144,20 @@
       <div id="item-${escapeHtml(item.id)}" class="${isNested ? 'bg-surface-container-low rounded-lg p-3' : 'bg-surface-container-lowest border border-outline-variant rounded-xl p-4'} flex flex-col gap-2 ${resolved ? 'opacity-80' : ''}">
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${label.color}">
-            <span class="material-symbols-outlined text-sm" aria-hidden="true">${label.icon}</span>${label.name}
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">${label.icon}</span>${escapeHtml(label.name)}
           </span>
-          ${resolved ? `<span class="px-2 py-0.5 rounded-full bg-[#e6f4ea] text-[#1e6b34] text-xs font-semibold">${label.resolved}${by ? ` by ${escapeHtml(by)}` : ''}${item.resolved_at ? ` · ${escapeHtml(formatDate(item.resolved_at))}` : ''}</span>` : ''}
-          ${item.capture === 'ai' && !item.review_status ? '<span class="text-xs text-on-surface-variant">AI-captured, not reviewed yet</span>' : ''}
+          ${resolved ? `<span class="px-2 py-0.5 rounded-full bg-[#e6f4ea] text-[#1e6b34] text-xs font-semibold">${escapeHtml(by ? t(label.resolvedBy, { name: by }) : label.resolved)}${item.resolved_at ? ` · ${escapeHtml(formatDate(item.resolved_at))}` : ''}</span>` : ''}
+          ${item.capture === 'ai' && !item.review_status ? `<span class="text-xs text-on-surface-variant">${escapeHtml(t('questions.notReviewed'))}</span>` : ''}
         </div>
         <p class="text-on-surface font-medium ${resolved ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>
-        ${item.rationale ? `<p class="text-sm text-on-surface-variant">Why it matters: ${escapeHtml(item.rationale)}</p>` : ''}
+        ${item.rationale ? `<p class="text-sm text-on-surface-variant">${escapeHtml(t('questions.whyMatters', { text: item.rationale }))}</p>` : ''}
         ${item.evidence_quote ? `<p class="text-xs italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         ${sourceHtml(item)}
         ${resolved && item.resolution_note ? `<p class="text-sm text-on-surface bg-surface-container-low rounded-lg p-3">${escapeHtml(item.resolution_note)}</p>` : ''}
         <div class="flex flex-wrap items-center gap-2 mt-1" data-actions="${escapeHtml(item.id)}">
           ${resolved
-            ? `<button type="button" class="reopen-btn text-sm font-semibold text-primary hover:underline" data-id="${escapeHtml(item.id)}">Reopen</button>`
-            : `<button type="button" class="resolve-btn border border-outline-variant rounded-lg py-1.5 px-3 text-sm font-semibold hover:bg-surface-container-low" data-id="${escapeHtml(item.id)}" data-type="${escapeHtml(item.type)}">${label.resolve}</button>`}
+            ? `<button type="button" class="reopen-btn text-sm font-semibold text-primary hover:underline" data-id="${escapeHtml(item.id)}">${escapeHtml(t('detail.reopen'))}</button>`
+            : `<button type="button" class="resolve-btn border border-outline-variant rounded-lg py-1.5 px-3 text-sm font-semibold hover:bg-surface-container-low" data-id="${escapeHtml(item.id)}" data-type="${escapeHtml(item.type)}">${escapeHtml(label.resolve)}</button>`}
         </div>
         ${isNested ? '' : linkedHtml(item, nested)}
       </div>`;
@@ -188,7 +190,7 @@
     const banner = document.getElementById('topic-banner');
     if (!banner) return;
     if (!state.topic) { banner.classList.add('hidden'); return; }
-    banner.innerHTML = `Showing one thread${topic ? `: <strong>${escapeHtml(topic)}</strong>` : ''}. <a href="/questions" class="text-primary font-semibold hover:underline">Show all</a>`;
+    banner.innerHTML = `${topic ? escapeHtml(t('questions.oneThreadNamed')).replace('{topic}', `<strong>${escapeHtml(topic)}</strong>`) : escapeHtml(t('questions.oneThread'))} <a href="/questions" class="text-primary font-semibold hover:underline">${escapeHtml(t('questions.showAll'))}</a>`;
     banner.classList.remove('hidden');
   }
 
@@ -204,14 +206,14 @@
         return;
       }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not load open questions and risks');
+      if (!response.ok) throw new Error(data.error || t('questions.loadFailed'));
       renderFilters(data.counts);
       renderTopicBanner(data.topic);
       const items = data.items;
-      document.getElementById('items-count').textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
+      document.getElementById('items-count').textContent = t('questions.count', { count: items.length });
       container.innerHTML = items.length
         ? cardsHtml(items)
-        : `<p class="text-on-surface-variant">${state.status === 'open' ? 'Nothing open here. Open questions and risks are captured automatically from your meetings.' : 'Nothing matches these filters.'}</p>`;
+        : `<p class="text-on-surface-variant">${escapeHtml(t(state.status === 'open' ? 'questions.emptyOpen' : 'questions.emptyFilters'))}</p>`;
     } catch (error) {
       container.innerHTML = `<p class="text-error">${escapeHtml(error.message)}</p>`;
     }
@@ -224,8 +226,8 @@
     if (!actions) return;
     actions.innerHTML = `
       <textarea class="resolve-note w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="${escapeHtml(label.note)}"></textarea>
-      <button type="button" class="resolve-save bg-primary text-on-primary rounded-lg py-1.5 px-3 text-sm font-semibold" data-id="${escapeHtml(id)}">${label.resolve}</button>
-      <button type="button" class="resolve-cancel text-sm text-on-surface-variant hover:underline">Cancel</button>`;
+      <button type="button" class="resolve-save bg-primary text-on-primary rounded-lg py-1.5 px-3 text-sm font-semibold" data-id="${escapeHtml(id)}">${escapeHtml(label.resolve)}</button>
+      <button type="button" class="resolve-cancel text-sm text-on-surface-variant hover:underline">${escapeHtml(t('common.cancel'))}</button>`;
     actions.querySelector('.resolve-note').focus();
   }
 
@@ -237,7 +239,7 @@
       body: JSON.stringify(body || {})
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) alert(data.error || 'Could not save');
+    if (!response.ok) alert(data.error || t('common.couldNotSave'));
     // An answered question with open risks in its thread: offer to close them too
     if (response.ok && window.CortezaLoop) window.CortezaLoop.offerMitigate(data.linked_risks);
     return load();

@@ -5,6 +5,7 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
 
   const $ = id => document.getElementById(id);
 
@@ -49,12 +50,12 @@
       select.appendChild(option);
     }
     select.value = current;
-    setStatus(saved.source === 'manual' ? 'Set by you.' : 'Detected from your browser.');
+    setStatus(t(saved.source === 'manual' ? 'settings.timezone.manual' : 'settings.timezone.auto'));
   }
 
   async function save() {
     const timezone = $('timezone-select').value;
-    setStatus('Saving…');
+    setStatus(t('common.saving'));
     try {
       const response = await fetch('/api/me/timezone', {
         method: 'POST',
@@ -63,8 +64,8 @@
         body: JSON.stringify({ timezone, manual: true })
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.saved) throw new Error(data.error || 'Could not save');
-      setStatus('Saved. Your summary arrives at 8:00 AM in this time zone.');
+      if (!response.ok || !data.saved) throw new Error(data.error || t('common.couldNotSave'));
+      setStatus(t('settings.timezone.saved'));
     } catch (error) {
       setStatus(error.message, true);
     }

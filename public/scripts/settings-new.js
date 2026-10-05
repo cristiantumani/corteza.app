@@ -1,5 +1,7 @@
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   let allSpaces = [];
   let currentSpaceId = null;
@@ -26,7 +28,7 @@
       const user = data.user;
 
       // Update UI with user info
-      const displayName = user.user_name || user.email || 'User';
+      const displayName = user.user_name || user.email || '';
       document.getElementById('user-display-name').textContent = displayName;
 
       // Update avatar
@@ -110,12 +112,12 @@
           <span class="text-sm font-medium text-on-surface">${escapeHtml(space.name)}</span>
         </div>
       </td>
-      <td class="py-4 text-sm text-on-surface-variant">${memberCount} Members</td>
+      <td class="py-4 text-sm text-on-surface-variant">${escapeHtml(t('settings.spaces.memberCount', { count: memberCount }))}</td>
       <td class="py-4 text-sm text-on-surface-variant">${lastActivity}</td>
       <td class="py-4 text-right">
         <div class="flex items-center justify-end gap-2">
           <button onclick="openMembersModal(${jsArg(space.space_id)}, ${jsArg(space.name)})" class="text-xs font-bold text-primary px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
-            Manage Members
+            ${escapeHtml(t('settings.spaces.manageMembers'))}
           </button>
           <button onclick="editSpace(${jsArg(space.space_id)})" class="p-1 rounded-lg hover:bg-surface-container-highest transition-colors">
             <span class="material-symbols-outlined text-lg text-on-surface-variant">edit</span>
@@ -131,17 +133,17 @@
   }
 
   function formatLastActivity(timestamp) {
-    if (!timestamp) return 'Never';
+    if (!timestamp) return t('time.never');
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffHours < 1) return 'Just now';
+    if (diffHours < 1) return t('time.justNow');
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays === 1) return t('time.yesterday');
+    if (diffDays < 7) return t('time.daysAgo', { count: diffDays });
     return date.toLocaleDateString();
   }
 
@@ -162,7 +164,7 @@
     const description = document.getElementById('space-description').value.trim();
 
     if (!name) {
-      alert('Please enter a space name');
+      alert(t('settings.spaces.nameRequired'));
       return;
     }
 
@@ -180,26 +182,26 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create space');
+        throw new Error(data.error || t('settings.spaces.createFailed'));
       }
 
-      showNotification(`Space "${name}" created successfully!`);
+      showNotification(t('settings.spaces.created', { name }));
       closeCreateSpaceModal();
       await loadSpaces();
 
     } catch (error) {
       console.error('Error creating space:', error);
-      alert('Failed to create space: ' + error.message);
+      alert(`${t('settings.spaces.createFailed')}: ${error.message}`);
     }
   };
 
   window.editSpace = async function(spaceId) {
     // TODO: Implement edit space functionality
-    alert('Edit space functionality coming soon!');
+    alert(t('settings.spaces.editSoon'));
   };
 
   window.deleteSpace = async function(spaceId, spaceName) {
-    if (!confirm(`Are you sure you want to delete the space "${spaceName}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(t('settings.spaces.confirmDelete', { name: spaceName }))) {
       return;
     }
 
@@ -213,15 +215,15 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete space');
+        throw new Error(data.error || t('settings.spaces.deleteFailed'));
       }
 
-      showNotification(`Space "${spaceName}" deleted successfully`);
+      showNotification(t('settings.spaces.deleted', { name: spaceName }));
       await loadSpaces();
 
     } catch (error) {
       console.error('Error deleting space:', error);
-      alert('Failed to delete space: ' + error.message);
+      alert(`${t('settings.spaces.deleteFailed')}: ${error.message}`);
     }
   };
 
@@ -248,7 +250,7 @@
       if (!data.members || data.members.length === 0) {
         membersList.innerHTML = `
           <div class="p-6 bg-surface-container-low rounded-lg text-center">
-            <p class="text-sm text-on-surface-variant">No members in this space yet.</p>
+            <p class="text-sm text-on-surface-variant">${escapeHtml(t('settings.spaces.noMembers'))}</p>
           </div>
         `;
         return;
@@ -297,7 +299,7 @@
   }
 
   window.removeMember = async function(userId, userName) {
-    if (!confirm(`Remove ${userName} from this space?`)) {
+    if (!confirm(t('settings.spaces.confirmRemove', { name: userName }))) {
       return;
     }
 
@@ -311,15 +313,15 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove member');
+        throw new Error(data.error || t('settings.spaces.removeFailed'));
       }
 
-      showNotification(`${userName} removed from space`);
+      showNotification(t('settings.spaces.removed', { name: userName }));
       await loadSpaceMembers(currentSpaceId);
 
     } catch (error) {
       console.error('Error removing member:', error);
-      alert('Failed to remove member: ' + error.message);
+      alert(`${t('settings.spaces.removeFailed')}: ${error.message}`);
     }
   };
 
@@ -341,12 +343,12 @@
 
       container.innerHTML = `
         <div class="border-t border-outline-variant pt-4">
-          <p class="text-xs font-bold text-on-surface-variant uppercase mb-2">Active Invites</p>
+          <p class="text-xs font-bold text-on-surface-variant uppercase mb-2">${escapeHtml(t('settings.invites.active'))}</p>
           ${data.invites.map(invite => `
             <div class="flex items-center justify-between p-2 bg-surface-container-low rounded mb-2">
               <div class="flex-1">
                 <p class="text-xs font-medium">${escapeHtml(invite.space_name)}</p>
-                <p class="text-[10px] text-on-surface-variant">Expires: ${new Date(invite.expires_at).toLocaleDateString()}</p>
+                <p class="text-[10px] text-on-surface-variant">${escapeHtml(t('settings.invites.expires', { date: new Date(invite.expires_at).toLocaleDateString(locale) }))}</p>
               </div>
               <button onclick="revokeInvite(${jsArg(invite.invite_id)})" class="material-symbols-outlined text-error text-sm">delete</button>
             </div>
@@ -371,7 +373,7 @@
     const spaceId = document.getElementById('invite-space-select').value;
 
     if (!spaceId) {
-      alert('Please select a space');
+      alert(t('settings.invites.pickSpace'));
       return;
     }
 
@@ -391,7 +393,7 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create invite');
+        throw new Error(data.error || t('settings.invites.createFailed'));
       }
 
       const inviteUrl = `${window.location.origin}/invite/${data.invite_id}`;
@@ -400,18 +402,18 @@
 
       // Copy to clipboard
       await navigator.clipboard.writeText(inviteUrl);
-      showNotification('Invite link copied to clipboard!');
+      showNotification(t('settings.invites.copied'));
 
       await loadInvites();
 
     } catch (error) {
       console.error('Error creating invite:', error);
-      alert('Failed to create invite: ' + error.message);
+      alert(`${t('settings.invites.createFailed')}: ${error.message}`);
     }
   };
 
   window.revokeInvite = async function(inviteId) {
-    if (!confirm('Revoke this invite link?')) {
+    if (!confirm(t('settings.invites.confirmRevoke'))) {
       return;
     }
 
@@ -425,15 +427,15 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to revoke invite');
+        throw new Error(data.error || t('settings.invites.revokeFailed'));
       }
 
-      showNotification('Invite revoked');
+      showNotification(t('settings.invites.revoked'));
       await loadInvites();
 
     } catch (error) {
       console.error('Error revoking invite:', error);
-      alert('Failed to revoke invite: ' + error.message);
+      alert(`${t('settings.invites.revokeFailed')}: ${error.message}`);
     }
   };
 
@@ -464,14 +466,14 @@
   window.deleteAllData = async function() {
     const confirmation = document.getElementById('delete-confirmation').value.trim();
     if (confirmation !== 'DELETE') {
-      showDeleteError('Type DELETE to confirm.');
+      showDeleteError(t('settings.data.typeDelete'));
       return;
     }
 
     const button = document.getElementById('delete-data-button');
     const label = button.textContent;
     button.disabled = true;
-    button.textContent = 'Deleting…';
+    button.textContent = t('settings.data.deleting');
     showDeleteError('');
 
     try {
@@ -480,13 +482,13 @@
         method: 'DELETE'
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'The data could not be deleted. Try again.');
+      if (!response.ok) throw new Error(data.error || t('settings.data.deleteFailed'));
 
-      button.textContent = 'Deleted. Signing you out…';
+      button.textContent = t('settings.data.deleted');
       setTimeout(() => { window.location.href = '/auth/logout'; }, 1500);
     } catch (error) {
       console.error('Error deleting data:', error.message);
-      showDeleteError(error.message === 'Failed to fetch' ? 'Could not reach Corteza. Check your connection and try again.' : error.message);
+      showDeleteError(error.message === 'Failed to fetch' ? t('common.offline') : error.message);
       button.disabled = false;
       button.textContent = label;
     }
@@ -499,10 +501,10 @@
   window.copyToClipboard = async function(text) {
     try {
       await navigator.clipboard.writeText(text);
-      showNotification('Copied to clipboard!');
+      showNotification(t('common.copied'));
     } catch (error) {
       console.error('Failed to copy:', error);
-      alert('Failed to copy to clipboard');
+      alert(t('common.copyFailed'));
     }
   };
 

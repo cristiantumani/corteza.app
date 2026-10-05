@@ -4,6 +4,8 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   const $ = id => document.getElementById(id);
   let state = null;
@@ -30,7 +32,7 @@
   async function request(url, options = {}) {
     const response = await fetch(url, { credentials: 'include', ...options });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.success === false) throw new Error(data.error || `Request failed (${response.status})`);
+    if (!response.ok || data.success === false) throw new Error(data.error || t('context.requestFailed', { status: response.status }));
     return data;
   }
 
@@ -39,7 +41,7 @@
       state = await request('/api/ai-context');
       render();
     } catch (error) {
-      setStatus('ctx-company-status', `Could not load the context: ${error.message}`, true);
+      setStatus('ctx-company-status', t('context.loadFailed', { error: error.message }), true);
     }
   }
 
@@ -57,10 +59,12 @@
     $('ctx-company-save').classList.toggle('hidden', !canEdit);
     $('ctx-upload-label').classList.toggle('hidden', !canEdit);
     $('ctx-company-note').textContent = canEdit
-      ? 'Shared by everyone in your workspace. Only admins can edit it.'
-      : 'Shared by everyone in your workspace. Only an admin can edit it.';
+      ? t('context.sharedAdmins')
+      : t('context.sharedAdmin');
     if (company.updated_at) {
-      setStatus('ctx-company-status', `Last updated ${new Date(company.updated_at).toLocaleDateString()}${company.updated_by ? ` by ${company.updated_by}` : ''}`);
+      setStatus('ctx-company-status', company.updated_by
+        ? t('context.updatedBy', { date: new Date(company.updated_at).toLocaleDateString(locale), name: company.updated_by })
+        : t('context.updated', { date: new Date(company.updated_at).toLocaleDateString(locale) }));
     }
     renderDocuments(company.documents || [], canEdit);
 
@@ -75,7 +79,7 @@
   function renderDocuments(documents, canEdit) {
     const list = $('ctx-documents');
     if (documents.length === 0) {
-      list.innerHTML = '<li class="text-xs text-on-surface-variant">No documents yet.</li>';
+      list.innerHTML = `<li class="text-xs text-on-surface-variant">${escapeHtml(t('context.noDocuments'))}</li>`;
       return;
     }
     list.innerHTML = documents.map(doc => `
@@ -84,13 +88,13 @@
           <span class="font-semibold text-on-surface truncate block" title="${escapeHtml(doc.preview)}">${escapeHtml(doc.name)}</span>
           <span class="text-xs text-on-surface-variant">${Number(doc.chars).toLocaleString()} characters${doc.truncated ? ' (shortened)' : ''}</span>
         </span>
-        ${canEdit ? `<button data-doc="${escapeHtml(doc.doc_id)}" class="ctx-remove text-xs font-bold text-error hover:underline">Remove</button>` : ''}
+        ${canEdit ? `<button data-doc="${escapeHtml(doc.doc_id)}" class="ctx-remove text-xs font-bold text-error hover:underline">${escapeHtml(t('common.remove'))}</button>` : ''}
       </li>`).join('');
     list.querySelectorAll('.ctx-remove').forEach(button => button.addEventListener('click', () => removeDocument(button.dataset.doc)));
   }
 
   async function saveCompany() {
-    setStatus('ctx-company-status', 'Saving…');
+    setStatus('ctx-company-status', t('common.saving'));
     try {
       const data = await request('/api/ai-context/company', {
         method: 'PUT',
@@ -99,14 +103,14 @@
       });
       state.company = data.company;
       render();
-      setStatus('ctx-company-status', 'Saved. It applies to the next meetings Corteza reads.');
+      setStatus('ctx-company-status', t('context.savedCompany'));
     } catch (error) {
       setStatus('ctx-company-status', error.message, true);
     }
   }
 
   async function savePersonal() {
-    setStatus('ctx-personal-status', 'Saving…');
+    setStatus('ctx-personal-status', t('common.saving'));
     try {
       const data = await request('/api/ai-context/me', {
         method: 'PUT',
@@ -114,7 +118,7 @@
         body: JSON.stringify({ role: $('ctx-personal-role').value, focus: $('ctx-personal-focus').value, glossary: $('ctx-personal-glossary').value })
       });
       state.personal = data.personal;
-      setStatus('ctx-personal-status', 'Saved. It applies to your next meetings.');
+      setStatus('ctx-personal-status', t('context.savedPersonal'));
     } catch (error) {
       setStatus('ctx-personal-status', error.message, true);
     }
@@ -123,7 +127,7 @@
   async function uploadDocument(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
-    setStatus('ctx-company-status', `Reading ${file.name}…`);
+    setStatus('ctx-company-status', t('context.reading', { name: file.name }));
     const form = new FormData();
     form.append('file', file);
     try {
@@ -139,12 +143,12 @@
   }
 
   async function removeDocument(docId) {
-    if (!window.confirm('Remove this document from the company context?')) return;
+    if (!window.confirm(t('context.confirmRemove'))) return;
     try {
       const data = await request(`/api/ai-context/company/documents/${encodeURIComponent(docId)}`, { method: 'DELETE' });
       state.company = data.company;
       render();
-      setStatus('ctx-company-status', 'Document removed.');
+      setStatus('ctx-company-status', t('context.removed'));
     } catch (error) {
       setStatus('ctx-company-status', error.message, true);
     }

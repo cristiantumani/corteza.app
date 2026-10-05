@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open questions & risks - Corteza</title>
+    <title>{{t:questions.pageTitle}}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -58,24 +58,24 @@
 
     <!-- TopAppBar -->
     <header class="fixed top-0 right-0 left-64 h-16 z-10 flex items-center justify-between px-6 bg-surface border-b border-outline-variant shadow-sm">
-        <h2 class="text-2xl font-bold text-on-surface">Open questions &amp; risks</h2>
+        <h2 class="text-2xl font-bold text-on-surface">{{t:nav.questions}}</h2>
     </header>
 
     <!-- Main: list and filters (public/scripts/questions.js) -->
     <main class="ml-64 pt-16 h-screen overflow-y-auto bg-background">
         <div class="max-w-[1100px] mx-auto p-8">
-            <p class="text-on-surface-variant mb-6">What your meetings left unresolved: questions that still need an answer, and risks to keep an eye on.</p>
+            <p class="text-on-surface-variant mb-6">{{t:questions.intro}}</p>
 
             <div class="flex flex-wrap items-center gap-3 mb-6">
-                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="Type">
-                    <button type="button" data-type="all" class="type-filter px-4 py-2 text-sm font-semibold">All</button>
-                    <button type="button" data-type="open_question" class="type-filter px-4 py-2 text-sm font-semibold">Questions <span data-count="open_question"></span></button>
-                    <button type="button" data-type="risk" class="type-filter px-4 py-2 text-sm font-semibold">Risks <span data-count="risk"></span></button>
+                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="{{t:questions.filters.type}}">
+                    <button type="button" data-type="all" class="type-filter px-4 py-2 text-sm font-semibold">{{t:questions.filters.all}}</button>
+                    <button type="button" data-type="open_question" class="type-filter px-4 py-2 text-sm font-semibold">{{t:questions.filters.questions}} <span data-count="open_question"></span></button>
+                    <button type="button" data-type="risk" class="type-filter px-4 py-2 text-sm font-semibold">{{t:types.plural.risk}} <span data-count="risk"></span></button>
                 </div>
-                <select id="status-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm" aria-label="Status">
-                    <option value="open">Open</option>
-                    <option value="resolved">Answered or mitigated</option>
-                    <option value="all">All</option>
+                <select id="status-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm" aria-label="{{t:actions.statusLabel}}">
+                    <option value="open">{{t:questions.status.open}}</option>
+                    <option value="resolved">{{t:questions.status.resolved}}</option>
+                    <option value="all">{{t:questions.filters.all}}</option>
                 </select>
                 <span id="items-count" class="text-sm text-on-surface-variant"></span>
             </div>
@@ -84,12 +84,12 @@
             <div id="loop-notice" class="hidden mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-[#eef1fb] p-4" role="status"></div>
 
             <div id="items" class="flex flex-col gap-3">
-                <p class="text-on-surface-variant">Loading…</p>
+                <p class="text-on-surface-variant">{{t:common.loading}}</p>
             </div>
         </div>
     </main>
 
-    <script src="/scripts/close-loop.js?v=1"></script>
-    <script src="/scripts/questions.js?v=2"></script>
+    <script src="/scripts/close-loop.js?v=2"></script>
+    <script src="/scripts/questions.js?v=3"></script>
 </body>
 </html>

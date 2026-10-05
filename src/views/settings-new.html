@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Corteza</title>
+    <title>{{t:settings.pageTitle}}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -59,14 +59,14 @@
     <!-- TopAppBar -->
     <header class="fixed top-0 right-0 left-64 h-16 z-10 flex items-center justify-between px-6 w-full bg-surface border-b border-outline-variant shadow-sm">
         <div class="flex items-center gap-4">
-            <h2 class="text-2xl font-bold text-on-surface">Settings</h2>
+            <h2 class="text-2xl font-bold text-on-surface">{{t:nav.settings}}</h2>
         </div>
         <div class="hidden md:flex items-center gap-6">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-primary text-on-primary rounded-full flex items-center justify-center font-bold text-xs" id="user-avatar">
                     U
                 </div>
-                <span class="text-sm text-on-surface-variant font-medium" id="user-display-name">Loading...</span>
+                <span class="text-sm text-on-surface-variant font-medium" id="user-display-name">{{t:common.loading}}</span>
             </div>
         </div>
     </header>
@@ -81,65 +81,65 @@
                     <div class="flex justify-between items-start mb-6">
                         <div>
                             <h3 class="text-2xl font-bold text-on-surface mb-1">Google Meet</h3>
-                            <p class="text-sm text-on-surface-variant">Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves the decisions automatically.</p>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.meet.intro}}</p>
                         </div>
                         <span class="material-symbols-outlined text-primary text-3xl">videocam</span>
                     </div>
-                    <div id="google-meet-body" class="text-sm text-on-surface-variant">Loading…</div>
+                    <div id="google-meet-body" class="text-sm text-on-surface-variant">{{t:common.loading}}</div>
                 </section>
 
                 <!-- Context for the AI: company (admins edit) and personal (public/scripts/settings-context.js) -->
                 <section id="ai-context" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h3 class="text-2xl font-bold text-on-surface mb-1">Context for the AI</h3>
-                            <p class="text-sm text-on-surface-variant max-w-2xl">Corteza reads this with every meeting, so it knows what matters to your business, spells names and acronyms right (the transcript often gets "CAC" or "P&amp;L" wrong) and knows who's who when it assigns owners.</p>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.context.title}}</h3>
+                            <p class="text-sm text-on-surface-variant max-w-2xl">{{t:settings.context.intro}}</p>
                         </div>
                         <span class="material-symbols-outlined text-primary text-3xl">psychology</span>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="rounded-lg border border-outline-variant p-5 flex flex-col gap-4">
                             <div>
-                                <h4 class="font-bold text-on-surface">Your company</h4>
-                                <p id="ctx-company-note" class="text-xs text-on-surface-variant mt-1">Shared by everyone in your workspace.</p>
+                                <h4 class="font-bold text-on-surface">{{t:settings.context.company}}</h4>
+                                <p id="ctx-company-note" class="text-xs text-on-surface-variant mt-1">{{t:settings.context.companyNote}}</p>
                             </div>
-                            <label class="text-sm font-semibold text-on-surface">What the company does
-                                <textarea id="ctx-company-description" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. Ninja Excel teaches Excel and data skills online to companies and individuals in Latin America and Spain. We sell B2C courses and B2B training."></textarea>
+                            <label class="text-sm font-semibold text-on-surface">{{t:settings.context.description}}
+                                <textarea id="ctx-company-description" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="{{t:settings.context.descriptionPlaceholder}}"></textarea>
                             </label>
-                            <label class="text-sm font-semibold text-on-surface">Glossary
-                                <span class="block text-xs font-normal text-on-surface-variant">One term per line: acronyms, products, customers, people and their roles.</span>
-                                <textarea id="ctx-company-glossary" rows="5" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="CAC: customer acquisition cost&#10;PNL: profit and loss statement&#10;José Tomás Acuña: finance"></textarea>
+                            <label class="text-sm font-semibold text-on-surface">{{t:settings.context.glossary}}
+                                <span class="block text-xs font-normal text-on-surface-variant">{{t:settings.context.glossaryHelp}}</span>
+                                <textarea id="ctx-company-glossary" rows="5" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="{{t:settings.context.glossaryPlaceholder}}"></textarea>
                             </label>
                             <div>
-                                <p class="text-sm font-semibold text-on-surface">Reference documents</p>
-                                <p class="text-xs text-on-surface-variant">TXT, MD, CSV, PDF or DOCX: a dictionary, org chart, product list… Only the text is kept.</p>
+                                <p class="text-sm font-semibold text-on-surface">{{t:settings.context.documents}}</p>
+                                <p class="text-xs text-on-surface-variant">{{t:settings.context.documentsHelp}}</p>
                                 <ul id="ctx-documents" class="mt-2 space-y-2 text-sm"></ul>
                                 <label id="ctx-upload-label" class="mt-2 inline-flex items-center gap-2 text-sm font-bold text-primary cursor-pointer hover:underline">
-                                    <span class="material-symbols-outlined text-base">upload_file</span> Add a document
+                                    <span class="material-symbols-outlined text-base">upload_file</span> {{t:settings.context.addDocument}}
                                     <input id="ctx-upload" type="file" accept=".txt,.md,.csv,.pdf,.docx" class="hidden">
                                 </label>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button id="ctx-company-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">Save company context</button>
+                                <button id="ctx-company-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">{{t:settings.context.saveCompany}}</button>
                                 <span id="ctx-company-status" class="text-xs text-on-surface-variant"></span>
                             </div>
                         </div>
                         <div class="rounded-lg border border-outline-variant p-5 flex flex-col gap-4">
                             <div>
-                                <h4 class="font-bold text-on-surface">About you</h4>
-                                <p class="text-xs text-on-surface-variant mt-1">Only used for your own meetings. Colleagues don't see it.</p>
+                                <h4 class="font-bold text-on-surface">{{t:settings.context.you}}</h4>
+                                <p class="text-xs text-on-surface-variant mt-1">{{t:settings.context.youNote}}</p>
                             </div>
-                            <label class="text-sm font-semibold text-on-surface">Your role
-                                <input id="ctx-personal-role" type="text" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. CEO">
+                            <label class="text-sm font-semibold text-on-surface">{{t:settings.context.role}}
+                                <input id="ctx-personal-role" type="text" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="{{t:settings.context.rolePlaceholder}}">
                             </label>
-                            <label class="text-sm font-semibold text-on-surface">What you focus on
-                                <textarea id="ctx-personal-focus" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="e.g. Growth in Spain, pricing, and the finance team's reporting."></textarea>
+                            <label class="text-sm font-semibold text-on-surface">{{t:settings.context.focus}}
+                                <textarea id="ctx-personal-focus" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal outline-none focus:border-primary" placeholder="{{t:settings.context.focusPlaceholder}}"></textarea>
                             </label>
-                            <label class="text-sm font-semibold text-on-surface">Your glossary
-                                <textarea id="ctx-personal-glossary" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="Terms and names that come up in your meetings"></textarea>
+                            <label class="text-sm font-semibold text-on-surface">{{t:settings.context.yourGlossary}}
+                                <textarea id="ctx-personal-glossary" rows="4" class="mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 text-sm font-normal font-mono outline-none focus:border-primary" placeholder="{{t:settings.context.yourGlossaryPlaceholder}}"></textarea>
                             </label>
                             <div class="flex items-center gap-3">
-                                <button id="ctx-personal-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">Save</button>
+                                <button id="ctx-personal-save" class="bg-primary text-on-primary font-bold py-2 px-5 rounded-lg hover:opacity-90">{{t:common.save}}</button>
                                 <span id="ctx-personal-status" class="text-xs text-on-surface-variant"></span>
                             </div>
                         </div>
@@ -168,26 +168,26 @@
                 <section id="email-summary" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h3 class="text-2xl font-bold text-on-surface mb-1">Morning summary</h3>
-                            <p class="text-sm text-on-surface-variant">On weekdays at 8:00 AM, Corteza emails you what happened since your last summary: meetings, decisions, new action items and what's due today. Only when there's something new.</p>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.summary.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.summary.intro}}</p>
                         </div>
                         <span class="material-symbols-outlined text-primary text-3xl">schedule</span>
                     </div>
-                    <label for="timezone-select" class="text-sm font-semibold text-on-surface mb-2">Your time zone</label>
+                    <label for="timezone-select" class="text-sm font-semibold text-on-surface mb-2">{{t:settings.summary.timezone}}</label>
                     <select id="timezone-select" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
-                        <option value="">Loading…</option>
+                        <option value="">{{t:common.loading}}</option>
                     </select>
                     <span id="timezone-status" class="text-xs text-on-surface-variant mt-2"></span>
 
                     <!-- Morning partner: the voice of the summary (public/scripts/settings-digest-voice.js, docs/specs/2026-10-morning-partner.md) -->
                     <fieldset id="digest-voice" class="mt-8 border-0 p-0 m-0 min-w-0">
-                        <legend class="text-sm font-semibold text-on-surface mb-1">Your morning partner</legend>
-                        <p class="text-sm text-on-surface-variant mb-3">Who writes your summary. A partner opens it with a line about your day; your list stays the same.</p>
+                        <legend class="text-sm font-semibold text-on-surface mb-1">{{t:settings.partner.title}}</legend>
+                        <p class="text-sm text-on-surface-variant mb-3">{{t:settings.partner.intro}}</p>
                         <div id="digest-voice-options" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
                         <span id="digest-voice-status" class="text-xs text-on-surface-variant mt-2 block" role="status"></span>
                         <label id="digest-voice-admin" class="hidden mt-4 flex items-center gap-2 text-sm text-on-surface">
                             <input type="checkbox" id="digest-voices-enabled" class="w-4 h-4 accent-primary">
-                            Allow morning partners in this workspace <span class="text-on-surface-variant">(admins only; off means everyone gets Classic)</span>
+                            {{t:settings.partner.allow}} <span class="text-on-surface-variant">{{t:settings.partner.allowHelp}}</span>
                         </label>
                     </fieldset>
                 </section>
@@ -198,15 +198,15 @@
                         <div class="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined">account_circle</span>
                         </div>
-                        <h3 class="text-2xl font-bold text-on-surface mb-1">Account</h3>
-                        <p class="text-sm text-on-surface-variant">You sign in to Corteza with your Google account. Password and 2-step verification are managed by Google.</p>
+                        <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.account.title}}</h3>
+                        <p class="text-sm text-on-surface-variant">{{t:settings.account.intro}}</p>
                     </div>
                     <div class="flex-1"></div>
                     <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" class="mt-8 w-full text-center border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                        Google account security
+                        {{t:settings.account.security}}
                     </a>
                     <a href="/auth/logout" class="mt-3 w-full text-center text-on-surface-variant font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                        Sign out
+                        {{t:nav.logout}}
                     </a>
                 </section>
 
@@ -214,22 +214,22 @@
                 <section data-multi-space class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h3 class="text-2xl font-bold text-on-surface mb-1">Manage Spaces</h3>
-                            <p class="text-sm text-on-surface-variant">Configure isolated environments for different teams or strategic initiatives.</p>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.spaces.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.spaces.intro}}</p>
                         </div>
                         <button onclick="openCreateSpaceModal()" class="flex items-center gap-2 bg-primary text-on-primary text-sm font-bold py-3 px-6 rounded-lg shadow-sm hover:opacity-90 transition-all">
                             <span class="material-symbols-outlined text-xl">add_box</span>
-                            Create New Space
+                            {{t:settings.spaces.create}}
                         </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="border-b border-outline-variant">
                                 <tr>
-                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Space Name</th>
-                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Member Count</th>
-                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Last Activity</th>
-                                    <th class="pb-2 text-right text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Actions</th>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{{t:settings.spaces.name}}</th>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{{t:settings.spaces.members}}</th>
+                                    <th class="pb-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{{t:settings.spaces.lastActivity}}</th>
+                                    <th class="pb-2 text-right text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{{t:settings.spaces.actions}}</th>
                                 </tr>
                             </thead>
                             <tbody id="spaces-table" class="divide-y divide-outline-variant/30">
@@ -244,14 +244,14 @@
                     <!-- Data Privacy & Export -->
                     <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                         <div class="mb-6">
-                            <h3 class="text-2xl font-bold text-on-surface mb-1">Data Privacy & Export</h3>
-                            <p class="text-sm text-on-surface-variant">Export your intelligence history or manage retention policies.</p>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.data.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.data.intro}}</p>
                         </div>
                         <div class="flex-1 space-y-6">
                             <div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant">
                                 <div>
-                                    <p class="text-sm font-bold text-on-surface">Export All Decisions</p>
-                                    <p class="text-xs text-on-surface-variant">Full JSON dump of logged decisions.</p>
+                                    <p class="text-sm font-bold text-on-surface">{{t:settings.data.export}}</p>
+                                    <p class="text-xs text-on-surface-variant">{{t:settings.data.exportHelp}}</p>
                                 </div>
                                 <button onclick="exportData()" class="p-4 rounded-full bg-primary text-on-primary shadow-sm hover:scale-105 transition-transform">
                                     <span class="material-symbols-outlined">download</span>
@@ -260,8 +260,8 @@
                             <!-- Workspace admins only (settings-new.js shows it); the API refuses everyone else -->
                             <div data-admin-only class="hidden flex items-center justify-between p-4 bg-error-container rounded-lg border border-error">
                                 <div>
-                                    <p class="text-sm font-bold text-on-error-container">Delete All Data</p>
-                                    <p class="text-xs text-on-error-container/70">Permanently remove all workspace data.</p>
+                                    <p class="text-sm font-bold text-on-error-container">{{t:settings.data.delete}}</p>
+                                    <p class="text-xs text-on-error-container/70">{{t:settings.data.deleteHelp}}</p>
                                 </div>
                                 <button onclick="openDeleteDataModal()" class="p-4 rounded-full bg-error text-on-error shadow-sm hover:scale-105 transition-transform">
                                     <span class="material-symbols-outlined">delete_forever</span>
@@ -273,13 +273,13 @@
                     <!-- Team Invitations: workspace admins only (settings-new.js shows it) -->
                     <section data-admin-only class="hidden bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                         <div class="mb-6">
-                            <h3 class="text-2xl font-bold text-on-surface mb-1">Team Invitations</h3>
-                            <p class="text-sm text-on-surface-variant">Create invite links to add new team members to your workspace.</p>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.invites.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.invites.intro}}</p>
                         </div>
                         <div class="flex-1 flex items-center justify-center">
                             <button onclick="openCreateInviteModal()" class="flex items-center gap-2 bg-primary text-on-primary text-sm font-bold py-4 px-8 rounded-lg shadow-sm hover:opacity-90 transition-all">
                                 <span class="material-symbols-outlined">person_add</span>
-                                Create Invite Link
+                                {{t:settings.invites.create}}
                             </button>
                         </div>
                         <div id="active-invites-list" class="mt-6 space-y-2">
@@ -291,7 +291,7 @@
 
             <!-- Footer Branding -->
             <footer class="mt-12 pt-8 border-t border-outline-variant text-center opacity-40">
-                <p class="text-xs">Corteza Decision Intelligence Platform • Enterprise Edition</p>
+                <p class="text-xs">Corteza</p>
             </footer>
         </div>
     </main>
@@ -300,31 +300,31 @@
     <div class="modal-overlay" id="create-space-modal">
         <div class="modal p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Create New Space</h3>
+                <h3 class="text-xl font-bold">{{t:settings.spaces.create}}</h3>
                 <button onclick="closeCreateSpaceModal()" class="text-on-surface-variant hover:text-on-surface">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             <div class="space-y-4 mb-6">
                 <div>
-                    <label class="block text-sm font-medium mb-2">Space Name</label>
-                    <input id="space-name" type="text" placeholder="e.g., Engineering Strategy" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                    <label class="block text-sm font-medium mb-2">{{t:settings.spaces.name}}</label>
+                    <input id="space-name" type="text" placeholder="{{t:settings.spaces.namePlaceholder}}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Icon (emoji)</label>
+                    <label class="block text-sm font-medium mb-2">{{t:settings.spaces.icon}}</label>
                     <input id="space-icon" type="text" placeholder="📊" maxlength="2" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Description</label>
-                    <textarea id="space-description" placeholder="What is this space for?" rows="3" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary resize-none"></textarea>
+                    <label class="block text-sm font-medium mb-2">{{t:settings.spaces.description}}</label>
+                    <textarea id="space-description" placeholder="{{t:settings.spaces.descriptionPlaceholder}}" rows="3" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary resize-none"></textarea>
                 </div>
             </div>
             <div class="flex gap-3">
                 <button onclick="closeCreateSpaceModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                    Cancel
+                    {{t:common.cancel}}
                 </button>
                 <button onclick="createSpace()" class="flex-1 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
-                    Create Space
+                    {{t:settings.spaces.createButton}}
                 </button>
             </div>
         </div>
@@ -334,7 +334,7 @@
     <div class="modal-overlay" id="manage-members-modal">
         <div class="modal p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Space Members: <span id="members-space-name"></span></h3>
+                <h3 class="text-xl font-bold">{{t:settings.spaces.membersOf}} <span id="members-space-name"></span></h3>
                 <button onclick="closeMembersModal()" class="text-on-surface-variant hover:text-on-surface">
                     <span class="material-symbols-outlined">close</span>
                 </button>
@@ -344,7 +344,7 @@
             </div>
             <div class="flex gap-3">
                 <button onclick="closeMembersModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                    Close
+                    {{t:common.close}}
                 </button>
             </div>
         </div>
@@ -354,23 +354,23 @@
     <div class="modal-overlay" id="create-invite-modal">
         <div class="modal p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Create Invite Link</h3>
+                <h3 class="text-xl font-bold">{{t:settings.invites.create}}</h3>
                 <button onclick="closeCreateInviteModal()" class="text-on-surface-variant hover:text-on-surface">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             <div class="mb-6">
-                <label class="block text-sm font-medium mb-2">Select Space</label>
+                <label class="block text-sm font-medium mb-2">{{t:settings.invites.space}}</label>
                 <select id="invite-space-select" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
                     <!-- Spaces will be populated here -->
                 </select>
             </div>
             <div class="flex gap-3">
                 <button onclick="closeCreateInviteModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                    Cancel
+                    {{t:common.cancel}}
                 </button>
                 <button onclick="createInvite()" class="flex-1 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
-                    Generate Link
+                    {{t:settings.invites.generate}}
                 </button>
             </div>
         </div>
@@ -380,23 +380,23 @@
     <div class="modal-overlay" id="delete-data-modal">
         <div class="modal p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-error">Delete All Workspace Data</h3>
+                <h3 class="text-xl font-bold text-error">{{t:settings.data.deleteTitle}}</h3>
                 <button onclick="closeDeleteDataModal()" class="text-on-surface-variant hover:text-on-surface">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             <div class="mb-6">
-                <p class="text-sm text-on-surface-variant mb-4">This permanently deletes every outcome, action item and AI suggestion in your workspace, for everyone in it, and destroys its encryption key. It can't be undone.</p>
-                <label class="block text-sm font-medium mb-2">Type "DELETE" to confirm</label>
+                <p class="text-sm text-on-surface-variant mb-4">{{t:settings.data.deleteBody}}</p>
+                <label class="block text-sm font-medium mb-2">{{t:settings.data.typeDelete}}</label>
                 <input id="delete-confirmation" type="text" autocomplete="off" class="w-full bg-surface-container-low border border-error rounded-lg p-3 outline-none focus:border-error">
                 <p id="delete-data-error" class="hidden mt-3 text-sm text-error" role="alert"></p>
             </div>
             <div class="flex gap-3">
                 <button onclick="closeDeleteDataModal()" class="flex-1 border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all">
-                    Cancel
+                    {{t:common.cancel}}
                 </button>
                 <button id="delete-data-button" onclick="deleteAllData()" class="flex-1 bg-error text-on-error disabled:opacity-50 font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
-                    Delete Everything
+                    {{t:settings.data.deleteButton}}
                 </button>
             </div>
         </div>
@@ -405,12 +405,12 @@
     <script>
         var WORKSPACE_ID = '<WORKSPACE_ID>';
     </script>
-    <script src="/scripts/settings-new.js?v=6"></script>
+    <script src="/scripts/settings-new.js?v=7"></script>
     <script src="/scripts/outcome-labels.js?v=2"></script>
-    <script src="/scripts/settings-integrations.js?v=12"></script>
-    <script src="/scripts/settings-context.js?v=2"></script>
-    <script src="/scripts/settings-timezone.js?v=1"></script>
+    <script src="/scripts/settings-integrations.js?v=13"></script>
+    <script src="/scripts/settings-context.js?v=3"></script>
+    <script src="/scripts/settings-timezone.js?v=2"></script>
     <script src="/scripts/settings-language.js?v=1"></script>
-    <script src="/scripts/settings-digest-voice.js?v=1"></script>
+    <script src="/scripts/settings-digest-voice.js?v=2"></script>
 </body>
 </html>

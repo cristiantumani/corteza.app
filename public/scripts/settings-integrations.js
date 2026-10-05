@@ -4,6 +4,8 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   const body = () => document.getElementById('google-meet-body');
 
@@ -13,11 +15,11 @@
   }
 
   const SKIP_REASONS = {
-    one_on_one: '1:1 meeting (skipped)',
-    excluded_title: 'Excluded by title',
-    no_transcript: 'No transcript or notes',
-    too_short: 'Too short',
-    ai_budget: "Daily AI limit reached, import it again tomorrow"
+    one_on_one: t('capture.skip.one_on_one'),
+    excluded_title: t('capture.skip.excluded_title'),
+    no_transcript: t('capture.skip.no_transcript'),
+    too_short: t('capture.skip.too_short'),
+    ai_budget: t('meet.skip.ai_budget')
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -31,8 +33,8 @@
   }
 
   function formatTime(value) {
-    if (!value) return 'never';
-    return new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    if (!value) return t('time.never');
+    return new Date(value).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
   /** Shows the result of the connect flow (?google=connected / ?google_error=…) */
@@ -43,7 +45,7 @@
 
     const banner = document.createElement('div');
     banner.className = `mb-4 p-3 rounded-lg text-sm ${error ? 'bg-error-container text-on-error-container' : 'bg-primary/10 text-primary'}`;
-    banner.textContent = error || 'Google Meet connected. Corteza will check your meetings every few minutes.';
+    banner.textContent = error || t('meet.connectedBanner');
     const section = document.getElementById('integrations');
     section.insertBefore(banner, section.children[1]);
     section.scrollIntoView({ behavior: 'smooth' });
@@ -54,10 +56,10 @@
     try {
       const response = await fetch('/api/integrations/google');
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load');
+      if (!response.ok) throw new Error(data.error || t('common.loadFailed'));
 
       if (!data.configured) {
-        body().innerHTML = '<p>Google is not configured on this server yet.</p>';
+        body().innerHTML = `<p>${escapeHtml(t('meet.notConfigured'))}</p>`;
       } else if (!data.connected) {
         renderDisconnected();
       } else {
@@ -65,20 +67,20 @@
       }
     } catch (error) {
       console.error('Google integration error:', error);
-      body().innerHTML = '<p>Could not load the Google Meet integration. Refresh to try again.</p>';
+      body().innerHTML = `<p>${escapeHtml(t('meet.loadFailed'))}</p>`;
     }
   }
 
   function renderDisconnected() {
     body().innerHTML = `
       <ul class="list-disc pl-5 space-y-1 mb-6">
-        <li>Works with meetings where <strong>transcription</strong> or <strong>Gemini "Take notes for me"</strong> is on.</li>
-        <li>Outcomes (decisions, action items, open questions and risks) are saved automatically and marked <em>AI-captured</em>. You can edit or delete them.</li>
-        <li>1:1 meetings are skipped by default. You can exclude meetings by title.</li>
+        <li>${escapeHtml(t('meet.disconnected.works'))}</li>
+        <li>${escapeHtml(t('meet.disconnected.saved'))}</li>
+        <li>${escapeHtml(t('meet.disconnected.skip'))}</li>
       </ul>
       <a href="/integrations/google/connect" class="inline-flex items-center gap-2 bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
         <span class="material-symbols-outlined text-xl">link</span>
-        Connect Google Meet
+        ${escapeHtml(t('capture.connect.button'))}
       </a>
     `;
   }
@@ -88,75 +90,75 @@
     const settings = data.settings || {};
     const needsReconnect = data.status !== 'active';
 
-    const spaceOptions = [`<option value="">My space</option>`]
+    const spaceOptions = [`<option value="">${escapeHtml(t('meet.mySpace'))}</option>`]
       .concat(spaces.filter(s => !s.is_personal).map(s => `<option value="${escapeHtml(s.space_id)}" ${s.space_id === settings.space_id ? 'selected' : ''}>${escapeHtml((s.settings && s.settings.icon) || '📁')} ${escapeHtml(s.name)}</option>`))
       .join('');
 
     const recent = (data.recent_meetings || []).map(m => {
       const status = m.status === 'completed'
         ? countLabel(m.decisions_created, m.action_items_created, m.outcomes_by_type)
-        : m.status === 'skipped' ? (SKIP_REASONS[m.skip_reason] || 'Skipped')
-          : m.status === 'failed' ? 'Failed (will retry)' : 'Processing';
-      return `<li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || 'Meeting')}</span><span class="sm:whitespace-nowrap">${escapeHtml(status)}</span></li>`;
+        : m.status === 'skipped' ? (SKIP_REASONS[m.skip_reason] || t('capture.skipped'))
+          : m.status === 'failed' ? t('capture.failed') : t('upload.processing');
+      return `<li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || t('capture.meeting'))}</span><span class="sm:whitespace-nowrap">${escapeHtml(status)}</span></li>`;
     }).join('');
 
     body().innerHTML = `
       ${needsReconnect ? `
         <div class="mb-4 p-3 rounded-lg bg-error-container text-on-error-container">
-          ${escapeHtml(data.last_error || 'Google access stopped working.')}
-          <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
+          ${escapeHtml(data.last_error || t('capture.accessStopped'))}
+          <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('capture.reconnect'))}</a>
         </div>` : ''}
       <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6">
         <span class="flex items-center gap-2 text-on-surface font-semibold">
           <span class="w-2 h-2 rounded-full ${needsReconnect ? 'bg-error' : 'bg-tertiary'}"></span>
-          ${needsReconnect ? 'Needs reconnecting' : 'Connected'} as ${escapeHtml(data.google_email)}
+          ${escapeHtml(t(needsReconnect ? 'meet.needsReconnect' : 'meet.connectedAs', { email: data.google_email }))}
         </span>
-        <span>Last checked: ${escapeHtml(formatTime(data.last_polled_at))}</span>
-        <span>${data.decisions_captured} outcome${data.decisions_captured === 1 ? '' : 's'} from ${data.meetings_processed} meeting${data.meetings_processed === 1 ? '' : 's'}</span>
+        <span>${escapeHtml(t('meet.lastChecked', { when: formatTime(data.last_polled_at) }))}</span>
+        <span>${escapeHtml(t('meet.totals', { outcomes: t('outcomeCounts.outcome', { count: data.decisions_captured }), meetings: t('capture.meetings', { count: data.meetings_processed }) }))}</span>
       </div>
       ${!needsReconnect && data.needs_reconsent ? `
         <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
-          Corteza can now read Gemini notes too. Reconnect once and allow Google Drive access to capture meetings that only have notes.
-          <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
+          ${escapeHtml(t('meet.reconsent'))}
+          <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('capture.reconnect'))}</a>
         </div>` : ''}
-      ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">Last check failed: ${escapeHtml(data.last_error)}</p>` : ''}
+      ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">${escapeHtml(t('meet.lastFailed', { error: data.last_error }))}</p>` : ''}
       ${needsReconnect ? '' : data.calendar_connected ? `
         <p class="mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-base text-tertiary" aria-hidden="true">event_available</span>
-          Calendar connected: your morning summary prepares you for today's meetings with the open action items of the people in them.</p>` : `
+          ${escapeHtml(t('meet.calendarConnected'))}</p>` : `
         <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
-          <strong>Prepare for your meetings.</strong> Let Corteza read your calendar and your morning summary will list today's meetings with the open action items of the people in them. Corteza only reads your own events when it writes the summary and doesn't store them.
-          <a href="/integrations/google/connect" class="font-bold underline ml-1">Add calendar access</a>
+          <strong>${escapeHtml(t('meet.calendar.title'))}</strong> ${escapeHtml(t('meet.calendar.body'))}
+          <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('meet.calendar.button'))}</a>
         </div>`}
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <label class="block" data-multi-space>
-          <span class="block text-xs mb-1">Save outcomes to</span>
+          <span class="block text-xs mb-1">${escapeHtml(t('meet.saveTo'))}</span>
           <select id="gm-space" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
         </label>
         <label class="block">
-          <span class="block text-xs mb-1">Skip meetings whose title contains (comma separated)</span>
-          <input id="gm-exclude" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3" placeholder="e.g. 1:1, interview, personal" value="${escapeHtml((settings.exclude_keywords || []).join(', '))}">
+          <span class="block text-xs mb-1">${escapeHtml(t('meet.excludeLabel'))}</span>
+          <input id="gm-exclude" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3" placeholder="${escapeHtml(t('meet.excludePlaceholder'))}" value="${escapeHtml((settings.exclude_keywords || []).join(', '))}">
         </label>
         <label class="block">
-          <span class="block text-xs mb-1">Write outcomes in</span>
+          <span class="block text-xs mb-1">${escapeHtml(t('meet.language'))}</span>
           <select id="gm-language" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-3">
-            ${[['auto', 'The language spoken in each meeting'], ['es', 'Español'], ['en', 'English'], ['pt', 'Português']]
+            ${[['auto', t('meet.languageAuto')], ['es', 'Español'], ['en', 'English'], ['pt', 'Português']]
               .map(([value, label]) => `<option value="${value}" ${(settings.language || 'auto') === value ? 'selected' : ''}>${label}</option>`).join('')}
           </select>
         </label>
         <label class="flex items-center gap-3 mt-5">
           <input id="gm-skip-1on1" type="checkbox" ${settings.skip_one_on_one !== false ? 'checked' : ''}>
-          <span>Skip 1:1 meetings (2 people or fewer)</span>
+          <span>${escapeHtml(t('meet.skip1on1'))}</span>
         </label>
       </div>
 
       <div class="flex flex-wrap gap-3 mb-6">
-        <button id="gm-save" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">Save settings</button>
-        <button id="gm-sync" class="border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all" ${needsReconnect ? 'disabled' : ''}>Check for new meetings now</button>
-        <button id="gm-disconnect" class="text-error font-bold py-3 px-6 rounded-lg hover:bg-error/10 transition-all">Disconnect</button>
+        <button id="gm-save" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">${escapeHtml(t('meet.save'))}</button>
+        <button id="gm-sync" class="border border-outline-variant text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-surface-container-low transition-all" ${needsReconnect ? 'disabled' : ''}>${escapeHtml(t('meet.checkNow'))}</button>
+        <button id="gm-disconnect" class="text-error font-bold py-3 px-6 rounded-lg hover:bg-error/10 transition-all">${escapeHtml(t('meet.disconnect'))}</button>
       </div>
 
-      ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">Recent meetings</h4><ul>${recent}</ul>` : '<p>No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, its outcomes show up here within a few minutes.</p>'}
+      ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">${escapeHtml(t('capture.latest'))}</h4><ul>${recent}</ul>` : `<p>${escapeHtml(t('capture.noMeetings'))}</p>`}
 
       ${needsReconnect ? '' : renderImportSection(spaceOptions, data.import_max_days || 7)}
     `;
@@ -183,20 +185,20 @@
 
   const AVAILABILITY_LABELS = {
     ready: null, // built from has_transcript / has_notes
-    pending: 'Being generated by Google',
-    none: 'Not recorded'
+    pending: t('meet.import.pending'),
+    none: t('meet.import.notRecorded')
   };
 
   const ITEM_STATUS_LABELS = {
-    completed: 'Imported',
-    already_imported: 'Already imported',
-    skipped: 'Skipped (too short)',
-    no_transcript: 'No transcript or notes',
-    not_ready: 'Transcript not ready yet',
-    too_old: 'Too old to import',
-    extracting: 'Extracting outcomes… (usually a few minutes, can take up to an hour)',
-    failed: 'Failed',
-    queued: 'Waiting…'
+    completed: t('meet.import.status.completed'),
+    already_imported: t('meet.import.status.already_imported'),
+    skipped: t('meet.import.status.skipped'),
+    no_transcript: t('capture.skip.no_transcript'),
+    not_ready: t('meet.import.status.not_ready'),
+    too_old: t('meet.import.status.too_old'),
+    extracting: t('meet.import.status.extracting'),
+    failed: t('meet.import.status.failed'),
+    queued: t('meet.import.status.queued')
   };
 
   let foundMeetings = [];
@@ -215,28 +217,28 @@
     const earliest = new Date(today.getTime() - maxDays * 24 * 60 * 60 * 1000);
     return `
       <div id="gm-import-section" class="mt-8 pt-6 border-t border-outline-variant">
-        <h4 class="text-lg font-bold text-on-surface mb-1">Import past meetings</h4>
-        <p class="mb-4">Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture outcomes from. You can import meetings from the last ${Number(maxDays)} days.</p>
+        <h4 class="text-lg font-bold text-on-surface mb-1">${escapeHtml(t('capture.importPast'))}</h4>
+        <p class="mb-4">${escapeHtml(t('meet.import.intro', { days: Number(maxDays) }))}</p>
 
         <div class="flex flex-wrap items-end gap-4 mb-4">
           <label class="block">
-            <span class="block text-xs mb-1">From</span>
+            <span class="block text-xs mb-1">${escapeHtml(t('meet.import.from'))}</span>
             <input id="gm-import-from" type="date" value="${isoDate(earliest)}" min="${isoDate(earliest)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
           </label>
           <label class="block">
-            <span class="block text-xs mb-1">To</span>
+            <span class="block text-xs mb-1">${escapeHtml(t('meet.import.to'))}</span>
             <input id="gm-import-to" type="date" value="${isoDate(today)}" min="${isoDate(earliest)}" max="${isoDate(today)}" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">
           </label>
-          <button id="gm-import-find" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">Find meetings</button>
+          <button id="gm-import-find" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">${escapeHtml(t('meet.import.find'))}</button>
         </div>
 
         <div id="gm-import-results"></div>
         <div id="gm-import-actions" class="hidden flex flex-wrap items-end gap-4 mt-4">
           <label class="block" data-multi-space>
-            <span class="block text-xs mb-1">Save outcomes to</span>
+            <span class="block text-xs mb-1">${escapeHtml(t('meet.saveTo'))}</span>
             <select id="gm-import-space" class="bg-surface-container-low border border-outline-variant rounded-lg p-3">${spaceOptions}</select>
           </label>
-          <button id="gm-import-start" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all disabled:opacity-50" disabled>Import selected (0)</button>
+          <button id="gm-import-start" class="bg-primary text-on-primary font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all disabled:opacity-50" disabled>${escapeHtml(t('meet.import.selected', { count: 0 }))}</button>
         </div>
         <div id="gm-import-progress" class="mt-4"></div>
       </div>
@@ -257,12 +259,12 @@
     if (!keepProgress) document.getElementById('gm-import-progress').innerHTML = '';
 
     button.disabled = true;
-    button.textContent = 'Searching…';
-    results.innerHTML = '<p>Looking for meetings in Google Meet…</p>';
+    button.textContent = t('home.ask.searching');
+    results.innerHTML = `<p>${escapeHtml(t('meet.import.looking'))}</p>`;
     try {
       const response = await fetch(`/api/integrations/google/meetings?${new URLSearchParams({ from, to })}`);
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not load meetings');
+      if (!response.ok) throw new Error(data.error || t('meet.import.loadFailed'));
       foundMeetings = data.meetings;
       renderMeetingList(data.truncated);
     } catch (error) {
@@ -271,7 +273,7 @@
       document.getElementById('gm-import-actions').classList.add('hidden');
     } finally {
       button.disabled = false;
-      button.textContent = 'Find meetings';
+      button.textContent = t('meet.import.find');
     }
   }
 
@@ -281,15 +283,15 @@
 
   function availabilityLabel(meeting) {
     if (meeting.availability !== 'ready') return AVAILABILITY_LABELS[meeting.availability];
-    return [meeting.has_transcript ? 'Transcript' : null, meeting.has_notes ? 'Gemini notes' : null].filter(Boolean).join(' + ');
+    return [meeting.has_transcript ? t('meet.import.transcript') : null, meeting.has_notes ? t('meet.import.notes') : null].filter(Boolean).join(' + ');
   }
 
   function statusLabel(meeting) {
-    if (meeting.status === 'completed') return `Imported · ${countLabel(meeting.decisions_created, 0, meeting.outcomes_by_type)}`;
-    if (meeting.status === 'skipped') return `Skipped automatically${SKIP_REASONS[meeting.skip_reason] ? ` (${SKIP_REASONS[meeting.skip_reason].replace(' (skipped)', '')})` : ''}`;
-    if (meeting.status === 'failed') return 'Failed earlier';
-    if (meeting.status === 'processing') return 'Processing…';
-    return 'Not imported';
+    if (meeting.status === 'completed') return `${t('meet.import.status.completed')} · ${countLabel(meeting.decisions_created, 0, meeting.outcomes_by_type)}`;
+    if (meeting.status === 'skipped') return `${t('meet.import.skippedAuto')}${SKIP_REASONS[meeting.skip_reason] ? ` (${SKIP_REASONS[meeting.skip_reason]})` : ''}`;
+    if (meeting.status === 'failed') return t('meet.import.failedEarlier');
+    if (meeting.status === 'processing') return t('upload.processing');
+    return t('meet.import.notImported');
   }
 
   function renderMeetingList(truncated) {
@@ -297,14 +299,14 @@
     const actions = document.getElementById('gm-import-actions');
 
     if (foundMeetings.length === 0) {
-      results.innerHTML = '<p>No Google Meet meetings found in this period.</p>';
+      results.innerHTML = `<p>${escapeHtml(t('meet.import.none'))}</p>`;
       actions.classList.add('hidden');
       return;
     }
 
     const importable = foundMeetings.filter(canImport).length;
     const rows = foundMeetings.map((meeting, index) => {
-      const date = meeting.started_at ? new Date(meeting.started_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+      const date = meeting.started_at ? new Date(meeting.started_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : '';
       const title = meeting.url && /^https:\/\//.test(meeting.url)
         ? `<a href="${escapeHtml(meeting.url).replace(/"/g, '&quot;')}" target="_blank" rel="noopener" class="text-primary hover:underline">${escapeHtml(meeting.title)}</a>`
         : escapeHtml(meeting.title);
@@ -313,7 +315,7 @@
           <td class="py-2 pr-3"><input type="checkbox" class="gm-import-check" data-index="${index}" ${canImport(meeting) ? '' : 'disabled'}></td>
           <td class="py-2 pr-4 whitespace-nowrap">${escapeHtml(date)}</td>
           <td class="py-2 pr-4 text-on-surface">${title}</td>
-          <td class="py-2 pr-4 whitespace-nowrap">${meeting.participant_count} people</td>
+          <td class="py-2 pr-4 whitespace-nowrap">${escapeHtml(t('meet.import.people', { count: meeting.participant_count }))}</td>
           <td class="py-2 pr-4 whitespace-nowrap">${escapeHtml(availabilityLabel(meeting))}</td>
           <td class="py-2 whitespace-nowrap">${escapeHtml(statusLabel(meeting))}</td>
         </tr>`;
@@ -321,13 +323,13 @@
 
     results.innerHTML = `
       <div class="flex justify-between items-center mb-2">
-        <span>${foundMeetings.length} meeting${foundMeetings.length === 1 ? '' : 's'} found, ${importable} can be imported${truncated ? ' (showing the most recent 200; pick a shorter period to see all)' : ''}</span>
-        ${importable ? '<label class="flex items-center gap-2"><input id="gm-import-all" type="checkbox"> Select all available</label>' : ''}
+        <span>${escapeHtml(t('meet.import.found', { count: foundMeetings.length, importable }))}${truncated ? ` ${escapeHtml(t('meet.import.truncated'))}` : ''}</span>
+        ${importable ? `<label class="flex items-center gap-2"><input id="gm-import-all" type="checkbox"> ${escapeHtml(t('meet.import.selectAll'))}</label>` : ''}
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left">
           <thead><tr class="text-xs uppercase tracking-wide border-b border-outline-variant">
-            <th class="py-2"></th><th class="py-2">Date</th><th class="py-2">Meeting</th><th class="py-2">Participants</th><th class="py-2">Available</th><th class="py-2">Status</th>
+            <th class="py-2"></th><th class="py-2">${escapeHtml(t('detail.date'))}</th><th class="py-2">${escapeHtml(t('capture.meeting'))}</th><th class="py-2">${escapeHtml(t('meet.import.participants'))}</th><th class="py-2">${escapeHtml(t('meet.import.available'))}</th><th class="py-2">${escapeHtml(t('actions.statusLabel'))}</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -353,7 +355,7 @@
   function updateSelectedCount() {
     const count = selectedMeetingIds().length;
     const button = document.getElementById('gm-import-start');
-    button.textContent = `Import selected (${count})`;
+    button.textContent = t('meet.import.selected', { count });
     button.disabled = count === 0;
   }
 
@@ -371,7 +373,7 @@
         body: JSON.stringify({ meeting_ids: ids, space_id: document.getElementById('gm-import-space').value || null })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not start the import');
+      if (!response.ok) throw new Error(data.error || t('meet.import.startFailed'));
       document.getElementById('gm-import-actions').classList.add('hidden');
       trackImport(data.import_id);
     } catch (error) {
@@ -385,13 +387,13 @@
     try {
       const response = await fetch(`/api/integrations/google/imports/${encodeURIComponent(importId)}`);
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not load the import');
+      if (!response.ok) throw new Error(data.error || t('meet.import.trackFailed'));
       const job = data.import;
       const percent = job.total ? Math.round((job.done / job.total) * 100) : 0;
 
       const items = job.items.map(item => `
         <li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-1">
-          <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || 'Meeting')}</span>
+          <span class="text-on-surface">${escapeHtml(item.title || importTitles[item.meeting_id] || t('capture.meeting'))}</span>
           <span class="sm:whitespace-nowrap">${escapeHtml(ITEM_STATUS_LABELS[item.status] || item.status)}${item.status === 'completed' ? ` · ${countLabel(item.decisions_created, item.action_items_created, item.outcomes_by_type)}` : ''}${item.error ? ` (${escapeHtml(item.error)})` : ''}</span>
         </li>`).join('');
 
@@ -399,12 +401,12 @@
       progress.innerHTML = `
         <div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant">
           <p class="font-bold text-on-surface mb-2">
-            ${running ? `Importing… ${job.done} of ${job.total} meetings` : job.status === 'failed' ? escapeHtml(job.error || 'Import failed') : `Done: ${countLabel(job.decisions_created, job.action_items_created, job.outcomes_by_type)} captured from ${job.total} meeting${job.total === 1 ? '' : 's'}`}
+            ${escapeHtml(running ? t('meet.import.running', { done: job.done, total: job.total }) : job.status === 'failed' ? (job.error || t('meet.import.failed')) : t('meet.import.done', { outcomes: countLabel(job.decisions_created, job.action_items_created, job.outcomes_by_type), meetings: t('capture.meetings', { count: job.total }) }))}
           </p>
           <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden mb-3"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
-          ${running ? '<p class="text-sm text-on-surface-variant mb-3">It keeps running if you leave this page. We\'ll email you a summary when it\'s done.</p>' : ''}
+          ${running ? `<p class="text-sm text-on-surface-variant mb-3">${escapeHtml(t('meet.import.background'))}</p>` : ''}
           <ul>${items}</ul>
-          ${running ? '' : '<a href="/dashboard" class="inline-block mt-3 text-primary font-bold">Open dashboard →</a>'}
+          ${running ? '' : `<a href="/dashboard" class="inline-block mt-3 text-primary font-bold">${escapeHtml(t('meet.import.openHome'))}</a>`}
         </div>`;
 
       if (running) {
@@ -442,20 +444,20 @@
       body: JSON.stringify(payload)
     });
     const data = await response.json();
-    alert(response.ok ? 'Google Meet settings saved' : (data.error || 'Failed to save settings'));
+    alert(response.ok ? t('meet.saved') : (data.error || t('common.couldNotSave')));
   }
 
   async function syncNow(event) {
     const button = event.currentTarget;
     button.disabled = true;
-    button.textContent = 'Checking…';
+    button.textContent = t('capture.checking');
     try {
       const response = await fetch('/api/integrations/google/sync', { method: 'POST' });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Check failed');
+      if (!response.ok) throw new Error(data.error || t('capture.checkFailed'));
       const waiting = (data.results || []).filter(r => r.status === 'waiting').length;
-      alert(`Captured ${countLabel(data.decisions_captured, data.action_items_captured, data.outcomes_by_type)} from ${data.meetings_processed} meeting(s).` +
-        (waiting ? ` ${waiting} meeting(s) are still waiting for Google to finish the transcript.` : ''));
+      alert(t('capture.captured', { outcomes: countLabel(data.decisions_captured, data.action_items_captured, data.outcomes_by_type), meetings: t('capture.meetings', { count: data.meetings_processed }) }) +
+        (waiting ? ` ${t('meet.waiting', { count: waiting })}` : ''));
     } catch (error) {
       alert(error.message);
     }
@@ -463,9 +465,9 @@
   }
 
   async function disconnect() {
-    if (!confirm('Disconnect Google Meet? Corteza will stop capturing outcomes from your meetings. Outcomes already captured stay.')) return;
+    if (!confirm(t('meet.confirmDisconnect'))) return;
     const response = await fetch('/api/integrations/google/disconnect', { method: 'POST' });
-    if (!response.ok) alert('Failed to disconnect');
+    if (!response.ok) alert(t('meet.disconnectFailed'));
     loadGoogleIntegration();
   }
 })();

@@ -3,6 +3,8 @@
 
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   console.log('🔍 AI Search UI loaded');
 
@@ -68,7 +70,7 @@
       // Get current user from session
       const userResponse = await fetch('/auth/me');
       if (!userResponse.ok) {
-        throw new Error('Not authenticated');
+        throw new Error(t('search.err.auth'));
       }
       const userData = await userResponse.json();
       console.log('👤 User data from /auth/me:', userData);
@@ -76,7 +78,7 @@
       console.log('🏢 Workspace ID:', workspaceId);
 
       if (!workspaceId) {
-        throw new Error('No workspace_id found in user session');
+        throw new Error(t('search.err.workspace'));
       }
 
       // Get current space from URL or localStorage
@@ -85,7 +87,7 @@
       console.log('📁 Space ID:', currentSpaceId);
 
       if (!currentSpaceId) {
-        throw new Error('No space selected. Please return to dashboard and select a space.');
+        throw new Error(t('search.err.space'));
       }
 
       // Perform semantic search with timeout
@@ -113,7 +115,7 @@
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.message || errorData.error || `Search failed with status ${response.status}`); // message: e.g. the daily AI limit
+        throw new Error(errorData.message || errorData.error || t('search.err.status', { status: response.status })); // message: e.g. the daily AI limit
       }
 
       const data = await response.json();
@@ -147,9 +149,9 @@
 
       // Better error message for timeout
       if (error.name === 'AbortError') {
-        alert('Search request timed out after 30 seconds. The server might be processing a large query or experiencing issues. Please try again.');
+        alert(t('search.err.timeout'));
       } else {
-        alert('Search failed: ' + error.message);
+        alert(t('search.err.failed', { error: error.message }));
       }
     }
   };
@@ -161,10 +163,10 @@
     document.getElementById('search-results').classList.remove('hidden');
 
     // Display query
-    document.getElementById('search-query-display').textContent = `"${query}"`;
+    document.getElementById('search-query-display').textContent = `“${query}”`;
 
     // Display synthesized response
-    document.getElementById('synthesized-response').textContent = data.response || 'No insights generated';
+    document.getElementById('synthesized-response').textContent = data.response || t('search.noInsights');
 
     // Display metadata: how many sources the answer is based on
     const resultsCount = document.getElementById('results-count');
@@ -172,15 +174,15 @@
     const total = (data.decisions || []).length;
     const actionCount = (data.action_items || []).length;
     resultsCount.textContent = total === 0
-      ? (actionCount ? `${actionCount} open action item${actionCount !== 1 ? 's' : ''}` : 'No matching sources')
-      : `Based on ${usedCount} source${usedCount !== 1 ? 's' : ''}${total > usedCount ? ` (${total - usedCount} other match${total - usedCount !== 1 ? 'es' : ''})` : ''}`
-        + (excludedIds.length ? ` · ${excludedIds.length} left out` : '')
+      ? (actionCount ? t('search.openActions', { count: actionCount }) : t('search.noSources'))
+      : t('home.ask.basedOn', { count: usedCount }) + (total > usedCount ? ` (${t('search.otherMatches', { count: total - usedCount })})` : '')
+        + (excludedIds.length ? ` · ${t('search.leftOut', { count: excludedIds.length })}` : '')
         + notReviewedNote(usedSources(data));
     renderExcludedBanner();
 
     const timestamp = document.getElementById('search-timestamp');
     const now = new Date();
-    timestamp.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    timestamp.textContent = now.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 
     // Open action items the question is about, then the evidence sources
     renderActionItems(data.action_items || []);
@@ -196,7 +198,7 @@
   /** " · 1 not reviewed yet": the answer rests on AI captures nobody confirmed */
   function notReviewedNote(sources) {
     const pending = sources.filter(needsReview).length;
-    return pending ? ` · ${pending} not reviewed yet` : '';
+    return pending ? ` · ${t('home.ask.notReviewed', { count: pending })}` : '';
   }
 
   /** Open action items the question is about ("What's pending from Ana?"), most urgent first */
@@ -210,11 +212,11 @@
     }
     const today = new Date().toISOString().slice(0, 10);
     const rows = items.map(item => {
-      const owners = (item.owners || []).map(owner => owner.name).filter(Boolean).join(', ') || 'No owner';
+      const owners = (item.owners || []).map(owner => owner.name).filter(Boolean).join(', ') || t('detail.noOwner');
       const overdue = item.due_date && item.due_date < today;
       const due = item.due_date
-        ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'No due date';
+        ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+        : t('due.none');
       const meeting = item.source && item.source.title ? ` · ${escapeHtml(item.source.title)}` : '';
       return `
         <li class="flex items-start justify-between gap-4 py-3">
@@ -225,16 +227,16 @@
               <p class="text-sm text-on-surface-variant">${escapeHtml(owners)}${meeting}</p>
             </div>
           </div>
-          <span class="whitespace-nowrap text-sm font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}">${overdue ? 'Overdue · ' : ''}${escapeHtml(due)}</span>
+          <span class="whitespace-nowrap text-sm font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}">${escapeHtml(overdue ? t('due.overdueOn', { date: due }) : due)}</span>
         </li>`;
     }).join('');
     container.innerHTML = `
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-2xl font-bold flex items-center gap-3">
           <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">task_alt</span>
-          Open action items
+          ${escapeHtml(t('search.actionsTitle'))}
         </h3>
-        <a href="/actions" class="text-sm text-primary font-semibold hover:underline">Open Action items →</a>
+        <a href="/actions" class="text-sm text-primary font-semibold hover:underline">${escapeHtml(t('detail.openActions'))}</a>
       </div>
       <ul class="bg-surface-container-lowest border border-outline-variant rounded-xl px-5 divide-y divide-outline-variant/50">${rows}</ul>`;
   }
@@ -269,7 +271,7 @@
         personExample.remove();
         return;
       }
-      const query = `What's still pending from ${top[0]} before our next meeting?`;
+      const query = t('search.personQuestion', { name: top[0] });
       personExample.dataset.query = query;
       personExample.querySelector('.font-medium').textContent = query;
     } catch (error) {
@@ -292,7 +294,7 @@
     if (decisions.length === 0) {
       container.innerHTML = `
         <div class="lg:col-span-2 text-center py-8 text-on-surface-variant">
-          <p>No sources match this question</p>
+          <p>${escapeHtml(t('search.noSourcesMatch'))}</p>
         </div>
       `;
       return;
@@ -305,7 +307,7 @@
     if (others.length) {
       const details = document.createElement('details');
       details.className = 'evidence-others lg:col-span-2';
-      details.innerHTML = `<summary class="cursor-pointer text-sm font-semibold text-on-surface-variant py-2">Other matches not used in the answer (${others.length})</summary>`;
+      details.innerHTML = `<summary class="cursor-pointer text-sm font-semibold text-on-surface-variant py-2">${escapeHtml(t('search.othersSummary', { count: others.length }))}</summary>`;
       const list = document.createElement('div');
       list.className = 'grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mt-3';
       others.forEach(decision => list.appendChild(createEvidenceCard(decision)));
@@ -315,7 +317,7 @@
     }
   }
 
-  const TYPE_LABELS = { decision: 'Decision', action_item: 'Action item', open_question: 'Open question', risk: 'Risk' };
+  const TYPE_LABELS = { decision: t('types.decision'), action_item: t('types.action_item'), open_question: t('types.open_question'), risk: t('types.risk') };
 
   /** AI-captured and nobody confirmed it yet (outcome-review.js uses the same rule) */
   function needsReview(decision) {
@@ -333,15 +335,15 @@
     card.dataset.sourceId = decision.id;
     card.onclick = () => openSource(decision);
 
-    const date = new Date(decision.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const date = new Date(decision.timestamp).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     const typeLabel = TYPE_LABELS[decision.type] || decision.type;
     const status = needsReview(decision)
-      ? '<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">Needs review</span>'
+      ? `<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">${escapeHtml(t('review.needsReview'))}</span>`
       : '';
     const source = decision.source_details;
     const sourceLine = source && source.title
-      ? `${source.type === 'google_meet' ? 'Google Meet' : 'Source'}: ${escapeHtml(source.title)} · ${escapeHtml(date)}`
-      : `${escapeHtml(decision.creator || 'Logged manually')} · ${escapeHtml(date)}`;
+      ? `${escapeHtml(source.type === 'google_meet' ? t('detail.googleMeet') : t('detail.source'))}: ${escapeHtml(source.title)} · ${escapeHtml(date)}`
+      : `${escapeHtml(decision.creator || t('search.loggedManually'))} · ${escapeHtml(date)}`;
 
     card.innerHTML = `
       <div class="flex items-start justify-between gap-2">
@@ -351,8 +353,8 @@
           ${status}
         </div>
         ${verdict === false
-          ? '<span class="text-xs font-bold text-error">Not related</span>'
-          : verdict === true ? '<span class="text-xs font-bold text-tertiary">Related</span>' : ''}
+          ? `<span class="text-xs font-bold text-error">${escapeHtml(t('search.notRelated'))}</span>`
+          : verdict === true ? `<span class="text-xs font-bold text-tertiary">${escapeHtml(t('search.related1'))}</span>` : ''}
       </div>
       <p class="font-medium text-on-surface line-clamp-4">${escapeHtml(decision.text)}</p>
       ${decision.evidence_quote ? `<p class="text-sm italic text-on-surface-variant line-clamp-3">“${escapeHtml(decision.evidence_quote)}”</p>` : ''}
@@ -376,7 +378,7 @@
     });
 
     if (allTags.size === 0) {
-      container.innerHTML = '<p class="text-sm text-on-surface-variant">No related topics found</p>';
+      container.innerHTML = `<p class="text-sm text-on-surface-variant">${escapeHtml(t('search.noTopics'))}</p>`;
       return;
     }
 
@@ -386,7 +388,7 @@
       const badge = document.createElement('button');
       badge.className = 'px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-sm font-medium hover:border-primary hover:bg-primary-container/10 transition-all';
       badge.textContent = tag;
-      badge.onclick = () => performSearch(`decisions about ${tag}`);
+      badge.onclick = () => performSearch(t('search.aboutTag', { tag }));
       container.appendChild(badge);
     });
   }
@@ -425,18 +427,18 @@
     const waiting = pendingExclusions.length > 0;
     block.style.display = 'block';
     block.innerHTML = `
-      <p class="detail-relevance-question">Is this related to <strong>“${escapeHtml(currentQuery)}”</strong>?</p>
+      <p class="detail-relevance-question">${escapeHtml(t('search.relevance.question')).replace('{query}', `<strong>“${escapeHtml(currentQuery)}”</strong>`)}</p>
       <div class="detail-relevance-buttons">
-        <button type="button" data-relevant="yes" class="${verdict === true ? 'is-selected' : ''}">👍 Yes, related</button>
-        <button type="button" data-relevant="no" class="${verdict === false ? 'is-selected' : ''}">👎 No, not related</button>
+        <button type="button" data-relevant="yes" class="${verdict === true ? 'is-selected' : ''}">👍 ${escapeHtml(t('search.relevance.yes'))}</button>
+        <button type="button" data-relevant="no" class="${verdict === false ? 'is-selected' : ''}">👎 ${escapeHtml(t('search.relevance.no'))}</button>
       </div>
       ${verdict === false ? `
         <div class="detail-relevance-followup">
           ${waiting
-            ? 'It will be left out when the answer is updated. <button type="button" data-update>Update the answer without it</button>'
-            : 'It is left out of the current answer.'}
+            ? `${escapeHtml(t('search.relevance.willLeaveOut'))} <button type="button" data-update>${escapeHtml(t('search.relevance.update'))}</button>`
+            : escapeHtml(t('search.relevance.leftOut'))}
         </div>` : ''}
-      ${verdict === true ? '<div class="detail-relevance-followup">Thanks, noted.</div>' : ''}`;
+      ${verdict === true ? `<div class="detail-relevance-followup">${escapeHtml(t('review.thanks'))}</div>` : ''}`;
 
     block.querySelector('[data-relevant="yes"]').onclick = () => setRelevance(decision, true);
     block.querySelector('[data-relevant="no"]').onclick = () => setRelevance(decision, false);
@@ -480,8 +482,8 @@
     const n = pendingExclusions.length;
     banner.classList.remove('hidden');
     banner.innerHTML = `
-      <span>${n} source${n !== 1 ? 's' : ''} marked as not related (${pendingExclusions.map(id => `#${id}`).join(', ')}).</span>
-      <button type="button" class="bg-white text-primary font-semibold rounded-lg px-4 py-2" id="update-answer">Update the answer without ${n === 1 ? 'it' : 'them'}</button>`;
+      <span>${escapeHtml(t('search.excluded.text', { count: n, ids: pendingExclusions.map(id => `#${id}`).join(', ') }))}</span>
+      <button type="button" class="bg-white text-primary font-semibold rounded-lg px-4 py-2" id="update-answer">${escapeHtml(t('search.excluded.button', { count: n }))}</button>`;
     document.getElementById('update-answer').onclick = updateAnswer;
   }
 

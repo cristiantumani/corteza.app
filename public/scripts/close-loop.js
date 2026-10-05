@@ -8,6 +8,7 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -24,12 +25,12 @@
     return `
       <div class="loop-row flex flex-col gap-2 rounded-lg bg-surface-container-lowest border border-outline-variant p-3" data-loop-id="${escapeHtml(outcome.id)}">
         <p class="text-sm text-on-surface">${isQuestion
-          ? `This was a next step on <strong>“${escapeHtml(outcome.text)}”</strong>. Mark it answered?`
-          : `Close the linked risk too? <strong>“${escapeHtml(outcome.text)}”</strong>`}</p>
-        ${isQuestion ? '<textarea class="loop-note w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="What was the answer? (optional)"></textarea>' : ''}
+          ? escapeHtml(t('loop.question')).replace('{question}', `<strong>“${escapeHtml(outcome.text)}”</strong>`)
+          : escapeHtml(t('loop.risk')).replace('{risk}', `<strong>“${escapeHtml(outcome.text)}”</strong>`)}</p>
+        ${isQuestion ? `<textarea class="loop-note w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="${escapeHtml(t('loop.answerPlaceholder'))}"></textarea>` : ''}
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" class="loop-yes ${BUTTON}" data-id="${escapeHtml(outcome.id)}" data-kind="${kind}">${isQuestion ? 'Mark answered' : 'Mark mitigated'}</button>
-          <button type="button" class="loop-no ${LINK}">Not yet</button>
+          <button type="button" class="loop-yes ${BUTTON}" data-id="${escapeHtml(outcome.id)}" data-kind="${kind}">${escapeHtml(t(isQuestion ? 'detail.markAnswered' : 'detail.markMitigated'))}</button>
+          <button type="button" class="loop-no ${LINK}">${escapeHtml(t('loop.notYet'))}</button>
         </div>
       </div>`;
   }
@@ -68,7 +69,7 @@
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       yes.disabled = false;
-      alert(data.error || 'Could not save');
+      alert(data.error || t('common.couldNotSave'));
       return;
     }
     removeRow(row);
