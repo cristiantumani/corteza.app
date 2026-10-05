@@ -15,13 +15,15 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   }
 
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
   let current = null; // decision id the modal shows, so late responses for another decision are ignored
   let openSave = null; // saves the open "Add action item" form, if any
 
   function renderItems(items) {
     return items.map(item => {
-      const owners = item.owners.map(owner => owner.name).join(', ') || 'No owner';
-      const due = item.due_date ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString() : 'no due date';
+      const owners = item.owners.map(owner => owner.name).join(', ') || t('detail.noOwner');
+      const due = item.due_date ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString(locale) : t('detail.noDue');
       return `<div class="decision-action">${item.status === 'done' ? '✅' : '⬜'} ${escapeHtml(item.text)}<br><small>${escapeHtml(owners)} · ${escapeHtml(due)}</small></div>`;
     }).join('');
   }
@@ -53,8 +55,8 @@
     list.innerHTML = `
       ${renderItems(items)}
       <div class="decision-actions-footer">
-        ${canAdd ? '<button type="button" class="inline-edit-prompt decision-action-add">+ Add action item</button>' : ''}
-        ${items.length ? '<a href="/actions">Open action items →</a>' : ''}
+        ${canAdd ? `<button type="button" class="inline-edit-prompt decision-action-add">+ ${escapeHtml(t('actions.add'))}</button>` : ''}
+        ${items.length ? `<a href="/actions">${escapeHtml(t('detail.openActions'))}</a>` : ''}
       </div>`;
     section.style.display = 'block';
 
@@ -71,14 +73,14 @@
     const form = document.createElement('form');
     form.className = 'decision-action-form';
     form.innerHTML = `
-      <input type="text" name="text" class="inline-edit-input" placeholder="What needs to be done?" maxlength="500" required>
+      <input type="text" name="text" class="inline-edit-input" placeholder="${escapeHtml(t('actions.whatPlaceholder'))}" maxlength="500" required>
       <div class="decision-action-row">
         <div class="decision-action-owners"></div>
-        <label class="decision-action-due">Due <input type="date" name="due_date" class="inline-edit-input"></label>
+        <label class="decision-action-due">${escapeHtml(t('actions.due'))} <input type="date" name="due_date" class="inline-edit-input"></label>
       </div>
       <div class="decision-action-buttons">
-        <button type="submit" class="modal-btn modal-btn-primary">Save</button>
-        <button type="button" class="modal-btn modal-btn-cancel" data-cancel>Cancel</button>
+        <button type="submit" class="modal-btn modal-btn-primary">${escapeHtml(t('common.save'))}</button>
+        <button type="button" class="modal-btn modal-btn-cancel" data-cancel>${escapeHtml(t('common.cancel'))}</button>
         <span class="inline-edit-hint"></span>
       </div>`;
     footer.replaceWith(form);
@@ -98,7 +100,7 @@
       const submit = form.querySelector('button[type="submit"]');
       submit.disabled = true;
       hint.classList.remove('inline-edit-error');
-      hint.textContent = 'Saving…';
+      hint.textContent = t('common.saving');
       try {
         const response = await fetch('/api/action-items', {
           method: 'POST',
@@ -112,7 +114,7 @@
           })
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Couldn’t add it');
+        if (!response.ok) throw new Error(data.error || t('actions.addFailed'));
         openSave = null;
         document.dispatchEvent(new CustomEvent('corteza:action-items-changed', { detail: { item: data.item } }));
         if (current === decision.id) await load({ decision, canAdd });

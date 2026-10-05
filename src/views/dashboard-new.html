@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corteza | Decision Intelligence</title>
+    <title>{{t:home.pageTitle}}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -37,7 +37,7 @@
 <div id="loading-indicator" class="fixed inset-0 bg-surface z-50 flex items-center justify-center">
     <div class="text-center">
         <div class="text-6xl mb-4">⏳</div>
-        <div class="text-lg text-on-surface-variant">Loading your workspace...</div>
+        <div class="text-lg text-on-surface-variant">{{t:common.loadingWorkspace}}</div>
     </div>
 </div>
 
@@ -69,8 +69,8 @@
     <div class="max-w-[1100px] mx-auto flex flex-col gap-6">
         <!-- Header: one sentence on the last 24 hours and what needs you (public/scripts/home-overview.js) -->
         <div class="flex flex-col gap-2">
-            <h1 class="text-2xl font-bold text-on-surface">Home</h1>
-            <p id="home-summary" class="text-on-surface-variant max-w-3xl" aria-live="polite">Loading your day…</p>
+            <h1 class="text-2xl font-bold text-on-surface">{{t:nav.homeTitle}}</h1>
+            <p id="home-summary" class="text-on-surface-variant max-w-3xl" aria-live="polite">{{t:home.loadingDay}}</p>
         </div>
 
         <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
@@ -79,69 +79,69 @@
                 <span class="material-symbols-outlined text-primary">pending_actions</span>
                 <p class="text-base text-on-surface" id="pending-suggestions-text"></p>
             </div>
-            <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">Review</button>
+            <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">{{t:common.review}}</button>
         </div>
 
-        <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="Home views">
-            <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">Overview</button>
-            <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">All outcomes</button>
+        <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="{{t:home.tabs.label}}">
+            <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">{{t:home.tabs.overview}}</button>
+            <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">{{t:home.tabs.all}}</button>
         </div>
 
         <!-- Overview: ask, capture status, review queue and the three questions -->
-        <section id="home-overview" role="tabpanel" aria-label="Overview" class="flex flex-col gap-6">
+        <section id="home-overview" role="tabpanel" aria-label="{{t:home.tabs.overview}}" class="flex flex-col gap-6">
             <form id="home-ask" class="flex gap-2" role="search">
-                <label for="home-ask-input" class="sr-only">Ask about your meetings</label>
+                <label for="home-ask-input" class="sr-only">{{t:home.ask.label}}</label>
                 <div class="relative flex-1">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-variation-settings: 'FILL' 0" aria-hidden="true">search</span>
-                    <input id="home-ask-input" type="search" maxlength="500" autocomplete="off" placeholder="Ask about decisions, pending action items, people…" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-10 pr-3 text-base focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                    <input id="home-ask-input" type="search" maxlength="500" autocomplete="off" placeholder="{{t:home.ask.placeholder}}" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-10 pr-3 text-base focus:ring-2 focus:ring-primary focus:border-primary outline-none">
                 </div>
-                <button type="submit" class="bg-primary text-on-primary rounded-lg px-5 text-sm font-semibold hover:bg-on-primary-fixed-variant disabled:opacity-50">Ask</button>
+                <button type="submit" class="bg-primary text-on-primary rounded-lg px-5 text-sm font-semibold hover:bg-on-primary-fixed-variant disabled:opacity-50">{{t:home.ask.button}}</button>
             </form>
             <div id="home-ask-result" hidden></div>
 
             <!-- Google Meet capture status in one line (public/scripts/home-capture.js) -->
             <section id="capture-panel">
-                <div class="rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">Loading automatic capture…</div>
+                <div class="rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">{{t:home.capture.loading}}</div>
             </section>
 
-            <section id="home-review" class="hidden flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Outcomes to review"></section>
+            <section id="home-review" class="hidden flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.review.label}}"></section>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-                <section id="home-owe" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="What I owe">
-                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                <section id="home-owe" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.owe.title}}">
+                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
                 </section>
-                <section id="home-open" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Still open">
-                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                <section id="home-open" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.open.title}}">
+                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
                 </section>
-                <section id="home-decided" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="Decided">
-                    <p class="text-sm text-on-surface-variant">Loading…</p>
+                <section id="home-decided" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.decided.title}}">
+                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
                 </section>
             </div>
         </section>
 
         <!-- All outcomes: the full list with its filters (public/scripts/dashboard.js) -->
-        <section id="home-all" role="tabpanel" aria-label="All outcomes" class="hidden">
+        <section id="home-all" role="tabpanel" aria-label="{{t:home.tabs.all}}" class="hidden">
         <!-- Outcomes list: decisions by default; "All outcomes" also shows open questions, risks and notes -->
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <h4 class="text-2xl font-semibold" id="outcomes-title">Recent decisions</h4>
+            <h4 class="text-2xl font-semibold" id="outcomes-title">{{t:outcomes.recentDecisions}}</h4>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <button type="button" onclick="openLogMemoryModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Log a decision or other outcome by hand">
-                    <span class="material-symbols-outlined text-base">edit_note</span> Log manually
+                <button type="button" onclick="openLogMemoryModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="{{t:outcomes.logTitle}}">
+                    <span class="material-symbols-outlined text-base">edit_note</span> {{t:nav.log}}
                 </button>
-                <button type="button" onclick="openFileUploadModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="Upload a transcript file">
-                    <span class="material-symbols-outlined text-base">upload_file</span> Upload transcript
+                <button type="button" onclick="openFileUploadModal()" class="text-sm text-on-surface-variant hover:text-primary flex items-center gap-1" title="{{t:outcomes.uploadTitle}}">
+                    <span class="material-symbols-outlined text-base">upload_file</span> {{t:outcomes.upload}}
                 </button>
-                <label for="search" class="sr-only">Filter outcomes</label>
-                <input id="search" type="search" oninput="applyFilters()" placeholder="Filter…" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none w-40">
+                <label for="search" class="sr-only">{{t:outcomes.filterLabel}}</label>
+                <input id="search" type="search" oninput="applyFilters()" placeholder="{{t:outcomes.filterPlaceholder}}" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none w-40">
                 <select id="type-filter" onchange="applyFilters()" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                    <option value="">All outcomes</option>
-                    <option value="decision" selected>Decisions</option>
-                    <option value="open_question">Open questions</option>
-                    <option value="risk">Risks</option>
-                    <option value="action_item">Action items (older)</option>
-                    <option value="context">Context</option>
-                    <option value="explanation">Explanations</option>
-                    <option value="learning">Learnings</option>
+                    <option value="">{{t:home.tabs.all}}</option>
+                    <option value="decision" selected>{{t:types.plural.decision}}</option>
+                    <option value="open_question">{{t:types.plural.open_question}}</option>
+                    <option value="risk">{{t:types.plural.risk}}</option>
+                    <option value="action_item">{{t:types.plural.action_item_older}}</option>
+                    <option value="context">{{t:types.plural.context}}</option>
+                    <option value="explanation">{{t:types.plural.explanation}}</option>
+                    <option value="learning">{{t:types.plural.learning}}</option>
                 </select>
                 <span class="text-sm text-on-surface-variant" id="decisions-count"></span>
             </div>
@@ -155,9 +155,9 @@
         <!-- Empty State -->
         <div id="empty-state" class="hidden text-center py-20">
             <div class="text-6xl mb-4">📭</div>
-            <p class="text-lg text-on-surface-variant mb-2" id="empty-state-title">Nothing here yet</p>
-            <p class="text-sm text-on-surface-variant mb-4">They appear automatically after your Google Meet meetings, once Google Meet is connected.</p>
-            <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">Or log one manually</button>
+            <p class="text-lg text-on-surface-variant mb-2" id="empty-state-title">{{t:outcomes.empty.title}}</p>
+            <p class="text-sm text-on-surface-variant mb-4">{{t:outcomes.empty.body}}</p>
+            <button onclick="openLogMemoryModal()" class="text-primary font-medium hover:underline">{{t:outcomes.empty.log}}</button>
         </div>
         </section>
     </div>
@@ -167,11 +167,11 @@
 <!-- Delete Confirmation Modal -->
 <div class="modal-overlay" id="delete-modal">
   <div class="modal">
-    <h2>🗑️ Delete Memory</h2>
-    <p>Are you sure you want to delete memory <strong id="delete-decision-id">#0</strong>? This action cannot be undone.</p>
+    <h2>{{t:outcomes.delete.title}}</h2>
+    <p>{{t:outcomes.delete.before}} <strong id="delete-decision-id">#0</strong>{{t:outcomes.delete.after}}</p>
     <div class="modal-buttons">
-      <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
-      <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">{{t:common.cancel}}</button>
+      <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">{{t:common.delete}}</button>
     </div>
   </div>
 </div>
@@ -180,15 +180,15 @@
 <div class="modal-overlay" id="log-memory-modal">
   <div class="modal detail-modal">
     <div class="detail-header">
-      <h2>➕ Log manually</h2>
-      <button class="close-btn" onclick="closeLogMemoryModal()">✕ Close</button>
+      <h2>{{t:nav.log}}</h2>
+      <button class="close-btn" onclick="closeLogMemoryModal()">✕ {{t:common.close}}</button>
     </div>
 
     <div class="detail-section">
-      <h3>What happened?</h3>
+      <h3>{{t:log.what}}</h3>
       <textarea
         id="log-memory-text"
-        placeholder="Describe the decision, context, or explanation..."
+        placeholder="{{t:log.whatPlaceholder}}"
         rows="5"
         style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
       ></textarea>
@@ -196,59 +196,59 @@
 
     <div class="detail-grid">
       <div class="detail-item">
-        <label>Type *</label>
+        <label>{{t:log.type}}</label>
         <select
           id="log-memory-type"
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         >
-          <option value="decision">Decision</option>
-          <option value="action_item">Action item</option>
-          <option value="open_question">Open question</option>
-          <option value="risk">Risk</option>
-          <option value="explanation">Explanation</option>
-          <option value="context">Context</option>
-          <option value="learning">Learning</option>
-          <option value="assumption">Assumption</option>
+          <option value="decision">{{t:types.decision}}</option>
+          <option value="action_item">{{t:types.action_item}}</option>
+          <option value="open_question">{{t:types.open_question}}</option>
+          <option value="risk">{{t:types.risk}}</option>
+          <option value="explanation">{{t:types.explanation}}</option>
+          <option value="context">{{t:types.context}}</option>
+          <option value="learning">{{t:types.learning}}</option>
+          <option value="assumption">{{t:types.assumption}}</option>
         </select>
       </div>
 
       <div class="detail-item" data-multi-space>
-        <label>📁 Space *</label>
+        <label>{{t:log.space}}</label>
         <select
           id="log-memory-space"
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         ></select>
         <small style="color: #616061; font-size: 12px; margin-top: 4px; display: block;">
-          Defaults to the space you're viewing. Only spaces you can add decisions to are listed.
+          {{t:log.spaceHelp}}
         </small>
       </div>
 
       <div class="detail-item" data-log-not-action>
-        <label>Category</label>
+        <label>{{t:log.category}}</label>
         <input
           type="text"
           id="log-memory-category"
-          placeholder="e.g., Frontend, Backend, UX"
+          placeholder="{{t:log.categoryPlaceholder}}"
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         />
       </div>
 
       <div class="detail-item" data-log-not-action>
-        <label>Tags</label>
+        <label>{{t:log.tags}}</label>
         <input
           type="text"
           id="log-memory-tags"
-          placeholder="Comma-separated tags"
+          placeholder="{{t:log.tagsPlaceholder}}"
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         />
       </div>
 
       <div class="detail-item" data-log-not-action>
-        <label>Epic Key / Jira</label>
+        <label>{{t:log.epic}}</label>
         <input
           type="text"
           id="log-memory-epic"
-          placeholder="e.g., PROJ-123"
+          placeholder="{{t:log.epicPlaceholder}}"
           style="width: 100%; padding: 10px; border: 1px solid #E1E4E8; border-radius: 8px; font-size: 14px;"
         />
       </div>
@@ -256,27 +256,27 @@
 
     <!-- Action item: owners and due date; saved to Action items (public/scripts/log-action-item.js) -->
     <div class="detail-section" id="log-action-fields" hidden>
-      <h3>Who and when</h3>
+      <h3>{{t:log.whoWhen}}</h3>
       <div class="decision-action-row">
         <div class="decision-action-owners" id="log-action-owners"></div>
-        <label class="decision-action-due">Due <input type="date" id="log-action-due" class="inline-edit-input"></label>
+        <label class="decision-action-due">{{t:actions.due}} <input type="date" id="log-action-due" class="inline-edit-input"></label>
       </div>
-      <small style="color: #616061; font-size: 12px; margin-top: 6px; display: block;">It goes to Action items, where you can follow it up and mark it done.</small>
+      <small style="color: #616061; font-size: 12px; margin-top: 6px; display: block;">{{t:log.actionHelp}}</small>
     </div>
 
     <div class="detail-section" data-log-not-action>
-      <h3>Additional Context (Optional)</h3>
+      <h3>{{t:log.context}}</h3>
       <textarea
         id="log-memory-alternatives"
-        placeholder="Any alternatives considered, additional details, or related information..."
+        placeholder="{{t:log.contextPlaceholder}}"
         rows="3"
         style="width: 100%; padding: 12px; border: 1px solid #E1E4E8; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical;"
       ></textarea>
     </div>
 
     <div class="modal-buttons">
-      <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">Cancel</button>
-      <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">Save</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeLogMemoryModal()">{{t:common.cancel}}</button>
+      <button class="modal-btn modal-btn-primary" onclick="submitLogMemory()">{{t:common.save}}</button>
     </div>
   </div>
 </div>
@@ -288,69 +288,69 @@
 <div class="modal-overlay" id="edit-modal">
   <div class="modal edit-modal">
     <div class="detail-header">
-      <h2>✏️ Edit Memory</h2>
-      <button class="close-btn" onclick="closeEditModal()">✕ Cancel</button>
+      <h2>{{t:edit.title}}</h2>
+      <button class="close-btn" onclick="closeEditModal()">✕ {{t:common.cancel}}</button>
     </div>
 
     <form id="edit-form" onsubmit="saveEdit(event)">
       <input type="hidden" id="edit-decision-id">
 
       <div class="form-group">
-        <label for="edit-decision-text">Content *</label>
+        <label for="edit-decision-text">{{t:edit.content}}</label>
         <textarea id="edit-decision-text" rows="4" required></textarea>
       </div>
 
       <div class="form-group">
-        <label for="edit-decision-type">Type *</label>
+        <label for="edit-decision-type">{{t:log.type}}</label>
         <select id="edit-decision-type" required>
-          <option value="decision">Decision</option>
-          <option value="action_item">Action item</option>
-          <option value="open_question">Open question</option>
-          <option value="risk">Risk</option>
-          <option value="explanation">Explanation</option>
-          <option value="context">Context</option>
+          <option value="decision">{{t:types.decision}}</option>
+          <option value="action_item">{{t:types.action_item}}</option>
+          <option value="open_question">{{t:types.open_question}}</option>
+          <option value="risk">{{t:types.risk}}</option>
+          <option value="explanation">{{t:types.explanation}}</option>
+          <option value="context">{{t:types.context}}</option>
         </select>
       </div>
 
       <div class="form-group" data-multi-space>
-        <label for="edit-decision-space">📁 Space *</label>
+        <label for="edit-decision-space">{{t:log.space}}</label>
         <select id="edit-decision-space" required>
-          <option value="">Loading spaces...</option>
+          <option value="">{{t:edit.loadingSpaces}}</option>
         </select>
-        <small>Move this memory to a different space</small>
+        <small>{{t:edit.spaceHelp}}</small>
       </div>
 
       <div class="form-group">
-        <label for="edit-decision-category">Category (optional)</label>
+        <label for="edit-decision-category">{{t:edit.category}}</label>
         <select id="edit-decision-category">
-          <option value="">None</option>
-          <option value="product">Product</option>
+          <option value="">{{t:edit.none}}</option>
+          <option value="product">{{t:edit.categories.product}}</option>
           <option value="ux">UX</option>
-          <option value="technical">Technical</option>
+          <option value="technical">{{t:edit.categories.technical}}</option>
         </select>
-        <small>Product, UX, or Technical domain</small>
+        <small>{{t:edit.categoryHelp}}</small>
       </div>
 
       <div class="form-group">
-        <label for="edit-epic-key">Epic Key</label>
-        <input type="text" id="edit-epic-key" placeholder="e.g. LOK-123">
-        <small>Leave empty to remove epic link</small>
+        <label for="edit-epic-key">{{t:log.epic}}</label>
+        <input type="text" id="edit-epic-key" placeholder="{{t:log.epicPlaceholder}}">
+        <small>{{t:edit.epicHelp}}</small>
       </div>
 
       <div class="form-group">
-        <label for="edit-tags">Tags</label>
+        <label for="edit-tags">{{t:log.tags}}</label>
         <input type="text" id="edit-tags" placeholder="tag1, tag2, tag3">
-        <small>Comma-separated tags</small>
+        <small>{{t:log.tagsPlaceholder}}</small>
       </div>
 
       <div class="form-group">
-        <label for="edit-alternatives">Additional Comments</label>
+        <label for="edit-alternatives">{{t:edit.comments}}</label>
         <textarea id="edit-alternatives" rows="3"></textarea>
       </div>
 
       <div class="modal-buttons">
-        <button type="button" class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
-        <button type="submit" class="modal-btn modal-btn-primary">💾 Save Changes</button>
+        <button type="button" class="modal-btn modal-btn-cancel" onclick="closeEditModal()">{{t:common.cancel}}</button>
+        <button type="submit" class="modal-btn modal-btn-primary">{{t:common.saveChanges}}</button>
       </div>
     </form>
   </div>
@@ -360,20 +360,20 @@
 <div class="modal-overlay" id="file-upload-modal">
   <div class="modal detail-modal">
     <div class="detail-header">
-      <h2>📤 Upload File for AI Extraction</h2>
-      <button class="close-btn" onclick="closeFileUploadModal()">✕ Close</button>
+      <h2>{{t:upload.title}}</h2>
+      <button class="close-btn" onclick="closeFileUploadModal()">✕ {{t:common.close}}</button>
     </div>
 
     <div class="detail-section">
-      <p style="color: #616061; margin-bottom: 16px;">Upload a meeting transcript, document, or notes file. Corteza extracts the outcomes (decisions, action items, open questions and risks) for you to review.</p>
+      <p style="color: #616061; margin-bottom: 16px;">{{t:upload.intro}}</p>
 
       <div style="border: 2px dashed #E1E4E8; border-radius: 12px; padding: 32px; text-align: center; background: #F6F8FA; cursor: pointer;" id="file-drop-zone">
         <span class="material-symbols-outlined" style="font-size: 48px; color: #667EEA; margin-bottom: 12px;">cloud_upload</span>
-        <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Drop file here or click to browse</p>
-        <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">Supports TXT, MD, PDF, DOCX and VTT/SRT captions, e.g. Google Meet transcripts (max 5MB)</p>
+        <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">{{t:upload.drop}}</p>
+        <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">{{t:upload.formats}}</p>
         <input type="file" id="file-input" accept=".txt,.md,.vtt,.srt,.pdf,.docx" style="display: none;" />
         <button type="button" class="modal-btn modal-btn-primary" onclick="event.stopPropagation(); document.getElementById('file-input').click()">
-          Choose File
+          {{t:upload.choose}}
         </button>
       </div>
 
@@ -390,8 +390,8 @@
 
       <div id="upload-progress" style="display: none; margin-top: 16px;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <span style="font-size: 14px; font-weight: 600;">Processing...</span>
-          <span id="upload-status" style="font-size: 14px; color: #616061;">Uploading file</span>
+          <span style="font-size: 14px; font-weight: 600;">{{t:upload.processing}}</span>
+          <span id="upload-status" style="font-size: 14px; color: #616061;">{{t:upload.uploading}}</span>
         </div>
         <div style="width: 100%; height: 8px; background: #E1E4E8; border-radius: 4px; overflow: hidden;">
           <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(to right, #667EEA, #764BA2); transition: width 0.3s;"></div>
@@ -400,9 +400,9 @@
     </div>
 
     <div class="modal-buttons">
-      <button class="modal-btn modal-btn-cancel" onclick="closeFileUploadModal()">Cancel</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeFileUploadModal()">{{t:common.cancel}}</button>
       <button id="upload-submit-btn" class="modal-btn modal-btn-primary" onclick="submitFileUpload()" disabled>
-        Extract outcomes
+        {{t:upload.extract}}
       </button>
     </div>
   </div>
@@ -412,8 +412,8 @@
 <div class="modal-overlay" id="ai-suggestions-modal">
   <div class="modal detail-modal" style="max-width: 900px;">
     <div class="detail-header">
-      <h2>🤖 Extracted outcomes</h2>
-      <button class="close-btn" onclick="closeAISuggestionsModal()">✕ Close</button>
+      <h2>{{t:upload.found}}</h2>
+      <button class="close-btn" onclick="closeAISuggestionsModal()">✕ {{t:common.close}}</button>
     </div>
 
     <div class="detail-section">
@@ -425,12 +425,12 @@
 
       <div id="no-suggestions" style="display: none; text-align: center; padding: 48px;">
         <span class="material-symbols-outlined" style="font-size: 64px; color: #E1E4E8; margin-bottom: 16px;">search_off</span>
-        <p style="font-size: 16px; color: #616061;">No clear outcomes found in this file. Try uploading a different document.</p>
+        <p style="font-size: 16px; color: #616061;">{{t:upload.none}}</p>
       </div>
     </div>
 
     <div class="modal-buttons">
-      <button class="modal-btn modal-btn-cancel" onclick="closeAISuggestionsModal()">Close</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeAISuggestionsModal()">{{t:common.close}}</button>
     </div>
   </div>
 </div>
@@ -440,17 +440,17 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/outcome-review.js?v=1"></script>
-<script src="/scripts/dashboard.js?v=31"></script>
-<script src="/scripts/dashboard-new.js?v=12"></script>
-<script src="/scripts/people.js?v=2"></script>
-<script src="/scripts/decision-actions.js?v=2"></script>
-<script src="/scripts/log-action-item.js?v=1"></script>
-<script src="/scripts/inline-edit.js?v=4"></script>
-<script src="/scripts/outcome-labels.js?v=1"></script>
-<script src="/scripts/home-capture.js?v=6"></script>
-<script src="/scripts/home-overview.js?v=1"></script>
-<script src="/scripts/onboarding.js?v=2"></script>
+<script src="/scripts/outcome-review.js?v=2"></script>
+<script src="/scripts/dashboard.js?v=32"></script>
+<script src="/scripts/dashboard-new.js?v=13"></script>
+<script src="/scripts/people.js?v=3"></script>
+<script src="/scripts/decision-actions.js?v=3"></script>
+<script src="/scripts/log-action-item.js?v=2"></script>
+<script src="/scripts/inline-edit.js?v=5"></script>
+<script src="/scripts/outcome-labels.js?v=2"></script>
+<script src="/scripts/home-capture.js?v=7"></script>
+<script src="/scripts/home-overview.js?v=2"></script>
+<script src="/scripts/onboarding.js?v=3"></script>
 <script>
     // Additional UI enhancements for new design
     document.addEventListener('DOMContentLoaded', () => {

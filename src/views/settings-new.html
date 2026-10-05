@@ -146,6 +146,24 @@
                     </div>
                 </section>
 
+                <!-- App language (public/scripts/settings-language.js, src/core/i18n) -->
+                <section id="language" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.language.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.language.body}}</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl" aria-hidden="true">translate</span>
+                    </div>
+                    <label for="language-select" class="text-sm font-semibold text-on-surface mb-2">{{t:settings.language.label}}</label>
+                    <select id="language-select" class="w-full md:w-80 bg-surface-container-low border border-outline-variant rounded-lg p-3 outline-none focus:border-primary">
+                        <option value="">{{t:settings.language.browser}}</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                    <span id="language-status" class="text-xs text-on-surface-variant mt-2" role="status"></span>
+                </section>
+
                 <!-- Daily summary email: the time zone it's sent in (public/scripts/settings-timezone.js) -->
                 <section id="email-summary" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
@@ -388,10 +406,11 @@
         var WORKSPACE_ID = '<WORKSPACE_ID>';
     </script>
     <script src="/scripts/settings-new.js?v=6"></script>
-    <script src="/scripts/outcome-labels.js?v=1"></script>
+    <script src="/scripts/outcome-labels.js?v=2"></script>
     <script src="/scripts/settings-integrations.js?v=12"></script>
     <script src="/scripts/settings-context.js?v=2"></script>
     <script src="/scripts/settings-timezone.js?v=1"></script>
+    <script src="/scripts/settings-language.js?v=1"></script>
     <script src="/scripts/settings-digest-voice.js?v=1"></script>
 </body>
 </html>

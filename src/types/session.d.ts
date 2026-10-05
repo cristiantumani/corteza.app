@@ -14,6 +14,8 @@ declare global {
       auth_provider?: string;
       authenticated_at?: string;
       is_demo?: boolean;
+      /** App language picked in Settings (core/users/language); missing: the browser's */
+      language?: 'en' | 'es';
       [key: string]: unknown;
     }
   }

@@ -3,11 +3,11 @@
 <div class="modal-overlay" id="detail-modal">
   <div class="modal detail-modal">
     <div class="detail-header">
-      <h2 id="detail-title">Memory Details</h2>
+      <h2 id="detail-title">{{t:detail.title}}</h2>
       <div style="display: flex; gap: 10px;">
-        <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
-        <button class="delete-btn" onclick="deleteCurrentDecision()" style="background: #ba1a1a; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ Delete</button>
-        <button class="close-btn" onclick="closeDetailModal()">✕ Close</button>
+        <button class="edit-btn" onclick="openEditModal()">✏️ {{t:common.edit}}</button>
+        <button class="delete-btn" onclick="deleteCurrentDecision()" style="background: #ba1a1a; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">🗑️ {{t:common.delete}}</button>
+        <button class="close-btn" onclick="closeDetailModal()">✕ {{t:common.close}}</button>
       </div>
     </div>
 
@@ -15,61 +15,61 @@
     <div class="detail-relevance" id="detail-relevance" style="display: none;"></div>
 
     <div class="detail-section">
-      <h3 id="detail-content-label">Decision</h3>
+      <h3 id="detail-content-label">{{t:types.decision}}</h3>
       <div class="content" id="detail-decision-text"></div>
     </div>
 
     <div class="detail-section" id="detail-rationale-section" style="display: none;">
-      <h3>Why</h3>
+      <h3>{{t:detail.why}}</h3>
       <div class="content" id="detail-rationale"></div>
     </div>
 
     <!-- Where an AI-captured outcome came from: the supporting quote and the meeting (dashboard.js renderDetailEvidence) -->
     <div class="detail-section" id="detail-evidence-section" style="display: none;">
-      <h3>Evidence</h3>
+      <h3>{{t:detail.evidence}}</h3>
       <div class="content flex flex-col gap-2" id="detail-evidence"></div>
     </div>
 
     <!-- Open questions and risks: the answer, or whether the risk was mitigated (dashboard.js renderDetailResolution) -->
     <div class="detail-section" id="detail-resolution-section" style="display: none;">
-      <h3 id="detail-resolution-label">Answer</h3>
+      <h3 id="detail-resolution-label">{{t:detail.answer}}</h3>
       <div class="content" id="detail-resolution"></div>
     </div>
 
     <div class="detail-section" id="detail-actions-section" style="display: none;">
-      <h3>Action items</h3>
+      <h3>{{t:nav.actions}}</h3>
       <div class="content" id="detail-actions"></div>
     </div>
 
     <div class="detail-grid">
       <!-- Added by (decisions), raised by (risks); hidden when nobody is known -->
       <div class="detail-item" id="detail-creator-container">
-        <label id="detail-creator-label">Added by</label>
+        <label id="detail-creator-label">{{t:detail.addedBy}}</label>
         <div class="value" id="detail-creator"></div>
       </div>
       <div class="detail-item">
-        <label>Date</label>
+        <label>{{t:detail.date}}</label>
         <div class="value" id="detail-date"></div>
       </div>
       <div class="detail-item" id="detail-owner-container" style="display: none;">
-        <label>Accountable</label>
+        <label>{{t:detail.accountable}}</label>
         <div class="value" id="detail-owner"></div>
-        <p class="detail-help" id="detail-owner-help">Who makes sure this gets done. Tasks and their owners go in Action items.</p>
+        <p class="detail-help" id="detail-owner-help">{{t:detail.accountableHelp}}</p>
       </div>
       <!-- Older captures only: decisions no longer have due dates (they belong to action items) -->
       <div class="detail-item" id="detail-due-container" style="display: none;">
-        <label>Due (older capture)</label>
+        <label>{{t:detail.dueOlder}}</label>
         <div class="value" id="detail-due"></div>
       </div>
     </div>
 
     <div class="detail-section" id="detail-meeting-section" style="display: none;">
-      <h3>Meeting Context</h3>
+      <h3>{{t:detail.context}}</h3>
       <div class="content" id="detail-meeting-info"></div>
     </div>
 
     <div class="detail-section" id="detail-epic-section" style="display: none;">
-      <h3>Jira Epic</h3>
+      <h3>{{t:log.epic}}</h3>
       <div class="content" id="detail-epic-info"></div>
     </div>
 

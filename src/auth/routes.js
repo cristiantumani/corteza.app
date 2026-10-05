@@ -77,6 +77,10 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
       return res.redirect(earlyAccessUrl());
     }
 
+    // The language they picked in Settings (else the app follows their browser)
+    const language = await require('../core/users/language').getLanguage(result.sessionUser.workspace_id, result.sessionUser.user_id).catch(() => null);
+    if (language) result.sessionUser.language = language;
+
     // New session ID on login (prevents session fixation)
     req.session.regenerate(err => {
       if (err) {

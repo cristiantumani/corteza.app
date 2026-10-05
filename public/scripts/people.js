@@ -34,11 +34,12 @@
    * @returns {{ selected: () => string[] }}
    */
   function ownerPicker(root, people, initial = []) {
+    const t = window.t || (key => key); // public/scripts/i18n.js
     const chosen = initial.filter(id => people.some(person => person.user_id === id));
     root.innerHTML = `
       <div class="decision-action-chips"></div>
-      <select class="inline-edit-input" aria-label="Add owner">
-        <option value="">+ Add owner…</option>
+      <select class="inline-edit-input" aria-label="${escapeHtml(t('actions.addOwner'))}">
+        <option value="">+ ${escapeHtml(t('actions.addOwner'))}…</option>
         ${people.map(person => `<option value="${escapeHtml(person.user_id)}">${escapeHtml(person.name)}</option>`).join('')}
       </select>`;
     const chips = root.querySelector('.decision-action-chips');
@@ -46,7 +47,7 @@
     const render = () => {
       chips.innerHTML = chosen.map(id => {
         const person = people.find(p => p.user_id === id);
-        return `<span class="tag decision-action-chip">${escapeHtml(person ? person.name : id)} <button type="button" data-remove="${escapeHtml(id)}" aria-label="Remove">×</button></span>`;
+        return `<span class="tag decision-action-chip">${escapeHtml(person ? person.name : id)} <button type="button" data-remove="${escapeHtml(id)}" aria-label="${escapeHtml(t('common.remove'))}">×</button></span>`;
       }).join('');
       for (const option of select.options) option.hidden = option.disabled = !!option.value && chosen.includes(option.value);
     };

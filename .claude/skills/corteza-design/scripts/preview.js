@@ -7,6 +7,7 @@
  *   node .claude/skills/corteza-design/scripts/preview.js --pages home,actions  # some pages
  *   node .claude/skills/corteza-design/scripts/preview.js --state empty         # empty | onboarding | member
  *   node .claude/skills/corteza-design/scripts/preview.js --out /tmp/shots      # where to write (default: ./ui-preview, gitignored)
+ *   node .claude/skills/corteza-design/scripts/preview.js --lang es             # the app in Spanish (en | es)
  *   node .claude/skills/corteza-design/scripts/preview.js --serve               # only serve, print the URL, keep running
  *
  * Writes <out>/<page>-<desktop|mobile>.png and <out>/report.json (console errors, page errors,
@@ -21,6 +22,7 @@ const { execSync, execFileSync } = require('child_process');
 const root = path.resolve(__dirname, '../../../..');
 const express = require(path.join(root, 'node_modules/express'));
 const { renderView } = require(path.join(root, 'src/http/page-partials'));
+const { localizeHtml } = require(path.join(root, 'src/core/i18n/i18n'));
 const fixtures = require('./fixtures');
 
 const PAGES = {
@@ -70,13 +72,13 @@ function routesFor(state) {
   return { routes, user };
 }
 
-function createApp(state, unmocked) {
+function createApp(state, unmocked, lang) {
   const { routes, user } = routesFor(state);
   const app = express();
   const bootstrap = `<script>window.__CORTEZA_BOOTSTRAP__ = ${JSON.stringify({ user, spaces: fixtures.spaces }).replace(/</g, '\\u003c')};</script>`;
 
   for (const page of Object.values(PAGES)) {
-    const html = renderView(page.view, { active: page.active })
+    const html = localizeHtml(renderView(page.view, { active: page.active }), lang)
       .replace(/<WORKSPACE_ID>/g, user.workspace_id)
       .replace(/<USER_ID>/g, user.user_id)
       .replace('<!-- BOOTSTRAP -->', () => (page.preload ? bootstrap : ''));
@@ -129,7 +131,8 @@ async function main() {
   if (unknown.length) throw new Error(`Unknown page(s): ${unknown.join(', ')}. Pages: ${Object.keys(PAGES).join(', ')}`);
 
   const unmocked = new Set();
-  const server = createApp(state, unmocked).listen(Number(arg('port', 0)));
+  const lang = arg('lang', 'en');
+  const server = createApp(state, unmocked, lang).listen(Number(arg('port', 0)));
   await new Promise(resolve => server.once('listening', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
 
@@ -142,7 +145,7 @@ async function main() {
   fs.mkdirSync(out, { recursive: true });
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {});
-  const report = { state, base, pages: {} };
+  const report = { state, lang, base, pages: {} };
 
   for (const name of names) {
     const page = PAGES[name];

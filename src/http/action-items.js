@@ -47,10 +47,11 @@ function requireSession(req, res, next) {
   next();
 }
 
-const actionsHTML = renderView('actions.html', { active: 'actions' });
+const { localizedPage } = require('../core/i18n/i18n');
+const actionsHTML = localizedPage(renderView('actions.html', { active: 'actions' }));
 
 router.get('/actions', requireAuthBrowser, (req, res) => {
-  res.type('html').send(actionsHTML);
+  res.type('html').send(actionsHTML(req));
 });
 
 router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res) => {

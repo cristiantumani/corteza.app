@@ -13,12 +13,14 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   const SKIP_REASONS = {
-    one_on_one: '1:1 meeting, skipped',
-    excluded_title: 'Excluded by title',
-    no_transcript: 'No transcript or notes',
-    too_short: 'Too short'
+    one_on_one: t('capture.skip.one_on_one'),
+    excluded_title: t('capture.skip.excluded_title'),
+    no_transcript: t('capture.skip.no_transcript'),
+    too_short: t('capture.skip.too_short')
   };
 
   function escapeHtml(value) {
@@ -26,18 +28,15 @@
   }
 
   function timeAgo(value) {
-    if (!value) return 'never';
+    if (!value) return t('time.never');
     const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 1) return t('time.justNow');
+    if (minutes < 60) return t('time.minutesAgo', { count: minutes });
     const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours} h ago`;
-    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (hours < 24) return t('time.hoursAgo', { count: hours });
+    return new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
   }
 
-  function plural(count, word) {
-    return `${count} ${word}${count === 1 ? '' : 's'}`;
-  }
 
   const describe = (byType, total, actionItems) => window.CortezaOutcomes.describe(byType, total, actionItems);
 
@@ -45,9 +44,9 @@
     if (meeting.status === 'completed') {
       return describe(meeting.outcomes_by_type || null, meeting.decisions_created || 0, meeting.action_items_created || 0);
     }
-    if (meeting.status === 'skipped') return SKIP_REASONS[meeting.skip_reason] || 'Skipped';
-    if (meeting.status === 'failed') return 'Failed, will retry';
-    return 'Processing…';
+    if (meeting.status === 'skipped') return SKIP_REASONS[meeting.skip_reason] || t('capture.skipped');
+    if (meeting.status === 'failed') return t('capture.failed');
+    return t('upload.processing');
   }
 
   const panel = () => document.getElementById('capture-panel');
@@ -57,16 +56,16 @@
       <div class="rounded-xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] p-8 text-white shadow-xl h-full">
         <div class="flex items-center gap-3 mb-3">
           <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-          <h3 class="text-2xl font-semibold">Capture decisions automatically</h3>
+          <h3 class="text-2xl font-semibold">${escapeHtml(t('capture.connect.title'))}</h3>
         </div>
-        <p class="text-base opacity-90 max-w-xl mb-6">Connect Google Meet and Corteza reads each meeting's transcript or Gemini notes, then saves the decisions and action items for you. Nobody has to write anything down.</p>
+        <p class="text-base opacity-90 max-w-xl mb-6">${escapeHtml(t('capture.connect.body'))}</p>
         <ol class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 text-sm">
-          <li class="bg-white/10 rounded-lg p-3"><strong>1.</strong> Connect your Google account</li>
-          <li class="bg-white/10 rounded-lg p-3"><strong>2.</strong> Turn on transcription or Gemini “Take notes for me” in your meetings</li>
-          <li class="bg-white/10 rounded-lg p-3"><strong>3.</strong> Decisions show up here a few minutes after each meeting</li>
+          <li class="bg-white/10 rounded-lg p-3"><strong>1.</strong> ${escapeHtml(t('capture.connect.step1'))}</li>
+          <li class="bg-white/10 rounded-lg p-3"><strong>2.</strong> ${escapeHtml(t('capture.connect.step2'))}</li>
+          <li class="bg-white/10 rounded-lg p-3"><strong>3.</strong> ${escapeHtml(t('capture.connect.step3'))}</li>
         </ol>
         <a href="/integrations/google/connect" class="inline-flex items-center gap-2 bg-white text-[#3953bd] font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
-          <span class="material-symbols-outlined">link</span> Connect Google Meet
+          <span class="material-symbols-outlined">link</span> ${escapeHtml(t('capture.connect.button'))}
         </a>
       </div>`;
   }
@@ -77,7 +76,7 @@
     const byType = data.outcomes_by_type;
     const countedByType = byType ? Object.values(byType).reduce((sum, count) => sum + count, 0) : 0;
     if (byType && countedByType === total && total > 0) return describe(byType, total, 0);
-    return plural(total, 'outcome');
+    return window.CortezaOutcomes.plural(total, 'outcome');
   }
 
   /** Progress of an "Import past meetings" job still running on the server */
@@ -85,16 +84,16 @@
     if (!job) return '';
     const percent = job.total ? Math.round((job.done / job.total) * 100) : 0;
     const soFar = job.decisions_created || job.action_items_created
-      ? ` · ${describe(job.outcomes_by_type || null, job.decisions_created || 0, job.action_items_created || 0)} so far`
+      ? ` · ${t('capture.import.soFar', { outcomes: describe(job.outcomes_by_type || null, job.decisions_created || 0, job.action_items_created || 0) })}`
       : '';
     return `
       <div class="p-3 rounded-lg bg-primary/5 border border-primary/20">
         <div class="flex items-center justify-between gap-4 text-sm mb-2">
-          <span class="font-semibold text-on-surface">Importing past meetings: ${job.done} of ${job.total}${escapeHtml(soFar)}</span>
-          <a href="/settings#import" class="text-primary font-semibold whitespace-nowrap hover:underline">Details</a>
+          <span class="font-semibold text-on-surface">${escapeHtml(t('capture.import.progress', { done: job.done, total: job.total }))}${escapeHtml(soFar)}</span>
+          <a href="/settings#import" class="text-primary font-semibold whitespace-nowrap hover:underline">${escapeHtml(t('capture.import.details'))}</a>
         </div>
         <div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: ${percent}%"></div></div>
-        <p class="text-xs text-on-surface-variant mt-2">It keeps going in the background. We'll email you a summary when it's done.</p>
+        <p class="text-xs text-on-surface-variant mt-2">${escapeHtml(t('capture.import.background'))}</p>
       </div>`;
   }
 
@@ -112,7 +111,7 @@
       refreshOverview();
       const result = document.getElementById('capture-sync-result');
       if (result) {
-        result.textContent = 'Import finished. Your overview is up to date.';
+        result.textContent = t('capture.import.finished');
         result.className = 'text-sm text-tertiary';
       }
     }
@@ -127,31 +126,31 @@
     const recentHtml = recent.length
       ? `<ul class="divide-y divide-outline-variant/50">${recent.map(meeting => `
           <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-4 py-2 text-sm">
-            <span class="text-on-surface truncate">${escapeHtml(meeting.title || 'Meeting')}</span>
+            <span class="text-on-surface truncate">${escapeHtml(meeting.title || t('capture.meeting'))}</span>
             <span class="sm:whitespace-nowrap text-on-surface-variant">${escapeHtml(meetingOutcome(meeting))} · ${escapeHtml(timeAgo(meeting.updated_at))}</span>
           </li>`).join('')}</ul>`
-      : '<p class="text-sm text-on-surface-variant">No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, it shows up here within a few minutes. You can also import past meetings.</p>';
+      : `<p class="text-sm text-on-surface-variant">${escapeHtml(t('capture.noMeetings'))}</p>`;
 
     panel().innerHTML = `
       <div class="rounded-xl bg-surface-container-lowest border border-outline-variant px-4 py-3 flex flex-col gap-3">
         ${needsReconnect ? `
           <div class="p-3 rounded-lg bg-error-container text-on-error-container text-sm">
-            ${escapeHtml(data.last_error || 'Google access stopped working, so meetings are not being captured.')}
-            <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
+            ${escapeHtml(data.last_error || t('capture.accessStopped'))}
+            <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('capture.reconnect'))}</a>
           </div>` : ''}
         ${!needsReconnect && data.needs_reconsent ? `
           <div class="p-3 rounded-lg bg-primary/10 text-primary text-sm">
             Reconnect once to let Corteza read Gemini notes too.
-            <a href="/integrations/google/connect" class="font-bold underline ml-1">Reconnect</a>
+            <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('capture.reconnect'))}</a>
           </div>` : ''}
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
           <span class="w-2.5 h-2.5 rounded-full shrink-0 ${needsReconnect ? 'bg-error' : 'bg-tertiary'}" aria-hidden="true"></span>
-          <span class="font-semibold text-on-surface">${needsReconnect ? 'Automatic capture paused' : 'Capturing from Google Meet'}</span>
-          <span class="text-on-surface-variant">checked ${escapeHtml(timeAgo(data.last_polled_at))} · ${escapeHtml(capturedTotals(data))} from ${plural(data.meetings_processed || 0, 'meeting')}</span>
+          <span class="font-semibold text-on-surface">${escapeHtml(t(needsReconnect ? 'capture.paused' : 'capture.capturing'))}</span>
+          <span class="text-on-surface-variant">${escapeHtml(t('capture.status', { when: timeAgo(data.last_polled_at), outcomes: capturedTotals(data), meetings: t('capture.meetings', { count: data.meetings_processed || 0 }) }))}</span>
           <span class="flex flex-wrap items-center gap-x-4 gap-y-1 sm:ml-auto">
-            <button id="capture-sync" type="button" class="font-semibold text-primary hover:underline disabled:opacity-50" ${needsReconnect ? 'disabled' : ''}>Check now</button>
-            <a href="/settings#import" class="font-semibold text-primary hover:underline">Import past meetings</a>
-            <button id="capture-meetings-toggle" type="button" aria-expanded="false" aria-controls="capture-meetings" class="font-semibold text-on-surface-variant hover:text-primary">Latest meetings</button>
+            <button id="capture-sync" type="button" class="font-semibold text-primary hover:underline disabled:opacity-50" ${needsReconnect ? 'disabled' : ''}>${escapeHtml(t('capture.checkNow'))}</button>
+            <a href="/settings#import" class="font-semibold text-primary hover:underline">${escapeHtml(t('capture.importPast'))}</a>
+            <button id="capture-meetings-toggle" type="button" aria-expanded="false" aria-controls="capture-meetings" class="font-semibold text-on-surface-variant hover:text-primary">${escapeHtml(t('capture.latest'))}</button>
           </span>
         </div>
         ${importProgressHtml(data.active_import)}
@@ -174,15 +173,15 @@
     const button = document.getElementById('capture-sync');
     const result = document.getElementById('capture-sync-result');
     button.disabled = true;
-    button.textContent = 'Checking…';
+    button.textContent = t('capture.checking');
     try {
       const response = await fetch('/api/integrations/google/sync', { method: 'POST', credentials: 'include' });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Checking Google Meet failed');
+      if (!response.ok) throw new Error(data.error || t('capture.checkFailed'));
       await loadCapture();
       const message = data.meetings_processed
-        ? `Captured ${describe(data.outcomes_by_type || null, data.decisions_captured, data.action_items_captured || 0)} from ${plural(data.meetings_processed, 'new meeting')}.`
-        : 'No new meetings with transcripts or notes yet.';
+        ? t('capture.captured', { outcomes: describe(data.outcomes_by_type || null, data.decisions_captured, data.action_items_captured || 0), meetings: t('capture.newMeetings', { count: data.meetings_processed }) })
+        : t('capture.noNew');
       const refreshed = document.getElementById('capture-sync-result');
       if (refreshed) {
         refreshed.textContent = message;
@@ -197,7 +196,7 @@
       result.textContent = error.message;
       result.className = 'text-sm text-error';
       button.disabled = false;
-      button.textContent = 'Check now';
+      button.textContent = t('capture.checkNow');
       result.classList.remove('hidden');
     }
   }
@@ -206,7 +205,7 @@
     try {
       const response = await fetch('/api/integrations/google', { credentials: 'include' });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load');
+      if (!response.ok) throw new Error(data.error || t('common.loadFailed'));
       if (!data.configured) {
         panel().classList.add('hidden');
         return;
@@ -215,7 +214,7 @@
       else renderNotConnected();
       followImport(data);
     } catch (error) {
-      panel().innerHTML = `<div class="rounded-xl border border-outline-variant p-6 text-sm text-error">Couldn't load automatic capture status. ${escapeHtml(error.message)}</div>`;
+      panel().innerHTML = `<div class="rounded-xl border border-outline-variant p-6 text-sm text-error">${escapeHtml(t('capture.loadFailed', { error: error.message }))}</div>`;
     }
   }
 

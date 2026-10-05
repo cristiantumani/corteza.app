@@ -1,9 +1,10 @@
 const { renderView } = require('../http/page-partials');
+const { localizedPage } = require('../core/i18n/i18n');
 
-// Pages loaded once at startup, with the shared sidebar and detail modal filled in
-const dashboardHTML = renderView('dashboard-new.html', { active: 'home' });
-const settingsNewHTML = renderView('settings-new.html', { active: 'settings' });
-const aiSearchHTML = renderView('ai-search.html', { active: 'search' });
+// Pages rendered once per language at startup, with the shared sidebar and detail modal filled in
+const dashboardHTML = localizedPage(renderView('dashboard-new.html', { active: 'home' }));
+const settingsNewHTML = localizedPage(renderView('settings-new.html', { active: 'settings' }));
+const aiSearchHTML = localizedPage(renderView('ai-search.html', { active: 'search' }));
 
 /**
  * What the dashboard would otherwise fetch first (/auth/me and /api/spaces),
@@ -40,7 +41,7 @@ function scriptJson(value) {
  */
 async function sendPreloadedPage(req, res, template) {
   const workspaceId = req.session?.user?.workspace_id || '';
-  let html = template.replace(/<WORKSPACE_ID>/g, workspaceId);
+  let html = template(req).replace(/<WORKSPACE_ID>/g, workspaceId);
 
   const bootstrap = req.session?.user ? await dashboardBootstrap(req.session.user) : null;
   if (bootstrap) {
@@ -68,7 +69,7 @@ function serveSettings(req, res) {
   const userId = req.session?.user?.user_id || '';
 
   // Replace placeholders with actual values (using new Material Design 3 version)
-  let html = settingsNewHTML.replace(/<WORKSPACE_ID>/g, workspaceId);
+  let html = settingsNewHTML(req).replace(/<WORKSPACE_ID>/g, workspaceId);
   html = html.replace(/<USER_ID>/g, userId);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });

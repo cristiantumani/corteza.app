@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Corteza in Spanish (part 1)
+- The app speaks English and Spanish. It follows your browser, or pick it in **Settings → Language**
+- In Spanish now: the sidebar, Home (summary, ask, review queue, the three columns and All outcomes), the outcome detail, Log manually and upload, review buttons and the first-run tour. Other pages and the emails come next
+- Old "Memory" wording removed from the outcome dialogs
+
 ### Added - Morning partner (COR-47)
 - The morning summary can be written by a personality: **The Sergeant** (tough love) or **The Sarcastic Colleague** (dry irony). Its line for the day is the subject and opens the email; the counts move to the inbox preview, and the list stays the same
 - Lines fit the day (all clear, due today, a few / a pile / too many overdue, meeting prep), in English and Spanish, never repeated within 14 days. With 6 or more overdue the partner stops pushing and helps triage. No swearing, and it never names an item a colleague's meeting just assigned
