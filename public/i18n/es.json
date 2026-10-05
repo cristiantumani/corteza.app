@@ -1,0 +1,466 @@
+{
+  "nav": {
+    "main": "Navegación principal",
+    "home": "Inicio",
+    "actions": "Pendientes",
+    "questions": "Preguntas y riesgos",
+    "search": "Buscar",
+    "settings": "Configuración",
+    "coffee": "Invítame un café",
+    "log": "Registrar a mano",
+    "howItWorks": "Cómo funciona",
+    "logout": "Cerrar sesión",
+    "menu": "Menú",
+    "close": "Cerrar menú",
+    "open": "Abrir menú",
+    "homeTitle": "Inicio"
+  },
+  "home": {
+    "pageTitle": "Inicio · Corteza",
+    "loadingDay": "Cargando tu día…",
+    "tabs": {
+      "label": "Vistas de inicio",
+      "overview": "Resumen",
+      "all": "Todos los resultados"
+    },
+    "ask": {
+      "label": "Pregunta sobre tus reuniones",
+      "placeholder": "Pregunta por decisiones, pendientes, personas…",
+      "button": "Preguntar",
+      "searching": "Buscando…",
+      "looking": "Revisando tus reuniones…",
+      "noSpace": "Abre tus resultados una vez para que Corteza sepa en qué espacio buscar, y vuelve a intentarlo.",
+      "basedOn": {
+        "one": "Basado en {count} fuente",
+        "other": "Basado en {count} fuentes"
+      },
+      "notReviewed": {
+        "one": "{count} sin revisar",
+        "other": "{count} sin revisar"
+      },
+      "openInSearch": "Abrir en Buscar",
+      "noAnswer": "Nada en tus reuniones responde esto todavía."
+    },
+    "capture": {
+      "loading": "Cargando la captura automática…"
+    },
+    "review": {
+      "label": "Resultados por revisar",
+      "title": "Por revisar",
+      "position": "{n} de {total}",
+      "subtitle": "Capturado automáticamente. Confirma lo que está bien, descarta lo que no.",
+      "why": "Por qué: {text}",
+      "confirmMeeting": "Confirmar todo lo de esta reunión",
+      "confirmedMeeting": {
+        "one": "Se confirmó {count} resultado de esta reunión.",
+        "other": "Se confirmaron {count} resultados de esta reunión."
+      }
+    },
+    "owe": {
+      "title": "Lo que debo",
+      "all": "Todos los pendientes",
+      "open": {
+        "one": "{count} pendiente abierto",
+        "other": "{count} pendientes abiertos"
+      },
+      "overdue": {
+        "one": "{count} atrasado",
+        "other": "{count} atrasados"
+      },
+      "markDone": "Marcar como hecho: {text}",
+      "empty": "Nada pendiente. Los pendientes que te asignen tus reuniones aparecen aquí.",
+      "markedDone": "Marcado como hecho."
+    },
+    "open": {
+      "title": "Sigue abierto",
+      "questions": {
+        "one": "{count} pregunta",
+        "other": "{count} preguntas"
+      },
+      "risks": {
+        "one": "{count} riesgo",
+        "other": "{count} riesgos"
+      },
+      "raised": "se planteó {when}",
+      "empty": "No hay preguntas abiertas ni riesgos. Cuando una reunión deja algo sin resolver, aparece aquí."
+    },
+    "decided": {
+      "title": "Decidido",
+      "subtitle": "Confirmadas o registradas a mano",
+      "emptyToReview": "Confirma las decisiones que capturó Corteza y aparecerán aquí.",
+      "empty": "Aún no hay decisiones. Aparecen aquí después de tus reuniones."
+    },
+    "summary": {
+      "newOutcomes": {
+        "one": "{count} resultado nuevo",
+        "other": "{count} resultados nuevos"
+      },
+      "fromMeetings": {
+        "one": " de {count} reunión",
+        "other": " de {count} reuniones"
+      },
+      "overdue": {
+        "one": "{count} pendiente atrasado",
+        "other": "{count} pendientes atrasados"
+      },
+      "dueToday": {
+        "one": "{count} pendiente vence hoy",
+        "other": "{count} pendientes vencen hoy"
+      },
+      "toReview": {
+        "one": "{count} por revisar",
+        "other": "{count} por revisar"
+      },
+      "caughtUp": "Todo al día: nada nuevo en las últimas 24 horas y nada atrasado.",
+      "last": "En las últimas 24 horas: {items}.",
+      "nothingNew": "Nada nuevo en las últimas 24 horas.",
+      "needsYou": "Te necesita: {items}."
+    }
+  },
+  "common": {
+    "loadingWorkspace": "Cargando tu organización…",
+    "review": "Revisar",
+    "loading": "Cargando…",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "edit": "Editar",
+    "saved": "Guardado",
+    "couldNotSave": "No se pudo guardar",
+    "tryAgain": "{error}. Inténtalo de nuevo.",
+    "saving": "Guardando…",
+    "undo": "Deshacer",
+    "remove": "Quitar",
+    "somethingWrong": "Algo salió mal. Inténtalo de nuevo.",
+    "loadFailed": "No se pudo cargar",
+    "back": "Atrás",
+    "next": "Siguiente"
+  },
+  "outcomes": {
+    "recentDecisions": "Decisiones recientes",
+    "logTitle": "Registra a mano una decisión u otro resultado",
+    "uploadTitle": "Sube un archivo de transcripción",
+    "upload": "Subir transcripción",
+    "filterLabel": "Filtrar resultados",
+    "filterPlaceholder": "Filtrar…",
+    "empty": {
+      "title": "Aún no hay nada aquí",
+      "body": "Aparecen solos después de tus reuniones de Google Meet, una vez que conectas Google Meet.",
+      "log": "O registra uno a mano"
+    },
+    "delete": {
+      "title": "Eliminar resultado",
+      "before": "¿Eliminar el resultado",
+      "after": "? No se puede deshacer."
+    },
+    "recent": {
+      "all": "Resultados recientes",
+      "decision": "Decisiones recientes",
+      "open_question": "Preguntas abiertas recientes",
+      "risk": "Riesgos recientes",
+      "action_item": "Pendientes antiguos",
+      "context": "Contexto",
+      "explanation": "Explicaciones",
+      "learning": "Aprendizajes"
+    },
+    "card": {
+      "unknownUser": "Desconocido",
+      "ai": "Capturado por IA",
+      "aiTitle": "Capturado automáticamente de una reunión",
+      "view": "Ver",
+      "accountable": "Responsable: {name}"
+    }
+  },
+  "types": {
+    "plural": {
+      "decision": "Decisiones",
+      "open_question": "Preguntas abiertas",
+      "risk": "Riesgos",
+      "action_item_older": "Pendientes (antiguos)",
+      "context": "Contexto",
+      "explanation": "Explicaciones",
+      "learning": "Aprendizajes"
+    },
+    "decision": "Decisión",
+    "action_item": "Pendiente",
+    "open_question": "Pregunta abierta",
+    "risk": "Riesgo",
+    "explanation": "Explicación",
+    "context": "Contexto",
+    "learning": "Aprendizaje",
+    "assumption": "Supuesto",
+    "short": {
+      "decision": "Decisión",
+      "open_question": "Pregunta",
+      "risk": "Riesgo",
+      "action_item": "Pendiente"
+    }
+  },
+  "log": {
+    "what": "¿Qué pasó?",
+    "whatPlaceholder": "Describe la decisión, el pendiente, la pregunta o el riesgo…",
+    "type": "Tipo *",
+    "space": "Espacio *",
+    "spaceHelp": "Por defecto, el espacio que estás viendo. Solo aparecen los espacios donde puedes agregar.",
+    "category": "Categoría",
+    "categoryPlaceholder": "p. ej. Frontend, Backend, UX",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "Etiquetas separadas por comas",
+    "epic": "Épica de Jira",
+    "epicPlaceholder": "p. ej. PROJ-123",
+    "whoWhen": "Quién y cuándo",
+    "actionHelp": "Va a Pendientes, donde puedes darle seguimiento y marcarlo como hecho.",
+    "context": "Más contexto (opcional)",
+    "contextPlaceholder": "Alternativas consideradas, detalles o información relacionada…"
+  },
+  "actions": {
+    "due": "Vence",
+    "add": "Agregar pendiente",
+    "whatPlaceholder": "¿Qué hay que hacer?",
+    "addFailed": "No se pudo agregar",
+    "addOwner": "Agregar responsable",
+    "saveFailed": "No se pudo guardar el pendiente"
+  },
+  "edit": {
+    "title": "Editar resultado",
+    "content": "Texto *",
+    "loadingSpaces": "Cargando espacios…",
+    "spaceHelp": "Muévelo a otro espacio",
+    "category": "Categoría (opcional)",
+    "none": "Ninguna",
+    "categories": {
+      "product": "Producto",
+      "technical": "Técnica"
+    },
+    "categoryHelp": "Producto, UX o técnica",
+    "epicHelp": "Déjalo vacío para quitar el vínculo con la épica",
+    "comments": "Comentarios",
+    "inline": {
+      "addWhy": "Agregar por qué",
+      "addAccountable": "Agregar responsable",
+      "epicHint": "Clave de la épica de Jira, p. ej. PROJ-12",
+      "nobody": "Nadie",
+      "notLinked": "{name} (no vinculado a un miembro)",
+      "saveCtrlEnter": "Ctrl+Enter para guardar · Esc para cancelar",
+      "savePick": "Elige una persona para guardar · Esc para cancelar",
+      "saveEnter": "Enter para guardar · Esc para cancelar",
+      "empty": "Esto no puede quedar vacío.",
+      "failed": "{error}. Esc para cancelar.",
+      "clickToEdit": "Haz clic para editar"
+    }
+  },
+  "upload": {
+    "title": "Subir una transcripción",
+    "intro": "Sube una transcripción, documento o notas de una reunión. Corteza encuentra los resultados (decisiones, pendientes, preguntas abiertas y riesgos) para que los revises.",
+    "drop": "Suelta un archivo aquí o haz clic para elegirlo",
+    "formats": "TXT, MD, PDF, DOCX y subtítulos VTT/SRT, como las transcripciones de Google Meet (hasta 5 MB)",
+    "choose": "Elegir un archivo",
+    "processing": "Procesando…",
+    "uploading": "Subiendo el archivo",
+    "extract": "Buscar resultados",
+    "found": "Resultados encontrados",
+    "none": "No hay resultados claros en este archivo. Prueba con otro documento."
+  },
+  "detail": {
+    "title": "Resultado",
+    "why": "Por qué",
+    "evidence": "Evidencia",
+    "answer": "Respuesta",
+    "addedBy": "Agregado por",
+    "date": "Fecha",
+    "accountable": "Responsable",
+    "accountableHelp": "Quien se asegura de que se cumpla. Las tareas y sus responsables van en Pendientes.",
+    "dueOlder": "Vence (captura antigua)",
+    "context": "Contexto de la reunión",
+    "raisedBy": "Planteado por",
+    "questionOwnerHelp": "Quien tiene que conseguir la respuesta.",
+    "mitigation": "Mitigación",
+    "mitigatedBy": "Mitigado por {name}",
+    "answeredBy": "Respondida por {name}",
+    "mitigated": "Mitigado",
+    "answered": "Respondida",
+    "reopen": "Reabrir",
+    "riskOpenHelp": "Sigue abierto. Cuando ya no amenace el trabajo, ciérralo y cuenta cómo.",
+    "notAnswered": "Aún sin respuesta.",
+    "stillOpen": "Sigue abierto.",
+    "howMitigated": "Cómo se mitigó",
+    "theAnswer": "La respuesta",
+    "mitigationPlaceholder": "Cómo se mitigó (opcional), p. ej. obtuvimos la certificación ISO 27001",
+    "answerPlaceholder": "La respuesta (opcional)",
+    "markMitigated": "Marcar como mitigado",
+    "markAnswered": "Marcar como respondida",
+    "googleMeet": "Google Meet",
+    "source": "Fuente",
+    "openActions": "Ver pendientes →",
+    "noOwner": "Sin responsable",
+    "noDue": "sin fecha"
+  },
+  "review": {
+    "reasons": {
+      "not_relevant": "No es relevante",
+      "not_an_outcome": "Nadie decidió esto",
+      "inaccurate": "Es inexacto",
+      "duplicate": "Está duplicado",
+      "about_a_person": "Es sobre una persona"
+    },
+    "confirmed": "Confirmado",
+    "needsReview": "Por revisar",
+    "pendingTitle": "Capturado automáticamente. Confírmalo si está bien, descártalo si no.",
+    "confirm": "Confirmar",
+    "dismiss": "Descartar",
+    "skip": "Saltar",
+    "confirmTitle": "Está bien: se queda",
+    "dismissTitle": "No debería estar aquí: quítalo (puedes deshacer)",
+    "dismissed": "Descartado. Corteza capturará menos cosas así.",
+    "whyOptional": "¿Por qué? (opcional)",
+    "undoFailed": "No se pudo deshacer. Inténtalo de nuevo.",
+    "thanks": "Gracias, anotado.",
+    "reasonFailed": "No se pudo guardar el motivo.",
+    "confirmFailed": "No se pudo confirmar. Inténtalo de nuevo.",
+    "dismissFailed": "No se pudo descartar. Inténtalo de nuevo.",
+    "chip": {
+      "one": "{count} por revisar",
+      "other": "{count} por revisar"
+    },
+    "chipShowing": "Mostrando {count} por revisar · Ver todo",
+    "chipShowAllTitle": "Ver todos los resultados",
+    "chipTitle": "Ver solo los resultados capturados automáticamente que nadie ha confirmado ni descartado",
+    "isItRight": "Capturado automáticamente. ¿Está bien?"
+  },
+  "time": {
+    "today": "hoy",
+    "yesterday": "ayer",
+    "daysAgo": {
+      "one": "hace {count} día",
+      "other": "hace {count} días"
+    },
+    "onDate": "el {date}",
+    "never": "nunca",
+    "justNow": "recién",
+    "minutesAgo": {
+      "one": "hace {count} min",
+      "other": "hace {count} min"
+    },
+    "hoursAgo": {
+      "one": "hace {count} h",
+      "other": "hace {count} h"
+    }
+  },
+  "due": {
+    "none": "Sin fecha",
+    "overdueOn": "Atrasado · {date}",
+    "today": "Vence hoy",
+    "on": "Vence el {date}"
+  },
+  "outcomeCounts": {
+    "outcome": {
+      "one": "{count} resultado",
+      "other": "{count} resultados"
+    },
+    "decision": {
+      "one": "{count} decisión",
+      "other": "{count} decisiones"
+    },
+    "open_question": {
+      "one": "{count} pregunta abierta",
+      "other": "{count} preguntas abiertas"
+    },
+    "risk": {
+      "one": "{count} riesgo",
+      "other": "{count} riesgos"
+    },
+    "action_item": {
+      "one": "{count} pendiente",
+      "other": "{count} pendientes"
+    },
+    "other": {
+      "one": "{count} nota",
+      "other": "{count} notas"
+    },
+    "list": "{items} y {last}"
+  },
+  "capture": {
+    "skip": {
+      "one_on_one": "Reunión 1:1, omitida",
+      "excluded_title": "Excluida por el título",
+      "no_transcript": "Sin transcripción ni notas",
+      "too_short": "Muy corta"
+    },
+    "skipped": "Omitida",
+    "failed": "Falló, se reintentará",
+    "connect": {
+      "title": "Captura decisiones automáticamente",
+      "body": "Conecta Google Meet y Corteza lee la transcripción o las notas de Gemini de cada reunión, y guarda las decisiones y pendientes por ti. Nadie tiene que anotar nada.",
+      "step1": "Conecta tu cuenta de Google",
+      "step2": "Activa la transcripción o “Tomar notas por mí” de Gemini en tus reuniones",
+      "step3": "Las decisiones aparecen aquí unos minutos después de cada reunión",
+      "button": "Conectar Google Meet"
+    },
+    "import": {
+      "soFar": "{outcomes} hasta ahora",
+      "progress": "Importando reuniones anteriores: {done} de {total}",
+      "details": "Detalles",
+      "background": "Sigue en segundo plano. Te enviaremos un resumen por correo cuando termine.",
+      "finished": "Importación terminada. Tu resumen está al día."
+    },
+    "meeting": "Reunión",
+    "noMeetings": "Aún no hay reuniones procesadas. Después de tu próxima reunión de Google Meet con transcripción o notas de Gemini, aparece aquí en unos minutos. También puedes importar reuniones anteriores.",
+    "accessStopped": "El acceso a Google dejó de funcionar, así que no se están capturando reuniones.",
+    "reconnect": "Reconectar",
+    "paused": "Captura automática en pausa",
+    "capturing": "Capturando desde Google Meet",
+    "status": "revisado {when} · {outcomes} de {meetings}",
+    "meetings": {
+      "one": "{count} reunión",
+      "other": "{count} reuniones"
+    },
+    "newMeetings": {
+      "one": "{count} reunión nueva",
+      "other": "{count} reuniones nuevas"
+    },
+    "checkNow": "Revisar ahora",
+    "importPast": "Importar reuniones anteriores",
+    "latest": "Últimas reuniones",
+    "checking": "Revisando…",
+    "checkFailed": "No se pudo revisar Google Meet",
+    "captured": "Se capturaron {outcomes} de {meetings}.",
+    "noNew": "Aún no hay reuniones nuevas con transcripción o notas.",
+    "loadFailed": "No se pudo cargar el estado de la captura automática. {error}"
+  },
+  "onboarding": {
+    "eyebrow1": "Cómo funciona Corteza",
+    "title1": "Tus reuniones, sin tomar notas",
+    "body1": "Corteza lee las transcripciones y notas de Gemini de tus reuniones de Google Meet y guarda lo importante:",
+    "item1": "Decisiones, con el motivo detrás",
+    "item2": "Pendientes, con responsable y fecha",
+    "item3": "Preguntas abiertas y riesgos",
+    "tip1": "Activa la transcripción o “Tomar notas por mí” de Gemini en tus reuniones. Los resultados de tus reuniones son privados.",
+    "connected": "Google Meet conectado",
+    "title2": "Pregúntale lo que quieras a Corteza",
+    "body2": "Pregunta con tus palabras sobre cualquier reunión. Corteza responde y muestra los resultados que usó, para que revises la fuente.",
+    "q1": "¿Qué decidimos sobre los precios?",
+    "q2": "¿Cuáles son mis pendientes?",
+    "q3": "¿Por qué elegimos este plan?",
+    "title3": "Seguimientos que no se pierden",
+    "body3": "Cada compromiso de tus reuniones llega a Pendientes, con su responsable y su fecha.",
+    "item4": "¿Sin fecha? Corteza le escribe al responsable para que la ponga",
+    "item5": "Márcalos como hechos a medida que avanzas, o cambia la fecha",
+    "item6": "Filtra los tuyos o mira los de todos",
+    "openActions": "Abrir Pendientes",
+    "eyebrow4": "Opcional · para admins",
+    "title4": "Cuéntale a Corteza sobre tu empresa",
+    "body4": "Una descripción corta y un glosario (siglas, clientes, personas y sus roles) ayudan a Corteza a capturar lo que importa a tu negocio y a escribir bien los nombres.",
+    "addContext": "Agregar contexto de la empresa",
+    "getStarted": "Empezar"
+  },
+  "settings": {
+    "language": {
+      "title": "Idioma",
+      "body": "El idioma de las pantallas de Corteza. Los resultados quedan en el idioma de cada reunión.",
+      "label": "Idioma de la app",
+      "browser": "Según mi navegador"
+    }
+  }
+}

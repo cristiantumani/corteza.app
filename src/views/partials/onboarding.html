@@ -58,69 +58,69 @@
   <div class="cz-onb-card">
     <section class="cz-onb-step" data-step="capture">
       <div class="cz-onb-icon"><span class="material-symbols-outlined">videocam</span></div>
-      <div class="cz-onb-eyebrow">How Corteza works</div>
-      <h2 id="cz-onb-title-1">Your meetings, without taking notes</h2>
-      <p>Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves what matters:</p>
+      <div class="cz-onb-eyebrow">{{t:onboarding.eyebrow1}}</div>
+      <h2 id="cz-onb-title-1">{{t:onboarding.title1}}</h2>
+      <p>{{t:onboarding.body1}}</p>
       <ul class="cz-onb-list">
-        <li><span class="material-symbols-outlined">gavel</span>Decisions, with the reason behind them</li>
-        <li><span class="material-symbols-outlined">task_alt</span>Action items, with owner and due date</li>
-        <li><span class="material-symbols-outlined">help</span>Open questions and risks</li>
+        <li><span class="material-symbols-outlined">gavel</span>{{t:onboarding.item1}}</li>
+        <li><span class="material-symbols-outlined">task_alt</span>{{t:onboarding.item2}}</li>
+        <li><span class="material-symbols-outlined">help</span>{{t:onboarding.item3}}</li>
       </ul>
-      <p class="cz-onb-tip">Turn on transcripts or Gemini's "Take notes for me" in your meetings. Outcomes of your meetings are private to you.</p>
+      <p class="cz-onb-tip">{{t:onboarding.tip1}}</p>
       <div class="cz-onb-actions" data-meet-cta>
         <a class="cz-onb-btn primary" href="/integrations/google/connect" data-onb-finish>
-          <span class="material-symbols-outlined">link</span>Connect Google Meet
+          <span class="material-symbols-outlined">link</span>{{t:capture.connect.button}}
         </a>
       </div>
       <div class="cz-onb-actions" data-meet-connected hidden>
-        <span class="cz-onb-done"><span class="material-symbols-outlined">check_circle</span>Google Meet connected</span>
-        <a class="cz-onb-btn ghost" href="/settings#integrations" data-onb-finish>Import past meetings</a>
+        <span class="cz-onb-done"><span class="material-symbols-outlined">check_circle</span>{{t:onboarding.connected}}</span>
+        <a class="cz-onb-btn ghost" href="/settings#integrations" data-onb-finish>{{t:capture.importPast}}</a>
       </div>
     </section>
 
     <section class="cz-onb-step" data-step="search">
       <div class="cz-onb-icon"><span class="material-symbols-outlined">forum</span></div>
-      <div class="cz-onb-eyebrow">Search</div>
-      <h2>Ask Corteza anything</h2>
-      <p>Ask in your own words about any meeting. Corteza answers and shows the outcomes it used, so you can check the source.</p>
+      <div class="cz-onb-eyebrow">{{t:nav.search}}</div>
+      <h2>{{t:onboarding.title2}}</h2>
+      <p>{{t:onboarding.body2}}</p>
       <div class="cz-onb-list">
-        <a class="cz-onb-chip" href="/ai-search?q=What%20did%20we%20decide%20about%20pricing%3F" data-onb-finish>"What did we decide about pricing?"</a>
-        <a class="cz-onb-chip" href="/ai-search?q=What%20are%20my%20open%20action%20items%3F" data-onb-finish>"What are my open action items?"</a>
-        <a class="cz-onb-chip" href="/ai-search?q=Why%20did%20we%20choose%20this%20plan%3F" data-onb-finish>"Why did we choose this plan?"</a>
+        <a class="cz-onb-chip" href="/ai-search?q={{tu:onboarding.q1}}" data-onb-finish>“{{t:onboarding.q1}}”</a>
+        <a class="cz-onb-chip" href="/ai-search?q={{tu:onboarding.q2}}" data-onb-finish>“{{t:onboarding.q2}}”</a>
+        <a class="cz-onb-chip" href="/ai-search?q={{tu:onboarding.q3}}" data-onb-finish>“{{t:onboarding.q3}}”</a>
       </div>
     </section>
 
     <section class="cz-onb-step" data-step="actions">
       <div class="cz-onb-icon"><span class="material-symbols-outlined">checklist</span></div>
-      <div class="cz-onb-eyebrow">Action items</div>
-      <h2>Follow-ups that don't get lost</h2>
-      <p>Every commitment from your meetings lands in Action items, with who owns it and when it's due.</p>
+      <div class="cz-onb-eyebrow">{{t:nav.actions}}</div>
+      <h2>{{t:onboarding.title3}}</h2>
+      <p>{{t:onboarding.body3}}</p>
       <ul class="cz-onb-list">
-        <li><span class="material-symbols-outlined">event</span>No due date? Corteza emails the owner to set one</li>
-        <li><span class="material-symbols-outlined">done_all</span>Mark items done as you go, or change the date</li>
-        <li><span class="material-symbols-outlined">person</span>Filter to yours, or see everyone's</li>
+        <li><span class="material-symbols-outlined">event</span>{{t:onboarding.item4}}</li>
+        <li><span class="material-symbols-outlined">done_all</span>{{t:onboarding.item5}}</li>
+        <li><span class="material-symbols-outlined">person</span>{{t:onboarding.item6}}</li>
       </ul>
       <div class="cz-onb-actions">
-        <a class="cz-onb-btn ghost" href="/actions" data-onb-finish>Open Action items</a>
+        <a class="cz-onb-btn ghost" href="/actions" data-onb-finish>{{t:onboarding.openActions}}</a>
       </div>
     </section>
 
     <section class="cz-onb-step" data-step="context" data-admin-only>
       <div class="cz-onb-icon"><span class="material-symbols-outlined">psychology</span></div>
-      <div class="cz-onb-eyebrow">Optional · for admins</div>
-      <h2>Teach Corteza about your company</h2>
-      <p>A short description and a glossary (acronyms, customers, people and their roles) help Corteza capture what matters to your business and spell names right.</p>
+      <div class="cz-onb-eyebrow">{{t:onboarding.eyebrow4}}</div>
+      <h2>{{t:onboarding.title4}}</h2>
+      <p>{{t:onboarding.body4}}</p>
       <div class="cz-onb-actions">
-        <a class="cz-onb-btn ghost" href="/settings#ai-context" data-onb-finish>Add company context</a>
+        <a class="cz-onb-btn ghost" href="/settings#ai-context" data-onb-finish>{{t:onboarding.addContext}}</a>
       </div>
     </section>
 
     <div class="cz-onb-footer">
       <div class="cz-onb-dots" aria-hidden="true"></div>
       <div class="cz-onb-nav">
-        <button type="button" class="cz-onb-link" data-onb-skip>Skip</button>
-        <button type="button" class="cz-onb-btn ghost" data-onb-back>Back</button>
-        <button type="button" class="cz-onb-btn primary" data-onb-next>Next</button>
+        <button type="button" class="cz-onb-link" data-onb-skip>{{t:review.skip}}</button>
+        <button type="button" class="cz-onb-btn ghost" data-onb-back>{{t:common.back}}</button>
+        <button type="button" class="cz-onb-btn primary" data-onb-next>{{t:common.next}}</button>
       </div>
     </div>
   </div>

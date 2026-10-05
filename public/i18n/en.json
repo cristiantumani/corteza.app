@@ -1,0 +1,466 @@
+{
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "actions": "Action items",
+    "questions": "Questions & risks",
+    "search": "Search",
+    "settings": "Settings",
+    "coffee": "Buy me a coffee",
+    "log": "Log manually",
+    "howItWorks": "How it works",
+    "logout": "Log out",
+    "menu": "Menu",
+    "close": "Close menu",
+    "open": "Open menu",
+    "homeTitle": "Home"
+  },
+  "home": {
+    "pageTitle": "Home · Corteza",
+    "loadingDay": "Loading your day…",
+    "tabs": {
+      "label": "Home views",
+      "overview": "Overview",
+      "all": "All outcomes"
+    },
+    "ask": {
+      "label": "Ask about your meetings",
+      "placeholder": "Ask about decisions, pending action items, people…",
+      "button": "Ask",
+      "searching": "Searching…",
+      "looking": "Looking through your meetings…",
+      "noSpace": "Open your outcomes once so Corteza knows which space to search, then try again.",
+      "basedOn": {
+        "one": "Based on {count} source",
+        "other": "Based on {count} sources"
+      },
+      "notReviewed": {
+        "one": "{count} not reviewed yet",
+        "other": "{count} not reviewed yet"
+      },
+      "openInSearch": "Open in Search",
+      "noAnswer": "Nothing in your meetings answers this yet."
+    },
+    "capture": {
+      "loading": "Loading automatic capture…"
+    },
+    "review": {
+      "label": "Outcomes to review",
+      "title": "To review",
+      "position": "{n} of {total}",
+      "subtitle": "Captured automatically. Confirm what’s right, dismiss what isn’t.",
+      "why": "Why: {text}",
+      "confirmMeeting": "Confirm all {count} from this meeting",
+      "confirmedMeeting": {
+        "one": "Confirmed {count} outcome from this meeting.",
+        "other": "Confirmed {count} outcomes from this meeting."
+      }
+    },
+    "owe": {
+      "title": "What I owe",
+      "all": "All action items",
+      "open": {
+        "one": "{count} open item",
+        "other": "{count} open items"
+      },
+      "overdue": {
+        "one": "{count} overdue",
+        "other": "{count} overdue"
+      },
+      "markDone": "Mark done: {text}",
+      "empty": "Nothing on your plate. Action items your meetings assign to you show up here.",
+      "markedDone": "Marked done."
+    },
+    "open": {
+      "title": "Still open",
+      "questions": {
+        "one": "{count} question",
+        "other": "{count} questions"
+      },
+      "risks": {
+        "one": "{count} risk",
+        "other": "{count} risks"
+      },
+      "raised": "raised {when}",
+      "empty": "No open questions or risks. When a meeting leaves something unresolved, it shows up here."
+    },
+    "decided": {
+      "title": "Decided",
+      "subtitle": "Confirmed or logged by hand",
+      "emptyToReview": "Confirm the decisions Corteza captured and they show up here.",
+      "empty": "No decisions yet. They show up here after your meetings."
+    },
+    "summary": {
+      "newOutcomes": {
+        "one": "{count} new outcome",
+        "other": "{count} new outcomes"
+      },
+      "fromMeetings": {
+        "one": " from {count} meeting",
+        "other": " from {count} meetings"
+      },
+      "overdue": {
+        "one": "{count} action item overdue",
+        "other": "{count} action items overdue"
+      },
+      "dueToday": {
+        "one": "{count} action item due today",
+        "other": "{count} action items due today"
+      },
+      "toReview": {
+        "one": "{count} to review",
+        "other": "{count} to review"
+      },
+      "caughtUp": "All caught up: nothing new in the last 24 hours and nothing overdue.",
+      "last": "In the last 24 hours: {items}.",
+      "nothingNew": "Nothing new in the last 24 hours.",
+      "needsYou": "Needs you: {items}."
+    }
+  },
+  "common": {
+    "loadingWorkspace": "Loading your workspace…",
+    "review": "Review",
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "edit": "Edit",
+    "saved": "Saved",
+    "couldNotSave": "Couldn’t save",
+    "tryAgain": "{error}. Try again.",
+    "saving": "Saving…",
+    "undo": "Undo",
+    "remove": "Remove",
+    "somethingWrong": "Something went wrong. Try again.",
+    "loadFailed": "Failed to load",
+    "back": "Back",
+    "next": "Next"
+  },
+  "outcomes": {
+    "recentDecisions": "Recent decisions",
+    "logTitle": "Log a decision or other outcome by hand",
+    "uploadTitle": "Upload a transcript file",
+    "upload": "Upload transcript",
+    "filterLabel": "Filter outcomes",
+    "filterPlaceholder": "Filter…",
+    "empty": {
+      "title": "Nothing here yet",
+      "body": "They appear automatically after your Google Meet meetings, once Google Meet is connected.",
+      "log": "Or log one manually"
+    },
+    "delete": {
+      "title": "Delete outcome",
+      "before": "Delete outcome",
+      "after": "? This can’t be undone."
+    },
+    "recent": {
+      "all": "Recent outcomes",
+      "decision": "Recent decisions",
+      "open_question": "Recent open questions",
+      "risk": "Recent risks",
+      "action_item": "Older action items",
+      "context": "Context",
+      "explanation": "Explanations",
+      "learning": "Learnings"
+    },
+    "card": {
+      "unknownUser": "Unknown",
+      "ai": "AI-captured",
+      "aiTitle": "Captured automatically from a meeting",
+      "view": "View",
+      "accountable": "Accountable: {name}"
+    }
+  },
+  "types": {
+    "plural": {
+      "decision": "Decisions",
+      "open_question": "Open questions",
+      "risk": "Risks",
+      "action_item_older": "Action items (older)",
+      "context": "Context",
+      "explanation": "Explanations",
+      "learning": "Learnings"
+    },
+    "decision": "Decision",
+    "action_item": "Action item",
+    "open_question": "Open question",
+    "risk": "Risk",
+    "explanation": "Explanation",
+    "context": "Context",
+    "learning": "Learning",
+    "assumption": "Assumption",
+    "short": {
+      "decision": "Decision",
+      "open_question": "Question",
+      "risk": "Risk",
+      "action_item": "Action item"
+    }
+  },
+  "log": {
+    "what": "What happened?",
+    "whatPlaceholder": "Describe the decision, action item, question or risk…",
+    "type": "Type *",
+    "space": "Space *",
+    "spaceHelp": "Defaults to the space you’re viewing. Only spaces you can add to are listed.",
+    "category": "Category",
+    "categoryPlaceholder": "e.g. Frontend, Backend, UX",
+    "tags": "Tags",
+    "tagsPlaceholder": "Comma-separated tags",
+    "epic": "Jira epic",
+    "epicPlaceholder": "e.g. PROJ-123",
+    "whoWhen": "Who and when",
+    "actionHelp": "It goes to Action items, where you can follow it up and mark it done.",
+    "context": "More context (optional)",
+    "contextPlaceholder": "Alternatives considered, details or related information…"
+  },
+  "actions": {
+    "due": "Due",
+    "add": "Add action item",
+    "whatPlaceholder": "What needs to be done?",
+    "addFailed": "Couldn’t add it",
+    "addOwner": "Add owner",
+    "saveFailed": "Couldn’t save the action item"
+  },
+  "edit": {
+    "title": "Edit outcome",
+    "content": "Text *",
+    "loadingSpaces": "Loading spaces…",
+    "spaceHelp": "Move it to another space",
+    "category": "Category (optional)",
+    "none": "None",
+    "categories": {
+      "product": "Product",
+      "technical": "Technical"
+    },
+    "categoryHelp": "Product, UX or technical",
+    "epicHelp": "Leave it empty to remove the link to the epic",
+    "comments": "Comments",
+    "inline": {
+      "addWhy": "Add why",
+      "addAccountable": "Add who’s accountable",
+      "epicHint": "Jira epic key, e.g. PROJ-12",
+      "nobody": "Nobody",
+      "notLinked": "{name} (not linked to a member)",
+      "saveCtrlEnter": "Ctrl+Enter to save · Esc to cancel",
+      "savePick": "Pick a person to save · Esc to cancel",
+      "saveEnter": "Enter to save · Esc to cancel",
+      "empty": "This can’t be empty.",
+      "failed": "{error}. Esc to cancel.",
+      "clickToEdit": "Click to edit"
+    }
+  },
+  "upload": {
+    "title": "Upload a transcript",
+    "intro": "Upload a meeting transcript, document or notes file. Corteza finds the outcomes (decisions, action items, open questions and risks) for you to review.",
+    "drop": "Drop a file here or click to choose one",
+    "formats": "TXT, MD, PDF, DOCX and VTT/SRT captions, like Google Meet transcripts (up to 5 MB)",
+    "choose": "Choose a file",
+    "processing": "Processing…",
+    "uploading": "Uploading file",
+    "extract": "Find outcomes",
+    "found": "Outcomes found",
+    "none": "No clear outcomes in this file. Try another document."
+  },
+  "detail": {
+    "title": "Outcome",
+    "why": "Why",
+    "evidence": "Evidence",
+    "answer": "Answer",
+    "addedBy": "Added by",
+    "date": "Date",
+    "accountable": "Accountable",
+    "accountableHelp": "Who makes sure this gets done. Tasks and their owners go in Action items.",
+    "dueOlder": "Due (older capture)",
+    "context": "Meeting context",
+    "raisedBy": "Raised by",
+    "questionOwnerHelp": "Who has to get this answered.",
+    "mitigation": "Mitigation",
+    "mitigatedBy": "Mitigated by {name}",
+    "answeredBy": "Answered by {name}",
+    "mitigated": "Mitigated",
+    "answered": "Answered",
+    "reopen": "Reopen",
+    "riskOpenHelp": "Still open. When it no longer threatens the work, close it and say how.",
+    "notAnswered": "Not answered yet.",
+    "stillOpen": "Still open.",
+    "howMitigated": "How it was mitigated",
+    "theAnswer": "The answer",
+    "mitigationPlaceholder": "How it was mitigated (optional), e.g. we got the ISO 27001 certification",
+    "answerPlaceholder": "The answer (optional)",
+    "markMitigated": "Mark as mitigated",
+    "markAnswered": "Mark as answered",
+    "googleMeet": "Google Meet",
+    "source": "Source",
+    "openActions": "Open action items →",
+    "noOwner": "No owner",
+    "noDue": "no due date"
+  },
+  "review": {
+    "reasons": {
+      "not_relevant": "Not relevant",
+      "not_an_outcome": "Nobody decided this",
+      "inaccurate": "Inaccurate",
+      "duplicate": "Duplicate",
+      "about_a_person": "About a person"
+    },
+    "confirmed": "Confirmed",
+    "needsReview": "Needs review",
+    "pendingTitle": "Captured automatically. Confirm it if it’s right, dismiss it if not.",
+    "confirm": "Confirm",
+    "dismiss": "Dismiss",
+    "skip": "Skip",
+    "confirmTitle": "It’s right: keep it",
+    "dismissTitle": "It shouldn’t be here: remove it (you can undo)",
+    "dismissed": "Dismissed. Corteza will capture fewer items like this.",
+    "whyOptional": "Why? (optional)",
+    "undoFailed": "Could not undo. Try again.",
+    "thanks": "Thanks, noted.",
+    "reasonFailed": "Could not save the reason.",
+    "confirmFailed": "Could not confirm it. Try again.",
+    "dismissFailed": "Could not dismiss it. Try again.",
+    "chip": {
+      "one": "{count} to review",
+      "other": "{count} to review"
+    },
+    "chipShowing": "Showing {count} to review · Show all",
+    "chipShowAllTitle": "Show all outcomes",
+    "chipTitle": "Show only automatically captured outcomes nobody has confirmed or dismissed",
+    "isItRight": "Captured automatically. Is it right?"
+  },
+  "time": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo": {
+      "one": "{count} day ago",
+      "other": "{count} days ago"
+    },
+    "onDate": "on {date}",
+    "never": "never",
+    "justNow": "just now",
+    "minutesAgo": {
+      "one": "{count} min ago",
+      "other": "{count} min ago"
+    },
+    "hoursAgo": {
+      "one": "{count} h ago",
+      "other": "{count} h ago"
+    }
+  },
+  "due": {
+    "none": "No due date",
+    "overdueOn": "Overdue · {date}",
+    "today": "Due today",
+    "on": "Due {date}"
+  },
+  "outcomeCounts": {
+    "outcome": {
+      "one": "{count} outcome",
+      "other": "{count} outcomes"
+    },
+    "decision": {
+      "one": "{count} decision",
+      "other": "{count} decisions"
+    },
+    "open_question": {
+      "one": "{count} open question",
+      "other": "{count} open questions"
+    },
+    "risk": {
+      "one": "{count} risk",
+      "other": "{count} risks"
+    },
+    "action_item": {
+      "one": "{count} action item",
+      "other": "{count} action items"
+    },
+    "other": {
+      "one": "{count} note",
+      "other": "{count} notes"
+    },
+    "list": "{items} and {last}"
+  },
+  "capture": {
+    "skip": {
+      "one_on_one": "1:1 meeting, skipped",
+      "excluded_title": "Excluded by title",
+      "no_transcript": "No transcript or notes",
+      "too_short": "Too short"
+    },
+    "skipped": "Skipped",
+    "failed": "Failed, will retry",
+    "connect": {
+      "title": "Capture decisions automatically",
+      "body": "Connect Google Meet and Corteza reads each meeting’s transcript or Gemini notes, then saves the decisions and action items for you. Nobody has to write anything down.",
+      "step1": "Connect your Google account",
+      "step2": "Turn on transcription or Gemini “Take notes for me” in your meetings",
+      "step3": "Decisions show up here a few minutes after each meeting",
+      "button": "Connect Google Meet"
+    },
+    "import": {
+      "soFar": "{outcomes} so far",
+      "progress": "Importing past meetings: {done} of {total}",
+      "details": "Details",
+      "background": "It keeps going in the background. We’ll email you a summary when it’s done.",
+      "finished": "Import finished. Your overview is up to date."
+    },
+    "meeting": "Meeting",
+    "noMeetings": "No meetings processed yet. After your next Google Meet with transcription or Gemini notes on, it shows up here within a few minutes. You can also import past meetings.",
+    "accessStopped": "Google access stopped working, so meetings are not being captured.",
+    "reconnect": "Reconnect",
+    "paused": "Automatic capture paused",
+    "capturing": "Capturing from Google Meet",
+    "status": "checked {when} · {outcomes} from {meetings}",
+    "meetings": {
+      "one": "{count} meeting",
+      "other": "{count} meetings"
+    },
+    "newMeetings": {
+      "one": "{count} new meeting",
+      "other": "{count} new meetings"
+    },
+    "checkNow": "Check now",
+    "importPast": "Import past meetings",
+    "latest": "Latest meetings",
+    "checking": "Checking…",
+    "checkFailed": "Checking Google Meet failed",
+    "captured": "Captured {outcomes} from {meetings}.",
+    "noNew": "No new meetings with transcripts or notes yet.",
+    "loadFailed": "Couldn’t load automatic capture status. {error}"
+  },
+  "onboarding": {
+    "eyebrow1": "How Corteza works",
+    "title1": "Your meetings, without taking notes",
+    "body1": "Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves what matters:",
+    "item1": "Decisions, with the reason behind them",
+    "item2": "Action items, with owner and due date",
+    "item3": "Open questions and risks",
+    "tip1": "Turn on transcripts or Gemini’s “Take notes for me” in your meetings. Outcomes of your meetings are private to you.",
+    "connected": "Google Meet connected",
+    "title2": "Ask Corteza anything",
+    "body2": "Ask in your own words about any meeting. Corteza answers and shows the outcomes it used, so you can check the source.",
+    "q1": "What did we decide about pricing?",
+    "q2": "What are my open action items?",
+    "q3": "Why did we choose this plan?",
+    "title3": "Follow-ups that don’t get lost",
+    "body3": "Every commitment from your meetings lands in Action items, with who owns it and when it’s due.",
+    "item4": "No due date? Corteza emails the owner to set one",
+    "item5": "Mark items done as you go, or change the date",
+    "item6": "Filter to yours, or see everyone’s",
+    "openActions": "Open Action items",
+    "eyebrow4": "Optional · for admins",
+    "title4": "Teach Corteza about your company",
+    "body4": "A short description and a glossary (acronyms, customers, people and their roles) help Corteza capture what matters to your business and spell names right.",
+    "addContext": "Add company context",
+    "getStarted": "Get started"
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "body": "The language Corteza’s screens use. Outcomes stay in the language of each meeting.",
+      "label": "App language",
+      "browser": "Follow my browser"
+    }
+  }
+}

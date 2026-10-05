@@ -13,13 +13,10 @@
 (function() {
   'use strict';
 
-  const REASONS = [
-    ['not_relevant', 'Not relevant'],
-    ['not_an_outcome', 'Nobody decided this'],
-    ['inaccurate', 'Inaccurate'],
-    ['duplicate', 'Duplicate'],
-    ['about_a_person', 'About a person']
-  ];
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const esc = text => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const REASONS = ['not_relevant', 'not_an_outcome', 'inaccurate', 'duplicate', 'about_a_person']
+    .map(key => [key, t(`review.reasons.${key}`)]);
 
   const style = document.createElement('style');
   style.textContent = `
@@ -69,16 +66,16 @@
   /** Status shown on a card: only AI-captured outcomes have one */
   function statusPill(decision) {
     if (decision.capture !== 'ai') return '';
-    if (decision.review_status === 'confirmed') return '<span class="cz-rv-pill cz-rv-confirmed"><i></i>Confirmed</span>';
-    return '<span class="cz-rv-pill cz-rv-pending" title="Captured automatically. Confirm it if it\'s right, dismiss it if not."><i></i>Needs review</span>';
+    if (decision.review_status === 'confirmed') return `<span class="cz-rv-pill cz-rv-confirmed"><i></i>${esc(t('review.confirmed'))}</span>`;
+    return `<span class="cz-rv-pill cz-rv-pending" title="${esc(t('review.pendingTitle'))}"><i></i>${esc(t('review.needsReview'))}</span>`;
   }
 
   /** ✓ / ✗ under a card that needs review */
   function cardControls(decision) {
     if (!needsReview(decision) || !canModify(decision)) return '';
     return `<div class="cz-rv-bar">
-      <button type="button" class="cz-rv-btn confirm" data-review="confirm" data-id="${decision.id}" title="It's right: keep it">✓ Confirm</button>
-      <button type="button" class="cz-rv-btn dismiss" data-review="dismiss" data-id="${decision.id}" title="It shouldn't be here: remove it (you can undo)">✕ Dismiss</button>
+      <button type="button" class="cz-rv-btn confirm" data-review="confirm" data-id="${decision.id}" title="${esc(t('review.confirmTitle'))}">✓ ${esc(t('review.confirm'))}</button>
+      <button type="button" class="cz-rv-btn dismiss" data-review="dismiss" data-id="${decision.id}" title="${esc(t('review.dismissTitle'))}">✕ ${esc(t('review.dismiss'))}</button>
     </div>`;
   }
 
@@ -133,8 +130,8 @@
     toast.className = 'cz-rv-toast';
     toast.setAttribute('role', 'status');
     toast.innerHTML = `
-      <div class="row"><span>Dismissed. Corteza will capture fewer items like this.</span><button type="button" data-undo>Undo</button></div>
-      <div class="why"><span>Why? (optional)</span>${REASONS.map(([key, label]) => `<button type="button" data-reason="${key}">${label}</button>`).join('')}</div>`;
+      <div class="row"><span>${esc(t('review.dismissed'))}</span><button type="button" data-undo>${esc(t('common.undo'))}</button></div>
+      <div class="why"><span>${esc(t('review.whyOptional'))}</span>${REASONS.map(([key, label]) => `<button type="button" data-reason="${key}">${esc(label)}</button>`).join('')}</div>`;
     document.body.appendChild(toast);
     toastTimer = setTimeout(closeToast, 10000);
 
@@ -144,16 +141,16 @@
         await post(`/api/decisions/${id}/restore`);
         if (typeof window.fetchDecisions === 'function') window.fetchDecisions();
       } catch (error) {
-        notify('Could not undo. Try again.');
+        notify(t('review.undoFailed'));
       }
     });
     toast.querySelectorAll('[data-reason]').forEach(button => button.addEventListener('click', async () => {
       const why = toast.querySelector('.why');
       try {
         await post(`/api/decisions/${id}/dismiss-reason`, { reason: button.dataset.reason });
-        why.innerHTML = '<span>Thanks, noted.</span>';
+        why.innerHTML = `<span>${esc(t('review.thanks'))}</span>`;
       } catch (error) {
-        why.innerHTML = '<span>Could not save the reason.</span>';
+        why.innerHTML = `<span>${esc(t('review.reasonFailed'))}</span>`;
       }
       clearTimeout(toastTimer);
       toastTimer = setTimeout(closeToast, 4000);
@@ -173,7 +170,7 @@
       return true;
     } catch (error) {
       if (button) button.disabled = false;
-      notify(action === 'confirm' ? 'Could not confirm it. Try again.' : 'Could not dismiss it. Try again.');
+      notify(t(action === 'confirm' ? 'review.confirmFailed' : 'review.dismissFailed'));
       return false;
     }
   }
@@ -207,8 +204,8 @@
     if (!chip) return;
     chip.hidden = pendingCount === 0 && !onlyPending;
     chip.classList.toggle('active', onlyPending);
-    chip.textContent = onlyPending ? `Showing ${pendingCount} to review · Show all` : `${pendingCount} to review`;
-    chip.title = onlyPending ? 'Show all outcomes' : 'Show only automatically captured outcomes nobody has confirmed or dismissed';
+    chip.textContent = onlyPending ? t('review.chipShowing', { count: pendingCount }) : t('review.chip', { count: pendingCount });
+    chip.title = t(onlyPending ? 'review.chipShowAllTitle' : 'review.chipTitle');
   }
 
   /** Called by dashboard.js with each list response */
@@ -236,14 +233,14 @@
       return;
     }
     box.style.display = 'flex';
-    box.innerHTML = `<span style="flex:1 1 12rem">Captured automatically. Is it right?</span>
-      <button type="button" class="cz-rv-btn confirm" data-detail-review="confirm">✓ Confirm</button>
-      <button type="button" class="cz-rv-btn dismiss" data-detail-review="dismiss">✕ Dismiss</button>`;
+    box.innerHTML = `<span style="flex:1 1 12rem">${esc(t('review.isItRight'))}</span>
+      <button type="button" class="cz-rv-btn confirm" data-detail-review="confirm">✓ ${esc(t('review.confirm'))}</button>
+      <button type="button" class="cz-rv-btn dismiss" data-detail-review="dismiss">✕ ${esc(t('review.dismiss'))}</button>`;
     box.querySelectorAll('[data-detail-review]').forEach(button => button.addEventListener('click', async () => {
       const ok = await run(button.dataset.detailReview, decision.id, button);
       if (!ok) return;
       if (button.dataset.detailReview === 'confirm') {
-        box.innerHTML = '<span>✓ Confirmed</span>';
+        box.innerHTML = `<span>✓ ${esc(t('review.confirmed'))}</span>`;
       } else if (typeof window.closeDetailModal === 'function') {
         window.closeDetailModal();
       }

@@ -31,7 +31,7 @@
     steps.forEach((step, i) => step.classList.toggle('active', i === index));
     root.querySelector('.cz-onb-dots').innerHTML = steps.map((_, i) => `<span class="${i === index ? 'active' : ''}"></span>`).join('');
     root.querySelector('[data-onb-back]').style.visibility = index === 0 ? 'hidden' : 'visible';
-    root.querySelector('[data-onb-next]').textContent = index === steps.length - 1 ? 'Get started' : 'Next';
+    root.querySelector('[data-onb-next]').textContent = (window.t || (k => k))(index === steps.length - 1 ? 'onboarding.getStarted' : 'common.next');
   }
 
   function close(how = 'skipped') {

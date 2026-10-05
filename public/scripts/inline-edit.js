@@ -14,21 +14,22 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
 
   /**
    * key: field in the decision and in the PUT body
    * valueId / sectionId: element that shows the value / wrapper hidden when empty
    * input: textarea | text | member
-   * prompt: shown when the field is empty (optional fields only)
+   * prompt: i18n key of what's shown when the field is empty (optional fields only); hint: i18n key
    * noPromptTypes: outcome types where an empty field stays hidden (editable once it has a value)
    * skipTypes: outcome types that don't use the field (not editable there)
    */
   const FIELDS = [
     { key: 'text', valueId: 'detail-decision-text', input: 'textarea', required: true },
-    { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'Add why', noPromptTypes: ['open_question', 'risk'] },
-    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'Add who’s accountable', skipTypes: ['risk'] },
+    { key: 'rationale', valueId: 'detail-rationale', sectionId: 'detail-rationale-section', input: 'textarea', prompt: 'edit.inline.addWhy', noPromptTypes: ['open_question', 'risk'] },
+    { key: 'owner_name', valueId: 'detail-owner', sectionId: 'detail-owner-container', input: 'member', prompt: 'edit.inline.addAccountable', skipTypes: ['risk'] },
     { key: 'alternatives', valueId: 'detail-meeting-info', sectionId: 'detail-meeting-section', input: 'textarea' },
-    { key: 'epic_key', valueId: 'detail-epic-info', sectionId: 'detail-epic-section', input: 'text', hint: 'Jira epic key, e.g. PROJ-12' }
+    { key: 'epic_key', valueId: 'detail-epic-info', sectionId: 'detail-epic-section', input: 'text', hint: 'edit.inline.epicHint' }
   ];
 
   let context = null; // { decision, workspaceId, onSaved }
@@ -62,9 +63,9 @@
     let input;
     if (field.input === 'member') {
       input = document.createElement('select');
-      input.add(new Option('Nobody', ''));
+      input.add(new Option(t('edit.inline.nobody'), ''));
       if (decision.owner_name && !people.some(person => person.user_id === decision.owner_user_id)) {
-        input.add(new Option(`${decision.owner_name} (not linked to a member)`, KEEP));
+        input.add(new Option(t('edit.inline.notLinked', { name: decision.owner_name }), KEEP));
       }
       for (const person of people) input.add(new Option(person.name, person.user_id));
       input.className = 'inline-edit-input';
@@ -96,8 +97,8 @@
     const input = buildInput(field, decision, people);
     const hint = document.createElement('div');
     hint.className = 'inline-edit-hint';
-    const saveKey = field.input === 'textarea' ? 'Ctrl+Enter' : (field.input === 'member' ? 'Pick a person' : 'Enter');
-    hint.textContent = `${field.hint ? `${field.hint} · ` : ''}${saveKey} to save · Esc to cancel`;
+    const how = t(field.input === 'textarea' ? 'edit.inline.saveCtrlEnter' : (field.input === 'member' ? 'edit.inline.savePick' : 'edit.inline.saveEnter'));
+    hint.textContent = `${field.hint ? `${t(field.hint)} · ` : ''}${how}`;
     element.replaceChildren(input, hint);
     input.focus();
     if (input.select && field.input !== 'member') input.select();
@@ -140,12 +141,12 @@
     const value = newValue(field, raw, decision);
     if (value === undefined) { cancelEdit(); return true; }
     if (field.required && !value) {
-      hint.textContent = 'This can’t be empty.';
+      hint.textContent = t('edit.inline.empty');
       hint.classList.add('inline-edit-error');
       return false;
     }
 
-    hint.textContent = 'Saving…';
+    hint.textContent = t('common.saving');
     hint.classList.remove('inline-edit-error');
     try {
       const response = await fetch(`/api/decisions/${encodeURIComponent(decision.id)}?workspace_id=${encodeURIComponent(workspaceId)}`, {
@@ -155,7 +156,7 @@
         body: JSON.stringify({ [bodyKey(field)]: value })
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.message || data.error || 'Couldn’t save');
+      if (!response.ok) throw new Error(data.message || data.error || t('common.couldNotSave'));
 
       const saved = data.decision || {};
       if (field.input === 'member') {
@@ -166,7 +167,7 @@
       }
       if (field.key === 'epic_key') decision.jira_data = saved.jira_data || null;
     } catch (error) {
-      hint.textContent = `${error.message}. Esc to cancel.`;
+      hint.textContent = t('edit.inline.failed', { error: error.message });
       hint.classList.add('inline-edit-error');
       return false;
     }
@@ -206,12 +207,12 @@
         if (!field.prompt) continue; // only shown when it has a value
         if (field.noPromptTypes && field.noPromptTypes.includes(decision.type)) continue;
         section.style.display = '';
-        element.innerHTML = `<span class="inline-edit-prompt">+ ${field.prompt}</span>`;
+        element.innerHTML = `<span class="inline-edit-prompt">+ ${t(field.prompt)}</span>`;
       }
 
       element.classList.add('inline-editable');
       element.tabIndex = 0;
-      element.title = 'Click to edit';
+      element.title = t('edit.inline.clickToEdit');
       element.onclick = event => {
         if (event.target.closest('a')) return; // links (meeting, Jira) still open
         startEdit(field, element);

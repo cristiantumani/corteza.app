@@ -9,18 +9,10 @@
   // Store decisions for rendering
   let allDecisionsForRender = [];
 
-  // "decisions" → "decision" for counts of one
-  const SINGULAR = {
-    outcomes: 'outcome', decisions: 'decision', 'open questions': 'open question', risks: 'risk',
-    'action items': 'action item', explanations: 'explanation', learnings: 'learning'
-  };
-
-  const TYPE_LABELS = {
-    decision: 'decision',
-    action_item: 'action item',
-    open_question: 'open question',
-    risk: 'risk'
-  };
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || 'en-US';
+  const MAIN_TYPES = ['decision', 'action_item', 'open_question', 'risk'];
+  const typeLabel = type => (MAIN_TYPES.includes(type) || ['context', 'explanation', 'learning', 'assumption'].includes(type) ? t(`types.${type}`) : type);
 
   // Override renderDecisions to use new card design
   // Wait a tick to ensure dashboard.js has exposed window.renderDecisions
@@ -56,17 +48,16 @@
 
     // Title and count follow the type filter: "Recent decisions · 12 decisions", "Recent outcomes · 20 outcomes"
     const typeFilter = document.getElementById('type-filter');
-    const filterLabel = typeFilter && typeFilter.value
-      ? typeFilter.options[typeFilter.selectedIndex].text.replace(/ \(.*\)$/, '').toLowerCase()
-      : 'outcomes';
+    const filter = (typeFilter && typeFilter.value) || 'all';
     const titleElement = document.getElementById('outcomes-title');
-    if (titleElement) titleElement.textContent = `Recent ${filterLabel}`;
+    if (titleElement) titleElement.textContent = t(`outcomes.recent.${filter}`);
     const count = decisions.length;
     if (countElement) {
-      countElement.textContent = `${count} ${count === 1 ? SINGULAR[filterLabel] || filterLabel : filterLabel}`;
+      const countType = filter === 'all' ? 'outcome' : (MAIN_TYPES.includes(filter) ? filter : 'other');
+      countElement.textContent = t(`outcomeCounts.${countType}`, { count });
     }
     const emptyTitle = document.getElementById('empty-state-title');
-    if (emptyTitle) emptyTitle.textContent = `No ${filterLabel} here yet`;
+    if (emptyTitle) emptyTitle.textContent = t('outcomes.empty.title');
 
     // Clear container
     container.innerHTML = '';
@@ -105,15 +96,15 @@
     const canModify = window.isCurrentUserAdmin || isOwnDecision;
 
     // Get user name (try user_name first, then creator as fallback)
-    const userName = decision.user_name || decision.creator || 'Unknown User';
+    const userName = decision.user_name || decision.creator || t('outcomes.card.unknownUser');
 
     // Build card HTML
     card.innerHTML = `
       <div class="flex items-start justify-between mb-4">
         <div class="flex gap-1 flex-wrap">
           ${decision.space_name ? `<span data-multi-space class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container text-xs font-semibold">${escapeHtml(decision.space_name)}</span>` : ''}
-          <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(TYPE_LABELS[decision.type] || decision.type)}</span>
-          ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="Captured automatically${decision.confidence != null ? ` (${Math.round(decision.confidence * 100)}% confidence)` : ''}">✨ AI-captured</span>` : ''}
+          <span class="px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold">${escapeHtml(typeLabel(decision.type))}</span>
+          ${decision.capture === 'ai' ? `<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-xs font-semibold" title="${escapeAttr(t('outcomes.card.aiTitle'))}">✨ ${escapeHtml(t('outcomes.card.ai'))}</span>` : ''}
         </div>
         ${window.CortezaReview ? window.CortezaReview.statusPill(decision) : ''}
       </div>
@@ -139,10 +130,10 @@
       ${canModify ? `
       <div class="mt-4 pt-4 border-t border-outline-variant/50 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button data-action="view" data-index="${index}" class="flex-1 text-sm text-primary hover:bg-primary-container/10 py-2 px-3 rounded-lg transition-colors">
-          View
+          ${escapeHtml(t('outcomes.card.view'))}
         </button>
         <button data-action="delete" data-id="${decision.id}" class="text-sm text-error hover:bg-error/10 py-2 px-3 rounded-lg transition-colors">
-          Delete
+          ${escapeHtml(t('common.delete'))}
         </button>
       </div>
       ` : ''}
@@ -186,7 +177,7 @@
   function getSourceLine(decision) {
     const details = decision.source_details;
     if (!details || !details.title) return '';
-    const label = details.type === 'google_meet' ? 'Google Meet' : 'Source';
+    const label = details.type === 'google_meet' ? t('detail.googleMeet') : t('detail.source');
     const safeUrl = details.url && /^https:\/\//.test(details.url) ? details.url : null;
     const title = safeUrl
       ? `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" data-action="source" class="text-primary hover:underline">${escapeHtml(details.title)}</a>`
@@ -197,7 +188,7 @@
   /** "Accountable: Ana" for outcomes that have someone accountable */
   function getOwnerLine(decision) {
     return decision.owner_name
-      ? `<p class="text-xs text-on-surface-variant">Accountable: ${escapeHtml(decision.owner_name)}</p>`
+      ? `<p class="text-xs text-on-surface-variant">${escapeHtml(t('outcomes.card.accountable', { name: decision.owner_name }))}</p>`
       : '';
   }
 
@@ -212,9 +203,9 @@
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 7) {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     }
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   function getTruncatedText(text) {
@@ -277,7 +268,7 @@
       const headerWorkspace = document.getElementById('header-workspace');
 
       if (headerUser) {
-        headerUser.textContent = window.currentUser.email || window.currentUser.user_name || 'User';
+        headerUser.textContent = window.currentUser.email || window.currentUser.user_name || '';
       }
       if (headerWorkspace) {
         headerWorkspace.textContent = window.currentUser.workspace_name || window.WORKSPACE_ID;

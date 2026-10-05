@@ -1,5 +1,5 @@
 /**
- * "Outcomes" wording shared by Home and Settings.
+ * "Outcomes" wording shared by Home and Settings, in the person's language (public/i18n, key "outcomeCounts").
  *
  * An outcome is anything Corteza captures from a meeting: a decision, an open
  * question, a risk, an action item or a note (context, explanation, learning).
@@ -7,17 +7,13 @@
  */
 (function() {
   'use strict';
+  const t = window.t || ((key, vars) => `${(vars && vars.count) || 0} ${key.split('.').pop()}`); // public/scripts/i18n.js
 
-  const LABELS = {
-    decision: ['decision', 'decisions'],
-    open_question: ['open question', 'open questions'],
-    risk: ['risk', 'risks'],
-    action_item: ['action item', 'action items'],
-    other: ['note', 'notes']
-  };
+  const TYPES = ['decision', 'open_question', 'risk', 'action_item', 'other'];
 
-  function plural(count, [one, many]) {
-    return `${count} ${count === 1 ? one : many}`;
+  /** "13 decisions" / "13 decisiones" */
+  function plural(count, type) {
+    return t(`outcomeCounts.${type}`, { count });
   }
 
   /**
@@ -29,12 +25,12 @@
   function describe(byType, total = 0, actionItems = 0) {
     const counts = byType ? { ...byType } : (total ? { outcome: total } : {});
     if (actionItems) counts.action_item = actionItems;
-    const labels = byType ? LABELS : { outcome: ['outcome', 'outcomes'], ...LABELS };
-    const parts = Object.keys(labels).filter(type => counts[type] > 0).map(type => plural(counts[type], labels[type]));
-    if (parts.length === 0) return '0 outcomes';
+    const types = byType ? TYPES : ['outcome', ...TYPES];
+    const parts = types.filter(type => counts[type] > 0).map(type => plural(counts[type], type));
+    if (parts.length === 0) return plural(0, 'outcome');
     if (parts.length === 1) return parts[0];
-    return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+    return t('outcomeCounts.list', { items: parts.slice(0, -1).join(', '), last: parts[parts.length - 1] });
   }
 
-  window.CortezaOutcomes = { LABELS, plural, describe };
+  window.CortezaOutcomes = { TYPES, plural, describe };
 })();

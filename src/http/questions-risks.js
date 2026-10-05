@@ -33,10 +33,11 @@ function oneOf(value, allowed, fallback) {
   return allowed.includes(/** @type {T} */ (value)) ? /** @type {T} */ (value) : fallback;
 }
 
-const pageHTML = renderView('questions.html', { active: 'questions' });
+const { localizedPage } = require('../core/i18n/i18n');
+const pageHTML = localizedPage(renderView('questions.html', { active: 'questions' }));
 
 router.get('/questions', requireAuthBrowser, (req, res) => {
-  res.type('html').send(pageHTML);
+  res.type('html').send(pageHTML(req));
 });
 
 router.get('/api/questions-risks', apiRateLimiter, requireSession, async (req, res) => {

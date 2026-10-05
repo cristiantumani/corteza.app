@@ -354,6 +354,42 @@ Removed features stay removed. Do not reintroduce:
 
 unless explicitly requested.
 
+## Languages (English and Spanish)
+
+Every text in the app exists in English and Spanish (`public/i18n/en.json`, `es.json`; spec `docs/specs/2026-10-i18n.md`). Never write a visible text straight into a page or script: add a key to both files and use `{{t:key}}` in views or `t('key')` in scripts. Counts use plural forms (`{ "one": …, "other": … }`), never `count + 's'`. Build sentences from whole translated templates with `{placeholders}`, not from English fragments glued together. Dates: `toLocaleDateString(CortezaI18n.locale)`.
+
+**Spanish tone:** tú; neutral Latin American Spanish; no gendered adjectives for the reader ("Todo al día", not "Estás listo"); sentence case. Product names stay as they are (Google Meet, Gemini, Jira, Slack).
+
+**Glossary** (use these words, in the UI and in emails):
+
+| English | Español |
+|---|---|
+| Outcome | Resultado |
+| Decision / Open question / Risk | Decisión / Pregunta abierta / Riesgo |
+| Action item | Pendiente |
+| Workspace (the company) | Organización |
+| Space / Personal space | Espacio / Espacio personal |
+| Home / Action items / Questions & risks / Search / Settings | Inicio / Pendientes / Preguntas y riesgos / Buscar / Configuración |
+| What I owe / Still open / Decided / All outcomes | Lo que debo / Sigue abierto / Decidido / Todos los resultados |
+| Ask across meetings | Pregunta sobre tus reuniones |
+| Needs review / Confirm / Dismiss / Undo | Por revisar / Confirmar / Descartar / Deshacer |
+| Confirm all from this meeting | Confirmar todo lo de esta reunión |
+| Accountable / Owner | Responsable |
+| Raised by | Planteado por |
+| Answer / Mark as answered | Respuesta / Marcar como respondida |
+| Mitigation / Mark as mitigated / Reopen | Mitigación / Marcar como mitigado / Reabrir |
+| Evidence / Why | Evidencia / Por qué |
+| Overdue / Due today / No due date | Atrasado / Vence hoy / Sin fecha |
+| Mark as done / Not mine? | Marcar como hecho / ¿No es mío? |
+| Log manually / Upload transcript | Registrar a mano / Subir transcripción |
+| Import past meetings / Connect Google Meet | Importar reuniones anteriores / Conectar Google Meet |
+| Admin | Admin |
+| Morning summary / Your morning partner | Resumen de la mañana / Tu socio de la mañana |
+| The Sergeant / The Sarcastic Colleague / Classic | El Sargento / El Colega Sarcástico / Clásico |
+| Context for the AI | Contexto para la IA |
+| Topic thread / Part of | Tema / Parte de |
+| How it works | Cómo funciona |
+
 ## Voice and personality (the morning partner)
 
 The daily summary can be written by a personality (The Sergeant, The Sarcastic Colleague; `src/core/digest/lines/`, spec `docs/specs/2026-10-morning-partner.md`). Every line follows these rules:
@@ -781,6 +817,7 @@ node .claude/skills/corteza-design/scripts/preview.js                        # a
 node .claude/skills/corteza-design/scripts/preview.js --pages home,actions   # pages: home actions questions search settings login
 node .claude/skills/corteza-design/scripts/preview.js --state empty          # states: default empty onboarding member
 node .claude/skills/corteza-design/scripts/preview.js --out /path/to/dir     # default ./ui-preview (gitignored)
+node .claude/skills/corteza-design/scripts/preview.js --lang es              # the app in Spanish (default en)
 node .claude/skills/corteza-design/scripts/preview.js --serve                # just serve and print URLs, for clicking around
 ```
 

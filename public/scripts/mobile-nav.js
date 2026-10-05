@@ -7,6 +7,7 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
 
   const aside = document.querySelector('.corteza-sidebar');
   if (!aside) return;
@@ -31,7 +32,7 @@
   button.className = 'cz-menu-btn';
   button.setAttribute('aria-controls', aside.id);
   button.setAttribute('aria-expanded', 'false');
-  button.setAttribute('aria-label', 'Open menu');
+  button.setAttribute('aria-label', t('nav.open'));
   button.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">menu</span>';
   bar.prepend(button);
 
@@ -46,7 +47,7 @@
     document.body.classList.toggle('cz-nav-open', open);
     backdrop.hidden = !open;
     button.setAttribute('aria-expanded', String(open));
-    button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    button.setAttribute('aria-label', open ? t('nav.close') : t('nav.open'));
     if (open) {
       // After the drawer becomes visible: a hidden element can't take focus
       const first = aside.querySelector('a, button');

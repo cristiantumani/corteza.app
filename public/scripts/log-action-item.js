@@ -60,7 +60,7 @@
       })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t save the action item');
+    if (!response.ok || !data.success) throw new Error(data.error || (window.t ? window.t('actions.saveFailed') : 'Couldn’t save the action item'));
     document.dispatchEvent(new CustomEvent('corteza:action-items-changed', { detail: { item: data.item } }));
     return data.item;
   }

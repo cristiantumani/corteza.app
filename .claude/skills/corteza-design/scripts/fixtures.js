@@ -114,6 +114,7 @@ const routes = {
   'GET /api/workspace-admins': { success: true, admins: [{ user_id: 'U1', user_name: 'Ana Rojas' }] },
   'GET /api/ai/pending-suggestions': { success: true, suggestions: [] },
   'GET /api/me/timezone': { success: true, timezone: user.timezone, automatic: true },
+  'GET /api/me/language': { success: true, language: 'en', chosen: null },
   'GET /api/me/digest-voice': {
     success: true, voice: 'sarcastic', chosen: null, default_voice: 'sarcastic', workspace_enabled: true, is_admin: true,
     voices: ['classic', 'sergeant', 'sarcastic'],

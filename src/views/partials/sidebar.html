@@ -76,7 +76,7 @@
   }
   @media (prefers-reduced-motion: reduce) { .corteza-sidebar { transition: none; } }
 </style>
-<aside class="corteza-sidebar" aria-label="Main navigation">
+<aside class="corteza-sidebar" aria-label="{{t:nav.main}}">
   <a class="sb-brand" href="/dashboard">
     <img src="/favicon-96x96.png" alt="">
     Corteza
@@ -84,44 +84,44 @@
 
   <nav class="sb-nav">
     <a class="sb-link" data-nav="home" href="/dashboard">
-      <span class="material-symbols-outlined" aria-hidden="true">home</span>Home
+      <span class="material-symbols-outlined" aria-hidden="true">home</span>{{t:nav.home}}
     </a>
     <a class="sb-link" data-nav="actions" href="/actions">
-      <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>Action items
+      <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>{{t:nav.actions}}
     </a>
     <a class="sb-link" data-nav="questions" href="/questions">
-      <span class="material-symbols-outlined" aria-hidden="true">contact_support</span>Questions &amp; risks
+      <span class="material-symbols-outlined" aria-hidden="true">contact_support</span>{{t:nav.questions}}
     </a>
     <a class="sb-link" data-nav="search" href="/ai-search">
-      <span class="material-symbols-outlined" aria-hidden="true">search</span>Search
+      <span class="material-symbols-outlined" aria-hidden="true">search</span>{{t:nav.search}}
     </a>
     <a class="sb-link" data-nav="settings" href="/settings">
-      <span class="material-symbols-outlined" aria-hidden="true">settings</span>Settings
+      <span class="material-symbols-outlined" aria-hidden="true">settings</span>{{t:nav.settings}}
     </a>
   </nav>
 
   <div class="sb-footer">
     <!-- Beta testers can chip in for the AI costs (a plain link: the CSP allows no third-party widgets) -->
     <a class="sb-link" href="https://buymeacoffee.com/corteza.app" target="_blank" rel="noopener">
-      <img class="sb-icon-img" src="/images/bmc-cup.png" alt="" width="14" height="20">Buy me a coffee
+      <img class="sb-icon-img" src="/images/bmc-cup.png" alt="" width="14" height="20">{{t:nav.coffee}}
     </a>
     <!-- Opens the Log modal where the page has it (Home, Search); elsewhere goes to Home with ?log=1 -->
     <a class="sb-link" href="/dashboard?log=1"
        onclick="if (typeof window.openLogMemoryModal === 'function') { event.preventDefault(); window.openLogMemoryModal(); }">
-      <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>Log manually
+      <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>{{t:nav.log}}
     </a>
     <!-- Opens the first-run steps again (on Home directly; elsewhere via /dashboard?tour=1) -->
     <a class="sb-link" href="/dashboard?tour=1"
        onclick="if (window.CortezaOnboarding) { event.preventDefault(); window.CortezaOnboarding.open(); }">
-      <span class="material-symbols-outlined" aria-hidden="true">help</span>How it works
+      <span class="material-symbols-outlined" aria-hidden="true">help</span>{{t:nav.howItWorks}}
     </a>
     <a class="sb-link" href="/auth/logout">
-      <span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out
+      <span class="material-symbols-outlined" aria-hidden="true">logout</span>{{t:nav.logout}}
     </a>
   </div>
 </aside>
 <!-- Phone layout: the sidebar as a drawer -->
-<script src="/scripts/mobile-nav.js?v=1" defer></script>
+<script src="/scripts/mobile-nav.js?v=2" defer></script>
 <!-- Reports the browser's time zone (daily summary at 8:00 local time) -->
 <script src="/scripts/timezone.js?v=1" defer></script>
 <!-- Count of new action items colleagues assigned (core/actions/colleague-assignments) -->

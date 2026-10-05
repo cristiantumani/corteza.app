@@ -680,17 +680,9 @@
       }
     }
 
-    /** Display names for decision types (src/core/decisions/types.js) */
-    const TYPE_TITLES = {
-      decision: 'Decision',
-      action_item: 'Action item',
-      open_question: 'Open question',
-      risk: 'Risk',
-      explanation: 'Explanation',
-      context: 'Context',
-      learning: 'Learning',
-      assumption: 'Assumption'
-    };
+    const TYPE_KEYS = ['decision', 'action_item', 'open_question', 'risk', 'explanation', 'context', 'learning', 'assumption'];
+    /** Display name of a decision type (src/core/decisions/types.js), in the person's language (public/i18n) */
+    const typeTitle = type => t(`types.${TYPE_KEYS.includes(type) ? type : 'decision'}`);
 
     /** Shows a detail field with text, or hides it when there's no value (missing elements are ignored) */
     function showDetailField(containerId, valueId, value) {
@@ -712,10 +704,10 @@
         const data = await response.json();
         if (!response.ok || !data.items.length) return;
         list.innerHTML = data.items.map(item => {
-          const owners = item.owners.map(owner => owner.name).join(', ') || 'No owner';
-          const due = item.due_date ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString() : 'no due date';
+          const owners = item.owners.map(owner => owner.name).join(', ') || t('detail.noOwner');
+          const due = item.due_date ? new Date(`${item.due_date}T00:00:00`).toLocaleDateString(CortezaI18n.locale) : t('detail.noDue');
           return `<div style="margin-bottom: 8px;">${item.status === 'done' ? '✅' : '⬜'} ${escapeHtml(item.text)}<br><small>${escapeHtml(owners)} · ${escapeHtml(due)}</small></div>`;
-        }).join('') + '<a href="/actions" style="font-size: 13px;">Open action items →</a>';
+        }).join('') + `<a href="/actions" style="font-size: 13px;">${escapeHtml(t('detail.openActions'))}</a>`;
         section.style.display = 'block';
       } catch (error) {
         console.error('Could not load action items:', error);
@@ -736,12 +728,12 @@
       }
       const source = decision.source_details;
       if (source && source.title) {
-        const label = source.type === 'google_meet' ? 'Google Meet' : 'Source';
+        const label = source.type === 'google_meet' ? t('detail.googleMeet') : t('detail.source');
         const url = source.url && /^https:\/\//.test(source.url) ? source.url : null;
         const title = url
           ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-primary hover:underline">${escapeHtml(source.title)}</a>`
           : escapeHtml(source.title);
-        const date = decision.timestamp ? ` · ${escapeHtml(new Date(decision.timestamp).toLocaleDateString())}` : '';
+        const date = decision.timestamp ? ` · ${escapeHtml(new Date(decision.timestamp).toLocaleDateString(CortezaI18n.locale))}` : '';
         parts.push(`<p class="m-0 text-sm text-on-surface-variant">${label}: ${title}${date}</p>`);
       }
       box.innerHTML = parts.join('');
@@ -758,8 +750,8 @@
       const value = document.getElementById('detail-creator');
       if (!container || !label || !value) return;
       let name = decision.creator || '';
-      let text = 'Added by';
-      if (decision.type === 'risk') { name = decision.raised_by || ''; text = 'Raised by'; }
+      let text = t('detail.addedBy');
+      if (decision.type === 'risk') { name = decision.raised_by || ''; text = t('detail.raisedBy'); }
       if (decision.type === 'open_question') name = ''; // a question shows who has to answer it (Accountable)
       label.textContent = text;
       value.textContent = name;
@@ -768,9 +760,7 @@
       // Accountable: who has to answer a question, or makes a decision happen; risks have none
       const help = document.getElementById('detail-owner-help');
       if (help) {
-        help.textContent = decision.type === 'open_question'
-          ? 'Who has to get this answered.'
-          : 'Who makes sure this gets done. Tasks and their owners go in Action items.';
+        help.textContent = decision.type === 'open_question' ? t('detail.questionOwnerHelp') : t('detail.accountableHelp');
       }
       if (decision.type === 'risk') {
         const owner = document.getElementById('detail-owner-container');
@@ -792,27 +782,28 @@
         return;
       }
       const isRisk = decision.type === 'risk';
-      label.textContent = isRisk ? 'Mitigation' : 'Answer';
+      label.textContent = isRisk ? t('detail.mitigation') : t('detail.answer');
       section.style.display = 'block';
 
       if (decision.resolution_status === 'resolved') {
-        const by = decision.resolved_by && decision.resolved_by.name ? ` by ${escapeHtml(decision.resolved_by.name)}` : '';
-        const when = decision.resolved_at ? ` · ${escapeHtml(new Date(decision.resolved_at).toLocaleDateString())}` : '';
+        const name = decision.resolved_by && decision.resolved_by.name;
+        const done = name ? t(isRisk ? 'detail.mitigatedBy' : 'detail.answeredBy', { name }) : t(isRisk ? 'detail.mitigated' : 'detail.answered');
+        const when = decision.resolved_at ? ` · ${new Date(decision.resolved_at).toLocaleDateString(CortezaI18n.locale)}` : '';
         box.innerHTML = `
           ${decision.resolution_note ? `<p class="m-0 mb-2 whitespace-pre-wrap">${escapeHtml(decision.resolution_note)}</p>` : ''}
-          <p class="m-0 text-sm text-on-surface-variant">${isRisk ? 'Mitigated' : 'Answered'}${by}${when}</p>
-          ${canResolve ? '<button type="button" class="mt-2 text-sm text-primary hover:underline" data-resolution="reopen">Reopen</button>' : ''}
+          <p class="m-0 text-sm text-on-surface-variant">${escapeHtml(done + when)}</p>
+          ${canResolve ? `<button type="button" class="mt-2 text-sm text-primary hover:underline" data-resolution="reopen">${escapeHtml(t('detail.reopen'))}</button>` : ''}
           <p class="m-0 mt-1 text-sm text-error" data-resolution-error role="alert"></p>`;
       } else if (canResolve) {
         box.innerHTML = `
-          <p class="m-0 mb-2 text-sm text-on-surface-variant">${isRisk ? 'Still open. When it no longer threatens the work, close it and say how.' : 'Not answered yet.'}</p>
-          <label class="sr-only" for="detail-resolution-note">${isRisk ? 'How it was mitigated' : 'The answer'}</label>
+          <p class="m-0 mb-2 text-sm text-on-surface-variant">${escapeHtml(t(isRisk ? 'detail.riskOpenHelp' : 'detail.notAnswered'))}</p>
+          <label class="sr-only" for="detail-resolution-note">${escapeHtml(t(isRisk ? 'detail.howMitigated' : 'detail.theAnswer'))}</label>
           <textarea id="detail-resolution-note" class="inline-edit-input" rows="2" maxlength="1000"
-            placeholder="${isRisk ? 'How it was mitigated (optional), e.g. we got the ISO 27001 certification' : 'The answer (optional)'}"></textarea>
-          <button type="button" class="mt-2 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold" data-resolution="resolve">${isRisk ? 'Mark as mitigated' : 'Mark as answered'}</button>
+            placeholder="${escapeHtml(t(isRisk ? 'detail.mitigationPlaceholder' : 'detail.answerPlaceholder'))}"></textarea>
+          <button type="button" class="mt-2 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold" data-resolution="resolve">${escapeHtml(t(isRisk ? 'detail.markMitigated' : 'detail.markAnswered'))}</button>
           <p class="m-0 mt-1 text-sm text-error" data-resolution-error role="alert"></p>`;
       } else {
-        box.innerHTML = `<p class="m-0 text-sm text-on-surface-variant">${isRisk ? 'Still open.' : 'Not answered yet.'}</p>`;
+        box.innerHTML = `<p class="m-0 text-sm text-on-surface-variant">${escapeHtml(t(isRisk ? 'detail.stillOpen' : 'detail.notAnswered'))}</p>`;
       }
 
       for (const button of box.querySelectorAll('[data-resolution]')) {
@@ -830,7 +821,7 @@
               body: JSON.stringify(action === 'resolve' ? { note: noteInput ? noteInput.value : '' } : {})
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || 'Couldn’t save');
+            if (!response.ok || !data.success) throw new Error(data.error || t('common.couldNotSave'));
             Object.assign(decision, {
               resolution_status: data.resolution_status, resolution_note: data.resolution_note,
               resolved_by: data.resolved_by, resolved_at: data.resolved_at
@@ -840,7 +831,7 @@
             rerender();
           } catch (err) {
             button.disabled = false;
-            if (error) error.textContent = `${err.message}. Try again.`;
+            if (error) error.textContent = t('common.tryAgain', { error: err.message });
           }
         };
       }
@@ -852,7 +843,7 @@
       if (!decision) return;
 
       // Title names the item's type: "Context #92", "Action item #93"
-      const typeLabel = TYPE_TITLES[decision.type] || 'Decision';
+      const typeLabel = typeTitle(decision.type);
       document.getElementById('detail-title').textContent = `${typeLabel} #${decision.id}`;
 
       // The outcome itself, labeled with its type ("Risk", "Open question")
@@ -865,7 +856,7 @@
       renderDetailEvidence(decision);
       showDetailField('detail-owner-container', 'detail-owner', decision.owner_name);
       showDetailField('detail-due-container', 'detail-due',
-        decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString() : null);
+        decision.due_date ? new Date(`${decision.due_date}T00:00:00`).toLocaleDateString(CortezaI18n.locale) : null);
 
       // Action items of this decision, plus "+ Add action item" for people who can add to its space
       const decisionSpace = currentUserSpaces.find(s => s.space_id === decision.space_id);
@@ -877,7 +868,7 @@
 
       // Who raised or added it, and when
       renderDetailPeople(decision);
-      document.getElementById('detail-date').textContent = new Date(decision.timestamp).toLocaleString();
+      document.getElementById('detail-date').textContent = new Date(decision.timestamp).toLocaleString(CortezaI18n.locale);
 
       // Check if user can edit this decision
       const isOwnDecision = decision.user_id === currentUser.user_id;
@@ -951,7 +942,7 @@
           onSaved: () => {
             detailChanged = true;
             rerender();
-            showNotification('✅ Saved');
+            showNotification(`✅ ${t('common.saved')}`);
           }
         });
       }
