@@ -15,6 +15,8 @@
  */
 (function() {
   'use strict';
+  const t = window.t || (key => key); // public/scripts/i18n.js
+  const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
 
   const params = new URLSearchParams(window.location.search);
   const focusItemId = params.get('item');
@@ -40,7 +42,7 @@
 
   function formatDate(value) {
     const date = new Date(`${value}T00:00:00`);
-    return isNaN(date) ? value : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return isNaN(date) ? value : date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   function renderFilters() {
@@ -56,29 +58,29 @@
 
   function ownersHtml(item) {
     if (!item.owners || item.owners.length === 0) {
-      return '<span class="px-2 py-0.5 rounded-full bg-error/10 text-error text-xs font-semibold">No owner</span>';
+      return `<span class="px-2 py-0.5 rounded-full bg-error/10 text-error text-xs font-semibold">${escapeHtml(t('detail.noOwner'))}</span>`;
     }
     return item.owners.map(owner => `
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${owner.user_id ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'}"
-            title="${owner.user_id ? escapeHtml(owner.email || '') : 'Not matched to a Corteza member'}">${escapeHtml(owner.name)}</span>`).join(' ');
+            title="${owner.user_id ? escapeHtml(owner.email || '') : escapeHtml(t('actions.notMatched'))}">${escapeHtml(owner.name)}</span>`).join(' ');
   }
 
   function dueHtml(item) {
     const overdue = item.status === 'open' && item.due_date && item.due_date < today();
     const label = item.due_date
-      ? `<span class="text-xs font-semibold ${overdue ? 'text-error' : 'text-on-surface-variant'}">${overdue ? 'Overdue · ' : 'Due '}${escapeHtml(formatDate(item.due_date))}</span>`
-      : '<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">No due date</span>';
+      ? `<span class="text-xs font-semibold ${overdue ? 'text-error' : 'text-on-surface-variant'}">${escapeHtml(t(overdue ? 'due.overdueOn' : 'due.on', { date: formatDate(item.due_date) }))}</span>`
+      : `<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">${escapeHtml(t('due.none'))}</span>`;
     return `
       <div class="flex items-center gap-2">
         ${label}
         <input type="date" class="due-input bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 text-xs"
-               data-id="${escapeHtml(item.item_id)}" value="${escapeHtml(item.due_date || '')}" aria-label="Due date">
+               data-id="${escapeHtml(item.item_id)}" value="${escapeHtml(item.due_date || '')}" aria-label="${escapeHtml(t('actions.dueDate'))}">
       </div>`;
   }
 
   function sourceHtml(item) {
     const parts = [];
-    if (item.decision_id) parts.push(`From decision #${escapeHtml(item.decision_id)}`);
+    if (item.decision_id) parts.push(escapeHtml(t('actions.fromDecision', { id: item.decision_id })));
     if (item.source && item.source.title) {
       const url = item.source.url && /^https:\/\//.test(item.source.url) ? item.source.url : null;
       parts.push(url
@@ -92,9 +94,9 @@
     const badges = [];
     if (newIds && newIds.has(item.item_id)) {
       const by = item.created_by && item.created_by.name;
-      badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold">New</span><span class="text-xs text-on-surface-variant">Assigned to you from ${by ? `${escapeHtml(by)}’s` : 'a colleague’s'} meeting</span>`);
+      badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold">${escapeHtml(t('actions.new'))}</span><span class="text-xs text-on-surface-variant">${escapeHtml(by ? t('actions.assignedBy', { name: by }) : t('actions.assignedByColleague'))}</span>`);
     }
-    if (item.completed_earlier) badges.push('<span class="text-xs text-on-surface-variant">Already done: the owner had finished it before this meeting was captured</span>');
+    if (item.completed_earlier) badges.push(`<span class="text-xs text-on-surface-variant">${escapeHtml(t('actions.completedEarlier'))}</span>`);
     return badges.length ? `<div class="flex flex-wrap items-center gap-2">${badges.join('')}</div>` : '';
   }
 
@@ -106,7 +108,7 @@
       const data = response.ok ? await response.json() : null;
       if (!banner || !data || !data.count) return;
       const people = data.from.map(row => `${escapeHtml(row.name)} (${row.count})`).join(', ');
-      banner.innerHTML = `<strong>${data.count} new action item${data.count === 1 ? '' : 's'} assigned to you by colleagues.</strong> They came from meetings captured by ${people}, and are marked <strong>New</strong> below. If one is already done, mark it done.`;
+      banner.innerHTML = `<strong>${escapeHtml(t('actions.fromColleagues.title', { count: data.count }))}</strong> ${escapeHtml(t('actions.fromColleagues.body')).replace('{people}', people)}`;
       banner.classList.remove('hidden');
       fetch('/api/action-items/from-colleagues/seen', { method: 'POST', credentials: 'include' }).catch(() => {});
     } catch (error) { /* the list still works */ }
@@ -117,13 +119,13 @@
     const thread = item.thread || threadById.get(item.item_id);
     if (!thread) return '';
     const counts = [
-      thread.questions ? `${thread.questions} question${thread.questions === 1 ? '' : 's'}` : '',
-      thread.risks ? `${thread.risks} risk${thread.risks === 1 ? '' : 's'}` : ''
+      thread.questions ? t('home.open.questions', { count: thread.questions }) : '',
+      thread.risks ? t('home.open.risks', { count: thread.risks }) : ''
     ].filter(Boolean).join(', ');
     return `
       <a href="/questions?topic=${encodeURIComponent(thread.topic_id)}" class="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e3e7fb] text-[#3953bd] text-xs font-semibold hover:underline">
         <span class="material-symbols-outlined text-sm" aria-hidden="true">contact_support</span>
-        ${thread.topic ? `Part of: ${escapeHtml(thread.topic)}` : 'Linked'}${counts ? ` · ${escapeHtml(counts)}` : ''}
+        ${escapeHtml(thread.topic ? t('actions.partOf', { topic: thread.topic }) : t('actions.linked'))}${counts ? ` · ${escapeHtml(counts)}` : ''}
       </a>`;
   }
 
@@ -132,11 +134,11 @@
     const cancelled = item.status === 'cancelled';
     return `
       <div id="item-${escapeHtml(item.item_id)}" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-wrap sm:flex-nowrap gap-x-4 gap-y-3 items-start ${item.item_id === focusItemId ? 'ring-2 ring-primary' : ''}">
-        <input type="checkbox" class="done-toggle mt-1 w-5 h-5 rounded" data-id="${escapeHtml(item.item_id)}" ${done ? 'checked' : ''} ${cancelled ? 'disabled' : ''} aria-label="Done">
+        <input type="checkbox" class="done-toggle mt-1 w-5 h-5 rounded" data-id="${escapeHtml(item.item_id)}" ${done ? 'checked' : ''} ${cancelled ? 'disabled' : ''} aria-label="${escapeHtml(t('actions.status.doneOne'))}">
         <div class="flex-1 min-w-0 flex flex-col gap-2">
           ${badgesHtml(item)}
           <p class="text-on-surface font-medium ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>
-          ${item.rationale ? `<p class="text-sm text-on-surface-variant">Why: ${escapeHtml(item.rationale)}</p>` : ''}
+          ${item.rationale ? `<p class="text-sm text-on-surface-variant">${escapeHtml(t('home.review.why', { text: item.rationale }))}</p>` : ''}
           <div class="flex flex-wrap items-center gap-2">${ownersHtml(item)}</div>
           ${threadHtml(item)}
           ${sourceHtml(item)}
@@ -145,8 +147,8 @@
         <!-- Due date and status: beside the text on wider screens, under it on a phone -->
         <div class="w-full sm:w-auto pl-9 sm:pl-0 flex flex-wrap sm:flex-col items-center sm:items-end gap-2">
           ${dueHtml(item)}
-          <select class="status-select bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 text-xs" data-id="${escapeHtml(item.item_id)}" aria-label="Status">
-            ${['open', 'done', 'cancelled'].map(status => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status[0].toUpperCase() + status.slice(1)}</option>`).join('')}
+          <select class="status-select bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 text-xs" data-id="${escapeHtml(item.item_id)}" aria-label="${escapeHtml(t('actions.statusLabel'))}">
+            ${['open', 'done', 'cancelled'].map(status => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${escapeHtml(t(`actions.statusOne.${status}`))}</option>`).join('')}
           </select>
         </div>
       </div>`;
@@ -165,15 +167,15 @@
         return;
       }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not load action items');
+      if (!response.ok) throw new Error(data.error || t('actions.loadFailed'));
       const items = data.items;
       for (const item of items) if (item.thread) threadById.set(item.item_id, item.thread);
       // Remember what was new on arrival: the flags clear once the visit marks them seen
       if (!newIds) newIds = new Set(items.filter(item => item.new_from_colleague).map(item => item.item_id));
-      document.getElementById('items-count').textContent = `${items.length} action item${items.length === 1 ? '' : 's'}`;
+      document.getElementById('items-count').textContent = t('outcomeCounts.action_item', { count: items.length });
       container.innerHTML = items.length
         ? items.map(itemHtml).join('')
-        : `<p class="text-on-surface-variant">${state.owner === 'me' ? 'Nothing assigned to you here.' : 'No action items match these filters.'} Action items are captured automatically from your meetings.</p>`;
+        : `<p class="text-on-surface-variant">${escapeHtml(t(state.owner === 'me' ? 'actions.emptyMine' : 'actions.emptyFilters'))} ${escapeHtml(t('actions.emptyHelp'))}</p>`;
 
       const focused = focusItemId && document.getElementById(`item-${focusItemId}`);
       if (focused) {
@@ -195,7 +197,7 @@
     });
     const data = await response.json();
     if (!response.ok) {
-      alert(data.error || 'Could not update the action item');
+      alert(data.error || t('actions.updateFailed'));
       return load();
     }
     const element = document.getElementById(`item-${itemId}`);

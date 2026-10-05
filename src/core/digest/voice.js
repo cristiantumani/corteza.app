@@ -28,11 +28,18 @@ const GENERIC_FOLLOW = {
   es: 'Empieza por el primero de la lista de abajo.'
 };
 
-/** One line per voice for the Settings picker (English, like the app) */
+/** One line per voice for the Settings picker, in the app's language */
 const SAMPLES = {
-  classic: 'Your day: 2 overdue, 1 due today · since yesterday: 3 meetings',
-  sergeant: '3 overdue. Excuses don’t ship. You do. Move.',
-  sarcastic: '3 overdue. At this point they’re not tasks, they’re roommates.'
+  en: {
+    classic: 'Your day: 2 overdue, 1 due today · since yesterday: 3 meetings',
+    sergeant: '3 overdue. Excuses don’t ship. You do. Move.',
+    sarcastic: '3 overdue. At this point they’re not tasks, they’re roommates.'
+  },
+  es: {
+    classic: 'Tu día: 2 atrasados, 1 vence hoy · desde ayer: 3 reuniones',
+    sergeant: '3 atrasados. Las excusas no entregan nada. Tú sí. Muévete.',
+    sarcastic: '3 atrasados. A estas alturas no son tareas, son familia.'
+  }
 };
 
 /**

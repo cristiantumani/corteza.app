@@ -1,4 +1,6 @@
+const fs = require('fs');
 const path = require('path');
+const { localizedPage } = require('../core/i18n/i18n');
 const express = require('express');
 const { authRateLimiter } = require('../middleware/auth');
 const google = require('../integrations/google/oauth');
@@ -28,9 +30,12 @@ function loginErrorRedirect(res, message) {
   return res.redirect(`/auth/login?error=${encodeURIComponent(message)}`);
 }
 
+// The sign-in page in the browser's language (core/i18n)
+const loginPage = localizedPage(fs.readFileSync(path.join(__dirname, '../views/login.html'), 'utf8'));
+
 router.get('/auth/login', authRateLimiter, (req, res) => {
   if (req.session?.user) return res.redirect('/dashboard');
-  res.sendFile(path.join(__dirname, '../views/login.html'));
+  res.type('html').send(loginPage(req));
 });
 
 router.get('/auth/google', authRateLimiter, (req, res) => {

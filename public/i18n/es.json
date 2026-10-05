@@ -136,7 +136,10 @@
     "somethingWrong": "Algo salió mal. Inténtalo de nuevo.",
     "loadFailed": "No se pudo cargar",
     "back": "Atrás",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "offline": "No se pudo conectar con Corteza. Revisa tu conexión e inténtalo de nuevo.",
+    "copied": "Copiado",
+    "copyFailed": "No se pudo copiar"
   },
   "outcomes": {
     "recentDecisions": "Decisiones recientes",
@@ -221,7 +224,59 @@
     "whatPlaceholder": "¿Qué hay que hacer?",
     "addFailed": "No se pudo agregar",
     "addOwner": "Agregar responsable",
-    "saveFailed": "No se pudo guardar el pendiente"
+    "saveFailed": "No se pudo guardar el pendiente",
+    "pageTitle": "Pendientes · Corteza",
+    "intro": "Compromisos capturados de tus reuniones: quién es responsable y para cuándo.",
+    "filters": {
+      "owner": "Responsable",
+      "mine": "Míos",
+      "everyone": "De todos"
+    },
+    "status": {
+      "open": "Abiertos",
+      "done": "Hechos",
+      "cancelled": "Cancelados",
+      "all": "Todos los estados",
+      "doneOne": "Hecho"
+    },
+    "dueFilter": {
+      "any": "Cualquier fecha",
+      "overdue": "Atrasados",
+      "today": "Vencen hoy",
+      "week": "Vencen en los próximos 7 días",
+      "none": "Sin fecha"
+    },
+    "notMatched": "No coincide con ningún miembro de Corteza",
+    "dueDate": "Fecha de vencimiento",
+    "fromDecision": "De la decisión #{id}",
+    "new": "Nuevo",
+    "assignedBy": "Te lo asignaron en una reunión de {name}",
+    "assignedByColleague": "Te lo asignaron en la reunión de un colega",
+    "completedEarlier": "Ya hecho: el responsable lo había terminado antes de que se capturara esta reunión",
+    "fromColleagues": {
+      "title": {
+        "one": "{count} pendiente nuevo que te asignaron tus colegas.",
+        "other": "{count} pendientes nuevos que te asignaron tus colegas."
+      },
+      "body": "Vienen de reuniones capturadas por {people} y abajo aparecen como Nuevo. Si alguno ya está hecho, márcalo como hecho.",
+      "badge": {
+        "one": "{count} pendiente nuevo que te asignaron tus colegas",
+        "other": "{count} pendientes nuevos que te asignaron tus colegas"
+      }
+    },
+    "partOf": "Parte de: {topic}",
+    "linked": "Vinculado",
+    "statusLabel": "Estado",
+    "statusOne": {
+      "open": "Abierto",
+      "done": "Hecho",
+      "cancelled": "Cancelado"
+    },
+    "loadFailed": "No se pudieron cargar los pendientes",
+    "emptyMine": "No tienes nada asignado aquí.",
+    "emptyFilters": "Ningún pendiente coincide con estos filtros.",
+    "emptyHelp": "Los pendientes se capturan automáticamente de tus reuniones.",
+    "updateFailed": "No se pudo actualizar el pendiente"
   },
   "edit": {
     "title": "Editar resultado",
@@ -461,6 +516,336 @@
       "body": "El idioma de las pantallas de Corteza. Los resultados quedan en el idioma de cada reunión.",
       "label": "Idioma de la app",
       "browser": "Según mi navegador"
+    },
+    "pageTitle": "Configuración · Corteza",
+    "meet": {
+      "intro": "Corteza lee las transcripciones y notas de Gemini de tus reuniones de Google Meet y guarda las decisiones automáticamente."
+    },
+    "context": {
+      "title": "Contexto para la IA",
+      "intro": "Corteza lee esto en cada reunión para saber qué le importa a tu negocio, escribir bien nombres y siglas (la transcripción suele equivocarse con “CAC” o “P&L”) y saber quién es quién al asignar responsables.",
+      "company": "Tu empresa",
+      "companyNote": "Compartido con toda tu organización.",
+      "description": "A qué se dedica la empresa",
+      "descriptionPlaceholder": "p. ej. Acme vende software de facturación a pymes en Chile y Perú. Vendemos planes mensuales y servicios de implementación.",
+      "glossary": "Glosario",
+      "glossaryHelp": "Un término por línea: siglas, productos, clientes, personas y sus roles.",
+      "glossaryPlaceholder": "CAC: costo de adquisición de clientes\nEERR: estado de resultados\nJosé Tomás Acuña: finanzas",
+      "documents": "Documentos de referencia",
+      "documentsHelp": "TXT, MD, CSV, PDF o DOCX: un diccionario, organigrama, lista de productos… Solo se guarda el texto.",
+      "addDocument": "Agregar un documento",
+      "saveCompany": "Guardar contexto de la empresa",
+      "you": "Sobre ti",
+      "youNote": "Solo se usa en tus reuniones. Tus colegas no lo ven.",
+      "role": "Tu rol",
+      "rolePlaceholder": "p. ej. Gerente general",
+      "focus": "En qué te enfocas",
+      "focusPlaceholder": "p. ej. Crecimiento en Perú, precios y los reportes del equipo de finanzas.",
+      "yourGlossary": "Tu glosario",
+      "yourGlossaryPlaceholder": "Términos y nombres que aparecen en tus reuniones"
+    },
+    "summary": {
+      "title": "Resumen de la mañana",
+      "intro": "De lunes a viernes a las 8:00, Corteza te envía por correo lo que pasó desde tu último resumen: reuniones, decisiones, pendientes nuevos y lo que vence hoy. Solo cuando hay algo nuevo.",
+      "timezone": "Tu zona horaria"
+    },
+    "partner": {
+      "title": "Tu socio de la mañana",
+      "intro": "Quién escribe tu resumen. Un socio lo abre con una frase sobre tu día; tu lista sigue igual.",
+      "allow": "Permitir socios de la mañana en esta organización",
+      "allowHelp": "(solo admins; apagado, todos reciben el Clásico)",
+      "classic": "Clásico",
+      "classicAbout": "El resumen de siempre: tus números y tu lista.",
+      "sergeant": "El Sargento",
+      "sergeantAbout": "Exigente con cariño. Corto, directo, sin excusas.",
+      "sarcastic": "El Colega Sarcástico",
+      "sarcasticAbout": "Ironía seca sobre tu lista de pendientes. Nunca sobre ti.",
+      "current": "(actual)",
+      "turnedOff": "Desactivado por el admin de tu organización. Tu resumen es el Clásico.",
+      "reload": "{error}. Recarga la página para intentarlo de nuevo.",
+      "saved": "Guardado. Tu próximo resumen lo escribe {name}.",
+      "on": "Los socios de la mañana están activados en esta organización.",
+      "off": "Los socios de la mañana están desactivados: todos reciben el Clásico."
+    },
+    "account": {
+      "title": "Cuenta",
+      "intro": "Entras a Corteza con tu cuenta de Google. La contraseña y la verificación en 2 pasos las maneja Google.",
+      "security": "Seguridad de la cuenta de Google"
+    },
+    "spaces": {
+      "title": "Espacios",
+      "intro": "Separa el trabajo de distintos equipos o iniciativas.",
+      "members": "Miembros",
+      "lastActivity": "Última actividad",
+      "actions": "Acciones",
+      "namePlaceholder": "p. ej. Estrategia de producto",
+      "icon": "Ícono (emoji)",
+      "description": "Descripción",
+      "descriptionPlaceholder": "¿Para qué es este espacio?",
+      "createButton": "Crear espacio",
+      "membersOf": "Miembros del espacio:",
+      "memberCount": {
+        "one": "{count} miembro",
+        "other": "{count} miembros"
+      },
+      "manageMembers": "Gestionar miembros",
+      "nameRequired": "Escribe un nombre para el espacio.",
+      "createFailed": "No se pudo crear el espacio",
+      "created": "Espacio “{name}” creado",
+      "editSoon": "Pronto podrás editar espacios.",
+      "confirmDelete": "¿Eliminar el espacio “{name}”? No se puede deshacer.",
+      "deleteFailed": "No se pudo eliminar el espacio",
+      "deleted": "Espacio “{name}” eliminado",
+      "noMembers": "Aún no hay miembros en este espacio.",
+      "confirmRemove": "¿Quitar a {name} de este espacio?",
+      "removeFailed": "No se pudo quitar al miembro",
+      "removed": "{name} salió del espacio",
+      "create": "Crear espacio",
+      "name": "Nombre del espacio"
+    },
+    "data": {
+      "title": "Datos y privacidad",
+      "intro": "Exporta tus resultados o elimina los datos de tu organización.",
+      "export": "Exportar resultados",
+      "exportHelp": "Un archivo JSON con todos tus resultados.",
+      "delete": "Eliminar todos los datos",
+      "deleteHelp": "Borra para siempre todos los datos de la organización.",
+      "deleteTitle": "Eliminar todos los datos de la organización",
+      "deleteBody": "Esto borra para siempre todos los resultados, pendientes y sugerencias de la IA de tu organización, para todas las personas, y destruye su llave de encriptación. No se puede deshacer.",
+      "typeDelete": "Escribe DELETE para confirmar",
+      "deleteButton": "Eliminar todo",
+      "deleting": "Eliminando…",
+      "deleteFailed": "No se pudieron eliminar los datos. Inténtalo de nuevo.",
+      "deleted": "Eliminado. Cerrando tu sesión…"
+    },
+    "invites": {
+      "title": "Invitaciones",
+      "intro": "Crea enlaces de invitación para sumar personas a tu organización.",
+      "space": "Espacio",
+      "generate": "Generar enlace",
+      "active": "Invitaciones activas",
+      "expires": "Vence el {date}",
+      "pickSpace": "Elige un espacio.",
+      "createFailed": "No se pudo crear la invitación",
+      "copied": "Enlace de invitación copiado",
+      "confirmRevoke": "¿Revocar este enlace de invitación?",
+      "revokeFailed": "No se pudo revocar la invitación",
+      "revoked": "Invitación revocada",
+      "create": "Crear enlace de invitación"
+    },
+    "timezone": {
+      "manual": "Elegida por ti.",
+      "auto": "Detectada desde tu navegador.",
+      "saved": "Guardado. Tu resumen llega a las 8:00 en esta zona horaria."
     }
+  },
+  "loop": {
+    "question": "Esto era un paso para responder {question}. ¿La marcas como respondida?",
+    "risk": "¿Cierras también el riesgo vinculado? {risk}",
+    "answerPlaceholder": "¿Cuál fue la respuesta? (opcional)",
+    "notYet": "Todavía no"
+  },
+  "questions": {
+    "pageTitle": "Preguntas y riesgos · Corteza",
+    "intro": "Lo que tus reuniones dejaron sin resolver: preguntas que aún necesitan respuesta y riesgos a vigilar.",
+    "filters": {
+      "type": "Tipo",
+      "all": "Todo",
+      "questions": "Preguntas"
+    },
+    "status": {
+      "open": "Abiertas",
+      "resolved": "Respondidas o mitigados"
+    },
+    "mitigationPlaceholder": "¿Cómo se manejó? (opcional)",
+    "nextStep": "Siguiente paso:",
+    "mayAnswer": "Decisión · podría responder esta pregunta",
+    "notReviewed": "Capturado por IA, aún sin revisar",
+    "whyMatters": "Por qué importa: {text}",
+    "oneThread": "Mostrando un tema.",
+    "oneThreadNamed": "Mostrando un tema: {topic}.",
+    "showAll": "Ver todo",
+    "loadFailed": "No se pudieron cargar las preguntas y riesgos",
+    "emptyOpen": "No hay nada abierto aquí. Las preguntas abiertas y los riesgos se capturan automáticamente de tus reuniones.",
+    "emptyFilters": "Nada coincide con estos filtros.",
+    "count": {
+      "one": "{count} elemento",
+      "other": "{count} elementos"
+    }
+  },
+  "search": {
+    "pageTitle": "Buscar · Corteza",
+    "searchingIn": "Buscando en",
+    "loadingSpace": "Cargando espacio…",
+    "clear": "Borrar la búsqueda",
+    "sources": "Fuentes",
+    "related": "Temas relacionados",
+    "intro": "Con tus palabras: qué se decidió y por qué, y qué sigue pendiente (y de quién) antes de tu próxima reunión.",
+    "ex": {
+      "mine": "¿Cuáles son mis pendientes?",
+      "person": "¿Qué tiene pendiente Ana antes de nuestra próxima reunión?",
+      "pricing": "¿Qué decidimos sobre los precios, y por qué?",
+      "open": "¿Qué preguntas abiertas y riesgos siguen sin resolver?"
+    },
+    "enterHint": "Enter para buscar, Shift+Enter para una nueva línea",
+    "send": "Buscar",
+    "personQuestion": "¿Qué tiene pendiente {name} antes de nuestra próxima reunión?",
+    "err": {
+      "auth": "No has iniciado sesión",
+      "workspace": "No se encontró una organización en tu sesión",
+      "space": "No hay un espacio seleccionado. Vuelve a Inicio y elige uno.",
+      "status": "La búsqueda falló ({status})",
+      "timeout": "La búsqueda tardó más de 30 segundos. Inténtalo de nuevo.",
+      "failed": "La búsqueda falló: {error}"
+    },
+    "noInsights": "Nada en tus reuniones responde esto todavía.",
+    "openActions": {
+      "one": "{count} pendiente abierto",
+      "other": "{count} pendientes abiertos"
+    },
+    "noSources": "No hay fuentes que coincidan",
+    "otherMatches": {
+      "one": "{count} otra coincidencia",
+      "other": "{count} otras coincidencias"
+    },
+    "leftOut": {
+      "one": "{count} dejada fuera",
+      "other": "{count} dejadas fuera"
+    },
+    "actionsTitle": "Pendientes abiertos",
+    "noSourcesMatch": "Ninguna fuente coincide con esta pregunta",
+    "othersSummary": "Otras coincidencias que no se usaron en la respuesta ({count})",
+    "loggedManually": "Registrado a mano",
+    "notRelated": "No relacionado",
+    "related1": "Relacionado",
+    "noTopics": "No se encontraron temas relacionados",
+    "aboutTag": "decisiones sobre {tag}",
+    "relevance": {
+      "question": "¿Esto se relaciona con {query}?",
+      "yes": "Sí, se relaciona",
+      "no": "No, no se relaciona",
+      "willLeaveOut": "Se dejará fuera cuando se actualice la respuesta.",
+      "update": "Actualizar la respuesta sin esta fuente",
+      "leftOut": "Queda fuera de la respuesta actual."
+    },
+    "excluded": {
+      "text": {
+        "one": "{count} fuente marcada como no relacionada ({ids}).",
+        "other": "{count} fuentes marcadas como no relacionadas ({ids})."
+      },
+      "button": {
+        "one": "Actualizar la respuesta sin ella",
+        "other": "Actualizar la respuesta sin ellas"
+      }
+    }
+  },
+  "meet": {
+    "skip": {
+      "ai_budget": "Se alcanzó el límite diario de IA, impórtala de nuevo mañana"
+    },
+    "connectedBanner": "Google Meet conectado. Corteza revisará tus reuniones cada pocos minutos.",
+    "notConfigured": "Google aún no está configurado en este servidor.",
+    "loadFailed": "No se pudo cargar la integración con Google Meet. Recarga la página para intentarlo de nuevo.",
+    "disconnected": {
+      "works": "Funciona con reuniones que tienen activada la transcripción o “Tomar notas por mí” de Gemini.",
+      "saved": "Los resultados (decisiones, pendientes, preguntas abiertas y riesgos) se guardan automáticamente y quedan marcados como capturados por IA. Puedes editarlos o eliminarlos.",
+      "skip": "Las reuniones 1:1 se omiten por defecto. Puedes excluir reuniones por título."
+    },
+    "mySpace": "Mi espacio",
+    "needsReconnect": "Hay que reconectar ({email})",
+    "connectedAs": "Conectado como {email}",
+    "lastChecked": "Última revisión: {when}",
+    "totals": "{outcomes} de {meetings}",
+    "reconsent": "Corteza ahora también lee las notas de Gemini. Reconecta una vez y permite el acceso a Google Drive para capturar reuniones que solo tienen notas.",
+    "lastFailed": "La última revisión falló: {error}",
+    "calendarConnected": "Calendario conectado: tu resumen de la mañana te prepara para las reuniones del día con los pendientes de las personas que participan.",
+    "calendar": {
+      "title": "Prepárate para tus reuniones.",
+      "body": "Deja que Corteza lea tu calendario y tu resumen de la mañana mostrará las reuniones del día con los pendientes de las personas que participan. Corteza solo lee tus eventos al escribir el resumen y no los guarda.",
+      "button": "Dar acceso al calendario"
+    },
+    "saveTo": "Guardar resultados en",
+    "excludeLabel": "Omitir reuniones cuyo título contenga (separado por comas)",
+    "excludePlaceholder": "p. ej. 1:1, entrevista, personal",
+    "language": "Escribir los resultados en",
+    "languageAuto": "El idioma de cada reunión",
+    "skip1on1": "Omitir reuniones 1:1 (2 personas o menos)",
+    "save": "Guardar configuración",
+    "checkNow": "Buscar reuniones nuevas ahora",
+    "disconnect": "Desconectar",
+    "saved": "Configuración de Google Meet guardada",
+    "waiting": {
+      "one": "{count} reunión sigue esperando a que Google termine la transcripción.",
+      "other": "{count} reuniones siguen esperando a que Google termine la transcripción."
+    },
+    "confirmDisconnect": "¿Desconectar Google Meet? Corteza dejará de capturar resultados de tus reuniones. Los que ya capturó se mantienen.",
+    "disconnectFailed": "No se pudo desconectar",
+    "import": {
+      "pending": "Google la está generando",
+      "notRecorded": "No se grabó",
+      "status": {
+        "completed": "Importada",
+        "already_imported": "Ya importada",
+        "skipped": "Omitida (muy corta)",
+        "not_ready": "La transcripción aún no está lista",
+        "too_old": "Demasiado antigua para importar",
+        "extracting": "Buscando resultados… (suele tardar unos minutos, puede tardar hasta una hora)",
+        "failed": "Falló",
+        "queued": "En espera…"
+      },
+      "intro": "Elige un período, mira las reuniones con transcripción o notas en Google y escoge de cuáles capturar resultados. Puedes importar reuniones de los últimos {days} días.",
+      "from": "Desde",
+      "to": "Hasta",
+      "find": "Buscar reuniones",
+      "selected": "Importar seleccionadas ({count})",
+      "looking": "Buscando reuniones en Google Meet…",
+      "loadFailed": "No se pudieron cargar las reuniones",
+      "transcript": "Transcripción",
+      "notes": "Notas de Gemini",
+      "skippedAuto": "Omitida automáticamente",
+      "failedEarlier": "Falló antes",
+      "notImported": "No importada",
+      "none": "No se encontraron reuniones de Google Meet en este período.",
+      "people": {
+        "one": "{count} persona",
+        "other": "{count} personas"
+      },
+      "found": {
+        "one": "{count} reunión encontrada, {importable} se puede importar",
+        "other": "{count} reuniones encontradas, {importable} se pueden importar"
+      },
+      "truncated": "(se muestran las 200 más recientes; elige un período más corto para verlas todas)",
+      "selectAll": "Seleccionar todas las disponibles",
+      "participants": "Participantes",
+      "available": "Disponible",
+      "startFailed": "No se pudo iniciar la importación",
+      "trackFailed": "No se pudo cargar la importación",
+      "running": "Importando… {done} de {total} reuniones",
+      "failed": "La importación falló",
+      "done": "Listo: {outcomes} capturados de {meetings}",
+      "background": "Sigue corriendo aunque salgas de esta página. Te enviaremos un resumen por correo cuando termine.",
+      "openHome": "Abrir Inicio →"
+    }
+  },
+  "context": {
+    "requestFailed": "La solicitud falló ({status})",
+    "loadFailed": "No se pudo cargar el contexto: {error}",
+    "sharedAdmins": "Compartido con toda tu organización. Solo los admins pueden editarlo.",
+    "sharedAdmin": "Compartido con toda tu organización. Solo un admin puede editarlo.",
+    "updatedBy": "Actualizado el {date} por {name}",
+    "updated": "Actualizado el {date}",
+    "noDocuments": "Aún no hay documentos.",
+    "savedCompany": "Guardado. Se aplica a las próximas reuniones que lea Corteza.",
+    "savedPersonal": "Guardado. Se aplica a tus próximas reuniones.",
+    "reading": "Leyendo {name}…",
+    "confirmRemove": "¿Quitar este documento del contexto de la empresa?",
+    "removed": "Documento quitado."
+  },
+  "login": {
+    "pageTitle": "Iniciar sesión · Corteza",
+    "title": "Entra a Corteza",
+    "subtitle": "Las decisiones de tu equipo, capturadas de tus reuniones.",
+    "google": "Continuar con Google",
+    "note": "Entra con tu cuenta de Google del trabajo. Tus colegas del mismo dominio de Google Workspace se suman automáticamente a la misma organización en Corteza."
   }
 }

@@ -136,7 +136,10 @@
     "somethingWrong": "Something went wrong. Try again.",
     "loadFailed": "Failed to load",
     "back": "Back",
-    "next": "Next"
+    "next": "Next",
+    "offline": "Couldn’t reach Corteza. Check your connection and try again.",
+    "copied": "Copied",
+    "copyFailed": "Couldn’t copy"
   },
   "outcomes": {
     "recentDecisions": "Recent decisions",
@@ -221,7 +224,59 @@
     "whatPlaceholder": "What needs to be done?",
     "addFailed": "Couldn’t add it",
     "addOwner": "Add owner",
-    "saveFailed": "Couldn’t save the action item"
+    "saveFailed": "Couldn’t save the action item",
+    "pageTitle": "Action items · Corteza",
+    "intro": "Commitments captured from your meetings: who owns them, and by when.",
+    "filters": {
+      "owner": "Owner",
+      "mine": "Mine",
+      "everyone": "Everyone"
+    },
+    "status": {
+      "open": "Open",
+      "done": "Done",
+      "cancelled": "Cancelled",
+      "all": "All statuses",
+      "doneOne": "Done"
+    },
+    "dueFilter": {
+      "any": "Any due date",
+      "overdue": "Overdue",
+      "today": "Due today",
+      "week": "Due in the next 7 days",
+      "none": "No due date"
+    },
+    "notMatched": "Not matched to a Corteza member",
+    "dueDate": "Due date",
+    "fromDecision": "From decision #{id}",
+    "new": "New",
+    "assignedBy": "Assigned to you from {name}’s meeting",
+    "assignedByColleague": "Assigned to you from a colleague’s meeting",
+    "completedEarlier": "Already done: the owner had finished it before this meeting was captured",
+    "fromColleagues": {
+      "title": {
+        "one": "{count} new action item assigned to you by colleagues.",
+        "other": "{count} new action items assigned to you by colleagues."
+      },
+      "body": "They came from meetings captured by {people}, and are marked New below. If one is already done, mark it done.",
+      "badge": {
+        "one": "{count} new action item assigned to you by colleagues",
+        "other": "{count} new action items assigned to you by colleagues"
+      }
+    },
+    "partOf": "Part of: {topic}",
+    "linked": "Linked",
+    "statusLabel": "Status",
+    "statusOne": {
+      "open": "Open",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "loadFailed": "Could not load action items",
+    "emptyMine": "Nothing assigned to you here.",
+    "emptyFilters": "No action items match these filters.",
+    "emptyHelp": "Action items are captured automatically from your meetings.",
+    "updateFailed": "Could not update the action item"
   },
   "edit": {
     "title": "Edit outcome",
@@ -461,6 +516,336 @@
       "body": "The language Corteza’s screens use. Outcomes stay in the language of each meeting.",
       "label": "App language",
       "browser": "Follow my browser"
+    },
+    "pageTitle": "Settings · Corteza",
+    "meet": {
+      "intro": "Corteza reads the transcripts and Gemini notes of your Google Meet meetings and saves the decisions automatically."
+    },
+    "context": {
+      "title": "Context for the AI",
+      "intro": "Corteza reads this with every meeting, so it knows what matters to your business, spells names and acronyms right (the transcript often gets “CAC” or “P&L” wrong) and knows who’s who when it assigns owners.",
+      "company": "Your company",
+      "companyNote": "Shared by everyone in your workspace.",
+      "description": "What the company does",
+      "descriptionPlaceholder": "e.g. Acme sells billing software to small businesses in Chile and Peru. We sell monthly plans and onboarding services.",
+      "glossary": "Glossary",
+      "glossaryHelp": "One term per line: acronyms, products, customers, people and their roles.",
+      "glossaryPlaceholder": "CAC: customer acquisition cost\nP&L: profit and loss statement\nJosé Tomás Acuña: finance",
+      "documents": "Reference documents",
+      "documentsHelp": "TXT, MD, CSV, PDF or DOCX: a dictionary, org chart, product list… Only the text is kept.",
+      "addDocument": "Add a document",
+      "saveCompany": "Save company context",
+      "you": "About you",
+      "youNote": "Only used for your own meetings. Colleagues don’t see it.",
+      "role": "Your role",
+      "rolePlaceholder": "e.g. CEO",
+      "focus": "What you focus on",
+      "focusPlaceholder": "e.g. Growth in Peru, pricing, and the finance team’s reporting.",
+      "yourGlossary": "Your glossary",
+      "yourGlossaryPlaceholder": "Terms and names that come up in your meetings"
+    },
+    "summary": {
+      "title": "Morning summary",
+      "intro": "On weekdays at 8:00 AM, Corteza emails you what happened since your last summary: meetings, decisions, new action items and what’s due today. Only when there’s something new.",
+      "timezone": "Your time zone"
+    },
+    "partner": {
+      "title": "Your morning partner",
+      "intro": "Who writes your summary. A partner opens it with a line about your day; your list stays the same.",
+      "allow": "Allow morning partners in this workspace",
+      "allowHelp": "(admins only; off means everyone gets Classic)",
+      "classic": "Classic",
+      "classicAbout": "The plain summary: your numbers and your list.",
+      "sergeant": "The Sergeant",
+      "sergeantAbout": "Tough love. Short, direct, no excuses.",
+      "sarcastic": "The Sarcastic Colleague",
+      "sarcasticAbout": "Dry irony about your to-do list. Never about you.",
+      "current": "(current)",
+      "turnedOff": "Turned off by your workspace admin. Your summary is Classic.",
+      "reload": "{error}. Reload the page to try again.",
+      "saved": "Saved. Your next summary comes from {name}.",
+      "on": "Morning partners are on for this workspace.",
+      "off": "Morning partners are off: everyone gets Classic."
+    },
+    "account": {
+      "title": "Account",
+      "intro": "You sign in to Corteza with your Google account. Password and 2-step verification are managed by Google.",
+      "security": "Google account security"
+    },
+    "spaces": {
+      "title": "Manage Spaces",
+      "intro": "Configure isolated environments for different teams or strategic initiatives.",
+      "members": "Members",
+      "lastActivity": "Last activity",
+      "actions": "Actions",
+      "namePlaceholder": "e.g. Product strategy",
+      "icon": "Icon (emoji)",
+      "description": "Description",
+      "descriptionPlaceholder": "What is this space for?",
+      "createButton": "Create Space",
+      "membersOf": "Space members:",
+      "memberCount": {
+        "one": "{count} member",
+        "other": "{count} members"
+      },
+      "manageMembers": "Manage members",
+      "nameRequired": "Enter a name for the space.",
+      "createFailed": "Couldn’t create the space",
+      "created": "Space “{name}” created",
+      "editSoon": "Editing spaces is coming soon.",
+      "confirmDelete": "Delete the space “{name}”? This can’t be undone.",
+      "deleteFailed": "Couldn’t delete the space",
+      "deleted": "Space “{name}” deleted",
+      "noMembers": "No members in this space yet.",
+      "confirmRemove": "Remove {name} from this space?",
+      "removeFailed": "Couldn’t remove the member",
+      "removed": "{name} removed from the space",
+      "create": "Create a space",
+      "name": "Space name"
+    },
+    "data": {
+      "title": "Data and privacy",
+      "intro": "Export your outcomes or delete your workspace’s data.",
+      "export": "Export outcomes",
+      "exportHelp": "A JSON file with all your outcomes.",
+      "delete": "Delete all data",
+      "deleteHelp": "Permanently remove all workspace data.",
+      "deleteTitle": "Delete all workspace data",
+      "deleteBody": "This permanently deletes every outcome, action item and AI suggestion in your workspace, for everyone in it, and destroys its encryption key. It can’t be undone.",
+      "typeDelete": "Type DELETE to confirm",
+      "deleteButton": "Delete everything",
+      "deleting": "Deleting…",
+      "deleteFailed": "The data couldn’t be deleted. Try again.",
+      "deleted": "Deleted. Signing you out…"
+    },
+    "invites": {
+      "title": "Invitations",
+      "intro": "Create invite links to add new team members to your workspace.",
+      "space": "Select Space",
+      "generate": "Generate Link",
+      "active": "Active invites",
+      "expires": "Expires {date}",
+      "pickSpace": "Pick a space.",
+      "createFailed": "Couldn’t create the invite",
+      "copied": "Invite link copied",
+      "confirmRevoke": "Revoke this invite link?",
+      "revokeFailed": "Couldn’t revoke the invite",
+      "revoked": "Invite revoked",
+      "create": "Create an invite link"
+    },
+    "timezone": {
+      "manual": "Set by you.",
+      "auto": "Detected from your browser.",
+      "saved": "Saved. Your summary arrives at 8:00 AM in this time zone."
     }
+  },
+  "loop": {
+    "question": "This was a next step on {question}. Mark it answered?",
+    "risk": "Close the linked risk too? {risk}",
+    "answerPlaceholder": "What was the answer? (optional)",
+    "notYet": "Not yet"
+  },
+  "questions": {
+    "pageTitle": "Questions & risks · Corteza",
+    "intro": "What your meetings left unresolved: questions that still need an answer, and risks to keep an eye on.",
+    "filters": {
+      "type": "Type",
+      "all": "All",
+      "questions": "Questions"
+    },
+    "status": {
+      "open": "Open",
+      "resolved": "Answered or mitigated"
+    },
+    "mitigationPlaceholder": "How was it handled? (optional)",
+    "nextStep": "Next step:",
+    "mayAnswer": "Decision · may answer this question",
+    "notReviewed": "AI-captured, not reviewed yet",
+    "whyMatters": "Why it matters: {text}",
+    "oneThread": "Showing one thread.",
+    "oneThreadNamed": "Showing one thread: {topic}.",
+    "showAll": "Show all",
+    "loadFailed": "Could not load open questions and risks",
+    "emptyOpen": "Nothing open here. Open questions and risks are captured automatically from your meetings.",
+    "emptyFilters": "Nothing matches these filters.",
+    "count": {
+      "one": "{count} item",
+      "other": "{count} items"
+    }
+  },
+  "search": {
+    "pageTitle": "Search · Corteza",
+    "searchingIn": "Searching in",
+    "loadingSpace": "Loading space…",
+    "clear": "Clear the search",
+    "sources": "Sources",
+    "related": "Related topics",
+    "intro": "In your own words: what was decided and why, and what’s still pending (and from whom) before your next meeting.",
+    "ex": {
+      "mine": "What are my open action items?",
+      "person": "What’s still pending from Ana before our next meeting?",
+      "pricing": "What did we decide about pricing, and why?",
+      "open": "Which open questions and risks are still unresolved?"
+    },
+    "enterHint": "Press Enter to search, Shift+Enter for a new line",
+    "send": "Search",
+    "personQuestion": "What’s still pending from {name} before our next meeting?",
+    "err": {
+      "auth": "Not signed in",
+      "workspace": "No workspace found in your session",
+      "space": "No space selected. Go back to Home and pick a space.",
+      "status": "Search failed ({status})",
+      "timeout": "The search took more than 30 seconds. Please try again.",
+      "failed": "Search failed: {error}"
+    },
+    "noInsights": "Nothing in your meetings answers this yet.",
+    "openActions": {
+      "one": "{count} open action item",
+      "other": "{count} open action items"
+    },
+    "noSources": "No matching sources",
+    "otherMatches": {
+      "one": "{count} other match",
+      "other": "{count} other matches"
+    },
+    "leftOut": {
+      "one": "{count} left out",
+      "other": "{count} left out"
+    },
+    "actionsTitle": "Open action items",
+    "noSourcesMatch": "No sources match this question",
+    "othersSummary": "Other matches not used in the answer ({count})",
+    "loggedManually": "Logged manually",
+    "notRelated": "Not related",
+    "related1": "Related",
+    "noTopics": "No related topics found",
+    "aboutTag": "decisions about {tag}",
+    "relevance": {
+      "question": "Is this related to {query}?",
+      "yes": "Yes, related",
+      "no": "No, not related",
+      "willLeaveOut": "It will be left out when the answer is updated.",
+      "update": "Update the answer without it",
+      "leftOut": "It is left out of the current answer."
+    },
+    "excluded": {
+      "text": {
+        "one": "{count} source marked as not related ({ids}).",
+        "other": "{count} sources marked as not related ({ids})."
+      },
+      "button": {
+        "one": "Update the answer without it",
+        "other": "Update the answer without them"
+      }
+    }
+  },
+  "meet": {
+    "skip": {
+      "ai_budget": "Daily AI limit reached, import it again tomorrow"
+    },
+    "connectedBanner": "Google Meet connected. Corteza will check your meetings every few minutes.",
+    "notConfigured": "Google is not configured on this server yet.",
+    "loadFailed": "Couldn’t load the Google Meet integration. Refresh to try again.",
+    "disconnected": {
+      "works": "Works with meetings where transcription or Gemini “Take notes for me” is on.",
+      "saved": "Outcomes (decisions, action items, open questions and risks) are saved automatically and marked AI-captured. You can edit or delete them.",
+      "skip": "1:1 meetings are skipped by default. You can exclude meetings by title."
+    },
+    "mySpace": "My space",
+    "needsReconnect": "Needs reconnecting ({email})",
+    "connectedAs": "Connected as {email}",
+    "lastChecked": "Last checked: {when}",
+    "totals": "{outcomes} from {meetings}",
+    "reconsent": "Corteza can now read Gemini notes too. Reconnect once and allow Google Drive access to capture meetings that only have notes.",
+    "lastFailed": "Last check failed: {error}",
+    "calendarConnected": "Calendar connected: your morning summary prepares you for today’s meetings with the open action items of the people in them.",
+    "calendar": {
+      "title": "Prepare for your meetings.",
+      "body": "Let Corteza read your calendar and your morning summary will list today’s meetings with the open action items of the people in them. Corteza only reads your own events when it writes the summary and doesn’t store them.",
+      "button": "Add calendar access"
+    },
+    "saveTo": "Save outcomes to",
+    "excludeLabel": "Skip meetings whose title contains (comma separated)",
+    "excludePlaceholder": "e.g. 1:1, interview, personal",
+    "language": "Write outcomes in",
+    "languageAuto": "The language spoken in each meeting",
+    "skip1on1": "Skip 1:1 meetings (2 people or fewer)",
+    "save": "Save settings",
+    "checkNow": "Check for new meetings now",
+    "disconnect": "Disconnect",
+    "saved": "Google Meet settings saved",
+    "waiting": {
+      "one": "{count} meeting is still waiting for Google to finish the transcript.",
+      "other": "{count} meetings are still waiting for Google to finish the transcript."
+    },
+    "confirmDisconnect": "Disconnect Google Meet? Corteza will stop capturing outcomes from your meetings. Outcomes already captured stay.",
+    "disconnectFailed": "Couldn’t disconnect",
+    "import": {
+      "pending": "Being generated by Google",
+      "notRecorded": "Not recorded",
+      "status": {
+        "completed": "Imported",
+        "already_imported": "Already imported",
+        "skipped": "Skipped (too short)",
+        "not_ready": "Transcript not ready yet",
+        "too_old": "Too old to import",
+        "extracting": "Finding outcomes… (usually a few minutes, can take up to an hour)",
+        "failed": "Failed",
+        "queued": "Waiting…"
+      },
+      "intro": "Pick a period, see the meetings Google has transcripts or notes for, and choose which ones to capture outcomes from. You can import meetings from the last {days} days.",
+      "from": "From",
+      "to": "To",
+      "find": "Find meetings",
+      "selected": "Import selected ({count})",
+      "looking": "Looking for meetings in Google Meet…",
+      "loadFailed": "Couldn’t load meetings",
+      "transcript": "Transcript",
+      "notes": "Gemini notes",
+      "skippedAuto": "Skipped automatically",
+      "failedEarlier": "Failed earlier",
+      "notImported": "Not imported",
+      "none": "No Google Meet meetings found in this period.",
+      "people": {
+        "one": "{count} person",
+        "other": "{count} people"
+      },
+      "found": {
+        "one": "{count} meeting found, {importable} can be imported",
+        "other": "{count} meetings found, {importable} can be imported"
+      },
+      "truncated": "(showing the most recent 200; pick a shorter period to see all)",
+      "selectAll": "Select all available",
+      "participants": "Participants",
+      "available": "Available",
+      "startFailed": "Couldn’t start the import",
+      "trackFailed": "Couldn’t load the import",
+      "running": "Importing… {done} of {total} meetings",
+      "failed": "Import failed",
+      "done": "Done: {outcomes} captured from {meetings}",
+      "background": "It keeps running if you leave this page. We’ll email you a summary when it’s done.",
+      "openHome": "Open Home →"
+    }
+  },
+  "context": {
+    "requestFailed": "Request failed ({status})",
+    "loadFailed": "Couldn’t load the context: {error}",
+    "sharedAdmins": "Shared by everyone in your workspace. Only admins can edit it.",
+    "sharedAdmin": "Shared by everyone in your workspace. Only an admin can edit it.",
+    "updatedBy": "Last updated {date} by {name}",
+    "updated": "Last updated {date}",
+    "noDocuments": "No documents yet.",
+    "savedCompany": "Saved. It applies to the next meetings Corteza reads.",
+    "savedPersonal": "Saved. It applies to your next meetings.",
+    "reading": "Reading {name}…",
+    "confirmRemove": "Remove this document from the company context?",
+    "removed": "Document removed."
+  },
+  "login": {
+    "pageTitle": "Sign in · Corteza",
+    "title": "Sign in to Corteza",
+    "subtitle": "Your team’s decisions, captured from your meetings.",
+    "google": "Continue with Google",
+    "note": "Sign in with your work Google account. Colleagues on the same Google Workspace domain join the same Corteza workspace automatically."
   }
 }

@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Corteza in Spanish (part 2)
+- In Spanish now: Action items, Questions & risks, Search, Settings (Google Meet, importing past meetings, context for the AI, morning partner, spaces, invitations, data) and the sign-in page. Only the emails remain
+- Old wording replaced while translating: "Synthesized Intelligence" is now "Answer", "Evidence Sources" is "Sources", and the "Enterprise Edition" footer is gone
+
 ### Added - Corteza in Spanish (part 1)
 - The app speaks English and Spanish. It follows your browser, or pick it in **Settings → Language**
 - In Spanish now: the sidebar, Home (summary, ask, review queue, the three columns and All outcomes), the outcome detail, Log manually and upload, review buttons and the first-run tour. Other pages and the emails come next

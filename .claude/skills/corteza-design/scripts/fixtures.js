@@ -118,11 +118,11 @@ const routes = {
   'GET /api/me/digest-voice': {
     success: true, voice: 'sarcastic', chosen: null, default_voice: 'sarcastic', workspace_enabled: true, is_admin: true,
     voices: ['classic', 'sergeant', 'sarcastic'],
-    samples: require('../../../../src/core/digest/voice').SAMPLES
+    samples: require('../../../../src/core/digest/voice').SAMPLES.en
   },
   'PUT /api/me/digest-voice': req => ({
     success: true, voice: req.body.voice, chosen: req.body.voice, default_voice: 'sarcastic', workspace_enabled: true,
-    voices: ['classic', 'sergeant', 'sarcastic'], samples: require('../../../../src/core/digest/voice').SAMPLES
+    voices: ['classic', 'sergeant', 'sarcastic'], samples: require('../../../../src/core/digest/voice').SAMPLES.en
   }),
   'POST /api/semantic-search': {
     success: true,

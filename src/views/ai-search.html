@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Search | Corteza</title>
+    <title>{{t:search.pageTitle}}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -65,15 +65,15 @@
         <div data-multi-space class="flex items-center gap-3 mb-6 px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl">
             <span class="material-symbols-outlined text-primary">folder</span>
             <div>
-                <div class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Searching in</div>
-                <div id="search-current-space" class="font-bold text-on-surface">Loading space...</div>
+                <div class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">{{t:search.searchingIn}}</div>
+                <div id="search-current-space" class="font-bold text-on-surface">{{t:search.loadingSpace}}</div>
             </div>
         </div>
 
         <!-- Loading State -->
         <div id="search-loading" class="hidden text-center py-20">
             <div class="text-6xl mb-4">🔍</div>
-            <div class="text-lg text-on-surface-variant">Searching your workspace...</div>
+            <div class="text-lg text-on-surface-variant">{{t:home.ask.looking}}</div>
         </div>
 
         <!-- Search Results Container -->
@@ -86,10 +86,10 @@
                         <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">psychology</span>
                     </div>
                     <div class="flex-1">
-                        <h2 class="text-3xl font-bold mb-2">Synthesized Intelligence</h2>
+                        <h2 class="text-3xl font-bold mb-2">{{t:detail.answer}}</h2>
                         <p class="text-lg opacity-90" id="search-query-display"></p>
                     </div>
-                    <button onclick="clearSearch()" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                    <button onclick="clearSearch()" aria-label="{{t:search.clear}}" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -120,7 +120,7 @@
             <div>
                 <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
                     <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">folder_open</span>
-                    Evidence Sources
+                    {{t:search.sources}}
                 </h3>
 
                 <div id="evidence-sources" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -130,7 +130,7 @@
 
             <!-- Related Topics -->
             <div class="mt-12">
-                <h4 class="text-lg font-semibold mb-4 text-on-surface-variant">Related Topics</h4>
+                <h4 class="text-lg font-semibold mb-4 text-on-surface-variant">{{t:search.related}}</h4>
                 <div id="related-topics" class="flex flex-wrap gap-2">
                     <!-- Tags will be inserted here -->
                 </div>
@@ -141,33 +141,33 @@
         <!-- Empty State (Initial) -->
         <div id="empty-state" class="text-center py-20">
             <div class="text-8xl mb-6">🔍</div>
-            <h2 class="text-3xl font-bold mb-4">Ask about your meetings</h2>
+            <h2 class="text-3xl font-bold mb-4">{{t:home.ask.label}}</h2>
             <p class="text-lg text-on-surface-variant max-w-xl mx-auto mb-8">
-                In your own words: what was decided and why, and what's still pending (and from whom) before your next meeting.
+                {{t:search.intro}}
             </p>
             <div id="search-examples" class="max-w-2xl mx-auto space-y-3">
-                <button type="button" data-example-mine data-query="What are my open action items?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-example-mine data-query="{{t:search.ex.mine}}" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">task_alt</span>
-                        <span class="font-medium">What are my open action items?</span>
+                        <span class="font-medium">{{t:search.ex.mine}}</span>
                     </div>
                 </button>
-                <button type="button" data-example-person data-query="What's still pending from Ana before our next meeting?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-example-person data-query="{{t:search.ex.person}}" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">person</span>
-                        <span class="font-medium">What's still pending from Ana before our next meeting?</span>
+                        <span class="font-medium">{{t:search.ex.person}}</span>
                     </div>
                 </button>
-                <button type="button" data-query="What did we decide about pricing, and why?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-query="{{t:search.ex.pricing}}" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">auto_awesome</span>
-                        <span class="font-medium">What did we decide about pricing, and why?</span>
+                        <span class="font-medium">{{t:search.ex.pricing}}</span>
                     </div>
                 </button>
-                <button type="button" data-query="Which open questions and risks are still unresolved?" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
+                <button type="button" data-query="{{t:search.ex.open}}" class="search-example w-full text-left px-6 py-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary transition-all">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 0;">help</span>
-                        <span class="font-medium">Which open questions and risks are still unresolved?</span>
+                        <span class="font-medium">{{t:search.ex.open}}</span>
                     </div>
                 </button>
             </div>
@@ -185,21 +185,21 @@
                     <textarea
                         id="search-input"
                         rows="1"
-                        placeholder="Ask about decisions, pending action items, people…"
+                        placeholder="{{t:home.ask.placeholder}}"
                         class="w-full bg-transparent border-none outline-none resize-none text-base"
                         onkeydown="handleSearchKeydown(event)"
                     ></textarea>
                 </div>
                 <button
                     onclick="performSearchFromInput()"
-                    id="search-button"
+                    id="search-button" aria-label="{{t:search.send}}"
                     class="bg-[#667EEA] hover:bg-[#546cd7] text-on-primary font-bold p-3 rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span class="material-symbols-outlined">send</span>
                 </button>
             </div>
             <div class="px-4 pb-3 flex items-center gap-2 text-xs text-on-surface-variant">
                 <span class="material-symbols-outlined text-sm">info</span>
-                <span>Press Enter to search, Shift+Enter for new line</span>
+                <span>{{t:search.enterHint}}</span>
             </div>
         </div>
     </div>
@@ -217,7 +217,7 @@
 <script src="/scripts/decision-actions.js?v=3"></script>
 <script src="/scripts/inline-edit.js?v=5"></script>
 <script src="/scripts/dashboard.js?v=32"></script>
-<script src="/scripts/ai-search.js?v=10"></script>
+<script src="/scripts/ai-search.js?v=11"></script>
 
 <!-- Initialize Space Context Indicator -->
 <script>

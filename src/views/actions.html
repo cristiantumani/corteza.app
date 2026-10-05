@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Action items - Corteza</title>
+    <title>{{t:actions.pageTitle}}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -58,31 +58,31 @@
 
     <!-- TopAppBar -->
     <header class="fixed top-0 right-0 left-64 h-16 z-10 flex items-center justify-between px-6 bg-surface border-b border-outline-variant shadow-sm">
-        <h2 class="text-2xl font-bold text-on-surface">Action items</h2>
+        <h2 class="text-2xl font-bold text-on-surface">{{t:nav.actions}}</h2>
     </header>
 
     <!-- Main: list and filters (public/scripts/actions.js) -->
     <main class="ml-64 pt-16 h-screen overflow-y-auto bg-background">
         <div class="max-w-[1100px] mx-auto p-8">
-            <p class="text-on-surface-variant mb-6">Commitments captured from your meetings: who owns them, and by when.</p>
+            <p class="text-on-surface-variant mb-6">{{t:actions.intro}}</p>
 
             <div class="flex flex-wrap items-center gap-3 mb-6">
-                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="Owner">
-                    <button type="button" data-owner="me" class="owner-filter px-4 py-2 text-sm font-semibold">Mine</button>
-                    <button type="button" data-owner="all" class="owner-filter px-4 py-2 text-sm font-semibold">Everyone</button>
+                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="{{t:actions.filters.owner}}">
+                    <button type="button" data-owner="me" class="owner-filter px-4 py-2 text-sm font-semibold">{{t:actions.filters.mine}}</button>
+                    <button type="button" data-owner="all" class="owner-filter px-4 py-2 text-sm font-semibold">{{t:actions.filters.everyone}}</button>
                 </div>
                 <select id="status-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm">
-                    <option value="open">Open</option>
-                    <option value="done">Done</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="all">All statuses</option>
+                    <option value="open">{{t:actions.status.open}}</option>
+                    <option value="done">{{t:actions.status.done}}</option>
+                    <option value="cancelled">{{t:actions.status.cancelled}}</option>
+                    <option value="all">{{t:actions.status.all}}</option>
                 </select>
                 <select id="due-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm">
-                    <option value="">Any due date</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="today">Due today</option>
-                    <option value="week">Due in the next 7 days</option>
-                    <option value="none">No due date</option>
+                    <option value="">{{t:actions.dueFilter.any}}</option>
+                    <option value="overdue">{{t:actions.dueFilter.overdue}}</option>
+                    <option value="today">{{t:actions.dueFilter.today}}</option>
+                    <option value="week">{{t:actions.dueFilter.week}}</option>
+                    <option value="none">{{t:actions.dueFilter.none}}</option>
                 </select>
                 <span id="items-count" class="text-sm text-on-surface-variant"></span>
             </div>
@@ -92,12 +92,12 @@
             <div id="loop-notice" class="hidden mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-[#eef1fb] p-4" role="status"></div>
 
             <div id="items" class="flex flex-col gap-3">
-                <p class="text-on-surface-variant">Loading…</p>
+                <p class="text-on-surface-variant">{{t:common.loading}}</p>
             </div>
         </div>
     </main>
 
-    <script src="/scripts/close-loop.js?v=1"></script>
-    <script src="/scripts/actions.js?v=6"></script>
+    <script src="/scripts/close-loop.js?v=2"></script>
+    <script src="/scripts/actions.js?v=7"></script>
 </body>
 </html>

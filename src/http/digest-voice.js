@@ -3,6 +3,7 @@ const { apiRateLimiter } = require('../middleware/auth');
 const { isAdmin } = require('../services/permissions');
 const { getVoiceSetting, setVoice, setWorkspaceVoicesEnabled } = require('../core/digest/voice-settings');
 const { track } = require('../integrations/posthog/client');
+const { requestLanguage } = require('../core/i18n/i18n');
 
 /**
  * The morning partner of the signed-in person's daily summary (core/digest).
@@ -21,7 +22,7 @@ function requireSession(req, res, next) {
 router.get('/api/me/digest-voice', apiRateLimiter, requireSession, async (req, res) => {
   try {
     const { workspace_id, user_id } = req.session.user;
-    const [setting, admin] = await Promise.all([getVoiceSetting(workspace_id, user_id), isAdmin(null, workspace_id, user_id)]);
+    const [setting, admin] = await Promise.all([getVoiceSetting(workspace_id, user_id, requestLanguage(req)), isAdmin(null, workspace_id, user_id)]);
     res.json({ success: true, ...setting, is_admin: admin });
   } catch (error) {
     console.error('❌ Failed to load the morning partner setting:', error);
@@ -35,7 +36,7 @@ router.put('/api/me/digest-voice', apiRateLimiter, requireSession, async (req, r
     const voice = (req.body || {}).voice;
     if (!await setVoice(workspace_id, user_id, voice)) return res.status(400).json({ success: false, error: 'Unknown morning partner' });
     track('digest_voice_set', { voice }, user_id);
-    res.json({ success: true, ...(await getVoiceSetting(workspace_id, user_id)) });
+    res.json({ success: true, ...(await getVoiceSetting(workspace_id, user_id, requestLanguage(req))) });
   } catch (error) {
     console.error('❌ Failed to save the morning partner:', error);
     res.status(500).json({ success: false, error: 'Failed to save your morning partner' });
