@@ -7,6 +7,7 @@ const { getSlackClient } = require('../config/slack-client');
 const { sendFeedbackNotificationEmail } = require('../utils/n8n-client');
 const { DECISION_TYPES } = require('../core/decisions/types');
 const { PENDING_REVIEW } = require('../core/decisions/review-service');
+const { normalizeTags } = require('../core/decisions/tags');
 const { jsonBody } = require('../middleware/input-safety');
 const { KEYWORD_SEARCH_LIMIT, foldText } = require('../core/search/relevance');
 
@@ -853,7 +854,7 @@ async function createMemory(req, res) {
       text: text.trim(),
       type: type,
       category: category || null,
-      tags: tags || null,
+      tags: normalizeTags(tags), // the extension sends "a, b"
       epic_key: epic_key || null,
       alternatives: alternatives || null,
       user_id: userId,

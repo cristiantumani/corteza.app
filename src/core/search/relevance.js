@@ -11,6 +11,7 @@
 
 // Words that say nothing about the topic: articles, pronouns, question words and the
 // verbs people use to ask about decisions ("what did we decide/agree about ...")
+const { normalizeTags } = require('../decisions/tags');
 const STOP_WORDS = new Set([
   // English
   'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
@@ -73,7 +74,7 @@ function escapeRegex(text) {
 function searchableText(doc) {
   return normalize([
     doc.text,
-    (doc.tags || []).join(' '),
+    normalizeTags(doc.tags).join(' '),
     doc.rationale,
     doc.owner_name,
     doc.epic_key,
