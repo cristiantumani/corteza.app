@@ -1,4 +1,5 @@
 const { OpenAI } = require('openai');
+const { normalizeTags } = require('../core/decisions/tags');
 
 let openaiClient = null;
 let embeddingsEnabled = false;
@@ -109,9 +110,10 @@ function buildDecisionText(decision) {
   }
 
   // Tags (important for categorization)
-  if (decision.tags && decision.tags.length > 0) {
-    parts.push(`Tags: ${decision.tags.join(', ')}`);
-    parts.push(`Tags: ${decision.tags.join(', ')}`); // Repeat for weight
+  const tags = normalizeTags(decision.tags);
+  if (tags.length > 0) {
+    parts.push(`Tags: ${tags.join(', ')}`);
+    parts.push(`Tags: ${tags.join(', ')}`); // Repeat for weight
   }
 
   // Epic/Jira context

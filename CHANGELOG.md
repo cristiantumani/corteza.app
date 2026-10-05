@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Search failed in spaces with outcomes from the Chrome extension
+- The extension saved tags as one piece of text ("iso, security") instead of a list; since keyword search reads outcomes in memory (encryption, Oct 3), one of them made every search in its space fail with "Search failed". Search now reads both, new captures save a list, and `scripts/migrations/013-normalize-tags.js --apply` fixes the ones already saved
+
 ### Added - Corteza in Spanish (part 3: emails)
 - Emails arrive in the recipient's language: the morning summary (the partner's line too), import summary, weekly digest, invitations (in the inviter's language) and the beta welcome (in the approver's language, or `--lang es`). The unsubscribe pages too
 - People who never picked a language get emails in their browser's language: the app remembers it when they open a page

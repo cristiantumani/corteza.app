@@ -10,6 +10,7 @@ const { generateDecisionEmbedding, isEmbeddingsEnabled } = require('../../servic
  */
 
 const { DECISION_TYPES: VALID_TYPES } = require('./types');
+const { normalizeTags } = require('./tags');
 
 /**
  * Next per-workspace decision number, atomically.
@@ -82,7 +83,7 @@ async function createDecision({
     id: await nextDecisionId(workspaceId),
     text: text.trim(),
     type: VALID_TYPES.includes(type) ? type : 'decision',
-    tags: Array.isArray(tags) ? tags : [],
+    tags: normalizeTags(tags),
     epic_key: epicKey || null,
     alternatives: alternatives || null,
     user_id: author?.user_id || null,
