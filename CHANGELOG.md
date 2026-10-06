@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Edit an outcome while reviewing it
+- Home's To review card has an Edit button: it opens the outcome with every field click-to-edit, and Home shows the change when it closes
+
 ### Fixed - Search failed in spaces with outcomes from the Chrome extension
 - The extension saved tags as one piece of text ("iso, security") instead of a list; since keyword search reads outcomes in memory (encryption, Oct 3), one of them made every search in its space fail with "Search failed". Search now reads both, new captures save a list, and `scripts/migrations/013-normalize-tags.js --apply` fixes the ones already saved
 
