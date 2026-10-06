@@ -167,15 +167,42 @@ function buildExtractionText(transcript) {
 }
 
 /**
+ * Links a captured meeting to open items from earlier meetings, when the workspace has it on
+ * @param {Object} transcript
+ * @param {Object[]} decisions
+ * @param {Object[]} actionItems
+ */
+async function linkMeeting(transcript, decisions, actionItems) {
+  const links = require('../core/links/cross-meeting');
+  const workspace = await require('../core/workspaces/workspace-service').findById(transcript.workspaceId);
+  if (!links.linksEnabled(workspace)) return;
+  const ownerId = transcript.author?.user_id || null;
+  const spaceIds = ownerId
+    ? await require('../services/permissions').getUserAccessibleSpaces(null, transcript.workspaceId, ownerId)
+    : [transcript.spaceId];
+  const result = await links.linkAcrossMeetings({
+    workspaceId: transcript.workspaceId,
+    spaceIds,
+    ownerId,
+    meetingId: transcript.externalId || null,
+    occurredAt: transcript.occurredAt || null,
+    decisions,
+    actionItems
+  });
+  if (result.links.length) console.log(`🔗 ${transcript.externalId}: ${result.links.length} link(s) to earlier meetings, ${result.resolves} may close`);
+}
+
+/**
  * Processes a transcript end to end
  * @param {Transcript} transcript
  * @param {Object} [options]
  * @param {Function} [options.extract] - (text, workspaceId) => { decisions } (defaults to Claude)
  * @param {boolean} [options.manual] - chosen by a person (see claim)
  * @param {Function} [options.reviewAssignments] - (actionItems) => checks colleagues' items (defaults to core/actions/colleague-assignments)
+ * @param {Function} [options.linkMeetings] - (transcript, decisions, actionItems) => links to earlier meetings (defaults to linkMeeting; skipped for imports)
  * @returns {Promise<{ status: 'completed'|'duplicate'|'skipped'|'failed', decisions: Object[], actionItems: Object[], error?: string }>}
  */
-async function ingestTranscript(transcript, { extract, manual = false, reviewAssignments: reviewOverride } = {}) {
+async function ingestTranscript(transcript, { extract, manual = false, reviewAssignments: reviewOverride, linkMeetings: linkOverride } = {}) {
   const ingestion = await claim(transcript, manual);
   if (!ingestion) return { status: 'duplicate', decisions: [], actionItems: [] };
 
@@ -307,6 +334,16 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         await reviewAssignments(actionItems);
       } catch (error) {
         console.warn(`⚠️  Checking colleagues' action items failed for ${transcript.externalId}:`, error.message);
+      }
+    }
+
+    // Earlier meetings on the same subjects: threads across meetings, and what a decision may close
+    // (docs/specs/2026-10-cross-meeting-links.md). Not for imports of past meetings
+    if (!manual && (decisions.length > 0 || actionItems.length > 0)) {
+      try {
+        await (linkOverride || linkMeeting)(transcript, decisions, actionItems);
+      } catch (error) {
+        console.warn(`⚠️  Cross-meeting links failed for ${transcript.externalId}:`, error.message);
       }
     }
 

@@ -1002,5 +1002,26 @@
     "doneTitle": "You’re unsubscribed",
     "errorTitle": "Something went wrong",
     "errorBody": "Please try again in a moment."
+  },
+  "links": {
+    "mayClose": "This may close:",
+    "mayCloseHint": "Earlier items on the same subject. Confirm closes the checked ones.",
+    "relation": {
+      "answers": "Answers",
+      "mitigates": "Mitigates",
+      "completes": "Completes"
+    },
+    "confirmedClosed": {
+      "one": "Confirmed · {count} earlier item closed",
+      "other": "Confirmed · {count} earlier items closed"
+    },
+    "closed": {
+      "one": "{count} earlier item closed",
+      "other": "{count} earlier items closed"
+    },
+    "closeSelected": "Close selected",
+    "closeFailed": "Couldn’t close them. Try again.",
+    "resolvedNote": "Resolved by: {text} ({meeting}, {date})",
+    "manual": "logged by hand"
   }
 }

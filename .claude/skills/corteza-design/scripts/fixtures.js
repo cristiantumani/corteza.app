@@ -63,6 +63,12 @@ const google = {
  * GET responses by path (no query string). A function receives the request.
  * Paths not listed here answer { success: true } and are reported as "unmocked" by preview.js.
  */
+// Earlier items the first outcome to review may close (GET /api/home review[0].may_close, GET /api/decisions/101/links)
+const mayClose = [
+  { kind: 'decision', id: 72, relation: 'answers', type: 'open_question', text: '¿Ofrecemos un plan anual con descuento este trimestre?', meeting: 'Revisión de precios', date: date(-21), owners: [], due_date: null, reason: 'La decisión fija el plan anual con 20% de descuento.' },
+  { kind: 'action_item', id: 'ai_old_1', relation: 'completes', type: 'action_item', text: 'Proponer el precio del plan anual', meeting: 'Revisión de precios', date: date(-21), owners: ['Bruno Díaz'], due_date: date(-7), reason: 'El precio quedó decidido: 20% de descuento.' }
+];
+
 const routes = {
   'GET /auth/me': { authenticated: true, user },
   'GET /api/spaces': { success: true, spaces },
@@ -98,9 +104,11 @@ const routes = {
       owe: open.map(i => ({ item_id: i.item_id, text: i.text, due_date: i.due_date, owners: i.owners, source: i.source, new_from_colleague: !!i.unseen })),
       open: questionsRisks,
       decided: decisions.filter(d => d.type === 'decision' && (d.capture !== 'ai' || d.review_status === 'confirmed')),
-      review: pending
+      // The first one closes earlier items on the same subject (cross-meeting links)
+      review: pending.map((d, i) => ({ ...d, may_close: i === 0 ? mayClose : [] }))
     };
   },
+  'GET /api/decisions/101/links': () => ({ success: true, may_close: mayClose, can_close: true }),
   'GET /api/integrations/google': google,
   'GET /api/integrations/google/meetings': { success: true, meetings: [], truncated: false },
   'GET /api/ai-context': {

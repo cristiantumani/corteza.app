@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Cross-meeting links: a new outcome closes the old ones on the same subject
+- When a meeting is captured, Corteza finds open questions, risks and action items from earlier meetings about the same subject (embeddings, then Claude). The new outcomes join that thread, and a decision that settles them shows "This may close" on the review card and in the detail modal, checked by default
+- Confirm closes the checked ones (question answered, risk mitigated, action item done, with a "Resolved by" note); Undo reopens them. Nothing closes by itself
+- On for the Google domains in `CROSS_MEETING_LINKS_DOMAINS` (ninjaexcel.com first). Outcomes already waiting for review: `scripts/migrations/014-cross-meeting-links.js --domain <domain> --apply`
+
 ### Added - Edit an outcome while reviewing it
 - Home's To review card has an Edit button: it opens the outcome with every field click-to-edit, and Home shows the change when it closes
 

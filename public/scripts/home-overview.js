@@ -241,6 +241,7 @@
         ${item.evidence_quote ? `<p class="text-sm italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         <p class="text-xs text-on-surface-variant">${sourceLine(item.source_details, item.timestamp)}</p>
       </div>
+      ${item.may_close && item.may_close.length && window.CortezaMayClose ? `<div data-may-close data-decision-id="${escapeHtml(item.id)}">${window.CortezaMayClose.render(item.may_close)}</div>` : ''}
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" data-review="confirm" class="bg-primary text-on-primary rounded-lg py-2 px-4 text-sm font-semibold hover:bg-on-primary-fixed-variant disabled:opacity-50">${escapeHtml(t('review.confirm'))}</button>
         <button type="button" data-review="dismiss" class="border border-outline-variant rounded-lg py-2 px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50">${escapeHtml(t('review.dismiss'))}</button>
@@ -268,7 +269,10 @@
     el.querySelectorAll('[data-review]').forEach(button => { button.disabled = true; });
     try {
       if (action === 'confirm') {
-        await request('POST', `/api/decisions/${item.id}/review`, { action: 'confirm' });
+        // And the checked earlier items it may close (cross-meeting links)
+        const close = window.CortezaMayClose ? window.CortezaMayClose.checked(el.querySelector('[data-may-close]'), item.id) : [];
+        const data = await request('POST', `/api/decisions/${item.id}/review`, { action: 'confirm', close });
+        if (data.closed && data.closed.length) window.CortezaMayClose.showClosed(item.id, data.closed, 'links.confirmedClosed');
       } else if (action === 'meeting') {
         for (const outcome of sameMeeting) await request('POST', `/api/decisions/${outcome.id}/review`, { action: 'confirm' });
         toast(t('home.review.confirmedMeeting', { count: sameMeeting.length }));
