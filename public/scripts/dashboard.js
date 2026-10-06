@@ -968,6 +968,7 @@
         detailChanged = false;
         fetchStats();
         fetchDecisions();
+        document.dispatchEvent(new CustomEvent('corteza:home-refresh')); // Home's review card and lists show the edit
       }
     }
 

@@ -244,6 +244,7 @@
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" data-review="confirm" class="bg-primary text-on-primary rounded-lg py-2 px-4 text-sm font-semibold hover:bg-on-primary-fixed-variant disabled:opacity-50">${escapeHtml(t('review.confirm'))}</button>
         <button type="button" data-review="dismiss" class="border border-outline-variant rounded-lg py-2 px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50">${escapeHtml(t('review.dismiss'))}</button>
+        <button type="button" data-review="edit" class="border border-outline-variant rounded-lg py-2 px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50">${escapeHtml(t('common.edit'))}</button>
         ${queue.length > 1 ? `<button type="button" data-review="skip" class="text-sm font-semibold text-on-surface-variant hover:underline px-2">${escapeHtml(t('review.skip'))}</button>` : ''}
         ${sameMeeting.length > 1 ? `<button type="button" data-review="meeting" class="ml-auto text-sm font-semibold text-primary hover:underline">${escapeHtml(t('home.review.confirmMeeting', { count: sameMeeting.length }))}</button>` : ''}
       </div>
@@ -253,6 +254,11 @@
   }
 
   async function review(action, item, sameMeeting, el) {
+    // Edit: the detail modal, where every field is click-to-edit (Home reloads when it closes)
+    if (action === 'edit') {
+      if (typeof window.openDecision === 'function') window.openDecision(item);
+      return;
+    }
     if (action === 'skip') {
       reviewIndex += 1;
       renderReview();
