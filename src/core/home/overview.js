@@ -1,4 +1,5 @@
 const { getDecisionsCollection } = require('../../config/database');
+const { describeLinks } = require('../links/close-links');
 const { getUserAccessibleSpaces, isAdmin } = require('../../services/permissions');
 const { listActionItems } = require('../actions/action-service');
 const { listQuestionsAndRisks } = require('../decisions/questions-risks');
@@ -25,7 +26,7 @@ const LIMITS = { owe: 6, open: 6, decided: 5, review: 20 };
 // What the browser needs from an outcome: never `embedding`
 const OUTCOME_FIELDS = {
   _id: 0, id: 1, type: 1, text: 1, rationale: 1, evidence_quote: 1, owner_name: 1, capture: 1, review_status: 1,
-  timestamp: 1, user_id: 1, space_id: 1, creator: 1, raised_by: 1, topic_id: 1, topic: 1,
+  timestamp: 1, user_id: 1, space_id: 1, creator: 1, raised_by: 1, topic_id: 1, topic: 1, resolves: 1,
   'source_details.type': 1, 'source_details.title': 1, 'source_details.url': 1, 'source_details.external_id': 1
 };
 
@@ -66,6 +67,10 @@ async function buildHomeOverview(workspaceId, userId, { now = new Date(), today 
     decisions.find({ ...inSpaces, timestamp: { $gte: since } }, { projection: { _id: 0, 'source_details.external_id': 1 } }).limit(1000).toArray()
   ]);
 
+  // What each outcome to review may close in earlier meetings (core/links), shown on the review card
+  const mayClose = await describeLinks(workspaceId, review, { spaceIds, userId });
+  const reviewItems = review.map(({ resolves, ...item }) => ({ ...item, may_close: mayClose.get(item.id) || [] }));
+
   const overdue = owned.filter(item => item.due_date && item.due_date < day).length;
   const dueToday = owned.filter(item => item.due_date === day).length;
   const meetings = new Set(recent.map(outcome => outcome.source_details && outcome.source_details.external_id).filter(Boolean));
@@ -92,8 +97,9 @@ async function buildHomeOverview(workspaceId, userId, { now = new Date(), today 
       ...item,
       source: item.source_details && item.source_details.title ? { title: item.source_details.title } : null
     })),
-    decided,
-    review
+    // `resolves` names earlier items the viewer may not see: only the described list (may_close) goes out
+    decided: decided.map(({ resolves, ...item }) => item),
+    review: reviewItems
   };
 }
 

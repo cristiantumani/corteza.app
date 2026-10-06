@@ -919,6 +919,12 @@
       // Confirm / dismiss for AI-captured outcomes nobody reviewed (public/scripts/outcome-review.js)
       if (window.CortezaReview) window.CortezaReview.renderDetail(decision);
 
+      // Earlier items on the same subject it may close (public/scripts/may-close.js); while it waits
+      // for review, the banner's Confirm closes the checked ones
+      if (window.CortezaMayClose) {
+        window.CortezaMayClose.loadDetail(decision, { pendingReview: decision.capture === 'ai' && !decision.review_status && canModify });
+      }
+
       // Re-render this same outcome after a change. Looked up by id: the list may have been
       // reloaded while the modal was open (an item opened from Home isn't in it at all)
       const rerender = () => {

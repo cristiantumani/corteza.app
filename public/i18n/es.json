@@ -1002,5 +1002,26 @@
     "doneTitle": "Listo, te diste de baja",
     "errorTitle": "Algo salió mal",
     "errorBody": "Inténtalo de nuevo en un momento."
+  },
+  "links": {
+    "mayClose": "Esto podría cerrar:",
+    "mayCloseHint": "Tarjetas anteriores sobre el mismo tema. Confirmar cierra las marcadas.",
+    "relation": {
+      "answers": "Responde",
+      "mitigates": "Mitiga",
+      "completes": "Completa"
+    },
+    "confirmedClosed": {
+      "one": "Confirmado · se cerró {count} tarjeta anterior",
+      "other": "Confirmado · se cerraron {count} tarjetas anteriores"
+    },
+    "closed": {
+      "one": "Se cerró {count} tarjeta anterior",
+      "other": "Se cerraron {count} tarjetas anteriores"
+    },
+    "closeSelected": "Cerrar seleccionadas",
+    "closeFailed": "No se pudieron cerrar. Inténtalo de nuevo.",
+    "resolvedNote": "Resuelto por: {text} ({meeting}, {date})",
+    "manual": "registrado a mano"
   }
 }

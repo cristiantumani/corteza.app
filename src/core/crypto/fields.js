@@ -6,13 +6,13 @@ const aead = require('./aead');
  * See docs/specs/2026-10-workspace-encryption.md for why each field is (or isn't) here.
  */
 const FIELD_PATHS = {
-  decisions: ['text', 'rationale', 'evidence_quote', 'alternatives', 'resolution_note', 'topic', 'source_details.title'],
+  decisions: ['text', 'rationale', 'evidence_quote', 'alternatives', 'resolution_note', 'topic', 'source_details.title', 'resolves.[].reason'],
   action_items: ['text', 'rationale', 'evidence_quote', 'topic', 'source.title'],
   ai_suggestions: ['decision_text', 'context', 'edits.decision_text', 'edits.alternatives'],
   ai_feedback: [
     'original_suggestion.decision_text', 'original_suggestion.context',
     'snapshot.text', 'snapshot.rationale', 'snapshot.evidence_quote', 'snapshot.alternatives',
-    'snapshot.resolution_note', 'snapshot.topic', 'snapshot.source_details.title'
+    'snapshot.resolution_note', 'snapshot.topic', 'snapshot.source_details.title', 'snapshot.resolves.[].reason'
   ],
   ai_context: ['description', 'glossary', 'role', 'focus', 'documents.[].text'],
   ingestions: ['title'],

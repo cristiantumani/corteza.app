@@ -102,7 +102,16 @@
   }
 
   async function confirm(id) {
-    await post(`/api/decisions/${id}/review`, { action: 'confirm' });
+    // From the detail modal: also close the checked earlier items it may resolve (may-close.js)
+    const mayClose = window.CortezaMayClose;
+    const close = mayClose ? mayClose.checked(document.getElementById('detail-may-close'), id) : [];
+    const data = await post(`/api/decisions/${id}/review`, { action: 'confirm', close });
+    if (mayClose && data.closed && data.closed.length) {
+      mayClose.showClosed(id, data.closed, 'links.confirmedClosed');
+      const section = document.getElementById('detail-may-close');
+      if (section && section.dataset.decisionId === String(id)) section.style.display = 'none';
+      document.dispatchEvent(new CustomEvent('corteza:home-refresh'));
+    }
     const decision = decisions().find(d => d.id === id);
     if (decision) decision.review_status = 'confirmed';
     pendingCount = Math.max(0, pendingCount - 1);

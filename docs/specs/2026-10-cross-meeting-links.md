@@ -1,6 +1,6 @@
 # Cross-meeting links: a new outcome closes the old ones on the same subject
 
-**Status:** draft (Oct 6, 2026) · **Owner:** Cristian · **Roadmap:** B4 (automatic progress detection) · **Builds on:** `docs/specs/2026-10-topic-threads.md`
+**Status:** approved (Oct 6, 2026): checked by default; on for ninjaexcel.com first (`CROSS_MEETING_LINKS_DOMAINS`), everyone after measuring precision · **Owner:** Cristian · **Roadmap:** B4 (automatic progress detection) · **Builds on:** `docs/specs/2026-10-topic-threads.md`
 
 ## Problem
 
@@ -30,7 +30,7 @@ When the decision arrives, the question and the action item stay open. Someone h
 5. **Confirm closes them too.** **Confirm** confirms the outcome and closes the checked items:
    - a question becomes *answered* and a risk *mitigated*, each with the note "Resolved by: <new outcome> (<meeting>, <date>)";
    - an action item becomes *done*.
-   - One toast offers **Undo** for all of it.
+   - One toast offers **Undo**: it reopens what was closed (the confirmation itself stays; Dismiss is the way back from that).
    - **Dismiss** closes nothing and drops the suggestions.
 6. **Already confirmed.** For an outcome that needs no review (logged by hand, or confirmed earlier), the detail modal shows the same list with a **Close selected** button.
 7. **Privacy.**
@@ -40,7 +40,7 @@ When the decision arrives, the question and the action item stay open. Someone h
    - At most one extra Claude call per captured meeting, and only when some candidate passes the similarity threshold.
    - The call is recorded with `recordAiUsage` (feature `cross_meeting_links`) and counts toward the daily caps.
    - Meet auto-capture is never blocked. Imports of past meetings skip linking.
-9. **Existing data.** `scripts/migrations/014-cross-meeting-links.js` runs the same linking for outcomes still waiting for review, so today's queue gets suggestions. Like the other migrations, it is a dry run unless `--apply`.
+9. **Existing data.** `scripts/migrations/014-cross-meeting-links.js --domain <domain>` runs the same linking for outcomes still waiting for review, so today's queue gets suggestions. It's a dry run unless `--apply` (the dry run still calls Claude, since that's how links are found, but saves nothing). Meetings already checked are skipped (`links_checked_at`).
 
 ## Out of scope (next steps)
 

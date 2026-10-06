@@ -139,7 +139,7 @@ async function getDecisions(req, res) {
     if (search) {
       // The space's newest outcomes, matched in memory, then paginated
       const recent = await decisionsCollection
-        .find(filter, { projection: { embedding: 0 } })
+        .find(filter, { projection: { embedding: 0, resolves: 0 } })
         .sort({ timestamp: -1 })
         .limit(KEYWORD_SEARCH_LIMIT)
         .toArray();
@@ -149,7 +149,7 @@ async function getDecisions(req, res) {
     } else {
       [decisions, total, pendingReview] = await Promise.all([
         decisionsCollection
-          .find(filter, { projection: { embedding: 0 } }) // embeddings are large and only used server-side
+          .find(filter, { projection: { embedding: 0, resolves: 0 } }) // embeddings are large and only used server-side
           .sort({ timestamp: -1 })
           .skip(skip)
           .limit(limit)
