@@ -131,8 +131,10 @@
           </li>`).join('')}</ul>`
       : `<p class="text-sm text-on-surface-variant">${escapeHtml(t('capture.noMeetings'))}</p>`;
 
+    // All good: a quiet line under the page. Something to act on (reconnect, an import running): a card
+    const quiet = !needsReconnect && !data.needs_reconsent && !data.active_import;
     panel().innerHTML = `
-      <div class="rounded-xl bg-surface-container-lowest border border-outline-variant px-4 py-3 flex flex-col gap-3">
+      <div class="${quiet ? 'px-1 py-1' : 'rounded-xl bg-surface-container-lowest border border-outline-variant px-4 py-3'} flex flex-col gap-3">
         ${needsReconnect ? `
           <div class="p-3 rounded-lg bg-error-container text-on-error-container text-sm">
             ${escapeHtml(data.last_error || t('capture.accessStopped'))}

@@ -84,12 +84,6 @@
       "raised": "se planteó {when}",
       "empty": "No hay preguntas abiertas ni riesgos. Cuando una reunión deja algo sin resolver, aparece aquí."
     },
-    "decided": {
-      "title": "Decidido",
-      "subtitle": "Confirmadas o registradas a mano",
-      "emptyToReview": "Confirma las decisiones que capturó Corteza y aparecerán aquí.",
-      "empty": "Aún no hay decisiones. Aparecen aquí después de tus reuniones."
-    },
     "summary": {
       "newOutcomes": {
         "one": "{count} resultado nuevo",
@@ -115,6 +109,48 @@
       "last": "En las últimas 24 horas: {items}.",
       "nothingNew": "Nada nuevo en las últimas 24 horas.",
       "needsYou": "Te necesita: {items}."
+    },
+    "tiles": {
+      "label": "Lo que sigue abierto",
+      "actions": "Tus pendientes",
+      "questions": "Preguntas por responder",
+      "risks": "Riesgos abiertos",
+      "overdue": {
+        "one": "{count} atrasado",
+        "other": "{count} atrasados"
+      },
+      "dueToday": {
+        "one": "{count} vence hoy",
+        "other": "{count} vencen hoy"
+      },
+      "nothingOverdue": "Nada atrasado",
+      "clear": "✓ Al día",
+      "newQuestions": {
+        "one": "{count} nueva hoy",
+        "other": "{count} nuevas hoy"
+      },
+      "waitingAnswer": "Esperan respuesta",
+      "newRisks": {
+        "one": "{count} nuevo hoy",
+        "other": "{count} nuevos hoy"
+      },
+      "toMitigate": "Por mitigar"
+    },
+    "headline": {
+      "overdue": {
+        "one": "{count} pendiente atrasado.",
+        "other": "{count} pendientes atrasados."
+      },
+      "dueToday": {
+        "one": "{count} pendiente vence hoy.",
+        "other": "{count} pendientes vencen hoy."
+      },
+      "clear": "Todo al día.",
+      "toReview": {
+        "one": "{count} resultado por revisar.",
+        "other": "{count} resultados por revisar."
+      },
+      "changeVoice": "Tu socio de la mañana. Cámbialo en Configuración"
     }
   },
   "common": {
@@ -139,7 +175,8 @@
     "next": "Siguiente",
     "offline": "No se pudo conectar con Corteza. Revisa tu conexión e inténtalo de nuevo.",
     "copied": "Copiado",
-    "copyFailed": "No se pudo copiar"
+    "copyFailed": "No se pudo copiar",
+    "tryAgainButton": "Intentar de nuevo"
   },
   "outcomes": {
     "recentDecisions": "Decisiones recientes",

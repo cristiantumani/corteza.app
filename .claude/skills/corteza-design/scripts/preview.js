@@ -64,7 +64,8 @@ function routesFor(state) {
     routes['GET /api/integrations/google'] = { success: true, configured: true, connected: false };
     routes['GET /api/home'] = {
       success: true, since: new Date().toISOString(),
-      summary: { new_outcomes: 0, meetings: 0, overdue: 0, due_today: 0, open_action_items: 0, to_review: 0, open_questions: 0, open_risks: 0 },
+      summary: { new_outcomes: 0, meetings: 0, overdue: 0, due_today: 0, open_action_items: 0, to_review: 0, open_questions: 0, open_risks: 0, new_questions: 0, new_risks: 0 },
+      headline: { voice: 'sarcastic', situation: 'all_clear', title: process.argv.includes('es') ? 'Cero atrasados. ¿Quién eres?' : 'Zero overdue. Who are you?', follow: null, item_id: null },
       owe: [], open: [], decided: [], review: []
     };
   }

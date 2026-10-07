@@ -401,7 +401,7 @@ The daily summary can be written by a personality (The Sergeant, The Sarcastic C
 - **When in doubt, kinder.** With 6 or more overdue (`overloaded`) the partner stops pushing and helps triage.
 - **Never push over something the AI may have gotten wrong:** a line never names an item a colleague's meeting assigned in the last 24 hours.
 - **Written per language, not translated.** Spanish uses neutral Spanish with "tú" and no gendered adjectives for the reader ("Hay atraso", not "Vas atrasado").
-- The voice lives only in that person's summary: never in the app UI, capture emails, the weekly digest or anything colleagues receive.
+- The voice lives only where the person alone reads it: their morning summary and the headline of their own Home (`src/core/home/headline.js`, same line library and situations, one line per day, no lines that talk about the email). Never anywhere else in the app UI, in capture emails, the weekly digest or anything colleagues receive.
 
 Add lines at the end of a list (a line's id is its position). Review them with `scripts/preview-digest.js`.
 

@@ -8,7 +8,7 @@ console.log = () => {};
 console.warn = () => {};
 console.error = () => {};
 
-describe('Home overview: summary, what I owe, what is open, decided, review queue', { skip }, () => {
+describe('Home overview: headline, what is open, review queue', { skip }, () => {
   let db;
   let cleanup;
   let space;
@@ -80,13 +80,18 @@ describe('Home overview: summary, what I owe, what is open, decided, review queu
       open_action_items: 4,
       to_review: 2, // #1 and #2: Bruno's #7 is his to review
       open_questions: 1,
-      open_risks: 1
+      open_risks: 1,
+      new_questions: 1, // #2, raised in the last 24 h
+      new_risks: 1 // #3
     });
+    assert.equal(overview.headline.voice, 'sarcastic', 'the morning partner (Sarcastic by default)');
+    assert.equal(overview.headline.situation, 'overdue_few');
+    assert.ok(overview.headline.title, 'a line for the headline');
     assert.deepEqual(overview.owe.map(item => item.text), ['Overdue one', 'Due today', 'Due later', 'No date'], 'mine only, most urgent first');
     assert.deepEqual(overview.open.map(item => item.id), [2, 3], 'open questions and risks, newest first; answered ones left out');
     assert.equal(overview.open[0].creator, 'Ana Rojas', 'open items carry the whole outcome, for the detail modal');
     assert.equal(overview.open[0].user_id, 'U1');
-    assert.deepEqual(overview.decided.map(d => d.id), [4, 5], 'confirmed or logged by hand, newest first; nothing waiting for review');
+    assert.equal(overview.decided, undefined, 'Home no longer lists decisions (All outcomes does)');
     assert.deepEqual(overview.review.map(d => d.id), [1, 2]);
     assert.equal(overview.review[0].evidence_quote, '20% keeps the margin', 'the queue carries the evidence');
     assert.equal(overview.review[0].source_details.external_id, 'm1', 'and the meeting, to confirm a whole meeting at once');

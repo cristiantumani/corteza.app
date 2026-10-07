@@ -84,12 +84,6 @@
       "raised": "raised {when}",
       "empty": "No open questions or risks. When a meeting leaves something unresolved, it shows up here."
     },
-    "decided": {
-      "title": "Decided",
-      "subtitle": "Confirmed or logged by hand",
-      "emptyToReview": "Confirm the decisions Corteza captured and they show up here.",
-      "empty": "No decisions yet. They show up here after your meetings."
-    },
     "summary": {
       "newOutcomes": {
         "one": "{count} new outcome",
@@ -115,6 +109,48 @@
       "last": "In the last 24 hours: {items}.",
       "nothingNew": "Nothing new in the last 24 hours.",
       "needsYou": "Needs you: {items}."
+    },
+    "tiles": {
+      "label": "What's open",
+      "actions": "Your action items",
+      "questions": "Questions to answer",
+      "risks": "Open risks",
+      "overdue": {
+        "one": "{count} overdue",
+        "other": "{count} overdue"
+      },
+      "dueToday": {
+        "one": "{count} due today",
+        "other": "{count} due today"
+      },
+      "nothingOverdue": "Nothing overdue",
+      "clear": "✓ All clear",
+      "newQuestions": {
+        "one": "{count} new today",
+        "other": "{count} new today"
+      },
+      "waitingAnswer": "Waiting for an answer",
+      "newRisks": {
+        "one": "{count} new today",
+        "other": "{count} new today"
+      },
+      "toMitigate": "To mitigate"
+    },
+    "headline": {
+      "overdue": {
+        "one": "{count} action item overdue.",
+        "other": "{count} action items overdue."
+      },
+      "dueToday": {
+        "one": "{count} action item due today.",
+        "other": "{count} action items due today."
+      },
+      "clear": "All caught up.",
+      "toReview": {
+        "one": "{count} outcome to review.",
+        "other": "{count} outcomes to review."
+      },
+      "changeVoice": "Your morning partner. Change it in Settings"
     }
   },
   "common": {
@@ -139,7 +175,8 @@
     "next": "Next",
     "offline": "Couldn’t reach Corteza. Check your connection and try again.",
     "copied": "Copied",
-    "copyFailed": "Couldn’t copy"
+    "copyFailed": "Couldn’t copy",
+    "tryAgainButton": "Try again"
   },
   "outcomes": {
     "recentDecisions": "Recent decisions",

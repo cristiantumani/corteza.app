@@ -9,8 +9,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=10">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=11">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link rel="stylesheet" href="/styles/dashboard.css?v=6">
     <link rel="stylesheet" href="/styles/dashboard-new.css">
@@ -67,10 +67,17 @@
 <!-- Main Content -->
 <main class="ml-64 mt-16 p-12 min-h-screen" id="main-content">
     <div class="max-w-[1100px] mx-auto flex flex-col gap-6">
-        <!-- Header: one sentence on the last 24 hours and what needs you (public/scripts/home-overview.js) -->
-        <div class="flex flex-col gap-2">
-            <h1 class="text-2xl font-bold text-on-surface">{{t:nav.homeTitle}}</h1>
-            <p id="home-summary" class="text-on-surface-variant max-w-3xl" aria-live="polite">{{t:home.loadingDay}}</p>
+        <!-- Header: the person's morning partner on where their day stands, and the view tabs (public/scripts/home-overview.js) -->
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div id="home-headline" class="flex flex-col gap-2 max-w-3xl min-w-0" aria-live="polite">
+                <p id="home-eyebrow" class="flex flex-wrap items-center gap-2 text-sm font-semibold text-on-surface-variant"></p>
+                <h1 id="home-title" class="text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface">{{t:nav.homeTitle}}</h1>
+                <p id="home-follow" class="text-base text-on-surface-variant">{{t:home.loadingDay}}</p>
+            </div>
+            <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="{{t:home.tabs.label}}">
+                <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">{{t:home.tabs.overview}}</button>
+                <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">{{t:home.tabs.all}}</button>
+            </div>
         </div>
 
         <!-- Pending AI suggestions (e.g. from Google Drive automations) -->
@@ -82,13 +89,10 @@
             <button type="button" class="modal-btn modal-btn-primary" onclick="openPendingSuggestions()">{{t:common.review}}</button>
         </div>
 
-        <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="{{t:home.tabs.label}}">
-            <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">{{t:home.tabs.overview}}</button>
-            <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">{{t:home.tabs.all}}</button>
-        </div>
-
-        <!-- Overview: ask, capture status, review queue and the three questions -->
+        <!-- Overview: what's open (one box each), ask, review queue, capture status -->
         <section id="home-overview" role="tabpanel" aria-label="{{t:home.tabs.overview}}" class="flex flex-col gap-6">
+            <div id="home-tiles" role="navigation" class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" aria-label="{{t:home.tiles.label}}"></div>
+
             <form id="home-ask" class="flex gap-2" role="search">
                 <label for="home-ask-input" class="sr-only">{{t:home.ask.label}}</label>
                 <div class="relative flex-1">
@@ -99,24 +103,12 @@
             </form>
             <div id="home-ask-result" hidden></div>
 
+            <section id="home-review" class="hidden flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.review.label}}"></section>
+
             <!-- Google Meet capture status in one line (public/scripts/home-capture.js) -->
             <section id="capture-panel">
                 <div class="rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">{{t:home.capture.loading}}</div>
             </section>
-
-            <section id="home-review" class="hidden flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.review.label}}"></section>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-                <section id="home-owe" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.owe.title}}">
-                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
-                </section>
-                <section id="home-open" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.open.title}}">
-                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
-                </section>
-                <section id="home-decided" class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-5" aria-label="{{t:home.decided.title}}">
-                    <p class="text-sm text-on-surface-variant">{{t:common.loading}}</p>
-                </section>
-            </div>
         </section>
 
         <!-- All outcomes: the full list with its filters (public/scripts/dashboard.js) -->
@@ -449,8 +441,8 @@
 <script src="/scripts/log-action-item.js?v=2"></script>
 <script src="/scripts/inline-edit.js?v=5"></script>
 <script src="/scripts/outcome-labels.js?v=2"></script>
-<script src="/scripts/home-capture.js?v=8"></script>
-<script src="/scripts/home-overview.js?v=4"></script>
+<script src="/scripts/home-capture.js?v=9"></script>
+<script src="/scripts/home-overview.js?v=6"></script>
 <script src="/scripts/onboarding.js?v=3"></script>
 <script>
     // Additional UI enhancements for new design

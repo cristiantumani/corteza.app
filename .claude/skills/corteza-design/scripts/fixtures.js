@@ -99,7 +99,7 @@ const routes = {
     const items = questionsRisks.filter(i => type === 'all' || i.type === type);
     return { success: true, items, counts: { all: questionsRisks.length, open_question: 1, risk: 2 } };
   },
-  'GET /api/home': () => {
+  'GET /api/home': req => {
     const pending = decisions.filter(d => d.capture === 'ai' && !d.review_status);
     const open = actionItems.filter(i => i.status === 'open');
     const todayStr = date(0);
@@ -108,8 +108,13 @@ const routes = {
       since: iso(day),
       summary: {
         new_outcomes: 3, meetings: 1, overdue: open.filter(i => i.due_date && i.due_date < todayStr).length,
-        due_today: 0, open_action_items: open.length, to_review: pending.length, open_questions: 1, open_risks: 2
+        due_today: 0, open_action_items: open.length, to_review: pending.length, open_questions: 1, open_risks: 2, new_questions: 1, new_risks: 1
       },
+      // The morning partner's line (src/core/home/headline.js), Sarcastic, in the page's language
+      headline: require('../../../../src/core/home/headline').buildHeadline({
+        voiceName: 'sarcastic', lang: process.argv.includes('es') ? 'es' : 'en', // the preview's --lang
+        owned: open.map(i => ({ ...i, new_from_colleague: !!i.unseen })), today: todayStr, seed: 'U1:preview'
+      }),
       owe: open.map(i => ({ item_id: i.item_id, text: i.text, due_date: i.due_date, owners: i.owners, source: i.source, new_from_colleague: !!i.unseen })),
       open: questionsRisks,
       decided: decisions.filter(d => d.type === 'decision' && (d.capture !== 'ai' || d.review_status === 'confirmed')),

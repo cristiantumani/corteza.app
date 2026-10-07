@@ -50,3 +50,26 @@ body {
   [type='checkbox'], [type='radio'] { color: #000000; }
   [type='checkbox']:focus, [type='radio']:focus { --tw-ring-color: #e85d3a; }
 }
+
+/* The one highlighted word in a page's main headline: Instrument Serif italic in Signal orange, as on corteza.app */
+.home-accent {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: 0;
+  color: #e85d3a;
+}
+
+/* Home's boxes: icons keep their font and size (dashboard-new.css shrinks icons without an inline font-variation-settings) */
+.home-tile .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  font-feature-settings: 'liga';
+  font-size: 1.25rem;
+}

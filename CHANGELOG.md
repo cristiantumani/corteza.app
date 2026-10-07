@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Home: close the loop
+- The morning partner opens Home with a line about your day, in the same voice as your morning summary (Classic: the plain counts). One highlighted word in Instrument Serif, as on the website
+- Three boxes, each opening its page: your action items (orange when something is overdue), questions to answer, open risks; "✓ All clear" in green at zero
+- Ask across meetings and the review queue stay; the summary sentence, the What I owe / Still open / Decided columns and the review subtitle are gone; the Google Meet status is a quiet line unless something needs you
+
 ### Changed - The website's palette in the app and emails
 - Ink, Paper, Cloud and Hairline surfaces, black primary buttons, one Signal orange accent (active menu item, counters, what needs you, "Needs review") and green only for finished things, as on corteza.app. Tokens in `tailwind.config.js` (`signal`, `signal-ink`, `signal-wash`, `success*`, `paper`, `ink`, `graphite`)
 - The purple gradients (sign-in, invite, Search answer, capture banner) are gone; hardcoded colors in scripts became tokens
