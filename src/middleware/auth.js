@@ -97,6 +97,47 @@ function requireWorkspaceAccess(req, res, next) {
   next();
 }
 
+/** Google sources the Drive Picker needs (Settings only; docs/specs/2026-10-context-from-drive.md) */
+const DRIVE_PICKER_SOURCES = {
+  script: 'https://apis.google.com https://accounts.google.com/gsi/client',
+  style: 'https://accounts.google.com/gsi/style',
+  frame: 'https://docs.google.com https://drive.google.com https://accounts.google.com',
+  connect: 'https://accounts.google.com/gsi/'
+};
+
+/**
+ * The Content-Security-Policy header value
+ * @param {{ drivePicker?: boolean }} [options] - drivePicker: also allow Google's Picker scripts and frames
+ * @returns {string}
+ */
+function buildCsp({ drivePicker = false } = {}) {
+  const extra = kind => (drivePicker ? ` ${DRIVE_PICKER_SOURCES[kind]}` : '');
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'unsafe-inline'${extra('script')}`, // no third-party scripts (except the Drive Picker on Settings); unsafe-inline is still needed for inline scripts and onclick handlers (to remove next)
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com${extra('style')}`, // unsafe-inline needed for inline styles, Google Fonts for Material icons
+    "img-src 'self' data: https:",
+    "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts for Material icons
+    `connect-src 'self'${extra('connect')}`,
+    ...(drivePicker ? [`frame-src ${DRIVE_PICKER_SOURCES.frame}`] : []),
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests"
+  ].join('; ');
+}
+
+/**
+ * Opens the policy for the Google Drive Picker on this response (Settings page only). The
+ * Picker's API key is restricted by referrer, so the page sends its origin (not the path).
+ * @param {import('express').Response} res
+ */
+function allowDrivePicker(res) {
+  res.setHeader('Content-Security-Policy', buildCsp({ drivePicker: true }));
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+}
+
 /**
  * Middleware to add security headers to all responses
  */
@@ -107,20 +148,7 @@ function addSecurityHeaders(req, res, next) {
   res.setHeader('Referrer-Policy', 'no-referrer');
 
   // Content-Security-Policy to prevent XSS and injection attacks
-  const cspDirectives = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'", // no third-party scripts; unsafe-inline is still needed for inline scripts and onclick handlers (to remove next)
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // unsafe-inline needed for inline styles, Google Fonts for Material icons
-    "img-src 'self' data: https:",
-    "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts for Material icons
-    "connect-src 'self'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "upgrade-insecure-requests"
-  ];
-  res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+  res.setHeader('Content-Security-Policy', buildCsp());
 
   // Only add HSTS in production (requires HTTPS)
   if (process.env.NODE_ENV === 'production') {
@@ -199,6 +227,8 @@ module.exports = {
   requireAuthBrowser,
   requireWorkspaceAccess,
   addSecurityHeaders,
+  buildCsp,
+  allowDrivePicker,
   apiRateLimiter,
   authRateLimiter,
   aiRateLimiter,

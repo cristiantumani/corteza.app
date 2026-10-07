@@ -1,5 +1,7 @@
 const { renderView } = require('../http/page-partials');
 const { localizedPage } = require('../core/i18n/i18n');
+const config = require('../config/environment');
+const { allowDrivePicker } = require('../middleware/auth');
 
 // Pages rendered once per language at startup, with the shared sidebar and detail modal filled in
 const dashboardHTML = localizedPage(renderView('dashboard-new.html', { active: 'home' }));
@@ -71,6 +73,9 @@ function serveSettings(req, res) {
   // Replace placeholders with actual values (using new Material Design 3 version)
   let html = settingsNewHTML(req).replace(/<WORKSPACE_ID>/g, workspaceId);
   html = html.replace(/<USER_ID>/g, userId);
+
+  // Add from Google Drive (Context for the AI) needs Google's Picker on this page only
+  if (config.google.picker.isConfigured) allowDrivePicker(res);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(html);

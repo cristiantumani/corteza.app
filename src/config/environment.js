@@ -101,7 +101,13 @@ module.exports = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    isConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+    isConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    // Google Picker (Settings → Context for the AI → Add from Google Drive); docs/specs/2026-10-context-from-drive.md
+    picker: {
+      apiKey: process.env.GOOGLE_PICKER_API_KEY,
+      appId: process.env.GOOGLE_CLOUD_PROJECT_NUMBER,
+      isConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_PICKER_API_KEY && process.env.GOOGLE_CLOUD_PROJECT_NUMBER)
+    }
   },
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY,

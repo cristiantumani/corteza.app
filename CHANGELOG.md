@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Company context from Google Drive
+- Settings → Context for the AI → **Add from Google Drive** (admins): Google's own file picker; Docs, Sheets, Slides, PDF, DOCX, TXT, MD and CSV, shared drives included. Only the text is kept, with the same limits as an upload
+- **Update** on a Drive document reads it again and replaces its text in place
+- Uses the `drive.file` scope (only the files the admin picks; non-sensitive). The token stays in the browser and is never stored. Google's scripts are allowed on the Settings page only
+- Needs `GOOGLE_PICKER_API_KEY` and `GOOGLE_CLOUD_PROJECT_NUMBER`; hidden until they're set
+
 ### Fixed - Icons that never showed, and legacy CSS removed
 - `dashboard-new.css` hid every `<nav>` and shrank Material icons to size 0 unless they carried an inline style; removed. Icons that were invisible now show: Search's send arrow (it was an empty black button), close, info and source icons, the Connect Google Meet link icon
 - `dashboard-minimal.css` (unused) removed

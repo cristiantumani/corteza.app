@@ -93,6 +93,62 @@ describe('context for the AI', { skip }, () => {
     assert.deepEqual(removed.body.company.documents.map(d => d.name), ['big']);
   });
 
+  test('admins add a document from Google Drive and update it later; the token is only used to read it', async () => {
+    await db.collection('ai_context').updateOne({ workspace_id: WS, user_id: null }, { $set: { documents: [] } });
+    const FILE = '1DriveFileId_abcdef';
+    let version = 'Acme Pay: payments product';
+    const seen = [];
+    const realFetch = globalThis.fetch;
+    // Google's side, stubbed: metadata, then the Doc exported as text
+    globalThis.fetch = async (url, init) => {
+      if (!String(url).startsWith('https://www.googleapis.com/')) return realFetch(url, init);
+      seen.push(init.headers.Authorization);
+      if (init.headers.Authorization !== 'Bearer good-token') return new Response('{}', { status: 401 });
+      if (String(url).includes('fields=')) return Response.json({ name: 'Product list', mimeType: 'application/vnd.google-apps.document', modifiedTime: '2026-10-01T00:00:00Z' });
+      return new Response(version);
+    };
+    try {
+      assert.equal((await call(MEMBER, 'POST', '/api/ai-context/company/documents/drive', { file_id: FILE, access_token: 'good-token' })).status, 403);
+      assert.equal(seen.length, 0, 'a member never reaches Drive');
+      assert.equal((await call(ADMIN, 'POST', '/api/ai-context/company/documents/drive', { file_id: 'bad id!', access_token: 'good-token' })).status, 400);
+
+      const added = await call(ADMIN, 'POST', '/api/ai-context/company/documents/drive', { file_id: FILE, access_token: 'good-token' });
+      assert.equal(added.status, 200);
+      const doc = added.body.company.documents.find(d => d.doc_id === added.body.doc_id);
+      assert.equal(doc.name, 'Product list');
+      assert.equal(doc.from_drive, true);
+      assert.match(doc.preview, /Acme Pay/);
+      const stored = (await context.getCompanyContext(WS)).documents.find(d => d.doc_id === doc.doc_id);
+      assert.deepEqual(stored.source, { type: 'google_drive', file_id: FILE, mime_type: 'application/vnd.google-apps.document', modified_time: '2026-10-01T00:00:00Z' });
+      assert.doesNotMatch(JSON.stringify(stored), /good-token/, 'the token is never stored');
+
+      const expired = await call(ADMIN, 'POST', `/api/ai-context/company/documents/${doc.doc_id}/refresh`, { access_token: 'old-token' });
+      assert.deepEqual([expired.status, expired.body.code], [401, 'expired']);
+
+      version = 'Acme Pay: payments product\nAcme Books: accounting';
+      const refreshed = await call(ADMIN, 'POST', `/api/ai-context/company/documents/${doc.doc_id}/refresh`, { access_token: 'good-token' });
+      assert.equal(refreshed.status, 200);
+      assert.equal(refreshed.body.company.documents.length, 1, 'replaced in place');
+      assert.match(refreshed.body.company.documents[0].preview, /Acme Books/);
+      if (process.env.FIELD_ENCRYPTION === 'on') {
+        const raw = await require('../../src/config/database').getRawDatabase().collection('ai_context').findOne({ workspace_id: WS, user_id: null });
+        assert.doesNotMatch(JSON.stringify(raw.documents), /Acme Books/, 'the replaced text is stored encrypted');
+      }
+      assert.equal(refreshed.body.company.documents[0].doc_id, doc.doc_id);
+
+      const form = new FormData();
+      form.append('file', new Blob(['plain'], { type: 'text/plain' }), 'plain.txt');
+      const upload = await call(ADMIN, 'POST', '/api/ai-context/company/documents', form);
+      const plain = upload.body.company.documents.find(d => d.name === 'plain.txt');
+      assert.equal(plain.from_drive, false);
+      assert.equal((await call(ADMIN, 'POST', `/api/ai-context/company/documents/${plain.doc_id}/refresh`, { access_token: 'good-token' })).status, 400);
+      assert.equal((await call(ADMIN, 'POST', '/api/ai-context/company/documents/ctxdoc_missing/refresh', { access_token: 'good-token' })).status, 404);
+    } finally {
+      globalThis.fetch = realFetch;
+      await db.collection('ai_context').updateOne({ workspace_id: WS, user_id: null }, { $set: { documents: [] } });
+    }
+  });
+
   test("the extraction prompt gets the company's context and the capturer's own", async () => {
     const forBob = await context.buildContextBlock(WS, 'UB', 'Bob');
     assert.match(forBob, /Ninja Excel teaches Excel/);

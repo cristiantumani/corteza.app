@@ -127,7 +127,12 @@ const routes = {
   'GET /api/integrations/google/meetings': { success: true, meetings: [], truncated: false },
   'GET /api/ai-context': {
     success: true, can_edit_company: true,
-    company: { description: 'Acme vende software de facturación a pymes en Chile y Perú.', glossary: 'MRR: ingreso mensual recurrente', documents: [] },
+    company: { description: 'Acme vende software de facturación a pymes en Chile y Perú.', glossary: 'MRR: ingreso mensual recurrente', documents: [
+      { doc_id: 'ctxdoc_1', name: 'Glosario comercial', chars: 4210, truncated: false, preview: 'MRR: ingreso mensual recurrente…', from_drive: true },
+      { doc_id: 'ctxdoc_2', name: 'organigrama.pdf', chars: 1880, truncated: false, preview: 'Ana Rojas: operaciones…', from_drive: false }
+    ] },
+    // Add from Google Drive: the page loads Google's scripts (blocked here, so the button says it's still loading)
+    drive: { client_id: 'preview.apps.googleusercontent.com', api_key: 'preview-key', app_id: '123', mime_types: ['application/vnd.google-apps.document'] },
     personal: { role: 'Head of Operations', focus: 'Lanzamiento del plan anual', glossary: '' },
     limits: { description: 4000, glossary: 8000, role: 300, focus: 1500, documentName: 120, documentText: 20000, documentsText: 40000, documents: 5 }
   },
