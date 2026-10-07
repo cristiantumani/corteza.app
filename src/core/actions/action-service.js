@@ -104,7 +104,7 @@ async function createActionItem({
  * @param {string} [filters.viewerId] - also include items this user owns, in any space
  *   (an action item from a colleague's private meeting still reaches its owner)
  * @param {string} [filters.ownerId] - only items owned by this user
- * @param {'open'|'done'|'cancelled'|'all'} [filters.status='open']
+ * @param {'open'|'done'|'cancelled'|'resolved'|'all'} [filters.status='open'] - resolved: done or cancelled, most recently finished first
  * @param {'overdue'|'today'|'none'|'week'} [filters.due]
  * @param {number} [filters.decisionId]
  * @param {Date} [filters.now]
@@ -120,6 +120,7 @@ async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, statu
   }
   if (ownerId) query.owner_ids = ownerId;
   if (STATUSES.includes(status)) query.status = status;
+  if (status === 'resolved') query.status = { $in: ['done', 'cancelled'] };
   if (typeof decisionId === 'number') query.decision_id = decisionId;
 
   const today = /^\d{4}-\d{2}-\d{2}$/.test(localToday || '') ? localToday : now.toISOString().slice(0, 10);
@@ -137,6 +138,11 @@ async function listActionItems(workspaceId, { spaceIds, viewerId, ownerId, statu
     // A colleague's meeting assigned it to the viewer and they haven't opened Action items since
     item.new_from_colleague = Boolean(viewerId && Array.isArray(item.unseen_by) && item.unseen_by.includes(viewerId));
     delete item.unseen_by;
+  }
+  // Resolved: most recently finished first
+  if (status === 'resolved') {
+    const finished = item => new Date(item.completed_at || item.updated_at || item.created_at || 0).getTime();
+    return items.sort((a, b) => finished(b) - finished(a));
   }
   return items.sort((a, b) => {
     if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
@@ -168,19 +174,61 @@ async function withoutColleaguesCopies(workspaceId, viewerId, spaceIds, items) {
 }
 
 /** One action item of a workspace, or null */
+/**
+ * New owners for an item: members picked by id, plus owners the item already had that matched
+ * no member (a name only), kept when still listed
+ * @param {Object} item - the stored item
+ * @param {unknown} userIds - member user_ids
+ * @param {unknown} keepNames - names of the item's unmatched owners to keep
+ * @returns {Promise<{ name: string, user_id: string|null, email: string|null }[]>}
+ */
+async function ownersForUpdate(item, userIds, keepNames) {
+  const ids = Array.isArray(userIds) ? userIds.filter(id => typeof id === 'string') : [];
+  const names = Array.isArray(keepNames) ? keepNames.filter(name => typeof name === 'string') : [];
+  const members = await ownersFromUserIds(item.workspace_id, ids);
+  const unmatched = (item.owners || []).filter(owner => !owner.user_id && names.includes(owner.name))
+    .map(owner => ({ name: owner.name, user_id: null, email: null }));
+  return [...members, ...unmatched];
+}
+
 async function getActionItem(workspaceId, itemId) {
   return collection().findOne({ workspace_id: workspaceId, item_id: itemId }, { projection: PUBLIC_PROJECTION });
 }
 
+const MAX_TEXT = 1000;
+const MAX_RATIONALE = 2000;
+
 /**
- * Updates status and/or due date
+ * Updates status, due date, text, why and/or owners
  * @param {string} workspaceId
  * @param {string} itemId
- * @param {Object} changes - { status?, due_date? ('YYYY-MM-DD' or null to clear) }
+ * @param {Object} changes
+ * @param {string} [changes.status]
+ * @param {string|null} [changes.due_date] - 'YYYY-MM-DD', or null to clear
+ * @param {unknown} [changes.text] - what has to be done (not empty)
+ * @param {unknown} [changes.rationale] - why; '' or null clears it
+ * @param {{ name: string, user_id: string|null, email: string|null }[]} [changes.owners] - already resolved (see ownersForUpdate)
  * @returns {Promise<Object|null|{ error: string }>} the updated item, null if not found
  */
 async function updateActionItem(workspaceId, itemId, changes = {}) {
   const set = { updated_at: new Date() };
+  /** @type {Record<string, ''>} */
+  const unset = {};
+  if (changes.text !== undefined) {
+    const text = typeof changes.text === 'string' ? changes.text.trim() : '';
+    if (!text) return { error: 'Write what needs to be done' };
+    set.text = text.slice(0, MAX_TEXT);
+    unset.embedding = ''; // recomputed from the new text when it's next needed
+  }
+  if (changes.rationale !== undefined) {
+    if (changes.rationale !== null && typeof changes.rationale !== 'string') return { error: 'Invalid why' };
+    const why = typeof changes.rationale === 'string' ? changes.rationale.trim() : '';
+    set.rationale = why ? why.slice(0, MAX_RATIONALE) : null;
+  }
+  if (changes.owners !== undefined) {
+    set.owners = changes.owners;
+    set.owner_ids = changes.owners.map(owner => owner.user_id).filter(Boolean);
+  }
   if (changes.status !== undefined) {
     if (!STATUSES.includes(changes.status)) return { error: 'Invalid status' };
     set.status = changes.status;
@@ -192,7 +240,7 @@ async function updateActionItem(workspaceId, itemId, changes = {}) {
   }
   return collection().findOneAndUpdate(
     { workspace_id: workspaceId, item_id: itemId },
-    { $set: set },
+    Object.keys(unset).length ? { $set: set, $unset: unset } : { $set: set },
     { returnDocument: 'after', projection: PUBLIC_PROJECTION }
   );
 }
@@ -202,5 +250,6 @@ module.exports = {
   listActionItems,
   getActionItem,
   updateActionItem,
+  ownersForUpdate,
   STATUSES
 };

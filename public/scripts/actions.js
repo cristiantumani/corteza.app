@@ -1,5 +1,5 @@
 /**
- * Action items page (/actions): list with filters, mark done, set due dates.
+ * Action items page (/actions): Active / Resolved tabs, filters, mark done, edit what, why and owners, set due dates.
  * API: GET /api/action-items, PATCH /api/action-items/:id (src/http/action-items.js)
  *
  * /actions?item=<id> (link in the "when will this be done?" email) shows that
@@ -28,6 +28,7 @@
     due: dueParam
   };
 
+  const itemsById = new Map(); // item_id → the item as last loaded or saved (for the edit form)
   let newIds = null; // items new from colleagues on this visit (null until the first load)
   const threadById = new Map(); // item_id → its thread summary (PATCH answers don't carry it)
 
@@ -52,7 +53,13 @@
       button.classList.toggle('text-on-primary', active);
       button.classList.toggle('text-on-surface-variant', !active);
     });
-    document.getElementById('status-filter').value = state.status;
+    document.querySelectorAll('.status-tab').forEach(button => {
+      const active = button.dataset.status === state.status;
+      button.classList.toggle('bg-primary', active);
+      button.classList.toggle('text-on-primary', active);
+      button.classList.toggle('text-on-surface-variant', !active);
+      button.setAttribute('aria-selected', String(active));
+    });
     document.getElementById('due-filter').value = state.due;
   }
 
@@ -150,8 +157,106 @@
           <select class="status-select bg-surface-container-low border border-outline-variant rounded-lg py-1 px-2 text-xs" data-id="${escapeHtml(item.item_id)}" aria-label="${escapeHtml(t('actions.statusLabel'))}">
             ${['open', 'done', 'cancelled'].map(status => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${escapeHtml(t(`actions.statusOne.${status}`))}</option>`).join('')}
           </select>
+          <button type="button" class="edit-item text-xs font-semibold text-primary hover:underline px-1" data-id="${escapeHtml(item.item_id)}">${escapeHtml(t('common.edit'))}</button>
         </div>
       </div>`;
+  }
+
+  /** The card as a form: what, why and owners (Save / Cancel; Esc cancels, Ctrl/⌘+Enter saves) */
+  async function openEditor(itemId) {
+    const item = itemsById.get(itemId);
+    const element = document.getElementById(`item-${itemId}`);
+    if (!item || !element) return;
+    const unmatched = (item.owners || []).filter(owner => !owner.user_id).map(owner => owner.name);
+    element.innerHTML = `
+      <form class="edit-form w-full flex flex-col gap-3" data-id="${escapeHtml(itemId)}">
+        <label class="flex flex-col gap-1 text-sm font-semibold text-on-surface">${escapeHtml(t('actions.whatPlaceholder'))}
+          <textarea name="text" rows="2" required maxlength="1000" class="inline-edit-input font-normal">${escapeHtml(item.text)}</textarea>
+        </label>
+        <label class="flex flex-col gap-1 text-sm font-semibold text-on-surface">${escapeHtml(t('detail.why'))}
+          <textarea name="rationale" rows="2" maxlength="2000" class="inline-edit-input font-normal">${escapeHtml(item.rationale || '')}</textarea>
+        </label>
+        <div class="flex flex-col gap-1 text-sm font-semibold text-on-surface">${escapeHtml(t('actions.ownersLabel'))}
+          ${unmatched.length ? `<div class="decision-action-chips font-normal">${unmatched.map(name => `<span class="decision-action-chip" title="${escapeHtml(t('actions.notMatched'))}">${escapeHtml(name)} <button type="button" data-keep-name="${escapeHtml(name)}" aria-label="${escapeHtml(t('common.remove'))}">×</button></span>`).join('')}</div>` : ''}
+          <div class="owner-picker font-normal"><p class="text-on-surface-variant">${escapeHtml(t('common.loading'))}</p></div>
+        </div>
+        <p class="edit-error hidden text-sm text-error" role="alert"></p>
+        <div class="flex items-center gap-2">
+          <button type="submit" class="bg-primary text-on-primary rounded-lg py-2 px-4 text-sm font-semibold disabled:opacity-50">${escapeHtml(t('common.save'))}</button>
+          <button type="button" class="cancel-edit border border-outline-variant rounded-lg py-2 px-4 text-sm font-semibold text-on-surface">${escapeHtml(t('common.cancel'))}</button>
+        </div>
+      </form>`;
+    const form = element.querySelector('form');
+    form.querySelector('textarea').focus();
+    let picker = null;
+    if (window.CortezaPeople) {
+      const people = await window.CortezaPeople.load();
+      const matched = (item.owners || []).map(owner => owner.user_id).filter(Boolean);
+      picker = window.CortezaPeople.ownerPicker(form.querySelector('.owner-picker'), people, matched);
+    }
+    const keptNames = new Set(unmatched);
+    form.addEventListener('click', event => {
+      const name = event.target.dataset && event.target.dataset.keepName;
+      if (name) {
+        keptNames.delete(name);
+        event.target.closest('.decision-action-chip').remove();
+      }
+      if (event.target.classList.contains('cancel-edit')) closeEditor(itemId);
+    });
+    form.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeEditor(itemId);
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) form.requestSubmit();
+    });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const changes = {
+        text: form.elements.text.value,
+        rationale: form.elements.rationale.value,
+        ...(picker ? { owner_ids: picker.selected(), keep_owner_names: [...keptNames] } : {})
+      };
+      form.querySelector('[type=submit]').disabled = true;
+      const result = await save(itemId, changes);
+      if (result.error) {
+        const error = form.querySelector('.edit-error');
+        error.textContent = result.error;
+        error.classList.remove('hidden');
+        form.querySelector('[type=submit]').disabled = false;
+      }
+    });
+  }
+
+  function closeEditor(itemId) {
+    const element = document.getElementById(`item-${itemId}`);
+    const item = itemsById.get(itemId);
+    if (element && item) element.outerHTML = itemHtml(item);
+  }
+
+  /** Whether an item with this status belongs to the tab on screen */
+  function belongsHere(item) {
+    if (state.status === 'open') return item.status === 'open';
+    if (state.status === 'resolved') return item.status === 'done' || item.status === 'cancelled';
+    return true;
+  }
+
+  let toastTimer = null;
+  /** "Marked as done: moved to Resolved · Undo" */
+  function showMoved(item, previousStatus) {
+    clearTimeout(toastTimer);
+    const old = document.getElementById('actions-toast');
+    if (old) old.remove();
+    const key = item.status === 'done' ? 'actions.moved.done' : item.status === 'cancelled' ? 'actions.moved.cancelled' : 'actions.moved.reopened';
+    const box = document.createElement('div');
+    box.id = 'actions-toast';
+    box.setAttribute('role', 'status');
+    box.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 rounded-lg bg-inverse-surface text-inverse-on-surface px-4 py-3 text-sm shadow-lg';
+    box.innerHTML = `<span>${escapeHtml(t(key))}</span><button type="button" class="font-semibold text-inverse-primary hover:underline">${escapeHtml(t('common.undo'))}</button>`;
+    box.querySelector('button').addEventListener('click', async () => {
+      box.remove();
+      await save(item.item_id, { status: previousStatus });
+      load();
+    });
+    document.body.appendChild(box);
+    toastTimer = setTimeout(() => box.remove(), 8000);
   }
 
   async function load() {
@@ -170,12 +275,15 @@
       if (!response.ok) throw new Error(data.error || t('actions.loadFailed'));
       const items = data.items;
       for (const item of items) if (item.thread) threadById.set(item.item_id, item.thread);
+      for (const item of items) itemsById.set(item.item_id, item);
       // Remember what was new on arrival: the flags clear once the visit marks them seen
       if (!newIds) newIds = new Set(items.filter(item => item.new_from_colleague).map(item => item.item_id));
       document.getElementById('items-count').textContent = t('outcomeCounts.action_item', { count: items.length });
       container.innerHTML = items.length
         ? items.map(itemHtml).join('')
-        : `<p class="text-on-surface-variant">${escapeHtml(t(state.owner === 'me' ? 'actions.emptyMine' : 'actions.emptyFilters'))} ${escapeHtml(t('actions.emptyHelp'))}</p>`;
+        : state.status === 'resolved'
+          ? `<p class="text-on-surface-variant">${escapeHtml(t('actions.emptyResolved'))}</p>`
+          : `<p class="text-on-surface-variant">${escapeHtml(t(state.owner === 'me' ? 'actions.emptyMine' : 'actions.emptyFilters'))} ${escapeHtml(t('actions.emptyHelp'))}</p>`;
 
       const focused = focusItemId && document.getElementById(`item-${focusItemId}`);
       if (focused) {
@@ -188,21 +296,46 @@
     }
   }
 
-  async function update(itemId, changes) {
-    const response = await fetch(`/api/action-items/${encodeURIComponent(itemId)}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(changes)
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      alert(data.error || t('actions.updateFailed'));
-      return load();
+  /**
+   * Saves changes and redraws the card; an item that no longer belongs to this tab leaves it,
+   * with Undo
+   * @returns {Promise<{ error?: string }>}
+   */
+  async function save(itemId, changes) {
+    const previous = itemsById.get(itemId);
+    let data;
+    try {
+      const response = await fetch(`/api/action-items/${encodeURIComponent(itemId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes)
+      });
+      data = await response.json();
+      if (!response.ok) return { error: data.error || t('actions.updateFailed') };
+    } catch (error) {
+      return { error: t('actions.updateFailed') };
     }
+    itemsById.set(itemId, data.item);
     const element = document.getElementById(`item-${itemId}`);
-    if (element) element.outerHTML = itemHtml(data.item);
+    if (element && belongsHere(data.item)) {
+      element.outerHTML = itemHtml(data.item);
+    } else if (element) {
+      element.remove();
+      const remaining = document.querySelectorAll('#items > [id^="item-"]').length;
+      document.getElementById('items-count').textContent = t('outcomeCounts.action_item', { count: remaining });
+      if (previous && previous.status !== data.item.status) showMoved(data.item, previous.status);
+    }
     if (window.CortezaLoop) window.CortezaLoop.offerAnswer(data.linked_questions);
+    return {};
+  }
+
+  async function update(itemId, changes) {
+    const result = await save(itemId, changes);
+    if (result.error) {
+      alert(result.error);
+      load();
+    }
   }
 
   document.addEventListener('change', event => {
@@ -210,13 +343,16 @@
     if (target.classList.contains('done-toggle')) update(target.dataset.id, { status: target.checked ? 'done' : 'open' });
     if (target.classList.contains('status-select')) update(target.dataset.id, { status: target.value });
     if (target.classList.contains('due-input')) update(target.dataset.id, { due_date: target.value || null });
-    if (target.id === 'status-filter') { state.status = target.value; load(); }
     if (target.id === 'due-filter') { state.due = target.value; load(); }
   });
 
   document.addEventListener('click', event => {
     const button = event.target.closest('.owner-filter');
     if (button) { state.owner = button.dataset.owner; load(); }
+    const tab = event.target.closest('.status-tab');
+    if (tab) { state.status = tab.dataset.status; load(); }
+    const edit = event.target.closest('.edit-item');
+    if (edit) openEditor(edit.dataset.id);
   });
 
   document.addEventListener('DOMContentLoaded', async () => {

@@ -82,7 +82,16 @@ const routes = {
   'GET /api/action-items': req => {
     if (req.query.decision_id) return { success: true, items: actionItems.filter(i => String(i.decision_id) === req.query.decision_id), user_id: 'U1' };
     const status = req.query.status || 'open';
-    return { success: true, items: actionItems.filter(i => status === 'all' || i.status === status), user_id: 'U1' };
+    const matches = i => status === 'all' || i.status === status || (status === 'resolved' && (i.status === 'done' || i.status === 'cancelled'));
+    return { success: true, items: actionItems.filter(matches), user_id: 'U1' };
+  },
+  // Edit or mark done (Action items page): the item with the changes applied
+  'PATCH /api/action-items/a1': req => {
+    const item = actionItems[0];
+    // eslint-disable-next-line no-unused-vars
+    const { owner_ids: ownerIds, keep_owner_names: keepNames, ...changes } = req.body || {};
+    const owners = ownerIds ? people.filter(p => ownerIds.includes(p.user_id)).map(p => ({ user_id: p.user_id, name: p.name })) : item.owners;
+    return { success: true, item: { ...item, ...changes, owners, owner_ids: owners.map(o => o.user_id) }, linked_questions: [] };
   },
   'GET /api/action-items/from-colleagues': { success: true, count: 1, from: [{ name: 'Bruno Díaz', count: 1 }] },
   'GET /api/questions-risks': req => {

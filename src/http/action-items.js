@@ -13,11 +13,11 @@ const { track } = require('../integrations/posthog/client');
  * Action items ("pendientes"): page and API (logic in core/actions).
  *
  *   GET   /actions                          page (filters: mine/everyone, status, due)
- *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|all&due=overdue|today|none|week&decision_id=12
+ *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|resolved|all&due=overdue|today|none|week&decision_id=12
  *   POST  /api/action-items                 { decision_id | space_id, text, owner_user_ids?, due_date? } add one by hand,
  *                                           to a decision or on its own (Log manually → Action item)
  *                                           each item has `thread` ("Part of: <topic> · N questions, M risks") or null
- *   PATCH /api/action-items/:itemId         { status?, due_date? }; marked done: `linked_questions`, the open
+ *   PATCH /api/action-items/:itemId         { status?, due_date?, text?, rationale?, owner_ids?, keep_owner_names? }; marked done: `linked_questions`, the open
  *                                           questions of its thread, to offer marking them answered
  *   GET   /api/action-items/from-colleagues  { count, from: [{ name, count }] } new items colleagues assigned to me
  *   POST  /api/action-items/from-colleagues/seen   I opened Action items: they're no longer new
@@ -67,7 +67,7 @@ router.get('/api/action-items', apiRateLimiter, requireSession, async (req, res)
       spaceIds,
       viewerId: user_id,
       ownerId: req.query.owner === 'me' ? user_id : undefined,
-      status: oneOf(req.query.status, /** @type {const} */ (['open', 'done', 'cancelled', 'all']), 'open'),
+      status: oneOf(req.query.status, /** @type {const} */ (['open', 'done', 'cancelled', 'resolved', 'all']), 'open'),
       due: oneOf(req.query.due, /** @type {const} */ (['overdue', 'today', 'none', 'week'])),
       decisionId: Number.isInteger(decisionId) ? decisionId : undefined,
       today: localTime(new Date(), timezone || 'UTC').date
@@ -188,8 +188,9 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
       || await isAdmin(null, workspace_id, user_id);
     if (!canUpdate) return res.status(403).json({ success: false, error: 'Only the owners or an admin can update this' });
 
-    const { status, due_date } = req.body || {};
-    const updated = await actions.updateActionItem(workspace_id, item.item_id, { status, due_date });
+    const { status, due_date, text, rationale, owner_ids, keep_owner_names } = req.body || {};
+    const owners = owner_ids !== undefined ? await actions.ownersForUpdate(item, owner_ids, keep_owner_names) : undefined;
+    const updated = await actions.updateActionItem(workspace_id, item.item_id, { status, due_date, text, rationale, owners });
     if (updated?.error) return res.status(400).json({ success: false, error: updated.error });
     const linkedQuestions = status === 'done' && item.status !== 'done' && item.topic_id
       ? await openInThread(workspace_id, item.topic_id, 'open_question', { spaceIds: await getUserAccessibleSpaces(null, workspace_id, user_id) })
@@ -197,6 +198,9 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
     track('action_item_updated', {
       status_changed_to: status && status !== item.status ? status : null,
       due_date_changed: due_date !== undefined && due_date !== item.due_date,
+      text_changed: text !== undefined && text !== item.text,
+      rationale_changed: rationale !== undefined && rationale !== item.rationale,
+      owners_changed: owners !== undefined,
       is_owner: isOwner,
       overdue: !!item.due_date && item.due_date < new Date().toISOString().slice(0, 10)
     });

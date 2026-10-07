@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Action items: Active and Resolved tabs, and editing
+- The status filter is now two tabs: Active (open) and Resolved (done and cancelled, most recently finished first). Marking an item done or cancelled moves it to Resolved, with Undo; reopening one moves it back
+- Edit on each item: what has to be done, why, and owners (members from the list; owners that matched no member can be removed). `PATCH /api/action-items/:id` takes `text`, `rationale`, `owner_ids` and `keep_owner_names`
+
 ### Added - Cross-meeting links: a new outcome closes the old ones on the same subject
 - When a meeting is captured, Corteza finds open questions, risks and action items from earlier meetings about the same subject (embeddings, then Claude). The new outcomes join that thread, and a decision that settles them shows "This may close" on the review card and in the detail modal, checked by default
 - Confirm closes the checked ones (question answered, risk mitigated, action item done, with a "Resolved by" note); Undo reopens them. Nothing closes by itself
