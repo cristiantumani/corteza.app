@@ -24,7 +24,7 @@ The first half describes the system **as it is today** (after Phase 0). The seco
 |---|---|---|
 | Dashboard pages (`/dashboard`, `/settings`, `/ai-search`; `/select-space` redirects to Home) | `src/routes/dashboard.js`, `src/views/*`, `public/scripts/*` | session (`requireAuthBrowser`) |
 | Dashboard JSON API (`/api/*`) | `src/routes/api.js`, `spaces-api.js`, `invites-api.js`, `ai-extract-web.js`, `settings-api.js`, `semantic-search-api.js` | session + `requireWorkspaceAccess` |
-| Context for the AI (`/api/ai-context*`) | `src/http/ai-context.js` → `core/context/context-service.js` | session; company context: admins only (`isAdmin`) |
+| Context for the AI (`/api/ai-context*`) | `src/http/ai-context.js` → `core/context/context-service.js`; documents from Google Drive: `integrations/google/drive-files.js` (`readDriveFile`, the admin's short-lived `drive.file` token from the Google Picker, never stored) | session; company context: admins only (`isAdmin`). The Settings page alone opens the CSP to Google's Picker (`allowDrivePicker` in `middleware/auth.js`) when `GOOGLE_PICKER_API_KEY` and `GOOGLE_CLOUD_PROJECT_NUMBER` are set |
 | First-run onboarding (`/api/onboarding`, `/api/onboarding/seen`) | `src/http/onboarding.js` → `core/onboarding/onboarding-service.js`; UI `partials/onboarding.html` + `public/scripts/onboarding.js` on Home | session |
 | Chrome extension | `browser-extension/` calls `/auth/me`, `/api/spaces?writable=true`, `/api/memory/create` | session cookie (`credentials: 'include'`) |
 | Slack (`/slack/events`) | `src/routes/slack.js` (`/decision`, `/decisions`; `/login` only links to the web sign-in), `src/routes/ai-decisions.js` (file uploads → AI suggestions) | Slack signing secret |
@@ -171,7 +171,7 @@ Linking an older workspace (Slack or magic link) to a Google domain: `scripts/mi
 | `api_keys` | No longer used: API keys and `/api/v1/*` were removed (Sept 2026). Old rows are ignored |
 | `workspaces` | One row per workspace; unique `google_domain` maps a Google Workspace domain to it |
 | `users` | Google accounts (`google_sub`, `email`, `last_workspace_id`) |
-| `ai_context` | Context the AI reads with every meeting (`core/context`), unique on `workspace_id` + `user_id`. Company row (`user_id: null`): `description`, `glossary`, `documents` (`doc_id`, `name`, extracted `text`, `chars`), edited by admins, used by everyone's captures. Personal rows: `role`, `focus`, `glossary`, used only by that person's captures. Capped (4k description, 8k glossary, 5 documents / 40k characters) so it stays a small part of the prompt |
+| `ai_context` | Context the AI reads with every meeting (`core/context`), unique on `workspace_id` + `user_id`. Company row (`user_id: null`): `description`, `glossary`, `documents` (`doc_id`, `name`, extracted `text`, `chars`, and `source: { type: 'google_drive', file_id, mime_type, modified_time }` when picked from Drive), edited by admins, used by everyone's captures. Personal rows: `role`, `focus`, `glossary`, used only by that person's captures. Capped (4k description, 8k glossary, 5 documents / 40k characters) so it stays a small part of the prompt |
 | `beta_access` | Private beta approved list: one row per `email` or Google `domain` (each unique), with `name`, `company`, `approved_at`, `approved_via` ('email_link' / 'script'), `welcome_sent_at` (`core/beta`) |
 | `sessions` | Express sessions (connect-mongo, 7 days) |
 | `slack_installations` | Slack OAuth installs (Bolt installation store) |

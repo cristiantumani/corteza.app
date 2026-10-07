@@ -581,8 +581,9 @@
       "glossaryHelp": "Un término por línea: siglas, productos, clientes, personas y sus roles.",
       "glossaryPlaceholder": "CAC: costo de adquisición de clientes\nEERR: estado de resultados\nJosé Tomás Acuña: finanzas",
       "documents": "Documentos de referencia",
-      "documentsHelp": "TXT, MD, CSV, PDF o DOCX: un diccionario, organigrama, lista de productos… Solo se guarda el texto.",
+      "documentsHelp": "Un Google Doc, Sheet o Slides, o un archivo TXT, MD, CSV, PDF o DOCX: un diccionario, un organigrama, una lista de productos… Solo se guarda el texto.",
       "addDocument": "Agregar un documento",
+      "addFromDrive": "Agregar desde Google Drive",
       "saveCompany": "Guardar contexto de la empresa",
       "you": "Sobre ti",
       "youNote": "Solo se usa en tus reuniones. Tus colegas no lo ven.",
@@ -888,7 +889,26 @@
     "savedPersonal": "Guardado. Se aplica a tus próximas reuniones.",
     "reading": "Leyendo {name}…",
     "confirmRemove": "¿Quitar este documento del contexto de la empresa?",
-    "removed": "Documento quitado."
+    "removed": "Documento quitado.",
+    "fromDrive": "Desde Google Drive",
+    "chars": "{chars} caracteres",
+    "shortened": "(recortado)",
+    "added": "{name} agregado.",
+    "update": "Actualizar",
+    "updateFromDrive": "Actualizar desde Drive",
+    "drive": {
+      "pickerTitle": "Elige un documento para Corteza",
+      "reading": "Leyendo el documento desde Google Drive…",
+      "updated": "Actualizado desde Google Drive.",
+      "loading": "Google Drive todavía está cargando. Intenta de nuevo en unos segundos.",
+      "denied": "Google no dio acceso. Intenta de nuevo y permite que Corteza vea el archivo que elijas.",
+      "expired": "Tu acceso a Google expiró. Intenta de nuevo.",
+      "cantOpen": "Corteza no puede abrir este archivo. Elígelo de nuevo desde Google Drive.",
+      "down": "Google Drive no respondió. Intenta de nuevo en un minuto.",
+      "tooLarge": "Este archivo es muy grande. Los archivos pueden pesar hasta 5 MB.",
+      "unsupported": "Elige un Google Doc, Sheet o Slides, o un archivo PDF, DOCX, TXT, MD o CSV.",
+      "blocked": "No se pudo cargar Google Drive. Revisa tu conexión o tu bloqueador de anuncios y recarga la página."
+    }
   },
   "login": {
     "pageTitle": "Iniciar sesión · Corteza",

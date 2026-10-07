@@ -72,11 +72,12 @@ async function saveCompanyContext(workspaceId, { description, glossary }, editor
 /**
  * Adds a reference document's text to the company context
  * @param {string} workspaceId
- * @param {{ name: string, text: string }} document
+ * @param {{ name: string, text: string, source?: Object }} document - source: where it came from
+ *   ({ type: 'google_drive', file_id, mime_type, modified_time }); none for an upload
  * @param {{ user_id: string, name: string }} editor
  * @returns {Promise<{ document?: Object, error?: string }>}
  */
-async function addCompanyDocument(workspaceId, { name, text }, editor) {
+async function addCompanyDocument(workspaceId, { name, text, source }, editor) {
   const body = clean(text, LIMITS.documentText);
   if (!body) return { error: 'The document has no readable text' };
   const current = await getCompanyContext(workspaceId);
@@ -94,6 +95,7 @@ async function addCompanyDocument(workspaceId, { name, text }, editor) {
     uploaded_by: { user_id: editor.user_id, name: editor.name || null },
     uploaded_at: new Date()
   };
+  if (source) document.source = source;
   await collection().updateOne(
     { workspace_id: workspaceId, user_id: null },
     {
@@ -102,6 +104,42 @@ async function addCompanyDocument(workspaceId, { name, text }, editor) {
       $setOnInsert: { description: '', glossary: '', created_at: new Date() }
     },
     { upsert: true }
+  );
+  return { document };
+}
+
+/**
+ * Replaces a document's text in place (Update from Drive), with the same limits as adding one
+ * @param {string} workspaceId
+ * @param {string} docId
+ * @param {{ name: string, text: string, source?: Object }} document
+ * @param {{ user_id: string, name: string }} editor
+ * @returns {Promise<{ document?: Object, error?: string, notFound?: boolean }>}
+ */
+async function replaceCompanyDocument(workspaceId, docId, { name, text, source }, editor) {
+  const body = clean(text, LIMITS.documentText);
+  if (!body) return { error: 'The document has no readable text' };
+  const current = await getCompanyContext(workspaceId);
+  const existing = current.documents.find(doc => doc.doc_id === docId);
+  if (!existing) return { notFound: true };
+  const others = current.documents.reduce((sum, doc) => sum + (doc.doc_id === docId ? 0 : (doc.text || '').length), 0);
+  if (others + body.length > LIMITS.documentsText) {
+    return { error: `Documents can add up to ${LIMITS.documentsText.toLocaleString('en-US')} characters. Remove one or use a shorter file.` };
+  }
+  const document = {
+    ...existing,
+    name: clean(name, LIMITS.documentName) || existing.name,
+    text: body,
+    chars: body.length,
+    truncated: typeof text === 'string' && text.trim().length > LIMITS.documentText,
+    uploaded_by: { user_id: editor.user_id, name: editor.name || null },
+    uploaded_at: new Date()
+  };
+  if (source) document.source = source;
+  const documents = current.documents.map(doc => (doc.doc_id === docId ? document : doc));
+  await collection().updateOne(
+    { workspace_id: workspaceId, user_id: null },
+    { $set: { documents, updated_at: new Date(), updated_by: document.uploaded_by } }
   );
   return { document };
 }
@@ -207,6 +245,7 @@ module.exports = {
   getCompanyContext,
   saveCompanyContext,
   addCompanyDocument,
+  replaceCompanyDocument,
   removeCompanyDocument,
   getPersonalContext,
   savePersonalContext,

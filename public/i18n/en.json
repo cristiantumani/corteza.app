@@ -581,8 +581,9 @@
       "glossaryHelp": "One term per line: acronyms, products, customers, people and their roles.",
       "glossaryPlaceholder": "CAC: customer acquisition cost\nP&L: profit and loss statement\nJosé Tomás Acuña: finance",
       "documents": "Reference documents",
-      "documentsHelp": "TXT, MD, CSV, PDF or DOCX: a dictionary, org chart, product list… Only the text is kept.",
+      "documentsHelp": "A Google Doc, Sheet or Slides, or a TXT, MD, CSV, PDF or DOCX file: a dictionary, org chart, product list… Only the text is kept.",
       "addDocument": "Add a document",
+      "addFromDrive": "Add from Google Drive",
       "saveCompany": "Save company context",
       "you": "About you",
       "youNote": "Only used for your own meetings. Colleagues don’t see it.",
@@ -888,7 +889,26 @@
     "savedPersonal": "Saved. It applies to your next meetings.",
     "reading": "Reading {name}…",
     "confirmRemove": "Remove this document from the company context?",
-    "removed": "Document removed."
+    "removed": "Document removed.",
+    "fromDrive": "From Google Drive",
+    "chars": "{chars} characters",
+    "shortened": "(shortened)",
+    "added": "{name} added.",
+    "update": "Update",
+    "updateFromDrive": "Update from Drive",
+    "drive": {
+      "pickerTitle": "Pick a document for Corteza",
+      "reading": "Reading the document from Google Drive…",
+      "updated": "Updated from Google Drive.",
+      "loading": "Google Drive is still loading. Try again in a few seconds.",
+      "denied": "Google didn’t give access. Try again and allow Corteza to see the file you pick.",
+      "expired": "Your Google access expired. Try again.",
+      "cantOpen": "Corteza can’t open this file. Pick it again from Google Drive.",
+      "down": "Google Drive didn’t answer. Try again in a minute.",
+      "tooLarge": "This file is too large. Files can be up to 5 MB.",
+      "unsupported": "Pick a Google Doc, Sheet or Slides, or a PDF, DOCX, TXT, MD or CSV file.",
+      "blocked": "Couldn’t load Google Drive. Check your connection or ad blocker, then reload the page."
+    }
   },
   "login": {
     "pageTitle": "Sign in · Corteza",
