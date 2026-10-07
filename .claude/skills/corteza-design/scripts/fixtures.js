@@ -88,7 +88,8 @@ const routes = {
   // Edit or mark done (Action items page): the item with the changes applied
   'PATCH /api/action-items/a1': req => {
     const item = actionItems[0];
-    const { owner_ids: ownerIds, keep_owner_names: keep, ...changes } = req.body || {};
+    // eslint-disable-next-line no-unused-vars
+    const { owner_ids: ownerIds, keep_owner_names: keepNames, ...changes } = req.body || {};
     const owners = ownerIds ? people.filter(p => ownerIds.includes(p.user_id)).map(p => ({ user_id: p.user_id, name: p.name })) : item.owners;
     return { success: true, item: { ...item, ...changes, owners, owner_ids: owners.map(o => o.user_id) }, linked_questions: [] };
   },
