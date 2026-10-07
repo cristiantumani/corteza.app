@@ -17,7 +17,7 @@
   let bar = Array.from(document.body.children).find(el => el.tagName === 'HEADER' && el.classList.contains('fixed'));
   if (!bar) {
     bar = document.createElement('header');
-    bar.className = 'cz-mobile-header fixed'; // "fixed": dashboard-new.css hides headers without it
+    bar.className = 'cz-mobile-header fixed';
     const brand = document.createElement('a');
     brand.href = '/dashboard';
     brand.className = 'cz-mobile-brand';
