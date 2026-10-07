@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Icons that never showed, and legacy CSS removed
+- `dashboard-new.css` hid every `<nav>` and shrank Material icons to size 0 unless they carried an inline style; removed. Icons that were invisible now show: Search's send arrow (it was an empty black button), close, info and source icons, the Connect Google Meet link icon
+- `dashboard-minimal.css` (unused) removed
+
 ### Changed - Home: close the loop
 - The morning partner opens Home with a line about your day, in the same voice as your morning summary (Classic: the plain counts). One highlighted word in Instrument Serif, as on the website
 - Three boxes, each opening its page: your action items (orange when something is overdue), questions to answer, open risks; "✓ All clear" in green at zero

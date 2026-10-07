@@ -836,7 +836,7 @@ Known screenshot artifacts (not bugs): the fixed sidebar's background stops at t
 
 Already known; report them again only with a concrete proposal or if something got worse:
 
-- **Three generations of CSS.** Home, Search and the demo still load `public/styles/dashboard.css` (2,200+ lines) and `dashboard-minimal.css`; newer pages use only Tailwind. Modal styles are copied per page.
+- **Two generations of CSS.** Home, Search and the demo still load `public/styles/dashboard.css` (2,200+ lines); newer pages use only Tailwind. Modal styles are copied per page. (`dashboard-new.css`, which hid every `<nav>` and shrank icons without an inline style, was removed in October 2026.)
 - **Inconsistent page headers:** Home has a search top bar, Action items and Settings a title bar, Search none.
 - **Search** uses a purple gradient hero and "Synthesized Intelligence" / "Evidence Sources" wording; relevance shows "0%".
 - **Settings** still shows "Data Privacy & Export / Export All Decisions" (export was removed) and "Enterprise Edition" in the footer.

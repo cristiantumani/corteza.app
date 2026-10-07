@@ -61,7 +61,7 @@ body {
   color: #e85d3a;
 }
 
-/* Home's boxes: icons keep their font and size (dashboard-new.css shrinks icons without an inline font-variation-settings) */
+/* Home's boxes: icons keep the icon font and size (dashboard.css sets Inter on spans) */
 .home-tile .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
