@@ -411,28 +411,29 @@ Add lines at the end of a list (a line's id is its position). Review them with `
 
 Use the Tailwind tokens in `tailwind.config.js`. Never introduce new hex values unless explicitly required.
 
+**The palette is the brand's, shared with the website (corteza.app), the logo and LinkedIn:** Ink, Paper, Cloud, Hairline and one Signal orange accent.
+
 Main tokens:
 
-| Role | Token |
-|---|---|
-| Page background | `bg-background` |
-| Card | `bg-surface-container-lowest` + `border-outline-variant` |
-| Subtle fill | `bg-surface-container-low` / `bg-surface-container` |
-| Text | `text-on-surface` |
-| Secondary text | `text-on-surface-variant` |
-| Primary action | `primary` |
-| Primary text | `on-primary` |
-| Primary tint | `bg-primary/10`, `primary-fixed` |
-| Error | `error`, `error-container` |
-| Success | `tertiary` |
+| Role | Token | Value |
+|---|---|---|
+| Page background, cards | `bg-background`, `bg-surface-container-lowest` | white |
+| Card border, dividers | `border-outline-variant` | Hairline #E5E7EB |
+| Subtle fill (sidebar, muted blocks) | `bg-surface-container-low` / `bg-surface-container` | Cloud #F9FAFB / #F3F4F6 |
+| Dark bands (sign-in, toasts) | `bg-inverse-surface` / `bg-ink` | Ink #0D0D0D |
+| Warm accent surface | `bg-paper` | Paper #F6F4EF |
+| Text | `text-on-surface` | #171717 |
+| Secondary text | `text-on-surface-variant` | #6B6B6B (4.5:1 on every fill) |
+| Primary button | `bg-primary` + `text-on-primary`, hover `bg-on-primary-fixed-variant` | black, Graphite hover |
+| The one accent | `signal` (bright: borders, dots, big type), `text-signal-ink` (small text), `bg-signal-wash` (chips) | #E85D3A / #C2410C / #FDECE8 |
+| Finished, done, "all clear" | `success` (dots, icons), `text-success-ink` (text), `bg-success-wash` | #2EB67D / #1F7A55 / #E6F6EE |
+| Error, overdue | `error`, `error-container` | #C62828 / #FEE4E2 |
 
-Warning and success-tint chips currently use hardcoded hex values.
+**Orange is rare:** four or five times per screen at most (the active menu item, a counter, the one thing that needs you, a "Needs review" chip), never as a background wash or a gradient. Green only for things that are genuinely finished. No gradients anywhere.
 
-When touching them, add proper tokens rather than copying the hex values.
+**Contrast:** the bright Signal orange (3.5:1) and green (2.6:1) are not readable as small text on white. For text use `signal-ink` and `success-ink`; keep the bright ones for borders, dots, icons and large type.
 
-`secondary` purple is for rare accents only.
-
----
+Neutral chips (types, "Part of") use `bg-surface-container text-on-surface`. Links are `text-on-surface` (Ink), bold or underlined where they need to stand out.
 
 ## Typography
 
@@ -441,6 +442,8 @@ Inter:
 - 500
 - 600
 - 700
+
+Instrument Serif italic, only for the one highlighted word in a page's main headline (in `text-signal`), as on the website.
 
 Page title:
 
@@ -837,4 +840,3 @@ Already known; report them again only with a concrete proposal or if something g
 - **Inconsistent page headers:** Home has a search top bar, Action items and Settings a title bar, Search none.
 - **Search** uses a purple gradient hero and "Synthesized Intelligence" / "Evidence Sources" wording; relevance shows "0%".
 - **Settings** still shows "Data Privacy & Export / Export All Decisions" (export was removed) and "Enterprise Edition" in the footer.
-- Hardcoded hex colors in scripts (`#eef1fb`, `#e3e7fb`, `#fff4e5`, `#e6f4ea`…).

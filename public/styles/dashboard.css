@@ -1872,7 +1872,7 @@
 
 .space-manage-btn {
   padding: 8px 16px;
-  background: #667eea;
+  background: #171717;
   color: white;
   border: none;
   border-radius: 8px;
@@ -1913,12 +1913,12 @@
 }
 
 .space-tab.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #171717;
+  border-bottom-color: #171717;
 }
 
 .space-tab:hover {
-  color: #667eea;
+  color: #171717;
 }
 
 .space-tab-content {
@@ -1990,7 +1990,7 @@
 }
 
 .badge-default {
-  background: #667eea;
+  background: #171717;
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
@@ -2135,7 +2135,7 @@
     }
 
     .inline-edit-prompt {
-      color: #3953bd;
+      color: #171717;
       font-weight: 500;
       font-size: 14px;
     }
@@ -2146,7 +2146,7 @@
       font-weight: 400;
       color: #1a1a1a;
       background: #fff;
-      border: 1px solid #3953bd;
+      border: 1px solid #171717;
       border-radius: 6px;
       padding: 8px 10px;
       box-shadow: 0 0 0 3px rgba(57, 83, 189, 0.15);
@@ -2161,7 +2161,7 @@
     }
 
     .inline-edit-hint.inline-edit-error {
-      color: #ba1a1a;
+      color: #C62828;
     }
 
     /* Action items inside a decision (public/scripts/decision-actions.js) */
@@ -2233,12 +2233,12 @@
     }
 
     .detail-relevance-buttons button.is-selected {
-      background: #3953bd;
-      border-color: #3953bd;
+      background: #171717;
+      border-color: #171717;
       color: #fff;
     }
 
     .detail-relevance-followup { margin-top: 10px; color: #475569; }
-    .detail-relevance-followup button { margin-left: 6px; color: #3953bd; }
+    .detail-relevance-followup button { margin-left: 6px; color: #171717; }
 
     .evidence-card-unrelated { opacity: 0.55; }

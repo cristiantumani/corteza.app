@@ -76,7 +76,7 @@
             <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
               ${escapeHtml(currentUser.workspace_name)} • ${escapeHtml(currentUser.user_name)}
             </span>
-            <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
+            <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #171717; text-decoration: none;">
               Logout →
             </a>
           `;
@@ -1554,7 +1554,7 @@
             if (response.ok && data.admins && data.admins.length > 0) {
               const adminEmails = data.admins
                 .filter(a => a.email)
-                .map(a => `<a href="mailto:${escapeHtml(encodeURIComponent(a.email))}" style="color: #667eea; text-decoration: none; font-weight: 600;">${escapeHtml(a.email)}</a>`)
+                .map(a => `<a href="mailto:${escapeHtml(encodeURIComponent(a.email))}" style="color: #171717; text-decoration: none; font-weight: 600;">${escapeHtml(a.email)}</a>`)
                 .join(', ');
 
               if (adminEmails) {
@@ -1563,7 +1563,7 @@
                     <p style="color: #616061; font-size: 14px; margin: 0 0 8px 0;">
                       <strong>👤 Workspace Administrator${data.admins.length > 1 ? 's' : ''}:</strong>
                     </p>
-                    <p style="color: #667eea; font-size: 14px; margin: 0;">
+                    <p style="color: #171717; font-size: 14px; margin: 0;">
                       ${adminEmails}
                     </p>
                   </div>
@@ -1637,14 +1637,14 @@
                       <button
                         type="submit"
                         id="quick-create-btn"
-                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+                        style="width: 100%; padding: 14px; background: #0D0D0D; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
                       >
                         ➕ Create Space
                       </button>
                     </form>
 
                     <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #E1E4E8; text-align: center;">
-                      <a href="/settings" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+                      <a href="/settings" style="color: #171717; text-decoration: none; font-size: 14px; font-weight: 600;">
                         Advanced Settings →
                       </a>
                     </div>
@@ -1796,7 +1796,7 @@
                     <button
                       type="submit"
                       id="send-invites-btn"
-                      style="flex: 1; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+                      style="flex: 1; padding: 14px; background: #0D0D0D; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
                     >
                       📧 Send Invites
                     </button>
@@ -1876,7 +1876,7 @@
 
         resultsDiv.style.display = 'block';
         resultsDiv.innerHTML = `
-          <div style="background: ${successCount > 0 ? '#F0F7FF' : '#FFF5F5'}; border: 1px solid ${successCount > 0 ? '#667eea' : '#E53E3E'}; border-radius: 8px; padding: 16px;">
+          <div style="background: ${successCount > 0 ? '#F0F7FF' : '#FFF5F5'}; border: 1px solid ${successCount > 0 ? '#171717' : '#E53E3E'}; border-radius: 8px; padding: 16px;">
             <p style="margin: 0 0 8px 0; font-weight: 600; color: #1d1c1d;">
               ${successCount > 0 ? '✅' : '❌'} ${successCount} invite(s) sent successfully
               ${failCount > 0 ? `, ${failCount} failed` : ''}
@@ -1890,7 +1890,7 @@
 
           <button
             onclick="window.location.reload()"
-            style="width: 100%; margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
+            style="width: 100%; margin-top: 16px; padding: 14px; background: #0D0D0D; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;"
           >
             Go to Dashboard
           </button>
@@ -2949,8 +2949,8 @@
       const uploadOption = document.getElementById('upload-option');
 
       if (tab === 'paste') {
-        pasteTab.style.borderBottom = '3px solid #667eea';
-        pasteTab.style.color = '#667eea';
+        pasteTab.style.borderBottom = '3px solid #171717';
+        pasteTab.style.color = '#171717';
         uploadTab.style.borderBottom = '3px solid transparent';
         uploadTab.style.color = '#616061';
         pasteOption.style.display = 'block';
@@ -2958,8 +2958,8 @@
       } else {
         pasteTab.style.borderBottom = '3px solid transparent';
         pasteTab.style.color = '#616061';
-        uploadTab.style.borderBottom = '3px solid #667eea';
-        uploadTab.style.color = '#667eea';
+        uploadTab.style.borderBottom = '3px solid #171717';
+        uploadTab.style.color = '#171717';
         pasteOption.style.display = 'none';
         uploadOption.style.display = 'block';
       }
@@ -3080,7 +3080,7 @@
                 <span style="background: ${confidenceColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
                   ${confidencePercent}% confidence
                 </span>
-                <span style="background: #F0F7FF; color: #667eea; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                <span style="background: #F0F7FF; color: #171717; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
                   ${escapeHtml(suggestion.decision_type)}
                 </span>
               </div>
@@ -3093,7 +3093,7 @@
             <button onclick="approveSuggestion(${jsArg(suggestion.suggestion_id)})" class="suggestion-approve-btn" style="flex: 1; padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
               ✅ Approve
             </button>
-            <button onclick="editSuggestion(${jsArg(suggestion.suggestion_id)})" style="flex: 1; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+            <button onclick="editSuggestion(${jsArg(suggestion.suggestion_id)})" style="flex: 1; padding: 8px 16px; background: #171717; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
               ✏️ Edit
             </button>
             <button onclick="rejectSuggestion(${jsArg(suggestion.suggestion_id)})" style="padding: 8px 16px; background: #E1E4E8; color: #616061; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
@@ -3308,7 +3308,7 @@
 
       dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#667EEA';
+        dropZone.style.borderColor = '#171717';
         dropZone.style.background = '#E7F3FF';
       });
 

@@ -23,8 +23,8 @@
   };
   const OUTCOME_LABELS = { decision: t('types.short.decision'), open_question: t('types.short.open_question'), risk: t('types.short.risk') };
   const LABELS = {
-    open_question: { name: t('types.open_question'), resolve: t('detail.markAnswered'), resolved: t('detail.answered'), resolvedBy: 'detail.answeredBy', note: t('loop.answerPlaceholder'), icon: 'contact_support', color: 'bg-[#e3e7fb] text-[#3953bd]' },
-    risk: { name: t('types.risk'), resolve: t('detail.markMitigated'), resolved: t('detail.mitigated'), resolvedBy: 'detail.mitigatedBy', note: t('questions.mitigationPlaceholder'), icon: 'warning', color: 'bg-[#fff4e5] text-[#8a5300]' }
+    open_question: { name: t('types.open_question'), resolve: t('detail.markAnswered'), resolved: t('detail.answered'), resolvedBy: 'detail.answeredBy', note: t('loop.answerPlaceholder'), icon: 'contact_support', color: 'bg-surface-container text-on-surface' },
+    risk: { name: t('types.risk'), resolve: t('detail.markMitigated'), resolved: t('detail.mitigated'), resolvedBy: 'detail.mitigatedBy', note: t('questions.mitigationPlaceholder'), icon: 'warning', color: 'bg-signal-wash text-signal-ink' }
   };
 
   function escapeHtml(value) {
@@ -90,7 +90,7 @@
     ].filter(Boolean).join(' · ');
     return `
       <li class="flex items-start gap-2">
-        <span class="material-symbols-outlined text-base ${done ? 'text-[#1e6b34]' : 'text-on-surface-variant'}" aria-hidden="true">${done ? 'task_alt' : 'radio_button_unchecked'}</span>
+        <span class="material-symbols-outlined text-base ${done ? 'text-success-ink' : 'text-on-surface-variant'}" aria-hidden="true">${done ? 'task_alt' : 'radio_button_unchecked'}</span>
         <span class="text-sm">
           <span class="text-xs font-semibold text-on-surface-variant">${escapeHtml(t('questions.nextStep'))}</span>
           <a href="/actions?item=${encodeURIComponent(action.item_id)}" class="text-on-surface hover:underline ${done || cancelled ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(action.text)}</a>
@@ -146,7 +146,7 @@
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${label.color}">
             <span class="material-symbols-outlined text-sm" aria-hidden="true">${label.icon}</span>${escapeHtml(label.name)}
           </span>
-          ${resolved ? `<span class="px-2 py-0.5 rounded-full bg-[#e6f4ea] text-[#1e6b34] text-xs font-semibold">${escapeHtml(by ? t(label.resolvedBy, { name: by }) : label.resolved)}${item.resolved_at ? ` · ${escapeHtml(formatDate(item.resolved_at))}` : ''}</span>` : ''}
+          ${resolved ? `<span class="px-2 py-0.5 rounded-full bg-success-wash text-success-ink text-xs font-semibold">${escapeHtml(by ? t(label.resolvedBy, { name: by }) : label.resolved)}${item.resolved_at ? ` · ${escapeHtml(formatDate(item.resolved_at))}` : ''}</span>` : ''}
           ${item.capture === 'ai' && !item.review_status ? `<span class="text-xs text-on-surface-variant">${escapeHtml(t('questions.notReviewed'))}</span>` : ''}
         </div>
         <p class="text-on-surface font-medium ${resolved ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>

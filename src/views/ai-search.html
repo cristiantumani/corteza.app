@@ -9,10 +9,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=9">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/dashboard.css?v=5">
+    <link rel="stylesheet" href="/styles/dashboard.css?v=6">
     <link rel="stylesheet" href="/styles/dashboard-new.css">
 
     <style>
@@ -23,10 +23,10 @@
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fcf8fb;
+            background-color: #FFFFFF;
         }
         .intelligence-gradient {
-            background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+            background: #0D0D0D;
         }
         .evidence-card {
             background: rgba(255, 255, 255, 0.95);
@@ -42,7 +42,7 @@
             bottom: 0;
             left: 256px;
             right: 0;
-            background: linear-gradient(to top, #fcf8fb 90%, transparent);
+            background: linear-gradient(to top, #FFFFFF 90%, transparent);
             padding: 20px 48px 32px;
             z-index: 30;
         }
@@ -193,7 +193,7 @@
                 <button
                     onclick="performSearchFromInput()"
                     id="search-button" aria-label="{{t:search.send}}"
-                    class="bg-[#667EEA] hover:bg-[#546cd7] text-on-primary font-bold p-3 rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-bold p-3 rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span class="material-symbols-outlined">send</span>
                 </button>
             </div>
@@ -216,9 +216,9 @@
 <script src="/scripts/people.js?v=3"></script>
 <script src="/scripts/decision-actions.js?v=3"></script>
 <script src="/scripts/inline-edit.js?v=5"></script>
-<script src="/scripts/may-close.js?v=1"></script>
-<script src="/scripts/dashboard.js?v=34"></script>
-<script src="/scripts/ai-search.js?v=11"></script>
+<script src="/scripts/may-close.js?v=2"></script>
+<script src="/scripts/dashboard.js?v=35"></script>
+<script src="/scripts/ai-search.js?v=12"></script>
 
 <!-- Initialize Space Context Indicator -->
 <script>

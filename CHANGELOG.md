@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - The website's palette in the app and emails
+- Ink, Paper, Cloud and Hairline surfaces, black primary buttons, one Signal orange accent (active menu item, counters, what needs you, "Needs review") and green only for finished things, as on corteza.app. Tokens in `tailwind.config.js` (`signal`, `signal-ink`, `signal-wash`, `success*`, `paper`, `ink`, `graphite`)
+- The purple gradients (sign-in, invite, Search answer, capture banner) are gone; hardcoded colors in scripts became tokens
+- Text tones keep 4.5:1 contrast: bright orange and green are for borders, dots and big type; small text uses their darker versions
+- Morning summary and other emails use the same palette
+
 ### Changed - Action items: Active and Resolved tabs, and editing
 - The status filter is now two tabs: Active (open) and Resolved (done and cancelled, most recently finished first). Marking an item done or cancelled moves it to Resolved, with Undo; reopening one moves it back
 - Edit on each item: what has to be done, why, and owners (members from the list; owners that matched no member can be removed). `PATCH /api/action-items/:id` takes `text`, `rationale`, `owner_ids` and `keep_owner_names`

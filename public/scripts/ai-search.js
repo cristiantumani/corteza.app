@@ -338,7 +338,7 @@
     const date = new Date(decision.timestamp).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     const typeLabel = TYPE_LABELS[decision.type] || decision.type;
     const status = needsReview(decision)
-      ? `<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">${escapeHtml(t('review.needsReview'))}</span>`
+      ? `<span class="px-2 py-0.5 rounded-full bg-signal-wash text-signal-ink text-xs font-semibold">${escapeHtml(t('review.needsReview'))}</span>`
       : '';
     const source = decision.source_details;
     const sourceLine = source && source.title

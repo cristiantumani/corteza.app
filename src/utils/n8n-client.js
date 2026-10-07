@@ -492,10 +492,10 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
     const overdue = summary.today && item.due_date < summary.today;
     const when = overdue ? t('email.digest.overdueWas', { date: shortDate(item.due_date) }) : t('due.today');
     return row({
-      box: overdue ? '#ba1a1a' : '#3953bd',
+      box: overdue ? '#C62828' : '#171717',
       title: escapeHtml(clip(String(item.text), 160)) + (item.next_step_on
-        ? `<div style="font-size: 13px; color: #3953bd; margin-top: 2px;">${escapeHtml(t('email.digest.nextStepOn', { question: clip(String(item.next_step_on), 120) }))}</div>` : ''),
-      meta: `<span style="color: ${overdue ? '#ba1a1a' : '#3953bd'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`
+        ? `<div style="font-size: 13px; color: #171717; margin-top: 2px;">${escapeHtml(t('email.digest.nextStepOn', { question: clip(String(item.next_step_on), 120) }))}</div>` : ''),
+      meta: `<span style="color: ${overdue ? '#C62828' : '#171717'}; font-weight: 600;">${when}</span>${item.meeting ? ` · ${escapeHtml(clip(String(item.meeting), 60))}` : ''}`
         // The AI may have picked the wrong owner: with a partner pushing, offer the way out (owners change in Corteza)
         + (partner ? ` · <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #6b6d78;">${escapeHtml(t('email.digest.notMine'))}</a>` : ''),
       href: `/actions?item=${encodeURIComponent(item.item_id)}`,
@@ -506,7 +506,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
   const allDue = summary.dueToday && summary.overdue ? '/actions' : `/actions?due=${summary.overdue ? 'overdue' : 'today'}`;
   const more = dueCount > items.length ? `
           <tr><td colspan="3" style="padding: 0 0 14px 26px;">
-            <a href="${link(allDue)}" style="color: #3953bd; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(t('email.digest.seeAll', { count: dueCount }))}</a>
+            <a href="${link(allDue)}" style="color: #171717; font-size: 14px; font-weight: 600; text-decoration: none;">${escapeHtml(t('email.digest.seeAll', { count: dueCount }))}</a>
           </td></tr>` : '';
   const reminders = [
     summary.toReview ? row({ box: '#c5c6d0', title: escapeHtml(t('email.digest.toReview', { count: summary.toReview })), meta: escapeHtml(t('email.digest.toReviewHelp')), href: '/dashboard?review=pending', label: t('common.review') }) : '',
@@ -533,7 +533,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
           <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
             <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
             <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : escapeHtml(t('email.digest.you'))}${!item.due_date ? '' : summary.today && item.due_date < summary.today
-              ? ` · <span style="color: #ba1a1a; font-weight: 600;">${escapeHtml(t('email.digest.overdueSince', { date: shortDate(item.due_date) }))}</span>`
+              ? ` · <span style="color: #C62828; font-weight: 600;">${escapeHtml(t('email.digest.overdueSince', { date: shortDate(item.due_date) }))}</span>`
               : ` · ${escapeHtml(t('email.digest.dueOn', { date: shortDate(item.due_date) }))}`}</div>
           </div>`).join('')}
           ${meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">${escapeHtml(t('email.digest.more', { count: meeting.more }))}</div>` : ''}
@@ -555,7 +555,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
 
   return `
       <div style="background: #eef1fb; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b1b1d;">${preheader}
-        <div style="max-width: 580px; margin: 0 auto; background: #fff; border: 1px solid #e4e1e8; border-top: 6px solid #3953bd; border-radius: 12px; overflow: hidden;">
+        <div style="max-width: 580px; margin: 0 auto; background: #fff; border: 1px solid #E5E7EB; border-top: 6px solid #E85D3A; border-radius: 12px; overflow: hidden;">
           <div style="padding: 20px 28px; border-bottom: 1px solid #ebe7ec;">
             <img src="https://corteza.app/favicon-96x96.png" alt="" width="24" height="24" style="vertical-align: middle; border-radius: 6px; margin-right: 10px;" />
             <span style="font-size: 17px; font-weight: 700; vertical-align: middle;">${escapeHtml(t('settings.summary.title'))}</span>
@@ -572,14 +572,14 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
             ${otherOutcomes ? `<p style="font-size: 14px; color: #6b6d78; margin: 12px 0 0;">${escapeHtml(t('email.digest.alsoCaptured', { outcomes: otherOutcomes }))}</p>` : ''}
             ${assignedByHtml(summary.assignedBy, lang)}
             <a href="${link('/actions')}"
-               style="display: inline-block; margin-top: 28px; background: #3953bd; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
+               style="display: inline-block; margin-top: 28px; background: #000000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 8px;">
               ${escapeHtml(t('email.digest.planButton'))}
             </a>
           </div>
         </div>
         <p style="max-width: 580px; margin: 20px auto 0; font-size: 12px; color: #8a8c96; text-align: center;">
           ${escapeHtml(t('email.digest.footer.useful'))}
-          <a href="${SUPPORT_URL}" style="color: #3953bd; font-weight: 600; text-decoration: none; white-space: nowrap;"><img src="${baseUrl}/images/bmc-cup.png" alt="" width="10" height="14" style="vertical-align: -2px; margin-right: 4px; border: 0;">${escapeHtml(t('nav.coffee'))}</a>${escapeHtml(t('email.digest.footer.helps'))}<br><br>
+          <a href="${SUPPORT_URL}" style="color: #171717; font-weight: 600; text-decoration: none; white-space: nowrap;"><img src="${baseUrl}/images/bmc-cup.png" alt="" width="10" height="14" style="vertical-align: -2px; margin-right: 4px; border: 0;">${escapeHtml(t('nav.coffee'))}</a>${escapeHtml(t('email.digest.footer.helps'))}<br><br>
           ${escapeHtml(t('email.digest.footer.why', { workspace: workspace_name }))}
           ${escapeHtml(t('email.digest.footer.change'))} <a href="${unsubscribe_url}" style="color: #8a8c96;">${escapeHtml(t('email.digest.footer.unsubscribe'))}</a>.
         </p>

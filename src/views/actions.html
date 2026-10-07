@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=9">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
@@ -52,7 +52,7 @@
         }
         /* Owner picker (public/scripts/people.js) in the edit form */
         .decision-action-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-        .decision-action-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 10px; border-radius: 9999px; background: #e3e7fb; color: #3953bd; font-size: 12px; font-weight: 600; }
+        .decision-action-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 10px; border-radius: 9999px; background: #F3F4F6; color: #171717; font-size: 12px; font-weight: 600; }
         .decision-action-chip button { background: none; border: none; cursor: pointer; margin-left: 2px; color: inherit; }
         .inline-edit-input { width: 100%; border: 1px solid #c4c6d0; border-radius: 8px; padding: 6px 10px; font-size: 14px; background: #fff; }
     </style>
@@ -91,9 +91,9 @@
                 <span id="items-count" class="text-sm text-on-surface-variant"></span>
             </div>
 
-            <div id="from-colleagues" class="hidden mb-4 rounded-xl border border-primary/30 bg-[#eef1fb] p-4 text-sm text-on-surface" role="status"></div>
+            <div id="from-colleagues" class="hidden mb-4 rounded-xl border border-primary/30 bg-surface-container-low p-4 text-sm text-on-surface" role="status"></div>
 
-            <div id="loop-notice" class="hidden mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-[#eef1fb] p-4" role="status"></div>
+            <div id="loop-notice" class="hidden mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-surface-container-low p-4" role="status"></div>
 
             <div id="items" class="flex flex-col gap-3">
                 <p class="text-on-surface-variant">{{t:common.loading}}</p>
@@ -103,6 +103,6 @@
 
     <script src="/scripts/close-loop.js?v=2"></script>
     <script src="/scripts/people.js?v=3"></script>
-    <script src="/scripts/actions.js?v=8"></script>
+    <script src="/scripts/actions.js?v=9"></script>
 </body>
 </html>
