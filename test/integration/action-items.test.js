@@ -174,4 +174,44 @@ describe('Action items: service, due date requests, API', { skip }, () => {
     sessionUser = { workspace_id: 'WOTHER', user_id: 'U3', user_name: 'Ana' };
     assert.equal((await request('POST', '/api/action-items', { space_id: space.space_id, text: 'x' })).status, 404, "another workspace's space");
   });
+  test('API: the owner edits what, why and owners; unmatched owners stay only if kept', async () => {
+    sessionUser = { workspace_id: 'WACT', user_id: 'U1', user_name: 'Martín Marchant' };
+    const item = await create({ text: 'Revisar el contrato', ownerNames: ['Martín', 'Proveedor externo'], author: { user_id: 'U1', name: 'Martín' } });
+    assert.deepEqual(item.owners.map(o => o.user_id), ['U1', null], 'one member, one name with no member');
+
+    const edited = await request('PATCH', `/api/action-items/${item.item_id}`, {
+      text: '  Revisar y firmar el contrato  ', rationale: 'Vence el viernes', owner_ids: ['U1', 'U3', 'UNKNOWN'], keep_owner_names: ['Proveedor externo']
+    });
+    assert.equal(edited.status, 200);
+    assert.equal(edited.body.item.text, 'Revisar y firmar el contrato');
+    assert.equal(edited.body.item.rationale, 'Vence el viernes');
+    assert.deepEqual(edited.body.item.owners.map(o => o.name), ['Martín Marchant', 'Ana Ruiz', 'Proveedor externo'], 'unknown ids are dropped');
+    assert.deepEqual(edited.body.item.owner_ids, ['U1', 'U3']);
+
+    const dropped = await request('PATCH', `/api/action-items/${item.item_id}`, { owner_ids: ['U1'], keep_owner_names: [], rationale: '' });
+    assert.deepEqual(dropped.body.item.owners.map(o => o.name), ['Martín Marchant']);
+    assert.equal(dropped.body.item.rationale, null, 'an empty why clears it');
+
+    assert.equal((await request('PATCH', `/api/action-items/${item.item_id}`, { text: '   ' })).status, 400, 'the text can\'t be empty');
+    sessionUser = { workspace_id: 'WACT', user_id: 'U2', user_name: 'Felipe Silva' };
+    assert.equal((await request('PATCH', `/api/action-items/${item.item_id}`, { text: 'x' })).status, 403, 'only owners, the author or admins');
+  });
+
+  test('API: Resolved lists done and cancelled items, most recently finished first', async () => {
+    sessionUser = { workspace_id: 'WACT', user_id: 'U2', user_name: 'Felipe Silva' };
+    const first = await create({ text: 'Primero hecho', ownerNames: ['Felipe'] });
+    const second = await create({ text: 'Después cancelado', ownerNames: ['Felipe'] });
+    const open = await create({ text: 'Sigue abierto', ownerNames: ['Felipe'] });
+    await request('PATCH', `/api/action-items/${first.item_id}`, { status: 'done' });
+    await new Promise(resolve => setTimeout(resolve, 20));
+    await request('PATCH', `/api/action-items/${second.item_id}`, { status: 'cancelled' });
+
+    const resolved = await request('GET', '/api/action-items?owner=me&status=resolved');
+    const ids = resolved.body.items.map(i => i.item_id);
+    assert.ok(ids.indexOf(second.item_id) < ids.indexOf(first.item_id), 'most recently finished first');
+    assert.ok(!ids.includes(open.item_id));
+    assert.ok(resolved.body.items.every(i => i.status === 'done' || i.status === 'cancelled'));
+    const active = await request('GET', '/api/action-items?owner=me&status=open');
+    assert.ok(active.body.items.every(i => i.status === 'open'));
+  });
 });

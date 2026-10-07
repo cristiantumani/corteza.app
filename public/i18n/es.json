@@ -276,7 +276,19 @@
     "emptyMine": "No tienes nada asignado aquí.",
     "emptyFilters": "Ningún pendiente coincide con estos filtros.",
     "emptyHelp": "Los pendientes se capturan automáticamente de tus reuniones.",
-    "updateFailed": "No se pudo actualizar el pendiente"
+    "updateFailed": "No se pudo actualizar el pendiente",
+    "tabs": {
+      "label": "Estado",
+      "active": "Activos",
+      "resolved": "Resueltos"
+    },
+    "moved": {
+      "done": "Marcado como hecho: pasó a Resueltos",
+      "cancelled": "Cancelado: pasó a Resueltos",
+      "reopened": "Reabierto: volvió a Activos"
+    },
+    "emptyResolved": "Todavía no hay nada resuelto. Aquí aparecen los pendientes que marques como hechos o cancelados.",
+    "ownersLabel": "Responsables"
   },
   "edit": {
     "title": "Editar resultado",

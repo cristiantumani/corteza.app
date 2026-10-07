@@ -276,7 +276,19 @@
     "emptyMine": "Nothing assigned to you here.",
     "emptyFilters": "No action items match these filters.",
     "emptyHelp": "Action items are captured automatically from your meetings.",
-    "updateFailed": "Could not update the action item"
+    "updateFailed": "Could not update the action item",
+    "tabs": {
+      "label": "Status",
+      "active": "Active",
+      "resolved": "Resolved"
+    },
+    "moved": {
+      "done": "Marked as done: moved to Resolved",
+      "cancelled": "Cancelled: moved to Resolved",
+      "reopened": "Reopened: back in Active"
+    },
+    "emptyResolved": "Nothing resolved yet. Items you mark done or cancel show up here.",
+    "ownersLabel": "Owners"
   },
   "edit": {
     "title": "Edit outcome",

@@ -50,6 +50,11 @@
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
+        /* Owner picker (public/scripts/people.js) in the edit form */
+        .decision-action-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+        .decision-action-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 10px; border-radius: 9999px; background: #e3e7fb; color: #3953bd; font-size: 12px; font-weight: 600; }
+        .decision-action-chip button { background: none; border: none; cursor: pointer; margin-left: 2px; color: inherit; }
+        .inline-edit-input { width: 100%; border: 1px solid #c4c6d0; border-radius: 8px; padding: 6px 10px; font-size: 14px; background: #fff; }
     </style>
 </head>
 <body class="bg-background text-on-surface overflow-hidden">
@@ -71,12 +76,11 @@
                     <button type="button" data-owner="me" class="owner-filter px-4 py-2 text-sm font-semibold">{{t:actions.filters.mine}}</button>
                     <button type="button" data-owner="all" class="owner-filter px-4 py-2 text-sm font-semibold">{{t:actions.filters.everyone}}</button>
                 </div>
-                <select id="status-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm">
-                    <option value="open">{{t:actions.status.open}}</option>
-                    <option value="done">{{t:actions.status.done}}</option>
-                    <option value="cancelled">{{t:actions.status.cancelled}}</option>
-                    <option value="all">{{t:actions.status.all}}</option>
-                </select>
+                <!-- Active (open) or Resolved (done and cancelled) -->
+                <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="{{t:actions.tabs.label}}">
+                    <button type="button" role="tab" data-status="open" class="status-tab px-4 py-2 text-sm font-semibold">{{t:actions.tabs.active}}</button>
+                    <button type="button" role="tab" data-status="resolved" class="status-tab px-4 py-2 text-sm font-semibold">{{t:actions.tabs.resolved}}</button>
+                </div>
                 <select id="due-filter" class="bg-surface-container-low border border-outline-variant rounded-lg py-2 px-3 text-sm">
                     <option value="">{{t:actions.dueFilter.any}}</option>
                     <option value="overdue">{{t:actions.dueFilter.overdue}}</option>
@@ -98,6 +102,7 @@
     </main>
 
     <script src="/scripts/close-loop.js?v=2"></script>
-    <script src="/scripts/actions.js?v=7"></script>
+    <script src="/scripts/people.js?v=3"></script>
+    <script src="/scripts/actions.js?v=8"></script>
 </body>
 </html>
