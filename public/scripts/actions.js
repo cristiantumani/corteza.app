@@ -76,7 +76,7 @@
     const overdue = item.status === 'open' && item.due_date && item.due_date < today();
     const label = item.due_date
       ? `<span class="text-xs font-semibold ${overdue ? 'text-error' : 'text-on-surface-variant'}">${escapeHtml(t(overdue ? 'due.overdueOn' : 'due.on', { date: formatDate(item.due_date) }))}</span>`
-      : `<span class="px-2 py-0.5 rounded-full bg-[#fff4e5] text-[#8a5300] text-xs font-semibold">${escapeHtml(t('due.none'))}</span>`;
+      : `<span class="px-2 py-0.5 rounded-full bg-signal-wash text-signal-ink text-xs font-semibold">${escapeHtml(t('due.none'))}</span>`;
     return `
       <div class="flex items-center gap-2">
         ${label}
@@ -130,7 +130,7 @@
       thread.risks ? t('home.open.risks', { count: thread.risks }) : ''
     ].filter(Boolean).join(', ');
     return `
-      <a href="/questions?topic=${encodeURIComponent(thread.topic_id)}" class="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e3e7fb] text-[#3953bd] text-xs font-semibold hover:underline">
+      <a href="/questions?topic=${encodeURIComponent(thread.topic_id)}" class="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface text-xs font-semibold hover:underline">
         <span class="material-symbols-outlined text-sm" aria-hidden="true">contact_support</span>
         ${escapeHtml(thread.topic ? t('actions.partOf', { topic: thread.topic }) : t('actions.linked'))}${counts ? ` · ${escapeHtml(counts)}` : ''}
       </a>`;

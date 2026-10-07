@@ -14,7 +14,7 @@
     badge.textContent = count > 99 ? '99+' : String(count);
     badge.title = (window.t || (key => key))('actions.fromColleagues.badge', { count });
     badge.setAttribute('aria-label', badge.title);
-    badge.style.cssText = 'margin-left:auto;min-width:20px;padding:1px 6px;border-radius:999px;background:#3953bd;color:#fff;font-size:12px;font-weight:600;text-align:center;line-height:18px;';
+    badge.style.cssText = 'margin-left:auto;min-width:20px;padding:1px 6px;border-radius:999px;background:#C2410C;color:#fff;font-size:12px;font-weight:600;text-align:center;line-height:18px;';
     link.appendChild(badge);
   }
 

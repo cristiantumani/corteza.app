@@ -37,7 +37,7 @@
       return `
         <li>
           <label class="flex items-start gap-3 cursor-pointer py-2">
-            <input type="checkbox" checked data-link-kind="${esc(item.kind)}" data-link-id="${esc(item.id)}" class="mt-1 h-4 w-4 shrink-0" style="accent-color: #3f51b5">
+            <input type="checkbox" checked data-link-kind="${esc(item.kind)}" data-link-id="${esc(item.id)}" class="mt-1 h-4 w-4 shrink-0" style="accent-color: #000000">
             <span class="flex flex-col gap-0.5 min-w-0">
               <span class="flex flex-wrap items-center gap-2 text-xs">
                 <span class="px-2 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">${esc(t(`links.relation.${item.relation}`))}</span>

@@ -10,7 +10,7 @@
 /* Base body styles */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #fcf8fb;
+  background-color: #ffffff;
 }
 
 /* Glass card effect */
@@ -43,4 +43,10 @@ body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Checkboxes and radios (@tailwindcss/forms) in the brand's ink instead of the plugin's default blue */
+@layer base {
+  [type='checkbox'], [type='radio'] { color: #000000; }
+  [type='checkbox']:focus, [type='radio']:focus { --tw-ring-color: #e85d3a; }
 }

@@ -53,7 +53,7 @@
 
   function renderNotConnected() {
     panel().innerHTML = `
-      <div class="rounded-xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] p-8 text-white shadow-xl h-full">
+      <div class="rounded-xl bg-inverse-surface p-8 text-white shadow-xl h-full">
         <div class="flex items-center gap-3 mb-3">
           <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
           <h3 class="text-2xl font-semibold">${escapeHtml(t('capture.connect.title'))}</h3>
@@ -64,7 +64,7 @@
           <li class="bg-white/10 rounded-lg p-3"><strong>2.</strong> ${escapeHtml(t('capture.connect.step2'))}</li>
           <li class="bg-white/10 rounded-lg p-3"><strong>3.</strong> ${escapeHtml(t('capture.connect.step3'))}</li>
         </ol>
-        <a href="/integrations/google/connect" class="inline-flex items-center gap-2 bg-white text-[#3953bd] font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
+        <a href="/integrations/google/connect" class="inline-flex items-center gap-2 bg-white text-on-surface font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-all">
           <span class="material-symbols-outlined">link</span> ${escapeHtml(t('capture.connect.button'))}
         </a>
       </div>`;

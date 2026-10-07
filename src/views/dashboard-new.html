@@ -9,10 +9,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="stylesheet" href="/styles/tailwind.min.css?v=9">
+    <link rel="stylesheet" href="/styles/tailwind.min.css?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/dashboard.css?v=5">
+    <link rel="stylesheet" href="/styles/dashboard.css?v=6">
     <link rel="stylesheet" href="/styles/dashboard-new.css">
 
     <style>
@@ -21,7 +21,7 @@
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fcf8fb;
+            background-color: #FFFFFF;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.7);
@@ -368,7 +368,7 @@
       <p style="color: #616061; margin-bottom: 16px;">{{t:upload.intro}}</p>
 
       <div style="border: 2px dashed #E1E4E8; border-radius: 12px; padding: 32px; text-align: center; background: #F6F8FA; cursor: pointer;" id="file-drop-zone">
-        <span class="material-symbols-outlined" style="font-size: 48px; color: #667EEA; margin-bottom: 12px;">cloud_upload</span>
+        <span class="material-symbols-outlined" style="font-size: 48px; color: #171717; margin-bottom: 12px;">cloud_upload</span>
         <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">{{t:upload.drop}}</p>
         <p style="font-size: 14px; color: #616061; margin-bottom: 16px;">{{t:upload.formats}}</p>
         <input type="file" id="file-input" accept=".txt,.md,.vtt,.srt,.pdf,.docx" style="display: none;" />
@@ -377,9 +377,9 @@
         </button>
       </div>
 
-      <div id="file-selected-info" style="display: none; margin-top: 16px; padding: 12px; background: #E7F3FF; border: 1px solid #667EEA; border-radius: 8px;">
+      <div id="file-selected-info" style="display: none; margin-top: 16px; padding: 12px; background: #E7F3FF; border: 1px solid #171717; border-radius: 8px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <span class="material-symbols-outlined" style="color: #667EEA;">description</span>
+          <span class="material-symbols-outlined" style="color: #171717;">description</span>
           <div style="flex: 1;">
             <p id="file-name" style="font-weight: 600; font-size: 14px;"></p>
             <p id="file-size" style="font-size: 12px; color: #616061;"></p>
@@ -394,7 +394,7 @@
           <span id="upload-status" style="font-size: 14px; color: #616061;">{{t:upload.uploading}}</span>
         </div>
         <div style="width: 100%; height: 8px; background: #E1E4E8; border-radius: 4px; overflow: hidden;">
-          <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(to right, #667EEA, #764BA2); transition: width 0.3s;"></div>
+          <div id="progress-bar" style="width: 0%; height: 100%; background: #E85D3A; transition: width 0.3s;"></div>
         </div>
       </div>
     </div>
@@ -440,16 +440,16 @@
     var WORKSPACE_ID = '<WORKSPACE_ID>';
 </script>
 <!-- BOOTSTRAP -->
-<script src="/scripts/may-close.js?v=1"></script>
-<script src="/scripts/outcome-review.js?v=3"></script>
-<script src="/scripts/dashboard.js?v=34"></script>
-<script src="/scripts/dashboard-new.js?v=13"></script>
+<script src="/scripts/may-close.js?v=2"></script>
+<script src="/scripts/outcome-review.js?v=4"></script>
+<script src="/scripts/dashboard.js?v=35"></script>
+<script src="/scripts/dashboard-new.js?v=14"></script>
 <script src="/scripts/people.js?v=3"></script>
 <script src="/scripts/decision-actions.js?v=3"></script>
 <script src="/scripts/log-action-item.js?v=2"></script>
 <script src="/scripts/inline-edit.js?v=5"></script>
 <script src="/scripts/outcome-labels.js?v=2"></script>
-<script src="/scripts/home-capture.js?v=7"></script>
+<script src="/scripts/home-capture.js?v=8"></script>
 <script src="/scripts/home-overview.js?v=4"></script>
 <script src="/scripts/onboarding.js?v=3"></script>
 <script>

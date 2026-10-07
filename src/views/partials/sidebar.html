@@ -7,26 +7,26 @@
     width: 16rem; height: 100vh; overflow-y: auto;
     display: flex; flex-direction: column;
     padding: 1.5rem 0.75rem;
-    background: #f6f3f5; border-right: 1px solid #e4e1e8;
+    background: #F9FAFB; border-right: 1px solid #E5E7EB;
     font-family: 'Inter', sans-serif;
   }
   .corteza-sidebar a { text-decoration: none; }
   .corteza-sidebar .sb-brand {
     display: flex; align-items: center; gap: 0.625rem;
     padding: 0 0.75rem; margin-bottom: 2rem;
-    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: #1b1b1d;
+    font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: #171717;
   }
   .corteza-sidebar .sb-brand img { width: 2rem; height: 2rem; border-radius: 0.5rem; }
   .corteza-sidebar .sb-nav { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
   .corteza-sidebar .sb-link {
     display: flex; align-items: center; gap: 0.75rem;
     height: 2.5rem; padding: 0 0.75rem; border-radius: 0.5rem;
-    font-size: 0.875rem; font-weight: 500; line-height: 1; color: #444653;
+    font-size: 0.875rem; font-weight: 500; line-height: 1; color: #6B6B6B;
     background: none; border: 0; width: 100%; cursor: pointer; text-align: left;
     transition: background-color 150ms, color 150ms;
   }
-  .corteza-sidebar .sb-link:hover { background: #ebe7ec; color: #1b1b1d; }
-  .corteza-sidebar .sb-link[aria-current="page"] { background: #e3e7fb; color: #3953bd; font-weight: 600; }
+  .corteza-sidebar .sb-link:hover { background: #F3F4F6; color: #171717; }
+  .corteza-sidebar .sb-link[aria-current="page"] { background: #F3F4F6; color: #171717; font-weight: 600; box-shadow: inset 3px 0 0 #E85D3A; }
   .corteza-sidebar .sb-link .material-symbols-outlined {
     font-size: 1.25rem !important; width: 1.25rem; flex-shrink: 0;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
@@ -40,7 +40,7 @@
   .corteza-sidebar .sb-link .sb-icon-img { width: 1.25rem; height: 1.25rem; object-fit: contain; flex-shrink: 0; }
   .corteza-sidebar .sb-footer {
     display: flex; flex-direction: column; gap: 0.25rem;
-    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4e1e8;
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;
   }
 
   /* Phones (public/scripts/mobile-nav.js): the sidebar is a drawer opened from the top bar,
@@ -57,15 +57,15 @@
     .cz-menu-btn {
       display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
       width: 2.75rem; height: 2.75rem; margin-left: -0.5rem; border: 0; border-radius: 0.5rem;
-      background: none; color: #1b1b1d; cursor: pointer;
+      background: none; color: #171717; cursor: pointer;
     }
-    .cz-menu-btn:hover { background: #ebe7ec; }
+    .cz-menu-btn:hover { background: #F3F4F6; }
     .cz-menu-btn .material-symbols-outlined { font-size: 1.5rem !important; }
     .cz-mobile-header {
       display: flex; align-items: center; gap: 0.5rem; position: fixed; top: 0; left: 0; right: 0; z-index: 10;
-      height: 3.5rem; padding: 0 1rem; background: #fcf8fb; border-bottom: 1px solid #e4e1e8;
+      height: 3.5rem; padding: 0 1rem; background: #FFFFFF; border-bottom: 1px solid #E5E7EB;
     }
-    .cz-mobile-brand { font: 800 1.125rem/1 'Inter', sans-serif; letter-spacing: -0.02em; color: #1b1b1d; text-decoration: none; }
+    .cz-mobile-brand { font: 800 1.125rem/1 'Inter', sans-serif; letter-spacing: -0.02em; color: #171717; text-decoration: none; }
     body .ml-64 { margin-left: 0 !important; }
     body .left-64 { left: 0 !important; }
     body > header.fixed { width: auto !important; padding-left: 1rem !important; padding-right: 1rem !important; gap: 0.5rem; }
@@ -125,4 +125,4 @@
 <!-- Reports the browser's time zone (daily summary at 8:00 local time) -->
 <script src="/scripts/timezone.js?v=1" defer></script>
 <!-- Count of new action items colleagues assigned (core/actions/colleague-assignments) -->
-<script src="/scripts/assigned-badge.js?v=2" defer></script>
+<script src="/scripts/assigned-badge.js?v=3" defer></script>

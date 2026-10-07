@@ -22,21 +22,21 @@
   style.textContent = `
     .cz-rv-pill { display: inline-flex; align-items: center; gap: .35rem; font-size: .75rem; font-weight: 700; white-space: nowrap; }
     .cz-rv-pill i { width: .5rem; height: .5rem; border-radius: 999px; display: inline-block; }
-    .cz-rv-pending { color: #8a5300; } .cz-rv-pending i { background: #e8a33d; }
-    .cz-rv-confirmed { color: #0b6b43; } .cz-rv-confirmed i { background: #1f9d63; }
+    .cz-rv-pending { color: #C2410C; } .cz-rv-pending i { background: #e8a33d; }
+    .cz-rv-confirmed { color: #1F7A55; } .cz-rv-confirmed i { background: #2EB67D; }
     .cz-rv-bar { display: flex; gap: .5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(196,197,213,.5); }
     .cz-rv-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; padding: .45rem .75rem;
-      border-radius: .6rem; font-size: .8125rem; font-weight: 700; cursor: pointer; border: 1px solid #e4e1e8; background: #fff; color: #1b1b1d; }
-    .cz-rv-btn:hover { background: #f6f3f5; }
-    .cz-rv-btn.confirm { border-color: #b7e2cb; color: #0b6b43; } .cz-rv-btn.confirm:hover { background: #eaf7f0; }
+      border-radius: .6rem; font-size: .8125rem; font-weight: 700; cursor: pointer; border: 1px solid #E5E7EB; background: #fff; color: #171717; }
+    .cz-rv-btn:hover { background: #F9FAFB; }
+    .cz-rv-btn.confirm { border-color: #BFE5D1; color: #1F7A55; } .cz-rv-btn.confirm:hover { background: #eaf7f0; }
     .cz-rv-btn.dismiss { color: #93000a; } .cz-rv-btn.dismiss:hover { background: #fdeceb; }
     .cz-rv-btn[disabled] { opacity: .5; cursor: default; }
     .cz-rv-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border-radius: 999px;
-      font-size: .8125rem; font-weight: 700; cursor: pointer; border: 1px solid #f0c98a; background: #fff6e8; color: #8a5300; vertical-align: middle; }
-    .cz-rv-chip.active { background: #8a5300; border-color: #8a5300; color: #fff; }
+      font-size: .8125rem; font-weight: 700; cursor: pointer; border: 1px solid #F5B7A6; background: #FDECE8; color: #C2410C; vertical-align: middle; }
+    .cz-rv-chip.active { background: #C2410C; border-color: #C2410C; color: #fff; }
     .cz-rv-chip[hidden] { display: none; }
     .cz-rv-toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 70; max-width: calc(100vw - 2rem);
-      background: #1b1b1d; color: #fff; border-radius: .9rem; padding: .85rem 1rem; box-shadow: 0 16px 40px -12px rgba(0,0,0,.45);
+      background: #171717; color: #fff; border-radius: .9rem; padding: .85rem 1rem; box-shadow: 0 16px 40px -12px rgba(0,0,0,.45);
       font: 500 .875rem/1.4 'Inter', sans-serif; }
     .cz-rv-toast .row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .cz-rv-toast button { background: none; border: 0; color: #b8c4ff; font-weight: 700; cursor: pointer; padding: .2rem .3rem; font-size: .875rem; }
@@ -44,7 +44,7 @@
     .cz-rv-toast .why button { border: 1px solid #45464f; border-radius: 999px; color: #fff; font-weight: 600; font-size: .8rem; padding: .25rem .65rem; }
     .cz-rv-toast .why button:hover { border-color: #b8c4ff; }
     .cz-rv-detail { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin: 0 0 1rem; padding: .75rem 1rem;
-      border-radius: .75rem; background: #fff6e8; border: 1px solid #f0c98a; font-size: .875rem; color: #5c3a00; }
+      border-radius: .75rem; background: #FDECE8; border: 1px solid #F5B7A6; font-size: .875rem; color: #5c3a00; }
     .cz-rv-detail .cz-rv-btn { flex: 0 0 auto; }
   `;
   document.head.appendChild(style);

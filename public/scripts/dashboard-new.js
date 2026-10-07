@@ -255,7 +255,7 @@
           <span style="font-size: 14px; font-weight: 400; margin-left: 20px; color: #718096;">
             ${escapeHtml(window.currentUser.workspace_name)} • ${escapeHtml(window.currentUser.user_name)}
           </span>
-          <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #667eea; text-decoration: none;">
+          <a href="/auth/logout" style="font-size: 14px; font-weight: 400; margin-left: 15px; color: #171717; text-decoration: none;">
             Logout →
           </a>
         `;
