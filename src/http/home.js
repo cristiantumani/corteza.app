@@ -2,6 +2,7 @@ const express = require('express');
 const { apiRateLimiter } = require('../middleware/auth');
 const { getTimeZone, localTime } = require('../core/users/timezone');
 const { buildHomeOverview } = require('../core/home/overview');
+const { requestLanguage } = require('../core/i18n/i18n');
 
 /**
  * GET /api/home: everything Home's overview shows, in one request (core/home/overview.js)
@@ -18,7 +19,7 @@ router.get('/api/home', apiRateLimiter, requireSession, async (req, res) => {
     const { workspace_id, user_id } = req.session.user;
     const { timezone } = await getTimeZone(workspace_id, user_id);
     const now = new Date();
-    const overview = await buildHomeOverview(workspace_id, user_id, { now, today: localTime(now, timezone || 'UTC').date });
+    const overview = await buildHomeOverview(workspace_id, user_id, { now, today: localTime(now, timezone || 'UTC').date, lang: requestLanguage(req) });
     res.json({ success: true, ...overview });
   } catch (error) {
     console.error('❌ Failed to load the home overview:', error.message);

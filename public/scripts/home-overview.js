@@ -1,16 +1,16 @@
 /**
- * Home overview (COR-41, docs/specs/2026-10-home-overview.md): the three questions in one place.
+ * Home (docs/specs/2026-10-home-overview.md): close the loop.
  *
- * - #home-summary: one sentence on the last 24 hours and what needs the person now, each count a link
+ * - #home-headline: the person's morning partner on where their day stands (same voice and
+ *   line library as the morning summary; Classic: the plain counts)
+ * - #home-tiles: what's open, one box each (my action items, open questions, open risks), each
+ *   opening its page; overdue in orange, "All clear" in green when a box is at zero
  * - #home-ask: ask across meetings (semantic search, the same API as Search) and read the answer here
- * - #home-review: AI-captured outcomes to confirm, one at a time, with their quote and meeting;
- *   "Confirm all from this meeting"; dismiss with undo
- * - #home-owe / #home-open / #home-decided: what I owe (tick to mark done, with undo), what is
- *   still open (with when it was raised), what was decided
+ * - #home-review: AI-captured outcomes to confirm, one at a time, with their quote, meeting and
+ *   what they may close; "Confirm all from this meeting"; dismiss with undo
  * - Tabs: Overview (default) and All outcomes (the list in dashboard.js), remembered in the URL hash
  *
- * APIs: GET /api/home, POST /api/semantic-search, PATCH /api/action-items/:id,
- *       POST /api/decisions/:id/review, POST /api/decisions/:id/restore
+ * APIs: GET /api/home, POST /api/semantic-search, POST /api/decisions/:id/review, POST /api/decisions/:id/restore
  * Everything from meetings or the AI is escaped (escapeHtml) or set with textContent.
  */
 (function() {
@@ -28,18 +28,7 @@
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   }
 
-  /** A text whose {placeholders} are HTML we built (links): the text is escaped, the HTML isn't */
-  const tHtml = (key, html, count) => escapeHtml(t(key, { count })).replace(/\{(\w+)\}/g, (match, name) => (html[name] === undefined ? match : html[name]));
-  const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in the browser's time zone
   const shortDate = value => new Date(value.length === 10 ? `${value}T12:00:00` : value).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-
-  function ago(value) {
-    const days = Math.floor((Date.now() - new Date(value).getTime()) / 86400000);
-    if (days < 1) return t('time.today');
-    if (days === 1) return t('time.yesterday');
-    if (days < 30) return t('time.daysAgo', { count: days });
-    return t('time.onDate', { date: shortDate(value) });
-  }
 
   function sourceLine(source, timestamp) {
     if (!source || !source.title) return timestamp ? escapeHtml(shortDate(timestamp)) : '';
@@ -83,135 +72,74 @@
     toastTimer = setTimeout(() => { box.hidden = true; }, 6000);
   }
 
-  // ---------- Summary ----------
+  // ---------- Headline ----------
 
-  function renderSummary() {
+  /** The page's main line, its last word in the brand's serif accent (design skill, typography) */
+  function titleHtml(text) {
+    const match = String(text).match(/^(.*\s)(\S+)$/);
+    return match ? `${escapeHtml(match[1])}<em class="home-accent">${escapeHtml(match[2])}</em>` : escapeHtml(text);
+  }
+
+  /** Classic (no partner): the counts, plainly */
+  function classicTitle(s) {
+    if (s.overdue) return t('home.headline.overdue', { count: s.overdue });
+    if (s.due_today) return t('home.headline.dueToday', { count: s.due_today });
+    return t('home.headline.clear');
+  }
+
+  function renderHeadline() {
+    const h = overview.headline || { voice: 'classic' };
     const s = overview.summary;
-    const el = document.getElementById('home-summary');
-    const last = [];
-    if (s.new_outcomes) {
-      last.push(`<a href="#all" data-home-tab="all" class="text-primary font-semibold hover:underline">${escapeHtml(t('home.summary.newOutcomes', { count: s.new_outcomes }))}</a>${s.meetings ? escapeHtml(t('home.summary.fromMeetings', { count: s.meetings })) : ''}`);
-    }
-    const now = [];
-    if (s.overdue) now.push(`<a href="/actions?due=overdue" class="text-error font-semibold hover:underline">${escapeHtml(t('home.summary.overdue', { count: s.overdue }))}</a>`);
-    else if (s.due_today) now.push(`<a href="/actions?due=today" class="text-primary font-semibold hover:underline">${escapeHtml(t('home.summary.dueToday', { count: s.due_today }))}</a>`);
-    if (s.to_review) now.push(`<a href="#home-review" class="text-primary font-semibold hover:underline">${escapeHtml(t('home.summary.toReview', { count: s.to_review }))}</a>`);
+    const date = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const eyebrow = document.getElementById('home-eyebrow');
+    eyebrow.innerHTML = `<span>${escapeHtml(date.charAt(0).toUpperCase() + date.slice(1))}</span>${h.voice === 'sergeant' || h.voice === 'sarcastic'
+      ? `<a href="/settings#digest" class="rounded-full border border-outline-variant bg-paper px-2.5 py-0.5 text-xs font-semibold text-graphite hover:border-on-surface" title="${escapeHtml(t('home.headline.changeVoice'))}">${escapeHtml(t(`settings.partner.${h.voice}`))}</a>`
+      : ''}`;
 
-    if (!last.length && !now.length) {
-      el.textContent = t('home.summary.caughtUp');
-      return;
+    const title = document.getElementById('home-title');
+    const follow = document.getElementById('home-follow');
+    if (h.title) {
+      title.innerHTML = titleHtml(h.title);
+      follow.textContent = h.follow || '';
+      if (h.item_id && h.follow) {
+        // The line names one of the person's items: the sentence opens it
+        follow.innerHTML = `<a href="/actions?item=${encodeURIComponent(h.item_id)}" class="text-on-surface underline decoration-signal underline-offset-4 hover:decoration-2">${escapeHtml(h.follow)}</a>`;
+      }
+    } else {
+      title.innerHTML = titleHtml(classicTitle(s));
+      follow.textContent = s.to_review ? t('home.headline.toReview', { count: s.to_review }) : '';
     }
-    el.innerHTML = [
-      last.length ? tHtml('home.summary.last', { items: last.join(', ') }) : escapeHtml(t('home.summary.nothingNew')),
-      now.length ? tHtml('home.summary.needsYou', { items: now.join(' · ') }) : ''
-    ].filter(Boolean).join(' ');
+    follow.hidden = !follow.textContent;
   }
 
-  // ---------- What I owe ----------
+  // ---------- What's open: one box per kind, each opens its page ----------
 
-  function dueLabel(due) {
-    if (!due) return `<span class="text-on-surface-variant">${escapeHtml(t('due.none'))}</span>`;
-    if (due < today()) return `<span class="text-error font-semibold">${escapeHtml(t('due.overdueOn', { date: shortDate(due) }))}</span>`;
-    if (due === today()) return `<span class="text-primary font-semibold">${escapeHtml(t('due.today'))}</span>`;
-    return `<span class="text-on-surface-variant">${escapeHtml(t('due.on', { date: shortDate(due) }))}</span>`;
+  function tile({ href, label, icon, count, note, tone, alert }) {
+    const noteClass = { alert: 'text-error font-semibold', ok: 'text-success-ink font-semibold', muted: 'text-on-surface-variant' }[tone];
+    return `
+      <a href="${href}" class="home-tile group relative flex md:flex-col items-center md:items-stretch gap-3 md:gap-1.5 rounded-xl border ${alert ? 'border-signal' : 'border-outline-variant'} bg-surface-container-lowest p-4 md:p-5 hover:border-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal">
+        <span class="text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface min-w-[2.5rem] md:order-2">${escapeHtml(count)}</span>
+        <span class="flex-1 flex flex-col md:contents min-w-0">
+          <span class="flex items-center justify-between gap-2 text-sm font-semibold text-on-surface-variant md:order-1">${escapeHtml(label)}<span class="material-symbols-outlined text-xl hidden md:inline" style="font-variation-settings: 'FILL' 0" aria-hidden="true">${icon}</span></span>
+          <span class="text-sm ${noteClass} md:order-3">${escapeHtml(note)}</span>
+        </span>
+        <span class="material-symbols-outlined text-xl text-on-surface md:absolute md:right-4 md:bottom-4 transition-transform group-hover:translate-x-0.5" style="font-variation-settings: 'FILL' 0" aria-hidden="true">arrow_forward</span>
+      </a>`;
   }
 
-  function renderOwe() {
+  function renderTiles() {
     const s = overview.summary;
-    const el = document.getElementById('home-owe');
-    const items = overview.owe;
-    el.innerHTML = `
-      <div class="flex items-baseline justify-between gap-2">
-        <h2 class="text-lg font-semibold">${escapeHtml(t('home.owe.title'))}</h2>
-        <a href="/actions" class="text-sm font-semibold text-primary hover:underline">${escapeHtml(t('home.owe.all'))}</a>
-      </div>
-      <p class="text-sm text-on-surface-variant">${s.open_action_items ? `${escapeHtml(t('home.owe.open', { count: s.open_action_items }))}${s.overdue ? ` · <span class="text-error font-semibold">${escapeHtml(t('home.owe.overdue', { count: s.overdue }))}</span>` : ''}` : ''}</p>
-      ${items.length ? `<ul class="flex flex-col divide-y divide-outline-variant/60">${items.map(item => `
-        <li class="flex items-start gap-3 py-2.5" data-owe="${escapeHtml(item.item_id)}">
-          <label class="flex items-center justify-center w-6 h-6 mt-0.5 shrink-0 cursor-pointer">
-            <input type="checkbox" class="w-5 h-5 rounded" data-done="${escapeHtml(item.item_id)}" aria-label="${escapeHtml(t('home.owe.markDone', { text: item.text }))}">
-          </label>
-          <div class="min-w-0 flex flex-col gap-0.5">
-            <a href="/actions?item=${encodeURIComponent(item.item_id)}" class="text-sm text-on-surface hover:text-primary line-clamp-2">${escapeHtml(item.text)}</a>
-            <span class="text-xs">${dueLabel(item.due_date)}${item.source ? ` <span class="text-on-surface-variant">· ${escapeHtml(item.source.title)}</span>` : ''}</span>
-          </div>
-        </li>`).join('')}</ul>`
-        : `<p class="text-sm text-on-surface-variant">${escapeHtml(t('home.owe.empty'))}</p>`}`;
-
-    el.querySelectorAll('[data-done]').forEach(box => box.addEventListener('change', () => markDone(box)));
-  }
-
-  async function markDone(box) {
-    const id = box.dataset.done;
-    box.disabled = true;
-    try {
-      await request('PATCH', `/api/action-items/${encodeURIComponent(id)}`, { status: 'done' });
-      toast(t('home.owe.markedDone'), async () => {
-        await request('PATCH', `/api/action-items/${encodeURIComponent(id)}`, { status: 'open' });
-        load();
-      });
-      load();
-    } catch (error) {
-      box.checked = false;
-      box.disabled = false;
-      toast(error.message);
-    }
-  }
-
-  // ---------- Still open ----------
-
-  function renderOpen() {
-    const s = overview.summary;
-    const el = document.getElementById('home-open');
-    const items = overview.open;
-    el.innerHTML = `
-      <div class="flex items-baseline justify-between gap-2">
-        <h2 class="text-lg font-semibold">${escapeHtml(t('home.open.title'))}</h2>
-        <a href="/questions" class="text-sm font-semibold text-primary hover:underline">${escapeHtml(t('nav.questions'))}</a>
-      </div>
-      <p class="text-sm text-on-surface-variant">${s.open_questions || s.open_risks ? escapeHtml([s.open_questions && t('home.open.questions', { count: s.open_questions }), s.open_risks && t('home.open.risks', { count: s.open_risks })].filter(Boolean).join(' · ')) : ''}</p>
-      ${items.length ? `<ul class="flex flex-col divide-y divide-outline-variant/60">${items.map(item => `
-        <li class="py-2.5">
-          <button type="button" data-open="${escapeHtml(item.id)}" class="w-full text-left flex flex-col gap-0.5 group">
-            <span class="flex items-center gap-2 text-xs">
-              <span class="px-2 py-0.5 rounded-full font-semibold ${item.type === 'risk' ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'}">${escapeHtml(typeLabel(item.type))}</span>
-              <span class="text-on-surface-variant">${escapeHtml(t('home.open.raised', { when: ago(item.timestamp) }))}</span>
-            </span>
-            <span class="text-sm text-on-surface group-hover:text-primary line-clamp-2">${escapeHtml(item.text)}</span>
-          </button>
-        </li>`).join('')}</ul>`
-        : `<p class="text-sm text-on-surface-variant">${escapeHtml(t('home.open.empty'))}</p>`}`;
-
-    el.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => {
-      const item = overview.open.find(i => String(i.id) === button.dataset.open);
-      if (item && typeof window.openDecision === 'function') window.openDecision(item);
-    }));
-  }
-
-  // ---------- Decided ----------
-
-  function renderDecided() {
-    const el = document.getElementById('home-decided');
-    const items = overview.decided;
-    el.innerHTML = `
-      <div class="flex items-baseline justify-between gap-2">
-        <h2 class="text-lg font-semibold">${escapeHtml(t('home.decided.title'))}</h2>
-        <a href="#all" data-home-tab="all" class="text-sm font-semibold text-primary hover:underline">${escapeHtml(t('home.tabs.all'))}</a>
-      </div>
-      <p class="text-sm text-on-surface-variant">${escapeHtml(t('home.decided.subtitle'))}</p>
-      ${items.length ? `<ul class="flex flex-col divide-y divide-outline-variant/60">${items.map(item => `
-        <li class="py-2.5">
-          <button type="button" data-decided="${escapeHtml(item.id)}" class="w-full text-left flex flex-col gap-0.5 group">
-            <span class="text-sm text-on-surface group-hover:text-primary line-clamp-2">${escapeHtml(item.text)}</span>
-            <span class="text-xs text-on-surface-variant">${sourceLine(item.source_details, item.timestamp)}</span>
-          </button>
-        </li>`).join('')}</ul>`
-        : `<p class="text-sm text-on-surface-variant">${escapeHtml(t(overview.summary.to_review ? 'home.decided.emptyToReview' : 'home.decided.empty'))}</p>`}`;
-
-    el.querySelectorAll('[data-decided]').forEach(button => button.addEventListener('click', () => {
-      const item = overview.decided.find(i => String(i.id) === button.dataset.decided);
-      if (item && typeof window.openDecision === 'function') window.openDecision(item);
-    }));
+    const owed = s.open_action_items;
+    const actionNote = s.overdue
+      ? [t('home.tiles.overdue', { count: s.overdue }), s.due_today ? t('home.tiles.dueToday', { count: s.due_today }) : ''].filter(Boolean).join(' · ')
+      : s.due_today ? t('home.tiles.dueToday', { count: s.due_today }) : owed ? t('home.tiles.nothingOverdue') : t('home.tiles.clear');
+    const questionNote = s.new_questions ? t('home.tiles.newQuestions', { count: s.new_questions }) : s.open_questions ? t('home.tiles.waitingAnswer') : t('home.tiles.clear');
+    const riskNote = s.new_risks ? t('home.tiles.newRisks', { count: s.new_risks }) : s.open_risks ? t('home.tiles.toMitigate') : t('home.tiles.clear');
+    document.getElementById('home-tiles').innerHTML = [
+      tile({ href: s.overdue ? '/actions?due=overdue' : '/actions', label: t('home.tiles.actions'), icon: 'task_alt', count: owed, note: actionNote, tone: s.overdue ? 'alert' : owed ? 'muted' : 'ok', alert: s.overdue > 0 }),
+      tile({ href: '/questions?type=open_question', label: t('home.tiles.questions'), icon: 'contact_support', count: s.open_questions, note: questionNote, tone: s.open_questions ? 'muted' : 'ok' }),
+      tile({ href: '/questions?type=risk', label: t('home.tiles.risks'), icon: 'warning', count: s.open_risks, note: riskNote, tone: s.open_risks ? 'muted' : 'ok' })
+    ].join('');
   }
 
   // ---------- Review queue ----------
@@ -232,7 +160,6 @@
     el.innerHTML = `
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-lg font-semibold">${escapeHtml(t('home.review.title'))} <span class="text-on-surface-variant font-normal">${escapeHtml(t('home.review.position', { n: reviewIndex + 1, total: overview.summary.to_review }))}</span></h2>
-        <p class="text-sm text-on-surface-variant">${escapeHtml(t('home.review.subtitle'))}</p>
       </div>
       <div class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-4">
         <span class="self-start px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">${escapeHtml(typeLabel(item.type))}</span>
@@ -392,13 +319,12 @@
   async function load() {
     try {
       overview = await request('GET', '/api/home');
-      renderSummary();
+      renderHeadline();
+      renderTiles();
       renderReview();
-      renderOwe();
-      renderOpen();
-      renderDecided();
     } catch (error) {
-      document.getElementById('home-summary').innerHTML = `<span class="text-error">${escapeHtml(error.message)}</span> <button type="button" id="home-retry" class="text-primary font-semibold hover:underline">Try again</button>`;
+      document.getElementById('home-follow').hidden = false;
+      document.getElementById('home-follow').innerHTML = `<span class="text-error">${escapeHtml(error.message)}</span> <button type="button" id="home-retry" class="text-on-surface font-semibold underline">${escapeHtml(t('common.tryAgainButton'))}</button>`;
       const retry = document.getElementById('home-retry');
       if (retry) retry.addEventListener('click', load);
     }

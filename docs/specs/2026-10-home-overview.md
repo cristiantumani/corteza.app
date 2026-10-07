@@ -49,3 +49,20 @@ Home is where the main actions happen: knowing what's pending (action items, ris
   - the review queue limited to the person's own outcomes, and an admin seeing everyone's;
   - the API session check.
 - Browser check with `preview.js` (default and empty states, desktop and mobile): ask, open a source, confirm, mark done with undo, and switch tabs.
+
+
+## Oct 7, 2026: close the loop (redesign)
+
+**Problem:** Home had too much text and its main message was "confirm the latest captures". The message should be "close the loop": nothing pending, no open risk, no unanswered question.
+
+**Now:**
+
+1. **Headline:** the person's morning partner (Sergeant or Sarcastic, as in Settings) says where their day stands, instead of "Home": same line library and situations as the morning summary, one stable line per person and day, never a line that talks about the email. The one highlighted word is in Instrument Serif italic, Signal orange. Classic: the plain counts ("1 action item overdue."). A chip with the partner's name links to Settings. The follow-up line opens the item it names.
+2. **Three boxes**, each a link: Your action items (`/actions`, or `/actions?due=overdue` when something is overdue; orange border and "N overdue"), Questions to answer (`/questions?type=open_question`), Open risks (`/questions?type=risk`), with how many were raised in the last 24 hours. A box at zero says "✓ All clear" in green.
+3. **Ask across meetings** stays (it gives Search visibility).
+4. **To review**, as before, without the explanatory subtitle.
+5. **Capture status** is a quiet line at the bottom while everything works; a card when something needs action (reconnect, an import running).
+
+**Removed:** the summary sentence, the What I owe / Still open / Decided columns (the boxes replace them; decisions are in All outcomes).
+
+**API:** `GET /api/home` adds `headline` ({ voice, situation, title, follow, item_id }) and `summary.new_questions` / `summary.new_risks`; `decided` is gone.
