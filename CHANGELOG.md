@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Search answers about pending work are a short summary
+- When the question is about action items, the answer says how many there are, how many are overdue, without a due date or without an owner, and points to the list below instead of repeating it (exact counts are computed, not guessed)
+
 ### Fixed - Search finds a meeting's action items
 - "Tengo la weekly de growth, ¿qué pendientes tiene?" now answers with that meeting's open action items, from all its sessions ("Weekly Product-Led Growth"), like the morning summary. A meeting is recognized by a distinctive word of its title ("growth", not "weekly"), and a person named too narrows the list
 - "Tengo …" in a question about a meeting no longer returns your own action items instead

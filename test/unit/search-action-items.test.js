@@ -58,3 +58,13 @@ test('a meeting named in the question gets its own items, from every session, no
   assert.deepEqual(selectActionItems('pendientes de la weekly', open).meetings, [], '"weekly" alone names no meeting');
   assert.deepEqual(selectActionItems('qué sabemos de growth', open).meetings, [], 'not about pending work or a meeting: a topic question');
 });
+
+test('a pending-work answer gets exact counts to summarize the list below', () => {
+  const { actionItemCounts } = require('../../src/services/semantic-search');
+  const counts = actionItemCounts([
+    { text: 'a', due_date: '2000-01-01', owners: [{ name: 'Ana' }] },
+    { text: 'b', due_date: null, owners: [] },
+    { text: 'c', due_date: '2999-01-01', owners: [{ name: 'Bruno' }] }
+  ]);
+  assert.equal(counts, '3 open · 1 overdue · 1 without a due date · 1 without an owner');
+});
