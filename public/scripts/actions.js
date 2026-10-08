@@ -103,6 +103,7 @@
       const by = item.created_by && item.created_by.name;
       badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold">${escapeHtml(t('actions.new'))}</span><span class="text-xs text-on-surface-variant">${escapeHtml(by ? t('actions.assignedBy', { name: by }) : t('actions.assignedByColleague'))}</span>`);
     }
+    if (item.sensitive && window.CortezaSensitive) badges.push(window.CortezaSensitive.chip());
     if (item.completed_earlier) badges.push(`<span class="text-xs text-on-surface-variant">${escapeHtml(t('actions.completedEarlier'))}</span>`);
     return badges.length ? `<div class="flex flex-wrap items-center gap-2">${badges.join('')}</div>` : '';
   }
@@ -180,6 +181,10 @@
           ${unmatched.length ? `<div class="decision-action-chips font-normal">${unmatched.map(name => `<span class="decision-action-chip" title="${escapeHtml(t('actions.notMatched'))}">${escapeHtml(name)} <button type="button" data-keep-name="${escapeHtml(name)}" aria-label="${escapeHtml(t('common.remove'))}">×</button></span>`).join('')}</div>` : ''}
           <div class="owner-picker font-normal"><p class="text-on-surface-variant">${escapeHtml(t('common.loading'))}</p></div>
         </div>
+        ${window.CortezaSensitive ? `<label class="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+          <input type="checkbox" name="sensitive" class="mt-0.5" ${item.sensitive ? 'checked' : ''}>
+          <span><span class="font-semibold">${escapeHtml(t('sensitive.mark'))}</span> <span class="text-on-surface-variant">${escapeHtml(t('sensitive.help'))}</span></span>
+        </label>` : ''}
         <p class="edit-error hidden text-sm text-error" role="alert"></p>
         <div class="flex items-center gap-2">
           <button type="submit" class="bg-primary text-on-primary rounded-lg py-2 px-4 text-sm font-semibold disabled:opacity-50">${escapeHtml(t('common.save'))}</button>
@@ -215,7 +220,22 @@
         ...(picker ? { owner_ids: picker.selected(), keep_owner_names: [...keptNames] } : {})
       };
       form.querySelector('[type=submit]').disabled = true;
+      // Sensitive (public/scripts/sensitive.js): changes its whole thread, so the list reloads after saving
+      const sensitiveBox = form.elements.sensitive;
+      const sensitiveChanged = sensitiveBox && sensitiveBox.checked !== !!item.sensitive;
+      if (sensitiveChanged) {
+        try {
+          await window.CortezaSensitive.setSensitive('action_item', itemId, sensitiveBox.checked);
+        } catch (error) {
+          const box = form.querySelector('.edit-error');
+          box.textContent = error.message;
+          box.classList.remove('hidden');
+          form.querySelector('[type=submit]').disabled = false;
+          return;
+        }
+      }
       const result = await save(itemId, changes);
+      if (!result.error && sensitiveChanged) load();
       if (result.error) {
         const error = form.querySelector('.edit-error');
         error.textContent = result.error;

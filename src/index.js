@@ -157,6 +157,7 @@ async function startApp() {
   expressApp.use(require('./http/action-items'));
   expressApp.use(require('./http/home'));
   expressApp.use(require('./http/questions-risks'));
+  expressApp.use(require('./http/sensitive'));
 
   // Confirm / dismiss AI-captured outcomes
   expressApp.use(require('./http/decision-review'));

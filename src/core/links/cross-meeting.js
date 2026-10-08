@@ -326,6 +326,9 @@ async function applyLinks(workspaceId, links) {
   for (const [id, resolves] of byDecision) {
     await decisions.updateOne({ workspace_id: workspaceId, id }, { $set: { resolves } });
   }
+
+  // A thread with a sensitive item is sensitive as a whole (core/privacy/sensitive)
+  await require('../privacy/sensitive').spreadSensitivity(workspaceId, [...linksByNew.keys()].map(item => item.topic_id));
 }
 
 module.exports = {

@@ -29,7 +29,7 @@ const LIMITS = { owe: 6, open: 6, review: 20 };
 // What the browser needs from an outcome: never `embedding`
 const OUTCOME_FIELDS = {
   _id: 0, id: 1, type: 1, text: 1, rationale: 1, evidence_quote: 1, owner_name: 1, capture: 1, review_status: 1,
-  timestamp: 1, user_id: 1, space_id: 1, creator: 1, raised_by: 1, topic_id: 1, topic: 1, resolves: 1,
+  timestamp: 1, user_id: 1, space_id: 1, creator: 1, raised_by: 1, topic_id: 1, topic: 1, resolves: 1, sensitive: 1, private_to: 1,
   'source_details.type': 1, 'source_details.title': 1, 'source_details.url': 1, 'source_details.external_id': 1
 };
 

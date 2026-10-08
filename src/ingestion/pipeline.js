@@ -4,6 +4,7 @@ const { countByType } = require('../core/decisions/types');
 const { track } = require('../integrations/posthog/client');
 const { createActionItem } = require('../core/actions/action-service');
 const { assignTopics } = require('../core/topics/topics');
+const { ensurePersonalSpace } = require('../services/spaces');
 const { getWorkspaceMembersCollection } = require('../config/database');
 
 /**
@@ -257,12 +258,27 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
         due_date: item.due_date,
         decision_ref: index,
         evidence_quote: item.evidence_quote || null,
-        confidence: item.confidence
+        confidence: item.confidence,
+        sensitive: item.sensitive === true
       }));
 
     // Threads: items about the same subject (a question, its risk, the next step) share a topic_id
     const threads = assignTopics([...extractedItems, ...datedFollowUps]);
     const threadOf = new Map([...extractedItems, ...datedFollowUps].map((item, index) => [item, threads[index]]));
+
+    // Sensitive people matters (core/privacy/sensitive): a sensitive item makes its whole thread
+    // sensitive; those items go to the capturer's personal space and stay visible only to them
+    const sensitiveTopics = new Set([...extractedItems, ...datedFollowUps].filter(item => item.sensitive === true && threadOf.get(item))
+      .map(item => threadOf.get(item).topicId));
+    const isSensitive = item => item.sensitive === true || sensitiveTopics.has(threadOf.get(item)?.topicId)
+      || (Number.isInteger(item.decision_ref) && extractedItems[item.decision_ref]?.sensitive === true);
+    const privateTo = (transcript.author && transcript.author.user_id) || null;
+    let privateSpace = null;
+    const placeFor = async item => {
+      if (!isSensitive(item) || !privateTo) return { spaceId: transcript.spaceId, spaceName: transcript.spaceName || null };
+      privateSpace = privateSpace || await ensurePersonalSpace(transcript.workspaceId, privateTo, transcript.author.name || null);
+      return { spaceId: privateSpace.space_id, spaceName: privateSpace.name || null };
+    };
 
     // Decisions (and open questions, risks) first, so action items can link to them
     const decisions = [];
@@ -271,8 +287,9 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
       if (extracted.decision_type === 'action_item') continue;
       const decision = await createDecision({
         workspaceId: transcript.workspaceId,
-        spaceId: transcript.spaceId,
-        spaceName: transcript.spaceName || null,
+        ...(await placeFor(extracted)),
+        sensitive: isSensitive(extracted),
+        privateTo,
         text: extracted.decision_text,
         type: extracted.decision_type,
         tags: extracted.tags,
@@ -309,8 +326,9 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
     for (const extracted of extractedActions) {
       actionItems.push(await createActionItem({
         workspaceId: transcript.workspaceId,
-        spaceId: transcript.spaceId,
-        spaceName: transcript.spaceName || null,
+        ...(await placeFor(extracted)),
+        sensitive: isSensitive(extracted),
+        privateTo,
         text: extracted.decision_text,
         ownerNames: extracted.owner_names || (extracted.owner_name ? [extracted.owner_name] : []),
         dueDate: extracted.due_date || null,

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { ownerIdsFor } = require('../privacy/sensitive');
 const { getDatabase } = require('../../config/database');
 const { resolveOwners, ownersFromUserIds } = require('./owners');
 
@@ -54,12 +55,14 @@ function validDate(value) {
  * @param {number|null} [params.confidence]
  * @param {Object} [params.author] - { user_id, name }
  * @param {Object[]} [params.members] - workspace members (avoids reloading them per item)
+ * @param {boolean} [params.sensitive] - only `privateTo` sees it: other owners keep their name, not access (core/privacy/sensitive)
+ * @param {string|null} [params.privateTo] - who a sensitive item stays visible to (default: the author)
  * @returns {Promise<Object>} the saved item
  */
 async function createActionItem({
   workspaceId, spaceId, spaceName = null, text, ownerNames = [], ownerUserIds = null, dueDate = null, decisionId = null,
   source = null, rationale = null, evidenceQuote = null, capture = 'manual', confidence = null, author = null, members,
-  topicId = null, topic = null
+  topicId = null, topic = null, sensitive = false, privateTo = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createActionItem requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createActionItem requires text');
@@ -75,7 +78,9 @@ async function createActionItem({
     space_name: spaceName,
     text: text.trim(),
     owners,
-    owner_ids: owners.map(owner => owner.user_id).filter(Boolean),
+    owner_ids: ownerIdsFor(owners, !!sensitive, privateTo || (author && author.user_id) || null),
+    sensitive: !!sensitive,
+    private_to: sensitive ? privateTo || (author && author.user_id) || null : null,
     due_date: validDate(dueDate),
     status: 'open',
     decision_id: typeof decisionId === 'number' ? decisionId : null,
@@ -227,7 +232,9 @@ async function updateActionItem(workspaceId, itemId, changes = {}) {
   }
   if (changes.owners !== undefined) {
     set.owners = changes.owners;
-    set.owner_ids = changes.owners.map(owner => owner.user_id).filter(Boolean);
+    // A sensitive item keeps granting access only to whoever it's private to
+    const current = await collection().findOne({ workspace_id: workspaceId, item_id: itemId }, { projection: { _id: 0, sensitive: 1, private_to: 1 } });
+    set.owner_ids = ownerIdsFor(changes.owners, !!(current && current.sensitive), (current && current.private_to) || null);
   }
   if (changes.status !== undefined) {
     if (!STATUSES.includes(changes.status)) return { error: 'Invalid status' };

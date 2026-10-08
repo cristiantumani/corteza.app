@@ -1109,5 +1109,12 @@
     "closeFailed": "No se pudieron cerrar. Inténtalo de nuevo.",
     "resolvedNote": "Resuelto por: {text} ({meeting}, {date})",
     "manual": "registrado a mano"
+  },
+  "sensitive": {
+    "label": "Sensible",
+    "mark": "Marcar como sensible",
+    "help": "Solo tú lo verás, junto con todo su hilo. Los otros dueños pierden el acceso.",
+    "onlyYou": "Solo tú lo ves, junto con todo su hilo.",
+    "remove": "Quitar la marca"
   }
 }

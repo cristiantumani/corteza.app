@@ -38,6 +38,8 @@ const decisions = [
 const actionItems = [
   { item_id: 'a1', text: 'Preparar la página de precios con el plan anual', status: 'open', due_date: date(5), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], decision_id: 101, rationale: 'Necesaria antes del lanzamiento', evidence_quote: 'Ana, ¿te encargas de la página?', source: meet('Planificación comercial Q4'), created_by: { user_id: 'U1', name: 'Ana Rojas' }, thread: { topic_id: 'top_pricing', topic: 'Plan anual', open_question: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?' } },
   { item_id: 'a2', text: 'Confirmar con el proveedor de pagos si soporta cobro anual', status: 'open', due_date: date(-2), owners: [{ user_id: 'U2', name: 'Bruno Díaz' }, { user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U2', 'U1'], source: meet('Planificación comercial Q4'), created_by: { user_id: 'U2', name: 'Bruno Díaz' }, unseen: true },
+  // Sensitive (core/privacy/sensitive): only Ana sees it; Bruno keeps his name on it, not access
+  { item_id: 'a5', text: 'Citar a Rocha para conversar sobre su desempeño y continuidad', status: 'open', due_date: date(2), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], sensitive: true, private_to: 'U1', source: meet('1:1 Ana / Bruno'), created_by: { user_id: 'U1', name: 'Ana Rojas' } },
   { item_id: 'a3', text: 'Enviar el resumen de la revisión técnica al equipo', status: 'open', due_date: null, owners: [], owner_ids: [], source: meet('Revisión técnica'), created_by: { user_id: 'U1', name: 'Ana Rojas' } },
   { item_id: 'a4', text: 'Actualizar el calendario de la reunión semanal', status: 'done', due_date: date(-1), completed_at: iso(day), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], source: meet('Weekly Ops'), created_by: { user_id: 'U1', name: 'Ana Rojas' } }
 ];
@@ -100,6 +102,7 @@ const routes = {
     };
   },
   'GET /api/action-items/from-colleagues': { success: true, count: 1, from: [{ name: 'Bruno Díaz', count: 1 }] },
+  'PUT /api/sensitive': { success: true, decisions: 1, action_items: 1 },
   'GET /api/questions-risks': req => {
     const type = req.query.type || 'all';
     const items = questionsRisks.filter(i => type === 'all' || i.type === type);

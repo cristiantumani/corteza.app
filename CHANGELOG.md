@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - Sensitive topics stay with you
+- The AI marks confidential people matters as sensitive: dismissals, people leaving, low performance, pay, health, legal or disciplinary matters, restructurings that name people. The whole thread follows
+- A sensitive outcome or action item is visible only to you: colleagues named as owners keep their name on it but don't see it anywhere (Action items, morning summary, search, meeting prep, "new from a colleague")
+- "Mark as sensitive" in the outcome detail and the action item editor (the whole thread); a 🔒 chip on Action items and Questions & risks
+- Run the extraction eval before deploying: the prompt changed
+
 ### Changed - Closing an action item closes the loop
 - Marking an action item done asks "Does this also resolve…?" with its open questions **and risks** (unchecked; a question can take an answer). Items without a thread use the outcome they carry out: its thread or meeting, or the question or risk itself
 - Cancelling the last action item of a question or risk says it's left with no action items, with "Add an action item" (linked to it, joins its thread) or "That's fine"
