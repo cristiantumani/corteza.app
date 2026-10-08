@@ -186,6 +186,9 @@ async function startApp() {
   // Private beta: approve a tester from the early access email (public — authorized by a signed link)
   expressApp.use(require('./http/beta'));
 
+  // Privacy policy and terms of service (public; linked from the login page, the sidebar and Google's consent screen)
+  expressApp.use(require('./http/legal'));
+
   // Demo routes (public — no auth required)
   expressApp.get('/demo', apiRateLimiter, handleDemoEntry);
   expressApp.get('/demo/dashboard', apiRateLimiter, handleDemoDashboard);

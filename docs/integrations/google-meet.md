@@ -5,7 +5,7 @@ Corteza reads the transcripts and Gemini notes of your Google Meet meetings and 
 ## For users
 
 1. Sign in to Corteza with Google.
-2. Go to **Settings → Google Meet → Connect Google Meet** and allow the requested access. Use the same Google account you signed in with.
+2. Go to **Settings → Google Meet → Connect Google Meet**, read what each permission is for (shown before Google's consent screen), click **Continue to Google** and allow the requested access. Use the same Google account you signed in with.
 3. In your meetings, turn on **transcription** (Activities → Transcripts) or **Gemini "Take notes for me"**.
 
 A few minutes after a meeting ends and Google has finished the transcript, its decisions appear in the dashboard. The next weekday morning (8:00 in each person's time zone), the daily digest email sums up those meetings and what's on their plate today (no email per meeting).
@@ -51,7 +51,7 @@ jobs/meet-poller.js           every MEET_POLL_INTERVAL_MINUTES (default 5), per 
   - `startImport` stores a job in `meet_imports` and runs it in the background; the UI polls `GET /api/integrations/google/imports/:id`.
   - Imports call `ingestTranscript(..., { manual: true })`, which re-processes skipped or failed meetings but never completed ones.
   - Jobs interrupted by a restart are resumed by the poller (`resumeStaleImports`).
-- **Connection:** `integrations/google/connections.js` asks for consent separately from sign-in (incremental consent, `access_type=offline`), checks the connected account matches the signed-in user, and stores the refresh token encrypted (`utils/encryption.js`) in `google_connections`.
+- **Connection:** `/integrations/google/connect` first shows what each permission is for (`views/google-connect.html`, required by Google's verification); `?continue=1` starts consent. `integrations/google/connections.js` asks for consent separately from sign-in (incremental consent, `access_type=offline`), checks the connected account matches the signed-in user, and stores the refresh token encrypted (`utils/encryption.js`) in `google_connections`.
 - **Late transcripts:** Meet generates transcripts a few minutes after a meeting ends. Meetings still generating are retried on later polls; after 6 hours without a transcript they're recorded as skipped (`no_transcript`).
 - **Access refused:** if Google refuses one source (for example the Gemini notes), the meeting is still captured from the other one. If the transcript entries are refused, the transcript Doc is exported from Drive instead. If nothing can be read, the poller logs Google's reason and moves on to the next meeting (it's retried on later polls), and imports show the reason next to the meeting.
 - **Failures:** a failed extraction is retried up to 3 times, at least 10 minutes apart. A revoked or expired Google grant (`invalid_grant`) marks the connection `revoked`, and Settings asks the user to reconnect.

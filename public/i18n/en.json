@@ -13,7 +13,9 @@
     "menu": "Menu",
     "close": "Close menu",
     "open": "Open menu",
-    "homeTitle": "Home"
+    "homeTitle": "Home",
+    "privacy": "Privacy",
+    "terms": "Terms"
   },
   "home": {
     "pageTitle": "Home · Corteza",
@@ -819,10 +821,10 @@
     "totals": "{outcomes} from {meetings}",
     "reconsent": "Corteza can now read Gemini notes too. Reconnect once and allow Google Drive access to capture meetings that only have notes.",
     "lastFailed": "Last check failed: {error}",
-    "calendarConnected": "Calendar connected: your morning summary prepares you for today’s meetings with the open action items of the people in them.",
+    "calendarConnected": "Calendar connected: your morning summary prepares you for today’s meetings with what is still open from their earlier sessions.",
     "calendar": {
       "title": "Prepare for your meetings.",
-      "body": "Let Corteza read your calendar and your morning summary will list today’s meetings with the open action items of the people in them. Corteza only reads your own events when it writes the summary and doesn’t store them.",
+      "body": "Let Corteza read your calendar and your morning summary will list today’s meetings, each with what is still open from its earlier sessions. Corteza only reads your own events when it writes the summary and doesn’t store them.",
       "button": "Add calendar access"
     },
     "saveTo": "Save outcomes to",
@@ -926,7 +928,9 @@
     "title": "Sign in to Corteza",
     "subtitle": "Your team’s decisions, captured from your meetings.",
     "google": "Continue with Google",
-    "note": "Sign in with your work Google account. Colleagues on the same Google Workspace domain join the same Corteza workspace automatically."
+    "note": "Sign in with your work Google account. Colleagues on the same Google Workspace domain join the same Corteza workspace automatically.",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
   },
   "email": {
     "digest": {
@@ -1116,5 +1120,31 @@
     "help": "Only you will see it, with its whole thread. Other owners lose access.",
     "onlyYou": "Only you see it, with its whole thread.",
     "remove": "Remove the mark"
+  },
+  "connectGoogle": {
+    "pageTitle": "Connect Google · Corteza",
+    "title": "Before you connect Google",
+    "intro": "Google will ask you to allow the permissions below. This is what Corteza does with each one.",
+    "meet": {
+      "title": "See your Google Meet meetings",
+      "body": "Lists the meetings you attend, with their participants, transcripts and Gemini notes, so Corteza can read new meetings automatically and import past ones when you ask."
+    },
+    "driveMeet": {
+      "title": "See files Google Meet creates in your Drive",
+      "body": "Reads the transcript and notes files Google Meet saves for a meeting."
+    },
+    "drive": {
+      "title": "See and download your Google Drive files",
+      "body": "Google names this permission broadly. Corteza uses it only to open the Gemini notes document Google Meet links to a meeting. It never browses, lists or reads your other files."
+    },
+    "calendar": {
+      "title": "See your calendar events",
+      "body": "Your morning summary lists today’s meetings with what is still open from their earlier sessions. Events are read when the summary is written and are never stored. You can leave this box unchecked."
+    },
+    "optional": "(optional)",
+    "keep": "Corteza keeps only the outcomes of your meetings (decisions, action items, open questions and risks), never the transcripts. Meeting content is encrypted, nobody else sees your personal space, and you can disconnect at any time in Settings.",
+    "privacy": "Privacy Policy",
+    "continue": "Continue to Google",
+    "notNow": "Not now"
   }
 }

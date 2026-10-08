@@ -42,6 +42,9 @@
     display: flex; flex-direction: column; gap: 0.25rem;
     margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;
   }
+  .corteza-sidebar .sb-legal { margin: 0.5rem 0 0; padding: 0 0.75rem; font-size: 0.75rem; color: #6B7280; }
+  .corteza-sidebar .sb-legal a { color: #6B7280; }
+  .corteza-sidebar .sb-legal a:hover { color: #171717; text-decoration: underline; }
 
   /* Phones (public/scripts/mobile-nav.js): the sidebar is a drawer opened from the top bar,
      and the page takes the full width. Pages keep their desktop classes (ml-64, left-64). */
@@ -118,6 +121,7 @@
     <a class="sb-link" href="/auth/logout">
       <span class="material-symbols-outlined" aria-hidden="true">logout</span>{{t:nav.logout}}
     </a>
+    <p class="sb-legal"><a href="/privacy" target="_blank" rel="noopener">{{t:nav.privacy}}</a> · <a href="/terms" target="_blank" rel="noopener">{{t:nav.terms}}</a></p>
   </div>
 </aside>
 <!-- Phone layout: the sidebar as a drawer -->

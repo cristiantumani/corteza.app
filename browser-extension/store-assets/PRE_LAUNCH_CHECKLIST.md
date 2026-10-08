@@ -94,10 +94,10 @@ Use this checklist to track your progress toward publishing the extension.
   - cookies: "Access session cookies to authenticate with corteza.app"
 
 - [ ] Verify Privacy Policy is accessible:
-  - https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+  - https://app.corteza.app/privacy
 
 - [ ] Verify Terms of Service is accessible:
-  - https://github.com/cristiantumani/corteza.app/blob/main/TERMS_OF_SERVICE.md
+  - https://app.corteza.app/terms
 
 ---
 

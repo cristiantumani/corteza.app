@@ -1,4 +1,7 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
+const { localizedPage } = require('../../core/i18n/i18n');
 const { listRecentForUser } = require('../../ingestion/pipeline');
 const { apiRateLimiter } = require('../../middleware/auth');
 const { canCreateInSpace } = require('../../services/permissions');
@@ -10,7 +13,9 @@ const { track } = require('../posthog/client');
 /**
  * "Connect Google Meet" routes
  *
- *   GET  /integrations/google/connect       start consent (Meet + Drive-Meet scopes, optional calendar, offline access)
+ *   GET  /integrations/google/connect       what each permission is for (shown before Google's consent screen,
+ *                                           as Google's verification requires), then ?continue=1 starts consent
+ *                                           (Meet + Drive-Meet scopes, optional calendar, offline access)
  *   GET  /integrations/google/callback      Google redirects back here
  *   GET  /api/integrations/google           connection status for the signed-in user (+ active_import: a running import, or null)
  *   PUT  /api/integrations/google/settings  { space_id, skip_one_on_one, exclude_keywords }
@@ -33,9 +38,13 @@ function requireSession(req, res, next) {
   next();
 }
 
+// What Corteza does with each permission, before Google asks for them (every "Connect" link lands here)
+const disclosurePage = localizedPage(fs.readFileSync(path.join(__dirname, '../../views/google-connect.html'), 'utf8'));
+
 router.get('/integrations/google/connect', (req, res) => {
   if (!req.session?.user) return res.redirect('/auth/login?return=%2Fsettings');
   if (!google.isGoogleConfigured()) return settingsRedirect(res, { google_error: 'Google is not configured on this server.' });
+  if (req.query.continue !== '1') return res.type('html').send(disclosurePage(req));
 
   const state = google.randomToken();
   const nonce = google.randomToken();

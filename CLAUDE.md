@@ -56,7 +56,8 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Invites (validate, join) | `src/core/invites/invite-service.js` |
 | Create a decision (single write path for new code) | `src/core/decisions/decision-service.js` (`createDecision`) |
 | Transcript → decisions pipeline (dedupe, extract, auto-save) | `src/ingestion/pipeline.js` (`ingestTranscript`) |
-| Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js` |
+| Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js`; what each permission is for, shown before Google's consent screen (every Connect link): `src/views/google-connect.html` |
+| Privacy policy and terms (public `/privacy`, `/terms`, EN/ES; English binds) | `src/views/legal/` (`page.html` + `<doc>.<lang>.html`), `src/http/legal.js`; linked from login and the sidebar. When a Google scope, a provider or a use of data changes, update both languages (new date) and the connect page in the same PR |
 | Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs, extraction through the Message Batches API at half price) | `src/ingestion/meet-import.js`, `src/ingestion/batch-extraction.js` |
@@ -73,7 +74,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Action items page and API (`/actions`, `/api/action-items`, `/api/people`) | `src/http/action-items.js`, `src/views/actions.html`, `public/scripts/actions.js`; inside a decision's detail: `public/scripts/decision-actions.js` |
 | Extraction eval (labeled transcripts, scoring, real-meeting export and draft labels) | `scripts/eval-extraction.js`, `scripts/eval/{score,export-meetings,draft-labels}.js`, `test/fixtures/extraction/` (synthetic only; real meetings stay outside the repo). Research and plan: `docs/research/extraction-quality.md` |
 | Product roadmap (what to build next, go-to-market) | `docs/ROADMAP.md` |
-| Google verification / launch checklist | `docs/launch/google-verification.md` |
+| Google verification / launch checklist (scope justifications, `drive.readonly` test, brand steps) and the demo video script | `docs/launch/google-verification.md`, `docs/launch/demo-video-script.md` |
 | Embeddings / semantic search (answer + sources used, keyword fallback, source feedback, open action items for "what's pending from Ana?" and for a meeting named in the question, from all its sessions, like meeting prep) | `src/services/embeddings.js`, `src/services/semantic-search.js`, `src/core/search/relevance.js`, `src/core/search/action-items.js`, `src/http/search-feedback.js`, `public/scripts/ai-search.js` |
 | App sidebar (one for every page: Home, Action items, Questions & risks, Search, Settings) | `src/views/partials/sidebar.html`, injected at `<!-- SIDEBAR -->` by `renderView` in `src/http/page-partials.js`. Change it there, never per page |
 | First-run onboarding on Home (4 steps: connect Meet, Search, Action items, company context for admins; once per person, reopened from the sidebar's "How it works") | `src/views/partials/onboarding.html` (injected at `<!-- ONBOARDING -->` by `renderView`), `public/scripts/onboarding.js`, `src/http/onboarding.js`, `src/core/onboarding/onboarding-service.js` |

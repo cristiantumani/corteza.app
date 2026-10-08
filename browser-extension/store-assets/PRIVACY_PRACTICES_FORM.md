@@ -97,7 +97,7 @@ All team memories are stored in the user's Corteza workspace, not by the extensi
 
 **Answer (Copy this):**
 ```
-https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+https://app.corteza.app/privacy
 ```
 
 ---
