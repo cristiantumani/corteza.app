@@ -1109,5 +1109,12 @@
     "closeFailed": "Couldn’t close them. Try again.",
     "resolvedNote": "Resolved by: {text} ({meeting}, {date})",
     "manual": "logged by hand"
+  },
+  "sensitive": {
+    "label": "Sensitive",
+    "mark": "Mark as sensitive",
+    "help": "Only you will see it, with its whole thread. Other owners lose access.",
+    "onlyYou": "Only you see it, with its whole thread.",
+    "remove": "Remove the mark"
   }
 }

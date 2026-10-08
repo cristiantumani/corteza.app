@@ -60,6 +60,8 @@ async function nextDecisionId(workspaceId) {
  *   (e.g. from the upload review screen): it's saved as confirmed, not waiting for review
  * @param {string|null} [params.topicId] - thread it belongs to (`top_<hex>`, see core/topics)
  * @param {string|null} [params.topic] - the thread's label
+ * @param {boolean} [params.sensitive] - visible only to `privateTo` (core/privacy/sensitive); the caller puts it in their personal space
+ * @param {string|null} [params.privateTo] - who a sensitive outcome stays visible to (default: the author)
  * @param {Date|string|null} [params.decidedAt] - when it was decided (e.g. the meeting's start); defaults to now.
  *   Stored as `timestamp`, which the dashboard, search date filters and digest use. `created_at` is always now.
  * @returns {Promise<Object>} The saved decision
@@ -68,7 +70,7 @@ async function createDecision({
   workspaceId, spaceId, spaceName = null, text, type = 'decision', tags = [], epicKey = null,
   alternatives = null, author, source, capture = 'manual', confidence = null, decidedAt = null,
   ownerName = null, raisedBy = null, dueDate = null, rationale = null, evidenceQuote = null, reviewedBy = null,
-  topicId = null, topic = null
+  topicId = null, topic = null, sensitive = false, privateTo = null
 }) {
   if (!workspaceId || !spaceId) throw new Error('createDecision requires workspaceId and spaceId');
   if (!text || !text.trim()) throw new Error('createDecision requires text');
@@ -99,6 +101,8 @@ async function createDecision({
     evidence_quote: evidenceQuote || null,
     topic_id: topicId || null,
     topic: topicId && topic ? String(topic).slice(0, 80) : null,
+    sensitive: !!sensitive,
+    private_to: sensitive ? privateTo || author?.user_id || null : null,
     timestamp: timestamp.toISOString(),
     created_at: now,
     ...(reviewedBy ? { review_status: 'confirmed', reviewed_by: reviewedBy, reviewed_at: now } : {})

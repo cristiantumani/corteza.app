@@ -924,6 +924,10 @@
       if (window.CortezaMayClose) {
         window.CortezaMayClose.loadDetail(decision, { pendingReview: decision.capture === 'ai' && !decision.review_status && canModify });
       }
+      // Sensitive: visible only to them, with its thread (public/scripts/sensitive.js)
+      if (window.CortezaSensitive) {
+        window.CortezaSensitive.renderDetail(decision, () => { detailChanged = true; });
+      }
 
       // Re-render this same outcome after a change. Looked up by id: the list may have been
       // reloaded while the modal was open (an item opened from Home isn't in it at all)

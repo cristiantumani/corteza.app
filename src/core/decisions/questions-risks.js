@@ -23,7 +23,7 @@ const LIST_LIMIT = 300;
 const PROJECTION = {
   _id: 0, id: 1, type: 1, text: 1, rationale: 1, evidence_quote: 1, owner_name: 1, space_id: 1, space_name: 1,
   source_details: 1, timestamp: 1, capture: 1, review_status: 1, creator: 1, raised_by: 1, user_id: 1,
-  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1, topic_id: 1, topic: 1
+  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1, topic_id: 1, topic: 1, sensitive: 1
 };
 
 /**
