@@ -60,3 +60,4 @@ temp/
 browser-extension/*.zip
 # Screenshots from .claude/skills/corteza-design/scripts/preview.js
 ui-preview/
+daily-digest-*.html

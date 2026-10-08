@@ -295,6 +295,51 @@ async function claimDay(workspaceId, userId, day, now) {
 }
 
 /**
+ * The email for one person: their partner, language and the send parameters
+ * @param {Object} member - workspace_members row (workspace_id, user_id, email, workspace_name, digest_voice, language, browser_language)
+ * @param {Object} params
+ * @param {Object} params.summary - from buildDailySummary
+ * @param {Date} params.since
+ * @param {Date} params.now
+ * @param {string} params.timeZone
+ * @param {Object|null} params.workspace - { digest_voices_enabled }
+ * @param {string|null} params.languageSetting - their Meet language setting
+ * @returns {Promise<{ params: Object, voiceName: string, partner: Object|null, language: 'en'|'es' }>}
+ */
+async function composeDigest(member, { summary, since, now, timeZone, workspace, languageSetting }) {
+  const voiceName = voice.resolveVoice(member, workspace);
+  const recent = await getDatabase().collection('daily_digests').find(
+    { workspace_id: member.workspace_id, user_id: member.user_id, sent: true, checked_at: { $gte: new Date(now.getTime() - voice.REPEAT_DAYS * 24 * 3600 * 1000) } },
+    { projection: { _id: 0, line_id: 1, language: 1 } }
+  ).sort({ checked_at: -1 }).toArray();
+  // The email's language: the person's (picked in Settings, or their browser's), else guessed like the partner's line
+  const language = memberLanguage(member) || voice.pickLanguage({
+    setting: languageSetting,
+    texts: [...summary.planItems.map(item => item.text), ...(summary.meetingPrep || []).flatMap(meeting => (meeting.items || []).map(item => item.text))],
+    previous: (recent[0] && recent[0].language) || null
+  });
+  const partner = buildPartner({ voiceName, summary, now, timeZone, recent, languageSetting, language });
+  return {
+    voiceName,
+    partner,
+    language,
+    params: {
+      email: member.email,
+      workspace_name: member.workspace_name || member.workspace_id,
+      summary: {
+        ...summary,
+        today: localTime(now, timeZone).date,
+        dayLabel: now.toLocaleDateString(language === 'es' ? 'es' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
+        since: sinceLabel(since, now, timeZone, language)
+      },
+      unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily'),
+      partner,
+      lang: language
+    }
+  };
+}
+
+/**
  * Sends the digests that are due now (8:00 in each person's time zone) and not sent yet
  * @param {Date} [now]
  * @param {Object} [deps] - { send } injectable for tests
@@ -331,33 +376,11 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
       const summary = await buildDailySummary(member.workspace_id, member.user_id, since, now, timeZone);
       if (!hasNews(summary)) continue;
 
-      const voiceName = voice.resolveVoice(member, workspaceOf.get(member.workspace_id) || null);
-      const recent = await db.collection('daily_digests').find(
-        { workspace_id: member.workspace_id, user_id: member.user_id, sent: true, checked_at: { $gte: new Date(now.getTime() - voice.REPEAT_DAYS * 24 * 3600 * 1000) } },
-        { projection: { _id: 0, line_id: 1, language: 1 } }
-      ).sort({ checked_at: -1 }).toArray();
-      // The email's language: the person's (picked in Settings, or their browser's), else guessed like the partner's line
       const languageSetting = languageOf.get(`${member.workspace_id}|${member.user_id}`) || null;
-      const language = memberLanguage(member) || voice.pickLanguage({
-        setting: languageSetting,
-        texts: [...summary.planItems.map(item => item.text), ...(summary.meetingPrep || []).flatMap(meeting => (meeting.items || []).map(item => item.text))],
-        previous: (recent[0] && recent[0].language) || null
+      const { params, voiceName, partner, language } = await composeDigest(member, {
+        summary, since, now, timeZone, workspace: workspaceOf.get(member.workspace_id) || null, languageSetting
       });
-      const partner = buildPartner({ voiceName, summary, now, timeZone, recent, languageSetting, language });
-
-      await send({
-        email: member.email,
-        workspace_name: member.workspace_name || member.workspace_id,
-        summary: {
-          ...summary,
-          today: localTime(now, timeZone).date,
-          dayLabel: now.toLocaleDateString(language === 'es' ? 'es' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
-          since: sinceLabel(since, now, timeZone, language)
-        },
-        unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily'),
-        partner,
-        lang: language
-      });
+      await send(params);
       await getDatabase().collection('daily_digests').updateOne(
         { workspace_id: member.workspace_id, user_id: member.user_id, day },
         // Counts only: the items' text isn't kept
@@ -405,6 +428,7 @@ module.exports = {
   buildDailySummary,
   digestDay,
   buildPartner,
+  composeDigest,
   hasNews,
   sinceLabel,
   timeZoneResolver
