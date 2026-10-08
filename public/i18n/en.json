@@ -693,7 +693,18 @@
     "question": "This was a next step on {question}. Mark it answered?",
     "risk": "Close the linked risk too? {risk}",
     "answerPlaceholder": "What was the answer? (optional)",
-    "notYet": "Not yet"
+    "notYet": "Not yet",
+    "doneTitle": "Done.",
+    "resolveAsk": "Does it also resolve any of these?",
+    "closeSelected": "Close selected",
+    "notNow": "Not now",
+    "orphanedQuestion": "This question is left with no action items:",
+    "orphanedRisk": "This risk is left with no action items:",
+    "addAction": "Add an action item",
+    "addPlaceholder": "What’s the next step?",
+    "addSave": "Add",
+    "thatsFine": "That’s fine",
+    "resolvedByItem": "Resolved with the action item: {item}"
   },
   "questions": {
     "pageTitle": "Questions & risks · Corteza",

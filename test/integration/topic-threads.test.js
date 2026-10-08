@@ -113,10 +113,13 @@ describe('topic threads: pipeline, linked items, close-the-loop suggestions, onl
     assert.equal(item.topic_id, undefined);
   });
 
-  test('marking the next step done suggests answering the question; answering it suggests closing the risk', async () => {
+  test('marking the next step done suggests closing its question and risk; answering it suggests closing the risk', async () => {
     const done = await request('PATCH', '/api/action-items/act_iso', { status: 'done' });
     assert.equal(done.status, 200);
-    assert.deepEqual(done.body.linked_questions, [{ id: 101, type: 'open_question', text: '¿Conviene certificarnos en ISO 27001?' }]);
+    assert.deepEqual(done.body.may_resolve, [
+      { id: 101, type: 'open_question', text: '¿Conviene certificarnos en ISO 27001?' },
+      { id: 102, type: 'risk', text: 'Sin la certificación podemos perder clientes enterprise' }
+    ], 'the question first, then the risk; not the decision, not the colleague\'s private risk');
     const stillOpen = await db.collection('decisions').findOne({ workspace_id: 'WTOP', id: 101 });
     assert.notEqual(stillOpen.resolution_status, 'resolved', 'only a suggestion: nothing closes by itself');
 
@@ -126,7 +129,7 @@ describe('topic threads: pipeline, linked items, close-the-loop suggestions, onl
       'the colleague\'s private risk is not offered');
 
     const again = await request('PATCH', '/api/action-items/act_iso', { status: 'done' });
-    assert.deepEqual(again.body.linked_questions, [], 'already done: nothing to suggest');
+    assert.deepEqual(again.body.may_resolve, [], 'already done: nothing to suggest');
   });
 
   test('the pipeline gives items about the same subject one thread', async () => {

@@ -693,7 +693,18 @@
     "question": "Esto era un paso para responder {question}. ¿La marcas como respondida?",
     "risk": "¿Cierras también el riesgo vinculado? {risk}",
     "answerPlaceholder": "¿Cuál fue la respuesta? (opcional)",
-    "notYet": "Todavía no"
+    "notYet": "Todavía no",
+    "doneTitle": "Hecho.",
+    "resolveAsk": "¿Esto también resuelve alguno de estos?",
+    "closeSelected": "Cerrar seleccionados",
+    "notNow": "Ahora no",
+    "orphanedQuestion": "Esta pregunta queda sin pendientes:",
+    "orphanedRisk": "Este riesgo queda sin pendientes:",
+    "addAction": "Agregar un pendiente",
+    "addPlaceholder": "¿Cuál es el siguiente paso?",
+    "addSave": "Agregar",
+    "thatsFine": "Está bien así",
+    "resolvedByItem": "Resuelto con el pendiente: {item}"
   },
   "questions": {
     "pageTitle": "Preguntas y riesgos · Corteza",
@@ -1094,7 +1105,7 @@
       "one": "Se cerró {count} tarjeta anterior",
       "other": "Se cerraron {count} tarjetas anteriores"
     },
-    "closeSelected": "Cerrar seleccionadas",
+    "closeSelected": "Cerrar seleccionados",
     "closeFailed": "No se pudieron cerrar. Inténtalo de nuevo.",
     "resolvedNote": "Resuelto por: {text} ({meeting}, {date})",
     "manual": "registrado a mano"

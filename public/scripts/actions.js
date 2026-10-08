@@ -10,8 +10,8 @@
  * (GET/POST /api/action-items/from-colleagues, core/actions/colleague-assignments).
  *
  * An item in a topic thread shows "Part of: <topic> · N questions, M risks", linking to
- * /questions?topic=<id>; marking it done offers to mark the thread's open questions
- * answered (close-loop.js).
+ * /questions?topic=<id>; marking it done offers to close its open questions and risks, and
+ * cancelling the last one of a question or risk says it's left alone (close-loop.js).
  */
 (function() {
   'use strict';
@@ -326,7 +326,7 @@
       document.getElementById('items-count').textContent = t('outcomeCounts.action_item', { count: remaining });
       if (previous && previous.status !== data.item.status) showMoved(data.item, previous.status);
     }
-    if (window.CortezaLoop) window.CortezaLoop.offerAnswer(data.linked_questions);
+    if (window.CortezaLoop) window.CortezaLoop.afterItemChange(data);
     return {};
   }
 
