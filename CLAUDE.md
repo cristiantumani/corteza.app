@@ -26,6 +26,7 @@ npm run typecheck         # TypeScript checks our JavaScript (JSDoc types; see t
 npm run build:css         # rebuild public/styles/tailwind.min.css after changing Tailwind classes
 TEST_MONGODB_URI=mongodb://localhost:27017 npm test   # run everything against a local MongoDB
 railway run node scripts/db-size.js   # space used per collection vs the Atlas free tier (512 MB); read-only
+railway run node scripts/send-daily-digest.js --email you@co.com [--dry-run]   # send one person's morning summary now (last 24 h; doesn't mark the day as sent)
 node scripts/eval-extraction.js   # extraction quality eval (calls Claude, costs money); run before/after prompt or model changes
 railway run node scripts/eval/export-meetings.js --email you@co.com --out ~/corteza-eval   # real meetings for the eval, OUTSIDE the repo
 node scripts/eval/draft-labels.js --dir ~/corteza-eval   # Claude drafts expected / not_expected labels to review (costs money)
