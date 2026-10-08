@@ -6,7 +6,8 @@ const { getDecisionsCollection, getWorkspaceMembersCollection, getWorkspaceSpace
 const actions = require('../core/actions/action-service');
 const { reviewColleagueAssignments, unseenFromColleagues, markColleagueAssignmentsSeen } = require('../core/actions/colleague-assignments');
 const { getTimeZone, localTime } = require('../core/users/timezone');
-const { withThreadSummaries, openInThread } = require('../core/topics/thread-service');
+const { withThreadSummaries } = require('../core/topics/thread-service');
+const closeLoop = require('../core/actions/close-loop');
 const { track } = require('../integrations/posthog/client');
 
 /**
@@ -15,10 +16,11 @@ const { track } = require('../integrations/posthog/client');
  *   GET   /actions                          page (filters: mine/everyone, status, due)
  *   GET   /api/action-items?owner=me|all&status=open|done|cancelled|resolved|all&due=overdue|today|none|week&decision_id=12
  *   POST  /api/action-items                 { decision_id | space_id, text, owner_user_ids?, due_date? } add one by hand,
- *                                           to a decision or on its own (Log manually → Action item)
+ *                                           to a decision or on its own (Log manually → Action item); it joins the decision's thread
  *                                           each item has `thread` ("Part of: <topic> · N questions, M risks") or null
- *   PATCH /api/action-items/:itemId         { status?, due_date?, text?, rationale?, owner_ids?, keep_owner_names? }; marked done: `linked_questions`, the open
- *                                           questions of its thread, to offer marking them answered
+ *   PATCH /api/action-items/:itemId         { status?, due_date?, text?, rationale?, owner_ids?, keep_owner_names? }; marked done: `may_resolve`,
+ *                                           its open questions and risks, to offer closing them; cancelled: `orphaned`, the ones it
+ *                                           leaves with no open action item (core/actions/close-loop, docs/specs/2026-10-close-loop-actions.md)
  *   GET   /api/action-items/from-colleagues  { count, from: [{ name, count }] } new items colleagues assigned to me
  *   POST  /api/action-items/from-colleagues/seen   I opened Action items: they're no longer new
  *   GET   /api/people                       workspace members to pick owners from: [{ user_id, name, email }]
@@ -90,7 +92,7 @@ router.post('/api/action-items', apiRateLimiter, express.json(), requireSession,
     if (decision_id !== undefined && decision_id !== null) {
       const decisionId = typeof decision_id === 'number' ? decision_id : parseInt(decision_id, 10);
       decision = Number.isInteger(decisionId)
-        ? await getDecisionsCollection().findOne({ workspace_id, id: decisionId }, { projection: { id: 1, space_id: 1, space_name: 1 } })
+        ? await getDecisionsCollection().findOne({ workspace_id, id: decisionId }, { projection: { id: 1, space_id: 1, space_name: 1, topic_id: 1, topic: 1 } })
         : null;
       if (!decision) return res.status(404).json({ success: false, error: 'Decision not found' });
       space = { space_id: decision.space_id, name: decision.space_name || null };
@@ -117,6 +119,8 @@ router.post('/api/action-items', apiRateLimiter, express.json(), requireSession,
       ownerUserIds: Array.isArray(owner_user_ids) ? owner_user_ids : [],
       dueDate: due_date || null,
       decisionId: decision ? decision.id : null,
+      topicId: decision && decision.topic_id ? decision.topic_id : null,
+      topic: decision && decision.topic ? decision.topic : null,
       capture: 'manual',
       author: { user_id, name: user_name || null }
     });
@@ -192,9 +196,11 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
     const owners = owner_ids !== undefined ? await actions.ownersForUpdate(item, owner_ids, keep_owner_names) : undefined;
     const updated = await actions.updateActionItem(workspace_id, item.item_id, { status, due_date, text, rationale, owners });
     if (updated?.error) return res.status(400).json({ success: false, error: updated.error });
-    const linkedQuestions = status === 'done' && item.status !== 'done' && item.topic_id
-      ? await openInThread(workspace_id, item.topic_id, 'open_question', { spaceIds: await getUserAccessibleSpaces(null, workspace_id, user_id) })
-      : [];
+    // Closing the loop: what this item may have resolved (done), or left without a next step (cancelled)
+    const closedNow = item.status === 'open' && (status === 'done' || status === 'cancelled');
+    const access = closedNow ? { spaceIds: spaceIds.length ? spaceIds : await getUserAccessibleSpaces(null, workspace_id, user_id), userId: user_id } : null;
+    const mayResolve = closedNow && status === 'done' ? (await closeLoop.relatedOutcomes(workspace_id, item, access)).outcomes : [];
+    const orphaned = closedNow && status === 'cancelled' ? await closeLoop.orphanedBy(workspace_id, item, access) : [];
     track('action_item_updated', {
       status_changed_to: status && status !== item.status ? status : null,
       due_date_changed: due_date !== undefined && due_date !== item.due_date,
@@ -204,7 +210,8 @@ router.patch('/api/action-items/:itemId', apiRateLimiter, express.json(), requir
       is_owner: isOwner,
       overdue: !!item.due_date && item.due_date < new Date().toISOString().slice(0, 10)
     });
-    res.json({ success: true, item: updated, linked_questions: linkedQuestions });
+    // viewer_id: the owner of an action item added for an orphaned question or risk (close-loop.js)
+    res.json({ success: true, item: updated, may_resolve: mayResolve, orphaned, viewer_id: user_id });
   } catch (error) {
     console.error('❌ Failed to update action item:', error);
     res.status(500).json({ success: false, error: 'Failed to update action item' });

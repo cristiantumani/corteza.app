@@ -91,7 +91,13 @@ const routes = {
     // eslint-disable-next-line no-unused-vars
     const { owner_ids: ownerIds, keep_owner_names: keepNames, ...changes } = req.body || {};
     const owners = ownerIds ? people.filter(p => ownerIds.includes(p.user_id)).map(p => ({ user_id: p.user_id, name: p.name })) : item.owners;
-    return { success: true, item: { ...item, ...changes, owners, owner_ids: owners.map(o => o.user_id) }, linked_questions: [] };
+    // Closing the loop (close-loop.js): done offers its question and risk, cancelled warns the question is left alone
+    const related = [{ id: 21, type: 'open_question', text: '¿Ofrecemos un plan anual con descuento este trimestre?' }, { id: 22, type: 'risk', text: 'El margen queda bajo el objetivo con un 20% de descuento' }];
+    const opened = item.status === 'open';
+    return {
+      success: true, item: { ...item, ...changes, owners, owner_ids: owners.map(o => o.user_id) }, viewer_id: 'U1',
+      may_resolve: opened && changes.status === 'done' ? related : [], orphaned: opened && changes.status === 'cancelled' ? related.slice(0, 1) : []
+    };
   },
   'GET /api/action-items/from-colleagues': { success: true, count: 1, from: [{ name: 'Bruno Díaz', count: 1 }] },
   'GET /api/questions-risks': req => {

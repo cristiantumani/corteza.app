@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Closing an action item closes the loop
+- Marking an action item done asks "Does this also resolve…?" with its open questions **and risks** (unchecked; a question can take an answer). Items without a thread use the outcome they carry out: its thread or meeting, or the question or risk itself
+- Cancelling the last action item of a question or risk says it's left with no action items, with "Add an action item" (linked to it, joins its thread) or "That's fine"
+- An action item added to an outcome joins that outcome's thread
+
 ### Changed - Meeting prep follows each meeting's own history
 - "Prepare for today's meetings" in the morning summary connects each meeting to its earlier sessions (same Meet link, or the same title), never to its attendees: an item from your 1:1 with someone no longer shows up in every meeting they're invited to
 - For a recurring meeting: last time it met, everyone's open action items with their owner, open questions and risks, and what was closed since last time
