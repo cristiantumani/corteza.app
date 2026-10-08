@@ -15,8 +15,26 @@ const MAX_EVENTS = 50;
  * @property {string} id
  * @property {string} title
  * @property {string} start - ISO date-time
+ * @property {string|null} meeting_code - the Google Meet code ('abc-defg-hij'), same for every instance of a recurring meeting
  * @property {{ email: string, name: string|null, self: boolean }[]} attendees - people only (no rooms), not ones who declined
  */
+
+const MEET_CODE = /meet\.google\.com\/([a-z]{3,4}-[a-z]{3,4}-[a-z]{3,4})/i;
+
+/**
+ * The Meet code of a calendar event, from its Meet link or its conference data
+ * @param {Object} event - a Calendar API event
+ * @returns {string|null}
+ */
+function meetingCodeOf(event) {
+  const fromLink = MEET_CODE.exec(event.hangoutLink || '');
+  if (fromLink) return fromLink[1].toLowerCase();
+  const conference = event.conferenceData || {};
+  const id = typeof conference.conferenceId === 'string' ? conference.conferenceId.toLowerCase() : '';
+  if (conference.conferenceSolution?.key?.type === 'hangoutsMeet' && /^[a-z]{3,4}-[a-z]{3,4}-[a-z]{3,4}$/.test(id)) return id;
+  const entry = (conference.entryPoints || []).map(point => MEET_CODE.exec(point.uri || '')).find(Boolean);
+  return entry ? entry[1].toLowerCase() : null;
+}
 
 /**
  * Timed events on the person's primary calendar between `from` and `to` that they haven't
@@ -43,10 +61,11 @@ async function listEventsBetween(client, { from, to }) {
       id: event.id,
       title: event.summary || '',
       start: event.start.dateTime,
+      meeting_code: meetingCodeOf(event),
       attendees: (event.attendees || [])
         .filter(a => a.email && !a.resource && a.responseStatus !== 'declined')
         .map(a => ({ email: String(a.email).toLowerCase(), name: a.displayName || null, self: Boolean(a.self) }))
     }));
 }
 
-module.exports = { listEventsBetween };
+module.exports = { listEventsBetween, meetingCodeOf };

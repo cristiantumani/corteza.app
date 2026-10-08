@@ -43,6 +43,18 @@ async function listConferenceRecordsBetween(client, { from, to }) {
 }
 
 /**
+ * Past conference records of one Meet code (every instance of a recurring meeting the person can see)
+ * @param {Object} client
+ * @param {string} meetingCode - 'abc-defg-hij'
+ * @returns {Promise<Object[]>} [{ name, startTime, endTime, space }]
+ */
+async function listConferenceRecordsForMeetingCode(client, meetingCode) {
+  return collectPages(client, `${MEET_API}/conferenceRecords`, 'conferenceRecords', {
+    filter: `space.meeting_code="${meetingCode}"`
+  }, 2);
+}
+
+/**
  * One conference record by name ("conferenceRecords/<id>"). Only succeeds for
  * meetings the connected user can access.
  */
@@ -124,6 +136,7 @@ function isRevokedError(error) {
 module.exports = {
   listConferenceRecords,
   listConferenceRecordsBetween,
+  listConferenceRecordsForMeetingCode,
   getConferenceRecord,
   listParticipants,
   listTranscripts,

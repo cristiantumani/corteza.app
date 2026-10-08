@@ -30,7 +30,23 @@ const SUMMARIES = {
   overloaded: { overdue: 9, dueToday: 0, planItems: [1, 2, 3, 4, 5].map(n => item(`o${n}`, `Pendiente atrasado número ${n}`, '2026-09-20')) },
   prep_only: {
     overdue: 0, dueToday: 0, planItems: [], meetings: 0, newActionItems: 0,
-    meetingPrep: [{ time: '9:30 AM', title: 'Weekly Ops', people: ['Bruno Díaz'], items: [{ item_id: 'm1', text: 'Actualizar el calendario', due_date: null, owner: 'Bruno Díaz' }], more: 0 }]
+    // Meeting prep (core/briefs/meeting-prep): a series with its history, a meeting without history, a new 1:1 with a suggestion
+    meetingPrep: [
+      {
+        time: '9:30 AM', title: 'Weekly Ops', people: ['Bruno Díaz', 'Carla Soto'], kind: 'series', last_met: '2026-09-28', suggested: false, more: 0,
+        items: [
+          { item_id: 'm1', text: 'Actualizar el calendario de lanzamientos', due_date: '2026-10-02', mine: false, owner: 'Bruno Díaz' },
+          { item_id: 'm2', text: 'Enviar el resumen de métricas al directorio', due_date: '2026-10-07', mine: true, owner: null }
+        ],
+        questions: [{ type: 'open_question', text: '¿Movemos el lanzamiento a noviembre?', owner: 'Carla Soto' }],
+        closed: [{ type: 'action_item', text: 'Cerrar el contrato con el proveedor de pagos', owner: 'Carla Soto' }]
+      },
+      { time: '1:00 PM', title: 'Directorio LATAM', people: ['Bruno Díaz', 'Ana López', 'Pedro Ruiz'], kind: 'new', last_met: null, suggested: false, more: 0, items: [], questions: [], closed: [] },
+      {
+        time: '4:00 PM', title: 'Café con Bruno', people: ['Bruno Díaz'], kind: 'new', last_met: null, suggested: true, more: 0,
+        items: [{ item_id: 's1', text: 'Revisar herramientas más baratas que Asana', due_date: null, mine: false, owner: 'Bruno Díaz' }], questions: [], closed: []
+      }
+    ]
   }
 };
 
