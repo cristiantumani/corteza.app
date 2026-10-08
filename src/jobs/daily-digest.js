@@ -152,7 +152,7 @@ async function addNextStepOn(workspaceId, items, spaceIds) {
  *   the open question of the item's topic thread, if any; recent_from_colleague: a colleague's meeting assigned it
  *   in the last 24 hours
  *   assignedBy: of the new action items, the ones colleagues' meetings assigned them, by colleague
- *   meetingPrep: today's meetings with the open items of the people in them (core/briefs/meeting-prep), each with `time` ('9:30 AM')
+ *   meetingPrep: today's meetings with what is open from each one's own history (core/briefs/meeting-prep), each with `time` ('9:30 AM') and `last_met` as a local 'YYYY-MM-DD'
  * @param {Object} [options]
  * @param {Function} [options.meetingPrep] - (workspaceId, userId, { now, timeZone }) => MeetingPrep[] (tests)
  */
@@ -211,21 +211,27 @@ async function buildDailySummary(workspaceId, userId, since, now, timeZone = 'UT
   }
   const assignedBy = fromColleagues.map(row => ({ name: row._id || 'A colleague', count: row.count }));
 
-  // Today's meetings with the open items of the people in them (needs calendar access)
+  // Today's meetings with what is open from each one's history (needs calendar access)
   let meetingPrep = [];
   try {
     const prep = await (loadPrep || require('../core/briefs/meeting-prep').getMeetingPrep)(workspaceId, userId, { now, timeZone });
     const clock = new Intl.DateTimeFormat('en-US', { timeZone: isValidTimeZone(timeZone) ? timeZone : 'UTC', hour: 'numeric', minute: '2-digit' });
-    meetingPrep = prep.map(meeting => ({ ...meeting, time: clock.format(new Date(meeting.start)) }));
+    // The time and "last time" date in the person's time zone
+    meetingPrep = prep.map(meeting => ({
+      ...meeting,
+      time: clock.format(new Date(meeting.start)),
+      last_met: meeting.last_met ? localTime(new Date(meeting.last_met), timeZone).date : null
+    }));
   } catch (error) {
     console.warn(`⚠️  Meeting prep failed for ${userId} in ${workspaceId}:`, error.message);
   }
   return { meetings: ingestions.length, outcomes, newActionItems, dueToday, toReview, overdue, noDueDate, planItems, assignedBy, meetingPrep };
 }
 
-/** Something new happened, something is due today, or a meeting today has items to prepare: reminders alone never trigger an email */
+/** Something new happened, something is due today, or a meeting today has something to prepare: reminders (or a calendar) alone never trigger an email */
 function hasNews(summary) {
-  return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0 || (summary.meetingPrep || []).length > 0;
+  const { hasContent } = require('../core/briefs/meeting-prep');
+  return summary.meetings > 0 || summary.newActionItems > 0 || summary.dueToday > 0 || (summary.meetingPrep || []).some(hasContent);
 }
 
 /**

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed - Meeting prep follows each meeting's own history
+- "Prepare for today's meetings" in the morning summary connects each meeting to its earlier sessions (same Meet link, or the same title), never to its attendees: an item from your 1:1 with someone no longer shows up in every meeting they're invited to
+- For a recurring meeting: last time it met, everyone's open action items with their owner, open questions and risks, and what was closed since last time
+- A meeting without history is listed with "No action items connected to this meeting yet"; a 1:1 without history suggests what you have open with that person
+- A day with meetings but nothing to show doesn't send the summary
+
 ### Added - Company context from Google Drive
 - Settings → Context for the AI → **Add from Google Drive** (admins): Google's own file picker; Docs, Sheets, Slides, PDF, DOCX, TXT, MD and CSV, shared drives included. Only the text is kept, with the same limits as an upload
 - **Update** on a Drive document reads it again and replaces its text in place

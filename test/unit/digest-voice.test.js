@@ -14,7 +14,8 @@ test('situations follow the spec table, including the overloaded threshold', () 
   assert.equal(s({ overdue: 3 }), 'overdue_pile');
   assert.equal(s({ overdue: 5 }), 'overdue_pile');
   assert.equal(s({ overdue: 6 }), 'overloaded');
-  assert.equal(voice.pickSituation({ meetings: 0, newActionItems: 0, meetingPrep: [{}] }), 'prep_only');
+  assert.equal(voice.pickSituation({ meetings: 0, newActionItems: 0, meetingPrep: [{ items: [{ text: 'x' }] }] }), 'prep_only');
+  assert.equal(voice.pickSituation({ meetings: 0, newActionItems: 0, meetingPrep: [{ items: [], questions: [], closed: [] }] }), 'all_clear', 'a meeting with nothing to prepare isn’t prep');
   assert.equal(voice.pickSituation({ meetings: 2, meetingPrep: [{}] }), 'all_clear', 'news and prep: not prep only');
 });
 

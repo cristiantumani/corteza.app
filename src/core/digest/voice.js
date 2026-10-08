@@ -75,7 +75,8 @@ function pickSituation(summary) {
   if (overdue >= 3) return 'overdue_pile';
   if (overdue >= 1) return 'overdue_few';
   if (summary.dueToday) return 'due_today';
-  const prep = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.length : 0;
+  // Meetings with something to prepare (core/briefs/meeting-prep): a calendar alone doesn't count
+  const prep = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.filter(m => (m.items || []).length || (m.questions || []).length || (m.closed || []).length).length : 0;
   if (prep && !summary.meetings && !summary.newActionItems) return 'prep_only';
   return 'all_clear';
 }

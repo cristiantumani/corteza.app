@@ -407,7 +407,7 @@ function dailyDigestSubject(summary, lang = 'en') {
   const today = [];
   if (summary.dueToday) today.push(t('email.digest.subject.dueToday', { count: summary.dueToday }));
   if (summary.overdue) today.push(t('email.digest.subject.overdue', { count: summary.overdue }));
-  const prepCount = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.length : 0;
+  const prepCount = Array.isArray(summary.meetingPrep) ? summary.meetingPrep.filter(meeting => (meeting.items || []).length || (meeting.questions || []).length || (meeting.closed || []).length).length : 0;
   if (prepCount) today.push(t('email.digest.subject.prep', { count: prepCount }));
   const since = [];
   if (summary.meetings) since.push(t('capture.meetings', { count: summary.meetings }));
@@ -425,9 +425,9 @@ function dailyDigestSubject(summary, lang = 'en') {
 
 /**
  * The morning summary for one person, to plan the day. Like a task list: their own action
- * items due today or overdue, each with a button to open it in Corteza; then counts of
- * what else needs them and of what their meetings left. No decisions, colleagues' items
- * or transcript text.
+ * items due today or overdue, each with a button to open it in Corteza; today's meetings
+ * with what is open from each one's history; then counts of what their meetings left.
+ * No decisions or transcript text.
  * @param {Object} params
  * @param {string} params.email
  * @param {string} params.workspace_name
@@ -435,7 +435,8 @@ function dailyDigestSubject(summary, lang = 'en') {
  * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
  *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting, next_step_on }], assignedBy: [{ name, count }],
- *   meetingPrep: [{ time, title, people, items: [{ item_id, text, due_date, owner }], more }] }
+ *   meetingPrep: [{ time, title, people, kind, last_met, items: [{ item_id, text, due_date, mine, owner }], suggested, more, questions, closed }]
+ *   (core/briefs/meeting-prep: each meeting's open items from its own history, everyone's) }
  * @param {{ voice: string, subject: string, opener: string, followUp: string }|null} [params.partner] - the
  *   morning partner's line (core/digest/voice): it becomes the subject and opens the email, and the counts
  *   move to the preheader. null for Classic
@@ -520,23 +521,44 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
           ${[itemRows.join(divider) + more, ...reminders].filter(Boolean).join(divider)}
         </table>` : '';
 
-  // Today's meetings: who's in them and the open items with those people (core/briefs/meeting-prep)
+  // Today's meetings, each with what's open from its own history (core/briefs/meeting-prep)
   const prep = Array.isArray(summary.meetingPrep) ? summary.meetingPrep : [];
+  const muted = text => `<div style="font-size: 14px; color: #6b6d78; padding: 6px 0; border-top: 1px solid #f1eef2;">${escapeHtml(text)}</div>`;
+  const prepItemRow = item => `
+          <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
+            <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
+            <div style="font-size: 12px; color: #6b6d78;">${escapeHtml(item.owner || (item.mine === false ? t('email.digest.noOwner') : t('email.digest.you')))}${!item.due_date ? '' : summary.today && item.due_date < summary.today
+              ? ` · <span style="color: #C62828; font-weight: 600;">${escapeHtml(t('email.digest.overdueSince', { date: shortDate(item.due_date) }))}</span>`
+              : ` · ${escapeHtml(t('email.digest.dueOn', { date: shortDate(item.due_date) }))}`}</div>
+          </div>`;
+  const questionRow = question => `
+          <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
+            <a href="${link('/questions')}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(question.text), 140))}</a>
+            <div style="font-size: 12px; color: #6b6d78;">${escapeHtml(t(`types.short.${question.type === 'risk' ? 'risk' : 'open_question'}`))}${question.owner ? ` · ${escapeHtml(question.owner)}` : ''}</div>
+          </div>`;
+  const closedBlock = closed => !closed || !closed.length ? '' : `
+          <div style="font-size: 12px; font-weight: 700; color: #1f7a55; padding: 10px 0 2px; border-top: 1px solid #f1eef2;">${escapeHtml(t('email.digest.closedSince'))}</div>
+          ${closed.map(entry => `
+          <div style="font-size: 13px; line-height: 1.4; padding: 3px 0; color: #444653;"><span style="color: #1f7a55; font-weight: 700;">✓</span> ${escapeHtml(clip(String(entry.text), 120))}${entry.owner ? ` <span style="color: #6b6d78;">· ${escapeHtml(entry.owner)}</span>` : ''}</div>`).join('')}`;
+  const meetingBody = meeting => {
+    const items = (meeting.items || []).map(prepItemRow).join('');
+    const more = meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">${escapeHtml(t('email.digest.more', { count: meeting.more }))}</div>` : '';
+    if (meeting.kind !== 'series') {
+      if (!meeting.suggested) return muted(t('email.digest.noHistory'));
+      return `${muted(`${t('email.digest.noHistory')} ${t('email.digest.suggested', { name: (meeting.people || [])[0] || '' })}`)}${items}${more}`;
+    }
+    const questions = (meeting.questions || []).map(questionRow).join('');
+    const body = items + more + questions + closedBlock(meeting.closed);
+    return body || muted(t('email.digest.nothingOpen'));
+  };
   const prepHtml = prep.length ? `
         <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: ${plateHtml ? '28px' : '0'} 0 4px;">${escapeHtml(t('email.digest.prep'))}</h2>
         <p style="font-size: 14px; color: #6b6d78; margin: 0 0 8px;">${escapeHtml(t('email.digest.prepHelp'))}</p>
         ${prep.map(meeting => `
         <div style="border: 1px solid #ebe7ec; border-radius: 10px; padding: 14px 16px; margin-top: 10px;">
           <div style="font-size: 15px; font-weight: 700; color: #1b1b1d;">${escapeHtml(meeting.time || '')} · ${escapeHtml(clip(String(meeting.title || t('capture.meeting')), 80))}</div>
-          <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">${escapeHtml(t('email.digest.with', { people: clip((meeting.people || []).join(', '), 120) }))}</div>
-          ${(meeting.items || []).map(item => `
-          <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
-            <a href="${link(`/actions?item=${encodeURIComponent(item.item_id)}`)}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(item.text), 140))}</a>
-            <div style="font-size: 12px; color: #6b6d78;">${item.owner ? escapeHtml(item.owner) : escapeHtml(t('email.digest.you'))}${!item.due_date ? '' : summary.today && item.due_date < summary.today
-              ? ` · <span style="color: #C62828; font-weight: 600;">${escapeHtml(t('email.digest.overdueSince', { date: shortDate(item.due_date) }))}</span>`
-              : ` · ${escapeHtml(t('email.digest.dueOn', { date: shortDate(item.due_date) }))}`}</div>
-          </div>`).join('')}
-          ${meeting.more ? `<div style="font-size: 13px; color: #6b6d78; padding-top: 6px;">${escapeHtml(t('email.digest.more', { count: meeting.more }))}</div>` : ''}
+          <div style="font-size: 13px; color: #6b6d78; margin: 2px 0 8px;">${escapeHtml(t('email.digest.with', { people: clip((meeting.people || []).join(', '), 120) }))}${meeting.kind === 'series' && meeting.last_met ? ` · ${escapeHtml(t('email.digest.lastMet', { date: shortDate(meeting.last_met) }))}` : ''}</div>
+          ${meetingBody(meeting)}
         </div>`).join('')}` : '';
 
   const tile = (value, label) => `
