@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed - Search finds a meeting's action items
+- "Tengo la weekly de growth, ¿qué pendientes tiene?" now answers with that meeting's open action items, from all its sessions ("Weekly Product-Led Growth"), like the morning summary. A meeting is recognized by a distinctive word of its title ("growth", not "weekly"), and a person named too narrows the list
+- "Tengo …" in a question about a meeting no longer returns your own action items instead
+
 ### Added - Sensitive topics stay with you
 - The AI marks confidential people matters as sensitive: dismissals, people leaving, low performance, pay, health, legal or disciplinary matters, restructurings that name people. The whole thread follows
 - A sensitive outcome or action item is visible only to you: colleagues named as owners keep their name on it but don't see it anywhere (Action items, morning summary, search, meeting prep, "new from a colleague")

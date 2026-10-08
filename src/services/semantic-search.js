@@ -328,7 +328,7 @@ async function semanticSearch(query, options = {}) {
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 5; // v5: open action items are part of the answer
+const CACHE_VERSION = 6; // v6: a named meeting's action items
 
 /**
  * Answers the question from the search results with Claude, and says which results it used.
@@ -342,9 +342,10 @@ const CACHE_VERSION = 5; // v5: open action items are part of the answer
  * @param {Array} [conversationHistory] - Previous turns [{ role, content }] or [{ query, response }]
  * @param {Object[]} [actionItems] - open action items to answer "what's pending" questions
  * @param {{ workspaceId?: string, userId?: string }} [usage] - whose AI usage this counts against
+ * @param {{ meetings?: string[] }} [context] - meetings the question named (core/search/action-items): the action items are all of theirs
  * @returns {Promise<{ text: string, usedIds: number[] }>}
  */
-async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = [], usage = {}) {
+async function generateConversationalResponse(query, results, conversationHistory = [], actionItems = [], usage = {}, context = {}) {
   const allIds = results.all.map(r => r.id);
   // Without Claude, only real matches can be listed (not the latest outcomes added as candidates)
   const matchedOnly = { ...results, all: results.all.filter(r => r.matched !== false) };
@@ -353,7 +354,7 @@ async function generateConversationalResponse(query, results, conversationHistor
     : { text: formatResultsSimple(query, matchedOnly), usedIds: matchedOnly.all.slice(0, 3).map(r => r.id) });
   if (!config.claude.isConfigured || (results.all.length === 0 && actionItems.length === 0)) return fallback();
 
-  const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}_${actionItems.map(item => item.item_id).join(',')}`;
+  const cacheKey = `v${CACHE_VERSION}_${query}_${allIds.join(',')}_${actionItems.map(item => item.item_id).join(',')}_${(context.meetings || []).length}`;
   const cached = responseCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
     console.log('♻️  CREDIT SAVED: Using cached conversational response (v' + CACHE_VERSION + ')');
@@ -363,8 +364,11 @@ async function generateConversationalResponse(query, results, conversationHistor
   const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
   const sources = results.all.map(r => describeSource(r)).join('\n\n') || '(none)';
   const history = formatHistory(conversationHistory);
+  const meetings = Array.isArray(context.meetings) ? context.meetings.filter(Boolean) : [];
   const actions = actionItems.length
-    ? `\n\nOpen action items (pending work) that may relate to the question:\n${actionItems.map(describeActionItem).join('\n')}`
+    ? meetings.length
+      ? `\n\nThe question names the meeting ${meetings.map(title => `"${title}"`).join(' / ')}. These are its open action items, from all its sessions (answer with these, by owner):\n${actionItems.map(describeActionItem).join('\n')}`
+      : `\n\nOpen action items (pending work) that may relate to the question:\n${actionItems.map(describeActionItem).join('\n')}`
     : '';
 
   const prompt = `You answer questions about a team's meeting outcomes (decisions, open questions, risks and context captured from their meetings).${history}
