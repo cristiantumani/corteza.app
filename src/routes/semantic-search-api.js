@@ -158,9 +158,10 @@ async function handleSemanticSearch(req, res) {
 
     // Open action items the question is about ("What's pending from Ana?"): in this space, or owned by the viewer
     let actionItems = [];
+    let meetings = [];
     try {
       const open = await listActionItems(requestData.workspace_id, { spaceIds: [requestData.space_id], viewerId: userId, status: 'open' });
-      actionItems = selectActionItems(requestData.query, open, { viewerId: userId }).items;
+      ({ items: actionItems, meetings } = selectActionItems(requestData.query, open, { viewerId: userId }));
     } catch (actionError) {
       console.error('⚠️ Loading action items for search failed:', actionError.message);
     }
@@ -178,7 +179,8 @@ async function handleSemanticSearch(req, res) {
           searchResult.results,
           conversationHistory,
           actionItems,
-          { workspaceId: requestData.workspace_id, userId: req.session?.user?.user_id }
+          { workspaceId: requestData.workspace_id, userId: req.session?.user?.user_id },
+          { meetings }
         );
         conversationalResponse = answer.text;
         usedIds = answer.usedIds;
