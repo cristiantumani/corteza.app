@@ -328,7 +328,7 @@ async function semanticSearch(query, options = {}) {
  */
 const responseCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_VERSION = 6; // v6: a named meeting's action items
+const CACHE_VERSION = 7; // v7: pending-work answers are a short summary of the list below
 
 /**
  * Answers the question from the search results with Claude, and says which results it used.
@@ -365,10 +365,11 @@ async function generateConversationalResponse(query, results, conversationHistor
   const sources = results.all.map(r => describeSource(r)).join('\n\n') || '(none)';
   const history = formatHistory(conversationHistory);
   const meetings = Array.isArray(context.meetings) ? context.meetings.filter(Boolean) : [];
+  const counts = actionItemCounts(actionItems);
   const actions = actionItems.length
     ? meetings.length
-      ? `\n\nThe question names the meeting ${meetings.map(title => `"${title}"`).join(' / ')}. These are its open action items, from all its sessions (answer with these, by owner):\n${actionItems.map(describeActionItem).join('\n')}`
-      : `\n\nOpen action items (pending work) that may relate to the question:\n${actionItems.map(describeActionItem).join('\n')}`
+      ? `\n\nThe question names the meeting ${meetings.map(title => `"${title}"`).join(' / ')}. These are its open action items, from all its sessions (${counts}):\n${actionItems.map(describeActionItem).join('\n')}`
+      : `\n\nOpen action items (pending work) that may relate to the question (${counts}):\n${actionItems.map(describeActionItem).join('\n')}`
     : '';
 
   const prompt = `You answer questions about a team's meeting outcomes (decisions, open questions, risks and context captured from their meetings).${history}
@@ -383,9 +384,9 @@ Instructions:
 - Answer in the same language as the question.
 - Sources may be written in another language than the question ("directorio" = "board", "octubre" = "October").
 - Use only sources that actually help answer the question. Ignore the others, even if they share words with it.
-- Start with the direct answer, then the why and context. Mention sources by number, like "(#74)". 60 to 150 words, plain text, no headings or lists unless steps are needed.
+- Otherwise, start with the direct answer, then the why and context. Mention sources by number, like "(#74)". 60 to 150 words, plain text, no headings or lists unless steps are needed.
 - If no source answers the question, say so briefly and suggest what to search instead. Don't invent anything that isn't in the sources.
-- If the question is about pending work (action items, "pendientes", what someone still owes), answer from the open action items: who has to do what, and by when (say which are overdue). A short list is fine here. They're shown to the user below the answer, so don't cite them by number.
+- If the question is about pending work (action items, "pendientes", what someone still owes) and there are open action items, they're listed one by one below your answer, so don't list or repeat them. Reply in one or two short sentences, under 40 words: how many there are (of that meeting or person, if the question names one), how many are overdue, how many have no due date or no owner, and end by pointing to the list below. Example: "Encontré 9 pendientes abiertos de la Weekly Product-Led Growth; ninguno tiene fecha límite y uno no tiene responsable. Los ves abajo." Don't cite sources by number in this case.
 
 Reply with JSON only: {"answer": "...", "used_ids": [the numbers of the sources you used]}`;
 
@@ -431,6 +432,15 @@ function describeSource(r) {
 }
 
 /** One open action item for the answer prompt: what, who, when, from which meeting */
+/** Exact counts for the answer's summary: "9 open · 0 overdue · 9 without a due date · 1 without an owner" */
+function actionItemCounts(items) {
+  const today = new Date().toISOString().slice(0, 10);
+  const overdue = items.filter(item => item.due_date && item.due_date < today).length;
+  const undated = items.filter(item => !item.due_date).length;
+  const unowned = items.filter(item => !(item.owners || []).some(owner => owner && owner.name)).length;
+  return `${items.length} open · ${overdue} overdue · ${undated} without a due date · ${unowned} without an owner`;
+}
+
 function describeActionItem(item) {
   const today = new Date().toISOString().slice(0, 10);
   const owners = (item.owners || []).map(owner => owner.name).filter(Boolean).join(', ') || 'no owner';
@@ -742,6 +752,7 @@ async function keywordSearch(query, options = {}) {
 
 module.exports = {
   parseAnswer,
+  actionItemCounts,
   visibleSources,
   recentOutcomes,
   describeSource,
