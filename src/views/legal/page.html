@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}} · Corteza</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --bg: #fafafa; --card: #ffffff; --text: #1d1d1f; --muted: #6b6b6b; --line: #e5e5e5; --link: #1a56db; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0d0d0d; --card: #171717; --text: #ececec; --muted: #a3a3a3; --line: #2a2a2a; --link: #8ab4f8; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+    header, main, footer { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; padding-bottom: 8px; }
+    header a.brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: 700; }
+    header img { width: 28px; height: 28px; }
+    nav a { color: var(--muted); font-size: 14px; margin-left: 12px; }
+    main { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 32px 24px; margin-top: 16px; }
+    h1 { font-size: 28px; line-height: 1.25; margin: 0 0 4px; }
+    .updated { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+    h2 { font-size: 20px; margin: 32px 0 8px; }
+    h3 { font-size: 16px; margin: 20px 0 4px; }
+    p, li { font-size: 15px; overflow-wrap: anywhere; }
+    ul { padding-left: 20px; }
+    a { color: var(--link); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 16px; }
+    th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); padding: 8px 6px; }
+    .callout { border-left: 3px solid var(--link); padding: 4px 0 4px 12px; margin: 16px 0; }
+    footer { color: var(--muted); font-size: 13px; padding-top: 16px; padding-bottom: 32px; }
+    footer a { color: var(--muted); margin-right: 12px; }
+    @media (max-width: 600px) { main { padding: 24px 16px; } table { font-size: 13px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/"><img src="/favicon.svg" alt="">Corteza</a>
+    <nav>
+      <a href="{{otherHref}}" hreflang="{{otherLang}}" lang="{{otherLang}}">{{otherLabel}}</a>
+    </nav>
+  </header>
+  <main>
+<!-- CONTENT -->
+  </main>
+  <footer>
+    <a href="/privacy?lang={{lang}}">{{privacyLabel}}</a>
+    <a href="/terms?lang={{lang}}">{{termsLabel}}</a>
+    <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>
+  </footer>
+</body>
+</html>

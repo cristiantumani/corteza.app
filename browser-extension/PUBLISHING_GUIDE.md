@@ -16,8 +16,8 @@
 
 #### Already Have ✅
 - [x] Icons (16x16, 48x48, 128x128) in `icons/` folder
-- [x] Privacy Policy: https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
-- [x] Terms of Service: https://github.com/cristiantumani/corteza.app/blob/main/TERMS_OF_SERVICE.md
+- [x] Privacy Policy: https://app.corteza.app/privacy
+- [x] Terms of Service: https://app.corteza.app/terms
 
 #### Need to Create 📸
 - [ ] **Screenshots** (minimum 1, recommended 3-5)
@@ -211,8 +211,8 @@ Need help? Contact us at cristiantumani@gmail.com or visit https://corteza.app
 
 📄 **Legal**
 
-• Privacy Policy: https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
-• Terms of Service: https://github.com/cristiantumani/corteza.app/blob/main/TERMS_OF_SERVICE.md
+• Privacy Policy: https://app.corteza.app/privacy
+• Terms of Service: https://app.corteza.app/terms
 
 ---
 
@@ -257,7 +257,7 @@ https://chrome.google.com/webstore/devconsole
 - Permissions justification:
   - `storage`: "Store user preferences and view settings locally"
   - `cookies`: "Access session cookies to authenticate with corteza.app"
-- Privacy policy URL: https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+- Privacy policy URL: https://app.corteza.app/privacy
 
 **Distribution tab:**
 - Visibility: Public
@@ -288,7 +288,7 @@ Click **"Submit for Review"**
 - ✅ Use detailed description above (explains problem, solution, features)
 
 ❌ **"Missing privacy policy"**
-- ✅ Already have: https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+- ✅ Already have: https://app.corteza.app/privacy
 
 ❌ **"Permissions not justified"**
 - ✅ Explain each permission clearly in privacy practices tab

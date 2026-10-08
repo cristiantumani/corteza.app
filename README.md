@@ -46,4 +46,4 @@ The extension lives in [`browser-extension/`](browser-extension/). It uses your 
 
 ## Legal
 
-[Privacy Policy](PRIVACY_POLICY.md) · [Terms of Service](TERMS_OF_SERVICE.md) · MIT License
+[Privacy Policy](https://app.corteza.app/privacy) · [Terms of Service](https://app.corteza.app/terms) · MIT License

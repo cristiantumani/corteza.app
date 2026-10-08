@@ -99,7 +99,7 @@ This extension does not collect, store, or transmit personal user data. It only:
 
 **Paste this:**
 ```
-https://github.com/cristiantumani/corteza.app/blob/main/PRIVACY_POLICY.md
+https://app.corteza.app/privacy
 ```
 
 ✅ **Save**
