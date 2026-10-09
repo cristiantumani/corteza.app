@@ -11,7 +11,7 @@ The free steps (this page) come first; the paid security assessment (CASA, step 
 | `openid`, `email`, `profile` | Non-sensitive | Sign-in | Sign in with Google; the `hd` claim picks the workspace |
 | `https://www.googleapis.com/auth/meetings.space.readonly` | Restricted | Connect Google (`MEET_SCOPES`) | List meetings (conference records), participants, transcript entries and Gemini notes metadata |
 | `https://www.googleapis.com/auth/drive.meet.readonly` | Restricted | Connect Google | Read the transcript Docs that Meet creates |
-| `https://www.googleapis.com/auth/drive.readonly` | Restricted | Connect Google | Read Gemini notes Docs, which `drive.meet.readonly` doesn't cover. Corteza only opens the Docs the Meet API links to a meeting. **Try to drop it** (below) |
+| `https://www.googleapis.com/auth/drive.readonly` | Restricted | Connect Google | Read Gemini notes Docs, which `drive.meet.readonly` doesn't cover (tested, below). Corteza only opens the Docs the Meet API links to a meeting |
 | `https://www.googleapis.com/auth/calendar.events.readonly` | Sensitive | Connect Google (optional, can be unticked) | Today's events, read when the morning summary is built: each meeting with what is still open from its earlier sessions (`core/briefs/meeting-prep.js`). Never stored |
 | `https://www.googleapis.com/auth/drive.file` | Non-sensitive | Settings → Context for the AI, through Google's Picker | Only the files the person picks, as company or personal context for the AI (`integrations/google/drive-files.js`) |
 
@@ -34,7 +34,7 @@ A future roadmap item adds another sensitive scope: `tasks` for Google Tasks. Ad
    - **200 with the notes text:** `drive.readonly` can go. Remove it from `MEET_SCOPES` in `src/integrations/google/connections.js`, its row from the disclosure page (`src/views/google-connect.html`, `connectGoogle.drive.*`) and the privacy policy, and from Data access. Existing connections keep working (they have more than needed).
    - **403 / 404 (`appNotAuthorizedToFile`, "has not granted the app … read access"):** keep it, and use the justification below.
 
-Record the result and the date here: _not run yet._
+**Result (Oct 9, 2026): keep `drive.readonly`.** With only `meetings.space.readonly` + `drive.meet.readonly`, `smartNotes` returns the notes Doc id, but `files/<id>/export` answers `403 appNotAuthorizedToFile` ("The user has not granted the app … read access to the file"). Re-run this test before each yearly CASA renewal: if Google extends `drive.meet.readonly` to Gemini notes, drop the scope.
 
 ## Steps
 
@@ -64,8 +64,8 @@ Record the result and the date here: _not run yet._
 **`drive.meet.readonly`**
 > Google Meet saves meeting transcripts as Google Docs in the organizer's Drive. Corteza reads the transcript Doc linked to a conference record to extract the meeting's decisions and action items. The scope only covers files Google Meet creates; Corteza opens only the Docs the Meet API links to a meeting.
 
-**`drive.readonly`** (only if the live test above shows it's still needed)
-> Gemini "Take notes for me" saves meeting notes as a Google Doc. Many meetings have notes but no transcript, and those notes Docs are not readable with drive.meet.readonly (the Drive API returns "The user has not granted the app read access to the file"). Corteza uses drive.readonly only to export the notes Doc that the Meet API's smartNotes resource links to a conference record (files.export to text). It never lists, searches or opens other Drive files, and never stores the notes text: only the outcomes extracted from it. drive.file is not an option because the notes Doc is created by Google Meet, not picked by the user or created by Corteza.
+**`drive.readonly`** (still needed: tested Oct 9, 2026, see above)
+> Gemini "Take notes for me" saves meeting notes as a Google Doc. Many meetings have notes but no transcript, and those notes Docs are not readable with drive.meet.readonly (tested on Oct 9, 2026: with drive.meet.readonly the Drive API returns 403 appNotAuthorizedToFile, "The user has not granted the app read access to the file"). Corteza uses drive.readonly only to export the notes Doc that the Meet API's smartNotes resource links to a conference record (files.export to text). It never lists, searches or opens other Drive files, and never stores the notes text: only the outcomes extracted from it. drive.file is not an option because the notes Doc is created by Google Meet, not picked by the user or created by Corteza.
 
 **`calendar.events.readonly`** (optional for the user)
 > Corteza's morning summary email prepares the user for today's meetings: for each event in the user's primary calendar today, it shows what is still open (action items, questions, risks) from that meeting's earlier sessions, matched by the event's Google Meet link. Events are read when the summary is built and are not stored. The user can untick this permission and Corteza works without it.
