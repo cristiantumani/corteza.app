@@ -46,6 +46,7 @@ const STOPWORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'e
  *
  * @typedef {Object} MeetingPrep
  * @property {string} start - ISO date-time
+ * @property {string|null} end - ISO date-time
  * @property {string} title
  * @property {string[]} people - the other attendees' names
  * @property {'series'|'new'} kind - series: we have captures of earlier instances
@@ -53,6 +54,7 @@ const STOPWORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'e
  * @property {PrepItem[]} items - the series' open action items (everyone's), or for a new 1:1 the suggested ones
  * @property {boolean} suggested - items are suggestions (a 1:1 without history), not the meeting's own
  * @property {number} more - items left out
+ * @property {number} overdue - how many of its items (shown or not) are overdue
  * @property {PrepOutcome[]} questions - the series' open questions and risks
  * @property {PrepOutcome[]} closed - closed since the last instance
  */
@@ -205,6 +207,7 @@ function buildMeetingPrep({ events, userId, selfEmail, members, records = new Ma
 
     prep.push({
       start: event.start,
+      end: event.end || null,
       title: event.title || 'Meeting',
       people: attendees.map(a => a.name),
       kind: isSeries ? /** @type {'series'} */ ('series') : /** @type {'new'} */ ('new'),
@@ -212,6 +215,7 @@ function buildMeetingPrep({ events, userId, selfEmail, members, records = new Ma
       items: items.slice(0, limit),
       suggested,
       more: Math.max(0, items.length - limit),
+      overdue: items.filter(item => item.due_date && item.due_date < today).length,
       questions,
       closed
     });
@@ -229,6 +233,10 @@ function hasContent(meeting) {
   return (meeting.items || []).length > 0 || (meeting.questions || []).length > 0 || (meeting.closed || []).length > 0;
 }
 
+// Today's events and their Meet history per person, for Home (GOOGLE_CACHE_MS): Calendar and Meet are slow
+const GOOGLE_CACHE_MS = 10 * 60 * 1000;
+const googleCache = new Map();
+
 /**
  * Today's meeting prep for a person (the rest of their local day)
  * @param {string} workspaceId
@@ -236,10 +244,11 @@ function hasContent(meeting) {
  * @param {Object} [options]
  * @param {Date} [options.now]
  * @param {string} [options.timeZone]
+ * @param {boolean} [options.cache] - reuse the Google part (events, Meet history) for 10 minutes (Home); Corteza's data is always read
  * @param {Object} [options.deps] - injectable for tests: { getConnection, getClient, listEvents, listRecords }
  * @returns {Promise<MeetingPrep[]>} [] without calendar access or meetings with other people
  */
-async function getMeetingPrep(workspaceId, userId, { now = new Date(), timeZone = 'UTC', deps = {} } = {}) {
+async function getMeetingPrep(workspaceId, userId, { now = new Date(), timeZone = 'UTC', cache = false, deps = {} } = {}) {
   const {
     getConnection = connections.getConnection,
     getClient = connections.getAuthorizedClient,
@@ -250,27 +259,41 @@ async function getMeetingPrep(workspaceId, userId, { now = new Date(), timeZone 
   const connection = await getConnection(workspaceId, userId);
   if (!connection || connection.status !== 'active' || !connections.hasCalendar(connection)) return [];
 
-  const { end } = localDayBounds(now, timeZone);
-  const client = getClient(connection);
+  const day = localTime(now, timeZone).date;
+  const key = `${workspaceId}:${userId}`;
+  const cached = cache ? googleCache.get(key) : null;
   let events;
-  try {
-    events = (await listEvents(client, { from: now, to: end })).filter(event => event.attendees.some(a => !a.self)).slice(0, MAX_MEETINGS);
-  } catch (error) {
-    console.warn(`⚠️  Reading the calendar failed for ${userId} in ${workspaceId}: ${error.response?.status || error.message}`);
-    return [];
+  let records;
+  if (cached && cached.day === day && cached.expires > now.getTime()) {
+    // Still ahead (or running): the cache was read earlier in the day
+    events = cached.events.filter(event => new Date(event.end || event.start).getTime() > now.getTime());
+    records = cached.records;
+  } else {
+    const { end } = localDayBounds(now, timeZone);
+    const client = getClient(connection);
+    try {
+      events = (await listEvents(client, { from: now, to: end })).filter(event => event.attendees.some(a => !a.self)).slice(0, MAX_MEETINGS);
+    } catch (error) {
+      console.warn(`⚠️  Reading the calendar failed for ${userId} in ${workspaceId}: ${error.response?.status || error.message}`);
+      return [];
+    }
+
+    // Earlier instances of each meeting, by its Meet code (null when unknown: the title still works)
+    records = new Map(await Promise.all(events.map(async event => {
+      if (!event.meeting_code) return [event.id, null];
+      try {
+        return [event.id, await listRecords(client, event.meeting_code)];
+      } catch (error) {
+        console.warn(`⚠️  Reading a meeting's history failed for ${userId} in ${workspaceId}: ${error.response?.status || error.message}`);
+        return [event.id, null];
+      }
+    })));
+    if (cache) {
+      if (googleCache.size > 5000) googleCache.clear(); // bounded: one entry per person, refilled on the next visit
+      googleCache.set(key, { day, expires: now.getTime() + GOOGLE_CACHE_MS, events, records });
+    }
   }
   if (!events.length) return [];
-
-  // Earlier instances of each meeting, by its Meet code (null when unknown: the title still works)
-  const records = new Map(await Promise.all(events.map(async event => {
-    if (!event.meeting_code) return [event.id, null];
-    try {
-      return [event.id, await listRecords(client, event.meeting_code)];
-    } catch (error) {
-      console.warn(`⚠️  Reading a meeting's history failed for ${userId} in ${workspaceId}: ${error.response?.status || error.message}`);
-      return [event.id, null];
-    }
-  })));
 
   const db = getDatabase();
   const spaceIds = await getUserAccessibleSpaces(null, workspaceId, userId);
@@ -299,4 +322,9 @@ async function getMeetingPrep(workspaceId, userId, { now = new Date(), timeZone 
   });
 }
 
-module.exports = { getMeetingPrep, buildMeetingPrep, hasContent, sameName, sameTitle, unrelatedTitles };
+/** Forgets the cached Google part (tests) */
+function clearMeetingPrepCache() {
+  googleCache.clear();
+}
+
+module.exports = { getMeetingPrep, clearMeetingPrepCache, buildMeetingPrep, hasContent, sameName, sameTitle, unrelatedTitles };

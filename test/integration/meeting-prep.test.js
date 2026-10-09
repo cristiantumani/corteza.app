@@ -101,6 +101,36 @@ describe('meeting prep: today\'s meetings with what is open from their own histo
     assert.deepEqual(await prep.getMeetingPrep('WPREP', 'UC', { now: NOW, deps: failing }), []);
   });
 
+  test('Home: the Google part is cached for 10 minutes, Corteza’s own data is read every time', async () => {
+    prep.clearMeetingPrepCache();
+    let calls = 0;
+    const counting = deps([CALENDAR], { listEvents: async () => { calls++; return events; } });
+    const first = await prep.getMeetingPrep('WPREP', 'UC', { now: NOW, timeZone: 'America/Santiago', cache: true, deps: counting });
+    assert.equal(first[0].items.length, 2);
+
+    // An item ticked off on Home doesn't come back from the cache
+    const db = require('../../src/config/database').getDatabase();
+    const open = await db.collection('action_items').find({ workspace_id: 'WPREP', space_id: mySpace.space_id, status: 'open' }).toArray();
+    const target = open.find(item => item.text === 'Juan reviews the contract');
+    await db.collection('action_items').updateOne({ item_id: target.item_id }, { $set: { status: 'done', completed_at: NOW } });
+    const later = new Date(NOW.getTime() + 5 * 60 * 1000);
+    const second = await prep.getMeetingPrep('WPREP', 'UC', { now: later, timeZone: 'America/Santiago', cache: true, deps: counting });
+    assert.equal(calls, 1, 'Calendar is read once within 10 minutes');
+    assert.deepEqual(second[0].items.map(item => item.text), ['Send Juan the pricing deck']);
+
+    // After 10 minutes Google is read again
+    const afternoon = new Date('2026-10-02T15:30:00Z');
+    const third = await prep.getMeetingPrep('WPREP', 'UC', { now: new Date(NOW.getTime() + 8 * 60 * 1000), timeZone: 'America/Santiago', cache: true, deps: counting });
+    assert.equal(third.length, 2);
+    await prep.getMeetingPrep('WPREP', 'UC', { now: afternoon, timeZone: 'America/Santiago', cache: true, deps: counting });
+    assert.equal(calls, 2);
+    await db.collection('action_items').updateOne({ item_id: target.item_id }, { $set: { status: 'open', completed_at: null } });
+
+    // The morning summary never uses the cache
+    await prep.getMeetingPrep('WPREP', 'UC', { now: NOW, timeZone: 'America/Santiago', deps: counting });
+    assert.equal(calls, 3);
+  });
+
   test('the morning summary carries the prep with local times, and it counts as news', async () => {
     const digest = require('../../src/jobs/daily-digest');
     const summary = await digest.buildDailySummary('WPREP', 'UC', new Date(NOW.getTime() - 3600 * 1000), NOW, 'America/Santiago', {

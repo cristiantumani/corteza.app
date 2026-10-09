@@ -54,6 +54,18 @@ test('a meeting shows what came out of its own earlier sessions, everyone’s, n
   assert.equal(oneOnOnePrep.suggested, false);
 });
 
+test('each meeting carries its end time and how many of its items are overdue (Home)', () => {
+  const ending = { ...weekly, end: '2026-10-08T20:00:00Z' };
+  const actions = [
+    item('o1', 'Late one', [{ user_id: 'UJ', name: 'Juan Pérez' }], { status: 'open', due_date: '2026-10-01', source: fromMeet('conferenceRecords/w2', 'Weekly Product-Led Growth') }),
+    item('o2', 'Due later', [{ user_id: 'UJ', name: 'Juan Pérez' }], { status: 'open', due_date: '2026-10-20', source: fromMeet('conferenceRecords/w2', 'Weekly Product-Led Growth') })
+  ];
+  const [prep] = build({ events: [ending], actions });
+  assert.equal(prep.end, '2026-10-08T20:00:00Z');
+  assert.equal(prep.overdue, 1);
+  assert.equal(build({ events: [oneOnOne] })[0].end, null);
+});
+
 test('closed since last time, and the open questions and risks of the meeting', () => {
   const actions = [
     item('d1', 'Ship the onboarding emails', [{ user_id: 'UM', name: 'Martín Marchant' }], { status: 'done', completed_at: '2026-10-03T12:00:00Z', source: fromMeet('conferenceRecords/w2', 'Weekly Product-Led Growth') }),
