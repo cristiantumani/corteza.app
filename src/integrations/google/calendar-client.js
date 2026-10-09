@@ -15,6 +15,7 @@ const MAX_EVENTS = 50;
  * @property {string} id
  * @property {string} title
  * @property {string} start - ISO date-time
+ * @property {string|null} end - ISO date-time
  * @property {string|null} meeting_code - the Google Meet code ('abc-defg-hij'), same for every instance of a recurring meeting
  * @property {{ email: string, name: string|null, self: boolean }[]} attendees - people only (no rooms), not ones who declined
  */
@@ -61,6 +62,7 @@ async function listEventsBetween(client, { from, to }) {
       id: event.id,
       title: event.summary || '',
       start: event.start.dateTime,
+      end: (event.end && event.end.dateTime) || null,
       meeting_code: meetingCodeOf(event),
       attendees: (event.attendees || [])
         .filter(a => a.email && !a.resource && a.responseStatus !== 'declined')

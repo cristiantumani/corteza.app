@@ -153,6 +153,58 @@
         "other": "{count} outcomes to review."
       },
       "changeVoice": "Your morning partner. Change it in Settings"
+    },
+    "today": {
+      "title": "Prepare your day",
+      "loading": "Checking your calendar…",
+      "remaining": {
+        "one": "{count} more meeting today",
+        "other": "{count} more meetings today"
+      },
+      "now": "Now",
+      "inMinutes": {
+        "one": "in {count} min",
+        "other": "in {count} min"
+      },
+      "open": {
+        "one": "{count} open",
+        "other": "{count} open"
+      },
+      "questions": {
+        "one": "{count} question",
+        "other": "{count} questions"
+      },
+      "risks": {
+        "one": "{count} risk",
+        "other": "{count} risks"
+      },
+      "suggestedSummary": {
+        "one": "Suggested: {count} item with {name}",
+        "other": "Suggested: {count} items with {name}"
+      },
+      "suggestedHelp": "You meet {name} today: what you have open together.",
+      "nothingConnected": "Nothing connected yet",
+      "nothingOpen": "Nothing open",
+      "with": "with {people}",
+      "you": "You",
+      "noOwner": "No owner",
+      "overdueDate": "Overdue · {date}",
+      "dueDate": "Due {date}",
+      "markDone": "Mark as done: {text}",
+      "done": "Done",
+      "moreItems": {
+        "one": "and {count} more in Action items",
+        "other": "and {count} more in Action items"
+      },
+      "closedSinceDate": "Closed since last time ({date})",
+      "showMore": {
+        "one": "Show {count} more meeting",
+        "other": "Show {count} more meetings"
+      },
+      "noCalendar": "Connect your calendar to prepare your meetings here.",
+      "connect": "Connect calendar",
+      "noMeetings": "No more meetings today.",
+      "failed": "Couldn’t load your meetings."
     }
   },
   "common": {

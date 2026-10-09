@@ -153,6 +153,58 @@
         "other": "{count} resultados por revisar."
       },
       "changeVoice": "Tu socio de la mañana. Cámbialo en Configuración"
+    },
+    "today": {
+      "title": "Prepara tu día",
+      "loading": "Revisando tu calendario…",
+      "remaining": {
+        "one": "Te queda {count} reunión hoy",
+        "other": "Te quedan {count} reuniones hoy"
+      },
+      "now": "Ahora",
+      "inMinutes": {
+        "one": "en {count} min",
+        "other": "en {count} min"
+      },
+      "open": {
+        "one": "{count} abierto",
+        "other": "{count} abiertos"
+      },
+      "questions": {
+        "one": "{count} pregunta",
+        "other": "{count} preguntas"
+      },
+      "risks": {
+        "one": "{count} riesgo",
+        "other": "{count} riesgos"
+      },
+      "suggestedSummary": {
+        "one": "Sugerido: {count} pendiente con {name}",
+        "other": "Sugerido: {count} pendientes con {name}"
+      },
+      "suggestedHelp": "Hoy te juntas con {name}: lo que tienen abierto juntos.",
+      "nothingConnected": "Sin pendientes conectados",
+      "nothingOpen": "Nada abierto",
+      "with": "con {people}",
+      "you": "Tú",
+      "noOwner": "Sin responsable",
+      "overdueDate": "Atrasado · {date}",
+      "dueDate": "Vence el {date}",
+      "markDone": "Marcar como hecho: {text}",
+      "done": "Hecho",
+      "moreItems": {
+        "one": "y {count} más en Pendientes",
+        "other": "y {count} más en Pendientes"
+      },
+      "closedSinceDate": "Cerrado desde la última vez ({date})",
+      "showMore": {
+        "one": "Ver {count} reunión más",
+        "other": "Ver {count} reuniones más"
+      },
+      "noCalendar": "Conecta tu calendario para preparar tus reuniones aquí.",
+      "connect": "Conectar calendario",
+      "noMeetings": "No tienes más reuniones hoy.",
+      "failed": "No se pudieron cargar tus reuniones."
     }
   },
   "common": {

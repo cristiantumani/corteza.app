@@ -108,6 +108,41 @@ const routes = {
     const items = questionsRisks.filter(i => type === 'all' || i.type === type);
     return { success: true, items, counts: { all: questionsRisks.length, open_question: 1, risk: 2 } };
   },
+  // Prepare your day (GET /api/home/today): times relative to now so "in 40 min" shows
+  'GET /api/home/today': () => {
+    const at = minutes => new Date(Date.now() + minutes * 60000).toISOString();
+    const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    return {
+      success: true, status: 'ok',
+      meetings: [
+        {
+          start: at(40), end: at(100), title: 'Weekly Product Led Growth', people: ['Bruno Díaz', 'Jess Romero', 'Nico Paz'], kind: 'series', last_met: at(-7 * 24 * 60),
+          items: [
+            { item_id: 'a1', text: 'Definir el precio de la API para clientes enterprise', due_date: daysAgo(3), mine: true, owner: null },
+            { item_id: 'a2', text: 'Hablar con 3 clientes sobre el plan anual', due_date: null, mine: false, owner: 'Bruno Díaz' }
+          ],
+          suggested: false, more: 2, overdue: 1,
+          questions: [
+            { type: 'open_question', text: '¿Cobramos por la API o la incluimos en el plan Business?', owner: 'Jess Romero' },
+            { type: 'risk', text: 'Clientes actuales se van con el cambio de precio', owner: null }
+          ],
+          closed: [{ type: 'action_item', text: 'Proponer el plan anual con 20% de descuento', owner: 'Bruno Díaz' }]
+        },
+        {
+          start: at(180), end: at(210), title: '1:1 Cristopher / Ana', people: ['Cristopher Duarte'], kind: 'new', last_met: null,
+          items: [{ item_id: 'a3', text: 'Revisar la propuesta de onboarding de Cristopher', due_date: null, mine: true, owner: null }],
+          suggested: true, more: 0, overdue: 0, questions: [], closed: []
+        },
+        { start: at(300), end: at(345), title: 'Entrevista candidato Senior Backend', people: ['Laura Gómez'], kind: 'new', last_met: null, items: [], suggested: false, more: 0, overdue: 0, questions: [], closed: [] },
+        {
+          start: at(360), end: at(420), title: 'Planificación comercial Q4', people: ['Bruno Díaz', 'Marta Ruiz'], kind: 'series', last_met: at(-14 * 24 * 60),
+          items: [], suggested: false, more: 0, overdue: 0, questions: [],
+          closed: [{ type: 'open_question', text: '¿Lanzamos el plan anual este trimestre?', owner: 'Ana López' }]
+        },
+        { start: at(420), end: at(450), title: 'Demo con cliente Acme Retail', people: ['Pedro Soto', 'Bruno Díaz'], kind: 'new', last_met: null, items: [], suggested: false, more: 0, overdue: 0, questions: [], closed: [] }
+      ]
+    };
+  },
   'GET /api/home': req => {
     const pending = decisions.filter(d => d.capture === 'ai' && !d.review_status);
     const open = actionItems.filter(i => i.status === 'open');

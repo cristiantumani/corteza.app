@@ -150,7 +150,7 @@ B5. **Pre-meeting brief.**
   - decisions due for review
 - New files: `src/integrations/google/calendar-client.js` and `src/jobs/meeting-briefs.js`.
 
-B5b. **"Today" on Home** (backlog, Oct 8 2026). Today's meetings with their prep (`core/briefs/meeting-prep.js`) under Home's boxes: one row per meeting (time, title, "4 open · 1 overdue"), the next one first with "in 40 min", a row opens in place to the same content as the morning summary; meetings without history in grey; at most 4 rows. Loaded after the rest of Home and cached about 10 minutes (Calendar and Meet are slow). To decide: placement under the boxes, all rows closed by default, and a line inviting to connect the calendar when it isn't.
+B5b. **"Prepare your day" on Home** *(done, Oct 9 2026; spec `docs/specs/2026-10-home-today.md`)*. Today's meetings still ahead under Home's boxes, each with its meeting prep; the next one open; mark your items done in place; a line to connect the calendar when it isn't.
 
 B6. **Push to where work lives.**
 - Google Tasks (`tasks` scope).

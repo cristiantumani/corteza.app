@@ -92,6 +92,16 @@
         <section id="home-overview" role="tabpanel" aria-label="{{t:home.tabs.overview}}" class="flex flex-col gap-6">
             <div id="home-tiles" role="navigation" class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" aria-label="{{t:home.tiles.label}}"></div>
 
+            <!-- Prepare your day: today's meetings with what is open from each one's history (public/scripts/home-today.js) -->
+            <section id="home-today" class="rounded-xl border border-outline-variant bg-surface-container-lowest" aria-labelledby="home-today-title">
+                <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-4 pb-3">
+                    <h2 id="home-today-title" class="text-lg font-semibold text-on-surface">{{t:home.today.title}}</h2>
+                    <p id="home-today-count" class="text-sm text-on-surface-variant"></p>
+                </div>
+                <div id="home-today-body" aria-live="polite"><p class="px-5 pb-4 text-sm text-on-surface-variant">{{t:home.today.loading}}</p></div>
+                <div id="home-today-loop" class="hidden mx-5 mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-surface-container-low p-4" role="status"></div>
+            </section>
+
             <form id="home-ask" class="flex gap-2" role="search">
                 <label for="home-ask-input" class="sr-only">{{t:home.ask.label}}</label>
                 <div class="relative flex-1">
@@ -443,6 +453,8 @@
 <script src="/scripts/outcome-labels.js?v=2"></script>
 <script src="/scripts/home-capture.js?v=9"></script>
 <script src="/scripts/home-overview.js?v=6"></script>
+<script src="/scripts/close-loop.js?v=3"></script>
+<script src="/scripts/home-today.js?v=1"></script>
 <script src="/scripts/onboarding.js?v=3"></script>
 <script>
     // Additional UI enhancements for new design
