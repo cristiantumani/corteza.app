@@ -164,7 +164,7 @@ C1. **Conflict and re-litigation detection.**
 - Each decision keeps a version chain.
 - Shown in capture emails and in the dashboard.
 
-C2. **Ask Corteza.**
+C2. **Ask Corteza.** *Decide and close (Oct 2026): type a decision on Search and Corteza closes what it settles (`docs/specs/2026-10-decide-and-close.md`); next: "we moved X to November" (due dates), "Nico takes X" (owners).*
 - Turn semantic search (`src/services/semantic-search.js`, `/api/semantic-search`) into answers with citations. Examples: "Why did we choose X?", "What's pending for Ana?", "What did we decide about pricing this quarter?"
 - Available in the dashboard and later in Chat.
 

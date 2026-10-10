@@ -1151,7 +1151,8 @@
     "relation": {
       "answers": "Responde",
       "mitigates": "Mitiga",
-      "completes": "Completa"
+      "completes": "Completa",
+      "drops": "Ya no aplica"
     },
     "confirmedClosed": {
       "one": "Confirmado · se cerró {count} tarjeta anterior",
@@ -1164,7 +1165,8 @@
     "closeSelected": "Cerrar seleccionados",
     "closeFailed": "No se pudieron cerrar. Inténtalo de nuevo.",
     "resolvedNote": "Resuelto por: {text} ({meeting}, {date})",
-    "manual": "registrado a mano"
+    "manual": "registrado a mano",
+    "droppedNote": "Ya no aplica: {text} ({meeting}, {date})"
   },
   "sensitive": {
     "label": "Sensible",
@@ -1198,5 +1200,46 @@
     "privacy": "Política de privacidad",
     "continue": "Continuar a Google",
     "notNow": "Ahora no"
+  },
+  "decide": {
+    "understood": "Parece una decisión",
+    "title": "Registrar decisión",
+    "wasQuestion": "No, era una pregunta",
+    "decision": "Decisión",
+    "why": "Por qué (opcional)",
+    "whyPlaceholder": "Qué llevó a esto, para que el equipo lo sepa después",
+    "wouldClose": "Esto cerraría",
+    "wouldCloseHint": "Temas abiertos sobre lo mismo. Los claros vienen marcados; desmarca lo que deba seguir abierto.",
+    "nothingFound": "No hay nada abierto sobre este tema. Igual puedes registrar la decisión.",
+    "related": {
+      "one": "Relacionado, sigue abierto ({count})",
+      "other": "Relacionado, sigue abierto ({count})"
+    },
+    "cantClose": "Solo sus responsables o un admin pueden cerrarlo.",
+    "record": "Registrar decisión",
+    "recordAndClose": {
+      "one": "Registrar y cerrar {count}",
+      "other": "Registrar y cerrar {count}"
+    },
+    "saving": "Guardando…",
+    "writeIt": "Escribe la decisión.",
+    "looking": "Buscando temas abiertos sobre esto…",
+    "recorded": "Decisión registrada",
+    "closedCount": {
+      "one": "{count} cerrado",
+      "other": "{count} cerrados"
+    },
+    "open": "Ver decisión",
+    "undone": {
+      "one": "Deshecho: se quitó la decisión y se reabrió {count} tema.",
+      "other": "Deshecho: se quitó la decisión y se reabrieron {count} temas."
+    },
+    "result": {
+      "answers": "Respondida",
+      "mitigates": "Mitigado",
+      "completes": "Hecho",
+      "dropped": "Ya no aplica",
+      "cancelled": "Cancelado"
+    }
   }
 }

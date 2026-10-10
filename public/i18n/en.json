@@ -1151,7 +1151,8 @@
     "relation": {
       "answers": "Answers",
       "mitigates": "Mitigates",
-      "completes": "Completes"
+      "completes": "Completes",
+      "drops": "No longer applies"
     },
     "confirmedClosed": {
       "one": "Confirmed · {count} earlier item closed",
@@ -1164,7 +1165,8 @@
     "closeSelected": "Close selected",
     "closeFailed": "Couldn’t close them. Try again.",
     "resolvedNote": "Resolved by: {text} ({meeting}, {date})",
-    "manual": "logged by hand"
+    "manual": "logged by hand",
+    "droppedNote": "No longer applies: {text} ({meeting}, {date})"
   },
   "sensitive": {
     "label": "Sensitive",
@@ -1198,5 +1200,46 @@
     "privacy": "Privacy Policy",
     "continue": "Continue to Google",
     "notNow": "Not now"
+  },
+  "decide": {
+    "understood": "Sounds like a decision",
+    "title": "Record decision",
+    "wasQuestion": "No, it was a question",
+    "decision": "Decision",
+    "why": "Why (optional)",
+    "whyPlaceholder": "What led to it, so the team knows later",
+    "wouldClose": "This would close",
+    "wouldCloseHint": "Open items on the same subject. Clear ones are checked; uncheck anything that should stay open.",
+    "nothingFound": "Nothing open on this subject. You can still record the decision.",
+    "related": {
+      "one": "Related, still open ({count})",
+      "other": "Related, still open ({count})"
+    },
+    "cantClose": "Only its owners or an admin can close it.",
+    "record": "Record decision",
+    "recordAndClose": {
+      "one": "Record and close {count}",
+      "other": "Record and close {count}"
+    },
+    "saving": "Saving…",
+    "writeIt": "Write the decision.",
+    "looking": "Looking for open items on this subject…",
+    "recorded": "Decision recorded",
+    "closedCount": {
+      "one": "{count} item closed",
+      "other": "{count} items closed"
+    },
+    "open": "View decision",
+    "undone": {
+      "one": "Undone: the decision was removed and {count} item reopened.",
+      "other": "Undone: the decision was removed and {count} items reopened."
+    },
+    "result": {
+      "answers": "Answered",
+      "mitigates": "Mitigated",
+      "completes": "Done",
+      "dropped": "No longer applies",
+      "cancelled": "Cancelled"
+    }
   }
 }

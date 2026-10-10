@@ -5,7 +5,8 @@
  *   line library as the morning summary; Classic: the plain counts)
  * - #home-tiles: what's open, one box each (my action items, open questions, open risks), each
  *   opening its page; overdue in orange, "All clear" in green when a box is at zero
- * - #home-ask: ask across meetings (semantic search, the same API as Search) and read the answer here
+ * - #home-ask: ask across meetings (semantic search, the same API as Search) and read the answer here;
+ *   a typed decision shows the decide-and-close card instead (public/scripts/decide-card.js)
  * - #home-review: AI-captured outcomes to confirm, one at a time, with their quote, meeting and
  *   what they may close; "Confirm all from this meeting"; dismiss with undo
  * - Tabs: Overview (default) and All outcomes (the list in dashboard.js), remembered in the URL hash
@@ -228,10 +229,7 @@
     const button = form.querySelector('button');
     const result = document.getElementById('home-ask-result');
 
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      const query = input.value.trim();
-      if (!query) return;
+    async function runSearch(query) {
       button.disabled = true;
       button.textContent = t('home.ask.searching');
       result.hidden = false;
@@ -247,6 +245,18 @@
         button.disabled = false;
         button.textContent = t('home.ask.button');
       }
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const query = input.value.trim();
+      if (!query) return;
+      // A typed decision ("Decidimos no ir por ISO 27001") offers to record it and close what it settles
+      if (window.CortezaDecide && window.CortezaDecide.looksLikeDecision(query)) {
+        window.CortezaDecide.start(query, result, { onSearch: runSearch });
+        return;
+      }
+      runSearch(query);
     });
   }
 

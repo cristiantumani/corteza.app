@@ -108,6 +108,25 @@ const routes = {
     const items = questionsRisks.filter(i => type === 'all' || i.type === type);
     return { success: true, items, counts: { all: questionsRisks.length, open_question: 1, risk: 2 } };
   },
+  // Decide and close: typing "Decidimos no ir por ISO 27001 por ahora" on Search or Home
+  'POST /api/decide/preview': () => ({
+    success: true, is_decision: true, decision: 'No vamos por la certificación ISO 27001 por ahora.',
+    items: [
+      { kind: 'decision', id: 701, type: 'open_question', text: '¿Vamos por ISO 27001 este año?', meeting: 'Weekly Product Led Growth', date: '2026-09-18T15:00:00Z', owners: ['Jess Romero'], due_date: null, relation: 'answers', confidence: 'high', reason: 'La respuesta es no, por ahora.', can_close: true },
+      { kind: 'decision', id: 702, type: 'risk', text: 'Perder deals enterprise que exigen ISO 27001', meeting: 'Planificación comercial Q4', date: '2026-09-25T14:00:00Z', owners: [], due_date: null, relation: 'drops', confidence: 'high', reason: 'Se acepta el riesgo al no certificarse.', can_close: true },
+      { kind: 'action_item', id: 'a9', type: 'action_item', text: 'Cotizar auditores para ISO 27001', meeting: 'Weekly Product Led Growth', date: '2026-09-18T15:00:00Z', owners: ['Ana López'], due_date: '2026-10-15', relation: 'drops', confidence: 'high', reason: 'Ya no hace falta cotizar.', can_close: true },
+      { kind: 'action_item', id: 'a10', type: 'action_item', text: 'Preparar políticas de seguridad para la auditoría', meeting: 'Seguridad mensual', date: '2026-09-30T13:00:00Z', owners: ['Bruno Díaz'], due_date: null, relation: 'drops', confidence: 'low', reason: 'Podría seguir siendo útil sin la certificación.', can_close: false }
+    ],
+    related: [
+      { kind: 'action_item', id: 'a11', type: 'action_item', text: 'Revisar la política de contraseñas', meeting: 'Seguridad mensual', date: '2026-09-30T13:00:00Z', owners: ['Bruno Díaz'], due_date: null, relation: 'none', confidence: 'low', reason: null, can_close: true }
+    ]
+  }),
+  'POST /api/decide': req => ({
+    success: true,
+    decision: { id: 990, type: 'decision', text: (req.body && req.body.text) || 'No vamos por ISO 27001', timestamp: new Date().toISOString(), source_details: { type: 'dashboard', via: 'decide' } },
+    closed: ((req.body && req.body.close) || []).map(c => ({ kind: c.kind, id: c.id }))
+  }),
+  'POST /api/decide/990/undo': { success: true, reopened: 3 },
   // Prepare your day (GET /api/home/today): times relative to now so "in 40 min" shows
   'GET /api/home/today': () => {
     const at = minutes => new Date(Date.now() + minutes * 60000).toISOString();
