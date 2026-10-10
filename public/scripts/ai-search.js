@@ -50,11 +50,20 @@
   /**
    * Main search function
    * @param {string} query
-   * @param {{ excludeIds?: number[], replaceLastTurn?: boolean }} [options] - answer again without some sources
+   * @param {{ excludeIds?: number[], replaceLastTurn?: boolean, skipDecide?: boolean }} [options] - answer again without some sources;
+   *   skipDecide: search even if it reads like a decision ("No, it was a question")
    */
   window.performSearch = async function(query, options = {}) {
-    console.log(`🔍 Performing search: "${query}"`);
     const isUpdate = !!options.replaceLastTurn;
+    const decidePanel = document.getElementById('decide-panel');
+    if (decidePanel) { decidePanel.innerHTML = ''; decidePanel.classList.add('hidden'); }
+    // A typed decision ("Decidimos no ir por ISO 27001") offers to record it and close what it settles
+    if (!isUpdate && !options.skipDecide && decidePanel && window.CortezaDecide && window.CortezaDecide.looksLikeDecision(query)) {
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('search-results').classList.add('hidden');
+      window.CortezaDecide.start(query, decidePanel, { onSearch: text => window.performSearch(text, { skipDecide: true }) });
+      return;
+    }
     if (!isUpdate) {
       excludedIds = [];
       feedback.clear();

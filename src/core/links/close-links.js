@@ -4,7 +4,8 @@ const { updateActionItem } = require('../actions/action-service');
 
 /**
  * Closing what a decision may resolve (its `resolves`, see cross-meeting.js): a question
- * answered, a risk mitigated, an action item done. Only when a person asks (Confirm on the
+ * answered, a risk mitigated, an action item done; or, for `drops` (decide-and-close), a question
+ * or risk closed as no longer applying and an action item cancelled. Only when a person asks (Confirm on the
  * review card, or Close selected in the detail modal); undo reopens them.
  *
  * Every earlier item is checked against what the person can see: outcomes in their spaces,
@@ -90,16 +91,19 @@ async function closeLinks(decision, chosen, user, access, t) {
 
   const targets = await loadTargets(decision.workspace_id, picked, access);
   const meeting = decision.source_details && decision.source_details.title;
-  const note = t('links.resolvedNote', { text: decision.text, meeting: meeting || t('links.manual'), date: String(decision.timestamp || '').slice(0, 10) });
+  const vars = { text: decision.text, meeting: meeting || t('links.manual'), date: String(decision.timestamp || '').slice(0, 10) };
+  const note = t('links.resolvedNote', vars);
+  const droppedNote = t('links.droppedNote', vars);
   const closed = [];
   for (const entry of picked) {
     const target = targets.get(`${entry.kind}:${entry.id}`);
     if (!target || !isOpen(entry.kind, target)) continue;
+    const drops = entry.relation === 'drops';
     if (entry.kind === 'decision') {
-      const result = await setResolution(target, 'resolved', user, note);
+      const result = await setResolution(target, 'resolved', user, drops ? droppedNote : note);
       if (result && 'error' in result) continue;
     } else {
-      await updateActionItem(decision.workspace_id, entry.id, { status: 'done' });
+      await updateActionItem(decision.workspace_id, entry.id, { status: drops ? 'cancelled' : 'done' });
     }
     closed.push({ kind: entry.kind, id: entry.id });
   }

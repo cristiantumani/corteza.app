@@ -66,7 +66,8 @@ function asCandidate(row, kind) {
     : {
       kind, id: row.item_id, type: 'action_item', text: row.text, topic_id: row.topic_id || null, topic: row.topic || null,
       meeting: row.source && row.source.title, date: row.source && row.source.occurred_at ? row.source.occurred_at : row.created_at,
-      owners: (row.owners || []).map(o => o.name).filter(Boolean), due_date: row.due_date || null, embedding: row.embedding || null
+      owners: (row.owners || []).map(o => o.name).filter(Boolean), due_date: row.due_date || null, embedding: row.embedding || null,
+      owner_ids: row.owner_ids || [], author_id: (row.created_by && row.created_by.user_id) || null
     };
 }
 
@@ -78,10 +79,11 @@ function asCandidate(row, kind) {
  * @param {string|null} params.ownerId - their action items in other spaces count too
  * @param {string|null} params.meetingId - this meeting's external id (its own items are excluded)
  * @param {Date} params.before - only items from before this meeting
+ * @param {number} [params.windowDays] - how far back (default WINDOW_DAYS)
  * @returns {Promise<Object[]>} candidates
  */
-async function loadEarlierItems({ workspaceId, spaceIds, ownerId, meetingId, before }) {
-  const since = new Date(before.getTime() - WINDOW_DAYS * DAY_MS);
+async function loadEarlierItems({ workspaceId, spaceIds, ownerId, meetingId, before, windowDays = WINDOW_DAYS }) {
+  const since = new Date(before.getTime() - windowDays * DAY_MS);
   const [outcomes, actions] = await Promise.all([
     getDecisionsCollection().find({
       workspace_id: workspaceId,
@@ -97,7 +99,7 @@ async function loadEarlierItems({ workspaceId, spaceIds, ownerId, meetingId, bef
       ...(meetingId ? { 'source.external_id': { $ne: meetingId } } : {}),
       created_at: { $gte: since, $lt: before },
       $or: [{ space_id: { $in: spaceIds } }, ...(ownerId ? [{ owner_ids: ownerId, 'owner_duplicates.user_id': { $ne: ownerId } }] : [])]
-    }, { projection: { _id: 0, item_id: 1, text: 1, topic_id: 1, topic: 1, source: 1, created_at: 1, owners: 1, due_date: 1, embedding: 1 } })
+    }, { projection: { _id: 0, item_id: 1, text: 1, topic_id: 1, topic: 1, source: 1, created_at: 1, owners: 1, owner_ids: 1, created_by: 1, due_date: 1, embedding: 1 } })
       .sort({ created_at: -1 }).limit(MAX_POOL).toArray()
   ]);
   return [...outcomes.map(row => asCandidate(row, 'decision')), ...actions.map(row => asCandidate(row, 'action_item'))];
@@ -336,6 +338,8 @@ module.exports = {
   linkAcrossMeetings,
   loadEarlierItems,
   selectCandidates,
+  describeItem,
+  defaultEmbedder,
   buildLinkPrompt,
   parseLinks,
   applyLinks,

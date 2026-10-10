@@ -158,6 +158,8 @@ async function startApp() {
   expressApp.use(require('./http/home'));
   expressApp.use(require('./http/questions-risks'));
   expressApp.use(require('./http/sensitive'));
+  // Decide and close: a typed decision closes what it settles (core/agent/decide)
+  expressApp.use(require('./http/decide'));
 
   // Confirm / dismiss AI-captured outcomes
   expressApp.use(require('./http/decision-review'));
