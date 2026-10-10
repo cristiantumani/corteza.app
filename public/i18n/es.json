@@ -597,14 +597,14 @@
     "tip1": "Activa la transcripción o “Tomar notas por mí” de Gemini en tus reuniones. Los resultados de tus reuniones son privados.",
     "connected": "Google Meet conectado",
     "title2": "Pregúntale lo que quieras a Corteza",
-    "body2": "Pregunta con tus palabras sobre cualquier reunión. Corteza responde y muestra los resultados que usó, para que revises la fuente.",
+    "body2": "Pregunta con tus palabras sobre cualquier reunión. Corteza responde y muestra los resultados que usó, para que revises la fuente. O escribe una decisión, como “Decidimos no ir por ISO 27001”, y Corteza te propone cerrar las preguntas abiertas y los pendientes que resuelve.",
     "q1": "¿Qué decidimos sobre los precios?",
     "q2": "¿Cuáles son mis pendientes?",
     "q3": "¿Por qué elegimos este plan?",
     "title3": "Seguimientos que no se pierden",
     "body3": "Cada compromiso de tus reuniones llega a Pendientes, con su responsable y su fecha.",
     "item4": "¿Sin fecha? Corteza le escribe al responsable para que la ponga",
-    "item5": "Márcalos como hechos a medida que avanzas, o cambia la fecha",
+    "item5": "Márcalos como hechos a medida que avanzas (pasan a Resueltos), o edítalos",
     "item6": "Filtra los tuyos o mira los de todos",
     "openActions": "Abrir Pendientes",
     "eyebrow4": "Opcional · para admins",
@@ -873,10 +873,10 @@
     "totals": "{outcomes} de {meetings}",
     "reconsent": "Corteza ahora también lee las notas de Gemini. Reconecta una vez y permite el acceso a Google Drive para capturar reuniones que solo tienen notas.",
     "lastFailed": "La última revisión falló: {error}",
-    "calendarConnected": "Calendario conectado: tu resumen de la mañana te prepara para las reuniones del día con lo que sigue abierto de sus sesiones anteriores.",
+    "calendarConnected": "Calendario conectado: tu resumen de la mañana e Inicio te preparan para las reuniones del día con lo que sigue abierto de sus sesiones anteriores.",
     "calendar": {
       "title": "Prepárate para tus reuniones.",
-      "body": "Deja que Corteza lea tu calendario y tu resumen de la mañana mostrará las reuniones del día, cada una con lo que sigue abierto de sus sesiones anteriores. Corteza solo lee tus eventos al escribir el resumen y no los guarda.",
+      "body": "Deja que Corteza lea tu calendario y tu resumen de la mañana e Inicio mostrarán las reuniones del día, cada una con lo que sigue abierto de sus sesiones anteriores. Corteza solo lee tus eventos cuando los necesita y no los guarda.",
       "button": "Dar acceso al calendario"
     },
     "saveTo": "Guardar resultados en",
@@ -1193,7 +1193,7 @@
     },
     "calendar": {
       "title": "Ver los eventos de tu calendario",
-      "body": "Tu resumen de la mañana muestra las reuniones del día con lo que sigue abierto de sus sesiones anteriores. Los eventos se leen al escribir el resumen y nunca se guardan. Puedes dejar esta casilla sin marcar."
+      "body": "Tu resumen de la mañana y “Prepara tu día” en Inicio muestran las reuniones del día con lo que sigue abierto de sus sesiones anteriores. Los eventos se leen cuando hace falta, se mantienen en memoria por hasta 10 minutos y nunca se guardan. Puedes dejar esta casilla sin marcar."
     },
     "optional": "(opcional)",
     "keep": "Corteza guarda solo los resultados de tus reuniones (decisiones, pendientes, preguntas abiertas y riesgos), nunca las transcripciones. El contenido de las reuniones se cifra, nadie más ve tu espacio personal y puedes desconectarte cuando quieras en Configuración.",
