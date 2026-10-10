@@ -1,5 +1,5 @@
 <h1>Privacy Policy</h1>
-<p class="updated">Last updated: October 8, 2026</p>
+<p class="updated">Last updated: October 10, 2026</p>
 
 <p>Corteza (“Corteza”, “we”, “us”) is a decision log for teams that use Google Workspace. It reads the transcripts and Gemini notes of your Google Meet meetings and keeps the outcomes in them: decisions, action items, open questions and risks. This policy explains what data Corteza uses, why, who it shares it with, and the choices you have. Corteza is operated by Cristian Tumani. Contact: <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>.</p>
 
@@ -20,7 +20,7 @@
     <tr><td><code>meetings.space.readonly</code></td><td>Lists the Google Meet meetings you attended (conference records) and their participants, transcripts and Gemini notes, so new meetings are read automatically and past ones can be imported when you ask.</td></tr>
     <tr><td><code>drive.meet.readonly</code></td><td>Reads the transcript and notes files that Google Meet saves in your Google Drive.</td></tr>
     <tr><td><code>drive.readonly</code></td><td>Reads the Gemini “Take notes for me” document of a meeting when Google stores it in a way the permission above doesn’t cover. Corteza opens only the notes documents Google Meet links to a meeting; it doesn’t browse, list or read other files in your Drive.</td></tr>
-    <tr><td><code>calendar.events.readonly</code> (optional)</td><td>Reads today’s events in your calendar to prepare your morning summary: each meeting with what is still open from its earlier sessions. Calendar events are read when the summary is prepared and are not stored.</td></tr>
+    <tr><td><code>calendar.events.readonly</code> (optional)</td><td>Reads today’s events in your calendar to prepare your morning summary and the “Prepare your day” section on Home: each meeting with what is still open from its earlier sessions. Calendar events are read when the summary or Home is prepared, kept only in the server’s memory for up to 10 minutes, and never saved.</td></tr>
     <tr><td><code>drive.file</code> (optional)</td><td>Lets you pick specific documents in Google Drive (through Google’s file picker) to give the AI context about your company or your role. Corteza can open only the files you pick.</td></tr>
   </tbody>
 </table>
@@ -39,7 +39,7 @@
 
 <h2>2. How we use data</h2>
 <ul>
-  <li>To provide Corteza: find the outcomes of your meetings, show them to you, answer your searches, prepare your morning summary and weekly digest, link outcomes across meetings and remind owners of their action items.</li>
+  <li>To provide Corteza: find the outcomes of your meetings, show them to you, answer your searches, prepare your morning summary and weekly digest, link outcomes across meetings, propose which open items a decision you type settles, and remind owners of their action items.</li>
   <li>To improve results in your own workspace: outcomes you confirm or dismiss become examples for future meetings of your workspace only.</li>
   <li>To run the service: security, preventing abuse, AI usage limits, fixing errors and understanding which features are used (with no meeting content).</li>
   <li>To contact you about your account and the service.</li>
@@ -65,7 +65,7 @@
 <table>
   <thead><tr><th>Provider</th><th>What for</th><th>Data</th></tr></thead>
   <tbody>
-    <tr><td>Anthropic</td><td>AI that finds outcomes in meetings and writes search answers</td><td>Transcript and notes text, outcomes, AI context, search questions</td></tr>
+    <tr><td>Anthropic</td><td>AI that finds outcomes in meetings and writes search answers</td><td>Transcript and notes text, outcomes, AI context, search questions and decisions you type</td></tr>
     <tr><td>OpenAI</td><td>Embeddings for semantic search</td><td>Outcome text and search questions</td></tr>
     <tr><td>MongoDB (Atlas)</td><td>Database</td><td>Everything Corteza stores (meeting content encrypted)</td></tr>
     <tr><td>Railway</td><td>Application hosting</td><td>Data in transit through the app, server logs</td></tr>
@@ -86,7 +86,7 @@
 <h2>6. Retention and deletion</h2>
 <ul>
   <li>Outcomes are kept while your workspace uses Corteza, so the log stays useful. You can delete outcomes and action items at any time.</li>
-  <li>Transcripts and calendar events are not stored (see section 1).</li>
+  <li>Transcripts and calendar events are not saved (see section 1).</li>
   <li><strong>Disconnecting Google</strong> (Settings → Google Meet) revokes Corteza’s access with Google and deletes the stored tokens. You can also remove access from your <a href="https://myaccount.google.com/permissions" rel="noopener">Google Account</a>.</li>
   <li>To delete your account or your workspace’s data, write to <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>. We delete it within 30 days. When a whole workspace is deleted, its encryption key is destroyed, which makes any remaining copy, including in backups, unreadable.</li>
 </ul>

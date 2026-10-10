@@ -597,14 +597,14 @@
     "tip1": "Turn on transcripts or Gemini’s “Take notes for me” in your meetings. Outcomes of your meetings are private to you.",
     "connected": "Google Meet connected",
     "title2": "Ask Corteza anything",
-    "body2": "Ask in your own words about any meeting. Corteza answers and shows the outcomes it used, so you can check the source.",
+    "body2": "Ask in your own words about any meeting. Corteza answers and shows the outcomes it used, so you can check the source. Or type a decision, like “We decided not to go for ISO 27001”, and Corteza offers to close the open questions and action items it settles.",
     "q1": "What did we decide about pricing?",
     "q2": "What are my open action items?",
     "q3": "Why did we choose this plan?",
     "title3": "Follow-ups that don’t get lost",
     "body3": "Every commitment from your meetings lands in Action items, with who owns it and when it’s due.",
     "item4": "No due date? Corteza emails the owner to set one",
-    "item5": "Mark items done as you go, or change the date",
+    "item5": "Mark items done as you go (they move to Resolved), or edit them",
     "item6": "Filter to yours, or see everyone’s",
     "openActions": "Open Action items",
     "eyebrow4": "Optional · for admins",
@@ -873,10 +873,10 @@
     "totals": "{outcomes} from {meetings}",
     "reconsent": "Corteza can now read Gemini notes too. Reconnect once and allow Google Drive access to capture meetings that only have notes.",
     "lastFailed": "Last check failed: {error}",
-    "calendarConnected": "Calendar connected: your morning summary prepares you for today’s meetings with what is still open from their earlier sessions.",
+    "calendarConnected": "Calendar connected: your morning summary and Home prepare you for today’s meetings with what is still open from their earlier sessions.",
     "calendar": {
       "title": "Prepare for your meetings.",
-      "body": "Let Corteza read your calendar and your morning summary will list today’s meetings, each with what is still open from its earlier sessions. Corteza only reads your own events when it writes the summary and doesn’t store them.",
+      "body": "Let Corteza read your calendar and your morning summary and Home will list today’s meetings, each with what is still open from its earlier sessions. Corteza only reads your own events when it needs them and doesn’t save them.",
       "button": "Add calendar access"
     },
     "saveTo": "Save outcomes to",
@@ -1193,7 +1193,7 @@
     },
     "calendar": {
       "title": "See your calendar events",
-      "body": "Your morning summary lists today’s meetings with what is still open from their earlier sessions. Events are read when the summary is written and are never stored. You can leave this box unchecked."
+      "body": "Your morning summary and Home’s “Prepare your day” list today’s meetings with what is still open from their earlier sessions. Events are read when needed, kept in memory for at most 10 minutes and never saved. You can leave this box unchecked."
     },
     "optional": "(optional)",
     "keep": "Corteza keeps only the outcomes of your meetings (decisions, action items, open questions and risks), never the transcripts. Meeting content is encrypted, nobody else sees your personal space, and you can disconnect at any time in Settings.",

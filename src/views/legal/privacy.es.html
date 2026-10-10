@@ -1,5 +1,5 @@
 <h1>Política de privacidad</h1>
-<p class="updated">Última actualización: 8 de octubre de 2026</p>
+<p class="updated">Última actualización: 10 de octubre de 2026</p>
 
 <p>Corteza (“Corteza”, “nosotros”) es un registro de decisiones para equipos que usan Google Workspace. Lee las transcripciones y las notas de Gemini de tus reuniones de Google Meet y guarda los resultados que salen de ellas: decisiones, pendientes, preguntas abiertas y riesgos. Esta política explica qué datos usa Corteza, para qué, con quién los comparte y qué opciones tienes. Corteza es operado por Cristian Tumani. Contacto: <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>.</p>
 
@@ -20,7 +20,7 @@
     <tr><td><code>meetings.space.readonly</code></td><td>Lista las reuniones de Google Meet a las que asististe (registros de conferencia) con sus participantes, transcripciones y notas de Gemini, para leer las reuniones nuevas automáticamente e importar las pasadas cuando lo pides.</td></tr>
     <tr><td><code>drive.meet.readonly</code></td><td>Lee los archivos de transcripción y de notas que Google Meet guarda en tu Google Drive.</td></tr>
     <tr><td><code>drive.readonly</code></td><td>Lee el documento de notas de Gemini (“Tomar notas por mí”) de una reunión cuando Google lo guarda de una forma que el permiso anterior no cubre. Corteza abre solo los documentos de notas que Google Meet vincula a una reunión; no explora, lista ni lee otros archivos de tu Drive.</td></tr>
-    <tr><td><code>calendar.events.readonly</code> (opcional)</td><td>Lee los eventos de hoy en tu calendario para preparar tu resumen de la mañana: cada reunión con lo que sigue abierto de sus sesiones anteriores. Los eventos se leen al preparar el resumen y no se guardan.</td></tr>
+    <tr><td><code>calendar.events.readonly</code> (opcional)</td><td>Lee los eventos de hoy en tu calendario para preparar tu resumen de la mañana y la sección “Prepara tu día” de Inicio: cada reunión con lo que sigue abierto de sus sesiones anteriores. Los eventos se leen al preparar el resumen o Inicio, se mantienen solo en la memoria del servidor por hasta 10 minutos y nunca se guardan.</td></tr>
     <tr><td><code>drive.file</code> (opcional)</td><td>Te permite elegir documentos concretos de Google Drive (con el selector de archivos de Google) para darle a la IA contexto sobre tu empresa o tu rol. Corteza solo puede abrir los archivos que elijas.</td></tr>
   </tbody>
 </table>
@@ -39,7 +39,7 @@
 
 <h2>2. Cómo usamos los datos</h2>
 <ul>
-  <li>Para prestar el servicio: encontrar los resultados de tus reuniones, mostrártelos, responder tus búsquedas, preparar tu resumen de la mañana y el resumen semanal, conectar resultados entre reuniones y recordar a los responsables sus pendientes.</li>
+  <li>Para prestar el servicio: encontrar los resultados de tus reuniones, mostrártelos, responder tus búsquedas, preparar tu resumen de la mañana y el resumen semanal, conectar resultados entre reuniones, proponer qué temas abiertos cierra una decisión que escribes y recordar a los responsables sus pendientes.</li>
   <li>Para mejorar los resultados de tu propio espacio de trabajo: lo que confirmas o descartas sirve de ejemplo para las próximas reuniones de tu espacio de trabajo, y de ningún otro.</li>
   <li>Para operar el servicio: seguridad, prevención de abusos, límites de uso de IA, corrección de errores y entender qué funciones se usan (sin contenido de reuniones).</li>
   <li>Para contactarte sobre tu cuenta y el servicio.</li>
@@ -65,7 +65,7 @@
 <table>
   <thead><tr><th>Proveedor</th><th>Para qué</th><th>Datos</th></tr></thead>
   <tbody>
-    <tr><td>Anthropic</td><td>IA que encuentra los resultados de las reuniones y redacta las respuestas de búsqueda</td><td>Texto de transcripciones y notas, resultados, contexto para la IA, búsquedas</td></tr>
+    <tr><td>Anthropic</td><td>IA que encuentra los resultados de las reuniones y redacta las respuestas de búsqueda</td><td>Texto de transcripciones y notas, resultados, contexto para la IA, búsquedas y decisiones que escribes</td></tr>
     <tr><td>OpenAI</td><td>Embeddings para la búsqueda semántica</td><td>Texto de los resultados y búsquedas</td></tr>
     <tr><td>MongoDB (Atlas)</td><td>Base de datos</td><td>Todo lo que guarda Corteza (el contenido de reuniones, cifrado)</td></tr>
     <tr><td>Railway</td><td>Alojamiento de la aplicación</td><td>Datos que pasan por la aplicación, registros del servidor</td></tr>
