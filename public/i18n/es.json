@@ -777,9 +777,6 @@
     "mayAnswer": "Decisión · podría responder esta pregunta",
     "notReviewed": "Capturado por IA, aún sin revisar",
     "whyMatters": "Por qué importa: {text}",
-    "oneThread": "Mostrando un tema.",
-    "oneThreadNamed": "Mostrando un tema: {topic}.",
-    "showAll": "Ver todo",
     "loadFailed": "No se pudieron cargar las preguntas y riesgos",
     "emptyOpen": "No hay nada abierto aquí. Las preguntas abiertas y los riesgos se capturan automáticamente de tus reuniones.",
     "emptyFilters": "Nada coincide con estos filtros.",
@@ -1241,5 +1238,68 @@
       "dropped": "Ya no aplica",
       "cancelled": "Cancelado"
     }
+  },
+  "threads": {
+    "inThread": "En este tema",
+    "openFor": {
+      "one": "Lleva {count} día",
+      "other": "Lleva {count} días"
+    },
+    "openToday": "Desde hoy",
+    "nextStep": "siguiente paso: {owner}, vence {date}",
+    "nextStepOverdue": "siguiente paso vencido: {owner}, {date}",
+    "nextStepNoDate": "siguiente paso: {owner}, sin fecha",
+    "you": "tú",
+    "noOwner": "sin responsable",
+    "noNextStep": "Sin siguiente paso",
+    "addNextStep": "Agregar siguiente paso",
+    "nextStepPlaceholder": "¿Cuál es el siguiente paso?",
+    "add": "Agregar",
+    "mayAnswer": {
+      "one": "una decisión podría responderla",
+      "other": "{count} decisiones podrían responderla"
+    },
+    "mayMitigate": {
+      "one": "una decisión podría mitigarlo",
+      "other": "{count} decisiones podrían mitigarlo"
+    },
+    "useAsAnswer": "Usar como respuesta",
+    "useAsMitigation": "Usar como mitigación",
+    "answeredByDecision": "Respondida por: {text}",
+    "mitigatedByDecision": "Mitigado por: {text}",
+    "answeredNote": "Respondida por la decisión: {text} ({meeting}, {date})",
+    "mitigatedNote": "Mitigado por la decisión: {text} ({meeting}, {date})",
+    "notRelated": "No está relacionado",
+    "moreActions": "Más acciones",
+    "removed": "Sacado de este tema.",
+    "markedAnswered": "Marcada como respondida.",
+    "markedMitigated": "Marcado como mitigado.",
+    "markDone": "Marcar como hecho",
+    "open": "Abierto",
+    "summary": {
+      "openQuestions": {
+        "one": "{count} pregunta abierta",
+        "other": "{count} preguntas abiertas"
+      },
+      "risks": {
+        "one": "{count} riesgo",
+        "other": "{count} riesgos"
+      },
+      "nextSteps": {
+        "one": "{count} siguiente paso",
+        "other": "{count} siguientes pasos"
+      },
+      "overdue": {
+        "one": "{count} vencido",
+        "other": "{count} vencidos"
+      },
+      "lastActivity": "última actividad {date}",
+      "allSettled": "Todo resuelto"
+    },
+    "byHand": "Agregado en Corteza",
+    "label": "Tema",
+    "back": "Todas las preguntas y riesgos",
+    "notFound": "Este tema no está disponible. Puede ser privado, o todo lo que tenía se sacó.",
+    "loadFailed": "No se pudo cargar este tema"
   }
 }

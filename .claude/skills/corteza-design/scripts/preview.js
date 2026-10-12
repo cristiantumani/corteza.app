@@ -29,6 +29,7 @@ const PAGES = {
   home: { path: '/dashboard', view: 'dashboard-new.html', active: 'home', preload: true },
   actions: { path: '/actions', view: 'actions.html', active: 'actions' },
   questions: { path: '/questions', view: 'questions.html', active: 'questions' },
+  thread: { path: '/questions', url: '/questions?topic=top_9c1a2b7e', view: 'questions.html', active: 'questions' },
   search: { path: '/ai-search', view: 'ai-search.html', active: 'search', preload: true, prepare: async page => {
     const input = page.locator('input[type="text"], textarea').first();
     if (await input.count()) { await input.fill('¿Qué decidimos sobre el plan anual?'); await input.press('Enter'); }
@@ -140,7 +141,7 @@ async function main() {
 
   if (process.argv.includes('--serve')) {
     console.log(`Serving with "${state}" data at ${base}`);
-    for (const [name, page] of Object.entries(PAGES)) console.log(`  ${name.padEnd(10)} ${base}${page.path}`);
+    for (const [name, page] of Object.entries(PAGES)) console.log(`  ${name.padEnd(10)} ${base}${page.url || page.path}`);
     return;
   }
 
@@ -160,7 +161,7 @@ async function main() {
       tab.on('pageerror', error => errors.push(`pageerror: ${error.message}`));
       tab.on('console', msg => { if (msg.type() === 'error') errors.push(`console: ${msg.text()}`); });
       tab.on('dialog', dialog => { errors.push(`dialog: ${dialog.message()}`); dialog.dismiss(); });
-      await tab.goto(base + page.path, { waitUntil: 'networkidle' }).catch(error => errors.push(`goto: ${error.message}`));
+      await tab.goto(base + (page.url || page.path), { waitUntil: 'networkidle' }).catch(error => errors.push(`goto: ${error.message}`));
       if (page.prepare) await page.prepare(tab).catch(error => errors.push(`prepare: ${error.message}`));
       await tab.waitForLoadState('networkidle').catch(() => {});
       await tab.waitForTimeout(400);

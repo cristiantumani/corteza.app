@@ -8,6 +8,7 @@ const { getDecisionsCollection } = require('../../config/database');
  *   resolution_status: 'open' (also when missing) | 'resolved'
  *   resolution_note: how it was answered or mitigated (optional, at most 1000 characters)
  *   resolved_by: { user_id, name }, resolved_at
+ *   answered_by: the decision that answered it, when "Use as answer" closed it (core/topics/thread-edits)
  *
  * "Resolved" reads "Answered" for a question and "Mitigated" for a risk in the UI.
  * Visibility follows spaces, like every outcome: the caller passes the spaces the viewer
@@ -23,7 +24,7 @@ const LIST_LIMIT = 300;
 const PROJECTION = {
   _id: 0, id: 1, type: 1, text: 1, rationale: 1, evidence_quote: 1, owner_name: 1, space_id: 1, space_name: 1,
   source_details: 1, timestamp: 1, capture: 1, review_status: 1, creator: 1, raised_by: 1, user_id: 1,
-  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1, topic_id: 1, topic: 1, sensitive: 1
+  resolution_status: 1, resolution_note: 1, resolved_by: 1, resolved_at: 1, answered_by: 1, topic_id: 1, topic: 1, sensitive: 1
 };
 
 /**
@@ -63,9 +64,10 @@ async function listQuestionsAndRisks(workspaceId, { spaceIds, type = 'all', stat
  * @param {'resolved'|'open'} status
  * @param {{ user_id: string, name?: string|null }} user
  * @param {unknown} [note] - how it was answered or mitigated
+ * @param {{ answeredBy?: number|null }} [options] - the decision that answered it
  * @returns {Promise<Object|{ error: string }>} the updated fields
  */
-async function setResolution(decision, status, user, note) {
+async function setResolution(decision, status, user, note, { answeredBy = null } = {}) {
   if (!TYPES.includes(decision.type)) return { error: 'Only open questions and risks can be resolved' };
   if (!STATUSES.includes(status)) return { error: 'Invalid status' };
   const fields = status === 'resolved'
@@ -73,9 +75,10 @@ async function setResolution(decision, status, user, note) {
       resolution_status: 'resolved',
       resolution_note: typeof note === 'string' && note.trim() ? note.trim().slice(0, MAX_NOTE) : null,
       resolved_by: { user_id: user.user_id, name: user.name || null },
-      resolved_at: new Date()
+      resolved_at: new Date(),
+      answered_by: typeof answeredBy === 'number' ? answeredBy : null
     }
-    : { resolution_status: 'open', resolution_note: null, resolved_by: null, resolved_at: null };
+    : { resolution_status: 'open', resolution_note: null, resolved_by: null, resolved_at: null, answered_by: null };
   await getDecisionsCollection().updateOne({ workspace_id: decision.workspace_id, id: decision.id }, { $set: fields });
   return fields;
 }

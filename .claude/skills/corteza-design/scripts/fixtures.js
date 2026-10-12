@@ -27,16 +27,16 @@ const people = [
 const meet = title => ({ type: 'google_meet', title, url: 'https://meet.google.com/abc-defg-hij', external_id: `conferenceRecords/${title.length}` });
 
 const decisions = [
-  { id: 101, type: 'decision', text: 'Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre', rationale: 'El 60% de los clientes pidió pago anual en las entrevistas', evidence_quote: 'Si lo dejamos en 20% seguimos sobre el margen objetivo', owner_name: 'Bruno Díaz', owner_user_id: 'U2', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
-  { id: 102, type: 'open_question', text: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
-  { id: 103, type: 'risk', text: 'El proveedor de pagos podría no soportar cobro anual antes de noviembre', raised_by: 'Carla Méndez', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pagos'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_pricing', topic: 'Plan anual' },
+  { id: 101, type: 'decision', text: 'Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre', rationale: 'El 60% de los clientes pidió pago anual en las entrevistas', evidence_quote: 'Si lo dejamos en 20% seguimos sobre el margen objetivo', owner_name: 'Bruno Díaz', owner_user_id: 'U2', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_9c1a2b7e', topic: 'Plan anual' },
+  { id: 102, type: 'open_question', text: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?', capture: 'ai', review_status: null, creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pricing'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_9c1a2b7e', topic: 'Plan anual' },
+  { id: 103, type: 'risk', text: 'El proveedor de pagos podría no soportar cobro anual antes de noviembre', raised_by: 'Carla Méndez', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['pagos'], timestamp: iso(2 * 3600 * 1000), source_details: meet('Planificación comercial Q4'), topic_id: 'top_9c1a2b7e', topic: 'Plan anual' },
   { id: 104, type: 'decision', text: 'Mover la reunión semanal de operaciones a los martes 9:30', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: [], timestamp: iso(26 * 3600 * 1000), source_details: meet('Weekly Ops') },
   { id: 105, type: 'decision', text: 'Usar Linear como única herramienta de seguimiento del equipo de producto y dejar de usar la planilla compartida', rationale: 'Hoy hay tareas duplicadas en dos lugares', capture: 'manual', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: ['producto', 'herramientas'], timestamp: iso(3 * day) },
   { id: 106, type: 'risk', text: 'La migración de datos de clientes antiguos puede tomar más de dos semanas', capture: 'ai', review_status: 'confirmed', creator: 'Ana Rojas', user_id: 'U1', space_id: 'sp1', space_name: 'Personal', tags: [], timestamp: iso(5 * day), source_details: meet('Revisión técnica') }
 ];
 
 const actionItems = [
-  { item_id: 'a1', text: 'Preparar la página de precios con el plan anual', status: 'open', due_date: date(5), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], decision_id: 101, rationale: 'Necesaria antes del lanzamiento', evidence_quote: 'Ana, ¿te encargas de la página?', source: meet('Planificación comercial Q4'), created_by: { user_id: 'U1', name: 'Ana Rojas' }, thread: { topic_id: 'top_pricing', topic: 'Plan anual', open_question: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?' } },
+  { item_id: 'a1', text: 'Preparar la página de precios con el plan anual', status: 'open', due_date: date(5), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], decision_id: 101, rationale: 'Necesaria antes del lanzamiento', evidence_quote: 'Ana, ¿te encargas de la página?', source: meet('Planificación comercial Q4'), created_by: { user_id: 'U1', name: 'Ana Rojas' }, thread: { topic_id: 'top_9c1a2b7e', topic: 'Plan anual', open_question: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?' } },
   { item_id: 'a2', text: 'Confirmar con el proveedor de pagos si soporta cobro anual', status: 'open', due_date: date(-2), owners: [{ user_id: 'U2', name: 'Bruno Díaz' }, { user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U2', 'U1'], source: meet('Planificación comercial Q4'), created_by: { user_id: 'U2', name: 'Bruno Díaz' }, unseen: true },
   // Sensitive (core/privacy/sensitive): only Ana sees it; Bruno keeps his name on it, not access
   { item_id: 'a5', text: 'Citar a Rocha para conversar sobre su desempeño y continuidad', status: 'open', due_date: date(2), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], sensitive: true, private_to: 'U1', source: meet('1:1 Ana / Bruno'), created_by: { user_id: 'U1', name: 'Ana Rojas' } },
@@ -44,9 +44,44 @@ const actionItems = [
   { item_id: 'a4', text: 'Actualizar el calendario de la reunión semanal', status: 'done', due_date: date(-1), completed_at: iso(day), owners: [{ user_id: 'U1', name: 'Ana Rojas' }], owner_ids: ['U1'], source: meet('Weekly Ops'), created_by: { user_id: 'U1', name: 'Ana Rojas' } }
 ];
 
+// Questions & risks (GET /api/questions-risks): each with its thread (`linked`) and status line (`status`)
+const linkedAction = item => ({ item_id: item.item_id, text: item.text, owners: item.owners.map(o => ({ name: o.name })), mine: item.owner_ids.includes('U1'), due_date: item.due_date, status: item.status, can_edit: true });
+const linkedOutcome = id => { const d = decisions.find(x => x.id === id); return { id, type: d.type, text: d.text, resolution_status: 'open', timestamp: d.timestamp, can_edit: true }; };
+const nextStep = (item, overdue) => ({ item_id: item.item_id, text: item.text, owner: item.owners[0].name, mine: item.owner_ids[0] === 'U1', due_date: item.due_date, overdue });
+const THREAD_EXTRAS = {
+  102: { timestamp: iso(12 * day), status: { age_days: 12, in_thread: true, next_step: nextStep(actionItems[0], false), may_answer: 1 },
+    linked: { outcomes: [linkedOutcome(101), linkedOutcome(103)], actions: [linkedAction(actionItems[0])] } },
+  103: { timestamp: iso(12 * day), status: { age_days: 12, in_thread: true, next_step: nextStep(actionItems[1], true), may_answer: 1 },
+    linked: { outcomes: [linkedOutcome(101), linkedOutcome(102)], actions: [linkedAction(actionItems[0])] } },
+  106: { topic_id: 'top_4d5e6f70', topic: 'Migración de clientes', status: { age_days: 5, in_thread: true, next_step: null, may_answer: 0 },
+    linked: { outcomes: [], actions: [{ ...linkedAction(actionItems[4]), text: 'Estimar el volumen de datos a migrar' }] } }
+};
 const questionsRisks = decisions
   .filter(d => d.type === 'open_question' || d.type === 'risk')
-  .map(d => ({ ...d, resolution_status: 'open' }));
+  .map(d => ({ ...d, resolution_status: 'open', can_edit: true, linked: { outcomes: [], actions: [] }, ...(THREAD_EXTRAS[d.id] || {}) }));
+
+// The thread view (GET /api/threads/top_9c1a2b7e): the "Plan anual" story across three meetings
+const pricingThread = {
+  success: true, topic_id: 'top_9c1a2b7e', topic: 'Plan anual',
+  summary: { open_questions: 1, risks: 1, next_steps: 2, overdue: 1, last_activity: iso(2 * 3600 * 1000) },
+  meetings: [
+    { title: 'Revisión de precios', date: iso(21 * day), items: [
+      { kind: 'decision', id: 72, type: 'open_question', text: '¿Ofrecemos un plan anual con descuento este trimestre?', resolution_status: 'resolved', resolution_note: 'Answered by the decision: Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre (Planificación comercial Q4)', answered_by: 101, resolved_by: { name: 'Ana Rojas' }, owner_name: null, date: iso(21 * day), can_edit: true },
+      { kind: 'action_item', id: 'ai_old_1', item_id: 'ai_old_1', type: 'action_item', text: 'Proponer el precio del plan anual', owners: [{ name: 'Bruno Díaz' }], due_date: date(-7), status: 'done', date: iso(21 * day), can_edit: true }
+    ] },
+    { title: 'Planificación comercial Q4', date: iso(12 * day), items: [
+      { kind: 'decision', id: 102, type: 'open_question', text: '¿Quién aprueba descuentos mayores al 30% para clientes enterprise?', resolution_status: 'open', owner_name: 'Carla Méndez', date: iso(12 * day), can_edit: true,
+        status: { age_days: 12, in_thread: true, next_step: nextStep(actionItems[1], true), may_answer: 1 } },
+      { kind: 'decision', id: 103, type: 'risk', text: 'El proveedor de pagos podría no soportar cobro anual antes de noviembre', resolution_status: 'open', date: iso(12 * day), can_edit: true,
+        status: { age_days: 12, in_thread: true, next_step: nextStep(actionItems[1], true), may_answer: 1 } },
+      { kind: 'action_item', id: 'a2', item_id: 'a2', type: 'action_item', text: 'Confirmar con el proveedor de pagos si soporta cobro anual', owners: [{ name: 'Bruno Díaz' }, { name: 'Ana Rojas' }], due_date: date(-2), status: 'open', date: iso(12 * day), can_edit: true }
+    ] },
+    { title: 'Weekly Product Led Growth', date: iso(2 * 3600 * 1000), items: [
+      { kind: 'decision', id: 101, type: 'decision', text: 'Lanzar el plan anual con 20% de descuento a partir del 1 de noviembre', owner_name: 'Bruno Díaz', date: iso(2 * 3600 * 1000), can_edit: true },
+      { kind: 'action_item', id: 'a1', item_id: 'a1', type: 'action_item', text: 'Preparar la página de precios con el plan anual', owners: [{ name: 'Ana Rojas' }], due_date: date(5), status: 'open', date: iso(2 * 3600 * 1000), can_edit: true }
+    ] }
+  ]
+};
 
 const google = {
   success: true, configured: true, connected: true, active_import: null, import_max_days: 90, status: 'active',
@@ -227,7 +262,8 @@ const routes = {
     resolved_by: { user_id: user.user_id, name: user.user_name }, resolved_at: new Date().toISOString(), linked_risks: []
   }),
   'POST /api/questions-risks/103/reopen': { success: true, resolution_status: 'open', resolution_note: null, resolved_by: null, resolved_at: null },
-  'POST /api/action-items/from-colleagues/seen': { success: true, seen: 1 }
+  'POST /api/action-items/from-colleagues/seen': { success: true, seen: 1 },
+  'GET /api/threads/top_9c1a2b7e': pricingThread
 };
 
 module.exports = { user, spaces, routes };

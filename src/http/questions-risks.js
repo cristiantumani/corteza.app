@@ -1,10 +1,12 @@
 const express = require('express');
 const { renderView } = require('./page-partials');
 const { apiRateLimiter, requireAuthBrowser } = require('../middleware/auth');
-const { getUserAccessibleSpaces, canAccessSpace } = require('../services/permissions');
+const { getUserAccessibleSpaces, canAccessSpace, isAdmin } = require('../services/permissions');
 const { getDecisionsCollection } = require('../config/database');
 const { listQuestionsAndRisks, setResolution, TYPES } = require('../core/decisions/questions-risks');
 const { withLinkedItems, openInThread } = require('../core/topics/thread-service');
+const { useAsAnswer } = require('../core/topics/thread-edits');
+const { translate, requestLanguage } = require('../core/i18n/i18n');
 const { track } = require('../integrations/posthog/client');
 
 /**
@@ -14,7 +16,10 @@ const { track } = require('../integrations/posthog/client');
  *   GET  /api/questions-risks?type=open_question|risk|all&status=open|resolved|all&topic=top_…
  *                                                   { items, counts: { open_question, risk } } (open counts);
  *                                                   each item has `linked: { outcomes, actions }`, the rest of its thread
- *   POST /api/questions-risks/:id/resolve           { note? } answered (question) / mitigated (risk);
+ *                                                   and `status`, the line under an open one (core/topics/thread-view)
+ *   POST /api/questions-risks/:id/resolve           { note? } or { decision_id } ("Use as answer": a decision of its
+ *                                                   thread; the note names it and `answered_by` keeps it);
+ *                                                   answered (question) / mitigated (risk);
  *                                                   for a question, `linked_risks`: open risks of its thread, to offer closing them
  *   POST /api/questions-risks/:id/reopen
  *
@@ -51,7 +56,8 @@ router.get('/api/questions-risks', apiRateLimiter, requireSession, async (req, r
       status: oneOf(req.query.status, /** @type {const} */ (['open', 'resolved', 'all']), 'open'),
       topicId
     });
-    const items = await withLinkedItems(workspace_id, result.items, { spaceIds, viewerId: user_id });
+    const admin = await isAdmin(null, workspace_id, user_id);
+    const items = await withLinkedItems(workspace_id, result.items, { spaceIds, viewerId: user_id, admin });
     res.json({ success: true, items, counts: result.counts, topic: topicId ? (items.find(item => item.topic)?.topic || null) : undefined });
   } catch (error) {
     console.error('❌ Failed to list open questions and risks:', error);
@@ -79,12 +85,20 @@ router.post('/api/questions-risks/:id/resolve', apiRateLimiter, express.json(), 
     const decision = await findAccessible(req, res);
     if (!decision) return;
     const { user_id, user_name } = req.session.user;
-    const fields = await setResolution(decision, 'resolved', { user_id, name: user_name || null }, (req.body || {}).note);
-    if ('error' in fields) return res.status(400).json({ success: false, error: fields.error });
+    const body = req.body || {};
+    const user = { user_id, name: user_name || null };
+    const spaceIds = await getUserAccessibleSpaces(null, decision.workspace_id, user_id);
+    const lang = requestLanguage(req);
+    const fields = body.decision_id !== undefined && body.decision_id !== null
+      ? await useAsAnswer({ question: decision, decisionId: body.decision_id, user, spaceIds, t: (key, vars) => translate(lang, key, vars) })
+      : await setResolution(decision, 'resolved', user, body.note);
+    if ('error' in fields) return res.status(/** @type {any} */ (fields).status || 400).json({ success: false, error: fields.error });
     const linkedRisks = decision.type === 'open_question' && decision.topic_id
-      ? await openInThread(decision.workspace_id, decision.topic_id, 'risk', { spaceIds: await getUserAccessibleSpaces(null, decision.workspace_id, user_id) })
+      ? await openInThread(decision.workspace_id, decision.topic_id, 'risk', { spaceIds })
       : [];
-    track('question_risk_resolved', { outcome_type: decision.type, with_note: Boolean(fields.resolution_note), in_thread: Boolean(decision.topic_id) });
+    track('question_risk_resolved', {
+      outcome_type: decision.type, with_note: Boolean(fields.resolution_note), in_thread: Boolean(decision.topic_id), by_decision: Boolean(fields.answered_by)
+    });
     res.json({ success: true, ...fields, linked_risks: linkedRisks });
   } catch (error) {
     console.error('❌ Failed to resolve question or risk:', error);

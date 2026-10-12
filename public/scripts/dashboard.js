@@ -850,6 +850,7 @@
       const contentLabel = document.getElementById('detail-content-label');
       if (contentLabel) contentLabel.textContent = typeLabel;
       document.getElementById('detail-decision-text').textContent = decision.text;
+      renderDetailThread(decision);
 
       // Why, owner and due date (AI extraction v2); hidden when missing
       showDetailField('detail-rationale-section', 'detail-rationale', decision.rationale);
@@ -1377,6 +1378,17 @@
 
     // Security: escape text before putting it in HTML (content and attribute values).
     // Anything from users, meetings or the AI goes through this, never raw into innerHTML.
+    /** "In this thread · <topic>": opens the thread view (docs/specs/2026-10-thread-as-unit.md) */
+    function renderDetailThread(decision) {
+      const section = document.getElementById('detail-thread');
+      if (!section) return;
+      const topicId = typeof decision.topic_id === 'string' && /^top_[0-9a-f]{1,32}$/.test(decision.topic_id) ? decision.topic_id : null;
+      if (!topicId) { section.style.display = 'none'; section.innerHTML = ''; return; }
+      section.innerHTML = `<a href="/questions?topic=${encodeURIComponent(topicId)}" class="inline-flex items-center gap-1 text-sm font-semibold text-on-surface hover:underline">
+        <span class="material-symbols-outlined text-base" aria-hidden="true">forum</span>${escapeHtml(t('threads.inThread'))}${decision.topic ? ` · ${escapeHtml(decision.topic)}` : ''}</a>`;
+      section.style.display = '';
+    }
+
     function escapeHtml(unsafe) {
       if (unsafe === null || unsafe === undefined) return '';
       return String(unsafe)

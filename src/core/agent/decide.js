@@ -198,17 +198,17 @@ async function recordDecision({ workspaceId, user, spaceIds, admin, text, ration
   const [outcomes, items] = await Promise.all([
     outcomeIds.length ? getDecisionsCollection().find(
       { workspace_id: workspaceId, id: { $in: outcomeIds }, space_id: { $in: spaceIds }, type: { $in: ['open_question', 'risk'] }, resolution_status: { $ne: 'resolved' } },
-      { projection: { _id: 0, id: 1, type: 1, topic_id: 1, topic: 1 } }
+      { projection: { _id: 0, id: 1, type: 1, topic_id: 1, topic: 1, unlinked_topics: 1 } }
     ).toArray() : [],
     itemIds.length ? getDatabase().collection('action_items').find(
       { workspace_id: workspaceId, item_id: { $in: itemIds }, status: 'open', $or: [{ space_id: { $in: spaceIds } }, { owner_ids: user.user_id }] },
-      { projection: { _id: 0, item_id: 1, owner_ids: 1, created_by: 1, topic_id: 1, topic: 1 } }
+      { projection: { _id: 0, item_id: 1, owner_ids: 1, created_by: 1, topic_id: 1, topic: 1, unlinked_topics: 1 } }
     ).toArray() : []
   ]);
   const found = new Map([
-    ...outcomes.map(o => [`decision:${o.id}`, { kind: 'decision', id: o.id, type: o.type, topic_id: o.topic_id || null, topic: o.topic || null }]),
+    ...outcomes.map(o => [`decision:${o.id}`, { kind: 'decision', id: o.id, type: o.type, topic_id: o.topic_id || null, topic: o.topic || null, unlinked_topics: o.unlinked_topics || [] }]),
     ...items.filter(i => canCloseItem({ owner_ids: i.owner_ids, author_id: i.created_by && i.created_by.user_id }, user.user_id, admin))
-      .map(i => [`action_item:${i.item_id}`, { kind: 'action_item', id: i.item_id, type: 'action_item', topic_id: i.topic_id || null, topic: i.topic || null }])
+      .map(i => [`action_item:${i.item_id}`, { kind: 'action_item', id: i.item_id, type: 'action_item', topic_id: i.topic_id || null, topic: i.topic || null, unlinked_topics: i.unlinked_topics || [] }])
   ]);
   const chosen = wanted.flatMap(c => {
     const target = found.get(`${c.kind}:${c.id}`);

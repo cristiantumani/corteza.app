@@ -777,9 +777,6 @@
     "mayAnswer": "Decision · may answer this question",
     "notReviewed": "AI-captured, not reviewed yet",
     "whyMatters": "Why it matters: {text}",
-    "oneThread": "Showing one thread.",
-    "oneThreadNamed": "Showing one thread: {topic}.",
-    "showAll": "Show all",
     "loadFailed": "Could not load open questions and risks",
     "emptyOpen": "Nothing open here. Open questions and risks are captured automatically from your meetings.",
     "emptyFilters": "Nothing matches these filters.",
@@ -1241,5 +1238,68 @@
       "dropped": "No longer applies",
       "cancelled": "Cancelled"
     }
+  },
+  "threads": {
+    "inThread": "In this thread",
+    "openFor": {
+      "one": "Open {count} day",
+      "other": "Open {count} days"
+    },
+    "openToday": "Opened today",
+    "nextStep": "next step: {owner}, due {date}",
+    "nextStepOverdue": "next step overdue: {owner}, {date}",
+    "nextStepNoDate": "next step: {owner}, no due date",
+    "you": "you",
+    "noOwner": "no owner",
+    "noNextStep": "No next step",
+    "addNextStep": "Add a next step",
+    "nextStepPlaceholder": "What’s the next step?",
+    "add": "Add",
+    "mayAnswer": {
+      "one": "a decision may answer it",
+      "other": "{count} decisions may answer it"
+    },
+    "mayMitigate": {
+      "one": "a decision may mitigate it",
+      "other": "{count} decisions may mitigate it"
+    },
+    "useAsAnswer": "Use as answer",
+    "useAsMitigation": "Use as mitigation",
+    "answeredByDecision": "Answered by: {text}",
+    "mitigatedByDecision": "Mitigated by: {text}",
+    "answeredNote": "Answered by the decision: {text} ({meeting}, {date})",
+    "mitigatedNote": "Mitigated by the decision: {text} ({meeting}, {date})",
+    "notRelated": "Not related",
+    "moreActions": "More actions",
+    "removed": "Taken out of this thread.",
+    "markedAnswered": "Marked as answered.",
+    "markedMitigated": "Marked as mitigated.",
+    "markDone": "Mark done",
+    "open": "Open",
+    "summary": {
+      "openQuestions": {
+        "one": "{count} open question",
+        "other": "{count} open questions"
+      },
+      "risks": {
+        "one": "{count} risk",
+        "other": "{count} risks"
+      },
+      "nextSteps": {
+        "one": "{count} next step",
+        "other": "{count} next steps"
+      },
+      "overdue": {
+        "one": "{count} overdue",
+        "other": "{count} overdue"
+      },
+      "lastActivity": "last activity {date}",
+      "allSettled": "All settled"
+    },
+    "byHand": "Added in Corteza",
+    "label": "Thread",
+    "back": "All questions & risks",
+    "notFound": "This thread isn’t available. It may be private, or everything in it was taken out.",
+    "loadFailed": "Could not load this thread"
   }
 }
