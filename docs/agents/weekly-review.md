@@ -1,6 +1,6 @@
 # Weekly review agent
 
-Runs every Friday at 16:00 (Chile) as a scheduled Claude Code routine. Goal: everything people read
+Runs every Friday at 16:00 (Spain time, Europe/Madrid) as a scheduled Claude Code routine. Goal: everything people read
 about Corteza stays true after this week's changes. It **proposes** updates in pull requests; Cristian
 reviews and merges. Never merge your own PR.
 
