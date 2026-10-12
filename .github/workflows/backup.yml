@@ -31,7 +31,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install mongodump and age
         run: |
-          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C /usr/local
+          mkdir -p "$RUNNER_TEMP/mongo-tools"
+          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C "$RUNNER_TEMP/mongo-tools"
+          echo "$RUNNER_TEMP/mongo-tools/bin" >> "$GITHUB_PATH"
           sudo apt-get update -qq && sudo apt-get install -y -qq age
       - name: Dump and encrypt
         env:
@@ -57,7 +59,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install mongodump and age
         run: |
-          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C /usr/local
+          mkdir -p "$RUNNER_TEMP/mongo-tools"
+          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C "$RUNNER_TEMP/mongo-tools"
+          echo "$RUNNER_TEMP/mongo-tools/bin" >> "$GITHUB_PATH"
           sudo apt-get update -qq && sudo apt-get install -y -qq age
       - uses: actions/setup-node@v4
         with:
