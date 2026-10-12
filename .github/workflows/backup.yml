@@ -1,0 +1,100 @@
+# Nightly encrypted backup of the production database (docs/specs/2026-10-ops-monitoring.md).
+# Atlas' free tier has no backups. The archive is encrypted with age to a public key whose private
+# key only the founder keeps offline, and kept 30 days as a workflow artifact. Restore guide:
+# docs/ops/restore.md. When the dump fails, GitHub emails the repo owner.
+#
+# Secrets: BACKUP_MONGODB_URI (a read-only Atlas user), BACKUP_AGE_RECIPIENT (age1… public key).
+# On pull requests that change the backup, a dry run backs up and restores a test database.
+name: Backup
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/backup.yml'
+      - 'scripts/ops/**'
+
+permissions:
+  contents: read
+
+env:
+  MONGO_TOOLS_URL: https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.10.0.tgz
+
+jobs:
+  backup:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mongodump and age
+        run: |
+          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C /usr/local
+          sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Dump and encrypt
+        env:
+          BACKUP_MONGODB_URI: ${{ secrets.BACKUP_MONGODB_URI }}
+          BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+        run: scripts/ops/backup.sh "corteza-$(date -u +%Y-%m-%d).archive.gz.age"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corteza-backup-${{ github.run_id }}
+          path: corteza-*.archive.gz.age
+          retention-days: 30
+          if-no-files-found: error
+
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mongodump and age
+        run: |
+          curl -sSfL "$MONGO_TOOLS_URL" | tar xz --strip-components=1 -C /usr/local
+          sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Seed a test database
+        run: |
+          node -e "
+            const { MongoClient } = require('mongodb');
+            (async () => {
+              const c = await MongoClient.connect('mongodb://127.0.0.1:27017');
+              const db = c.db('backup_source');
+              await db.collection('decisions').insertMany(Array.from({ length: 50 }, (_, i) => ({ id: i, text: 'x'.repeat(200) })));
+              await db.collection('action_items').insertMany(Array.from({ length: 20 }, (_, i) => ({ item_id: 'a' + i })));
+              await c.close();
+            })();
+          "
+      - name: Back up, then restore into another database
+        run: |
+          age-keygen -o key.txt 2> /dev/null
+          export BACKUP_AGE_RECIPIENT=$(grep -o 'age1[0-9a-z]*' key.txt)
+          export BACKUP_MONGODB_URI='mongodb://127.0.0.1:27017/backup_source'
+          scripts/ops/backup.sh test.archive.gz.age
+          if gunzip -t test.archive.gz.age 2>/dev/null; then echo 'The backup is not encrypted' && exit 1; fi
+          scripts/ops/restore.sh test.archive.gz.age key.txt 'mongodb://127.0.0.1:27017' --nsFrom='backup_source.*' --nsTo='backup_restored.*'
+      - name: Compare counts
+        run: |
+          node -e "
+            const { MongoClient } = require('mongodb');
+            (async () => {
+              const c = await MongoClient.connect('mongodb://127.0.0.1:27017');
+              for (const name of ['decisions', 'action_items']) {
+                const [a, b] = await Promise.all([c.db('backup_source').collection(name).countDocuments(), c.db('backup_restored').collection(name).countDocuments()]);
+                console.log(name, a, b);
+                if (a !== b || a === 0) process.exit(1);
+              }
+              await c.close();
+            })();
+          "

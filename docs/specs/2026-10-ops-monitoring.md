@@ -1,6 +1,6 @@
 # Know when Corteza breaks: errors, alerts, backups and status
 
-**Status:** draft for approval (Oct 12, 2026). Linear COR-16 (roadmap A6).
+**Status:** approved and built (Oct 12, 2026). Linear COR-16 (roadmap A6).
 
 ## Why
 
@@ -46,8 +46,8 @@ error types, never titles or text.
 | **Claude is out of credit / rejected the key** | an Anthropic call fails with a billing or auth error (`credit balance is too low`, 401, 403). Sent right away (not on the 15-minute tick) |
 | **Captures are failing** | 3 or more meetings in `failed` in the last hour, or any meeting that used up its 3 attempts |
 | **The Meet poller stopped** | no poller run finished in the last 20 minutes (it runs every 5) |
-| **The morning summary didn't go out** | at 9:00 UTC, fewer summaries sent today than people due for one, with the count of errors |
-| **Google refused a connection** | a Google connection moved to `needs_reconsent` or `revoked` (count per day, in the morning, not per event) |
+| **Morning summaries failed** | one or more morning summaries failed to send today (count of failures) |
+| **Google connections lost** | Google connections revoked or expired in the last 24 hours (count; at most once a day) |
 
 The job state (last sent per type) lives in a small `ops_state` collection. `/health` stays as it is
 (Railway needs it to answer without the database).

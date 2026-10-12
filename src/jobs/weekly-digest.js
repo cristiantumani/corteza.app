@@ -8,6 +8,7 @@ const {
 const { getUserAccessibleSpaces } = require('../services/permissions');
 const { sendWeeklyDigestEmail } = require('../utils/n8n-client');
 const { memberLanguage } = require('../core/users/language');
+const { reportError } = require('../integrations/sentry/client');
 
 /**
  * Weekly decision digest, replacing the n8n "Weekly Team Digest" workflow.
@@ -161,6 +162,7 @@ async function sendWorkspaceDigest(workspaceId, period) {
       sent++;
     } catch (error) {
       console.error(`❌ Weekly digest failed for ${member.email} in ${workspaceId}:`, error.message);
+      reportError(error, { job: 'weekly_digest', workspace_id: workspaceId });
       // Continue with the next member
     }
   }
@@ -210,6 +212,7 @@ async function runWeeklyDigest(now = new Date()) {
     }
   } catch (error) {
     console.error('❌ Weekly digest job failed:', error.message);
+    reportError(error, { job: 'weekly_digest' });
   }
 }
 

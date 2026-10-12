@@ -1,5 +1,6 @@
 const { getExtensionInstallsCollection } = require('../config/database');
 const { sendReengagementEmail } = require('../utils/n8n-client');
+const { reportError } = require('../integrations/sentry/client');
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // Once per day
@@ -44,6 +45,7 @@ async function checkAndSendReengagementEmails() {
     }
   } catch (error) {
     console.error('❌ Re-engagement job failed:', error.message);
+    reportError(error, { job: 'reengagement' });
   }
 }
 

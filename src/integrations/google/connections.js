@@ -191,6 +191,7 @@ async function finishPoll(connectionId, { cursor, error, meetingsProcessed = 0, 
   if (cursor) update.$set.poll_cursor = cursor;
   if (error && error.revoked) {
     update.$set.status = 'revoked';
+    update.$set.revoked_at = new Date();
     update.$set.last_error = 'Google access was revoked or expired. Reconnect Google Meet in Settings.';
   } else if (error) {
     update.$set.last_error = String(error.message || error).slice(0, 300);

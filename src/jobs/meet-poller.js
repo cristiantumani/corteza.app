@@ -6,6 +6,7 @@ const googleMeetSource = require('../ingestion/sources/google-meet');
 const pipeline = require('../ingestion/pipeline');
 const { ensurePersonalSpace } = require('../services/spaces');
 const { countByType } = require('../core/decisions/types');
+const { reportError } = require('../integrations/sentry/client');
 
 /**
  * Google Meet poller: finds meetings that ended for each connected user and
@@ -146,6 +147,7 @@ async function runForConnection(connection, deps = {}) {
   } catch (error) {
     const revoked = meetClient.isRevokedError(error);
     console.error(`❌ Meet poll failed for ${leased.google_email}:`, error.message);
+    if (!revoked) reportError(error, { job: 'meet_poller', workspace_id: leased.workspace_id });
     await connections.finishPoll(leased._id, { error: Object.assign(error, { revoked }) });
     return { error: revoked ? 'revoked' : error.message, meetingsProcessed: 0, decisionsCaptured: 0, results: [] };
   }
@@ -159,8 +161,11 @@ async function runMeetPoller() {
     }
     // Finish "Import past meetings" jobs interrupted by a restart
     await require('../ingestion/meet-import').resumeStaleImports();
+    // The ops checks alert when this stops (jobs/ops-alerts)
+    await require('../core/ops/alerts').heartbeat('meet_poller');
   } catch (error) {
     console.error('❌ Meet poller run failed:', error.message);
+    reportError(error, { job: 'meet_poller' });
   }
 }
 
