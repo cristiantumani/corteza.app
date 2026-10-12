@@ -84,7 +84,10 @@
 
   function outcomeHtml(outcome, closed) {
     const icon = closed ? 'check' : outcome.type === 'risk' ? 'warning' : outcome.type === 'action_item' ? 'task_alt' : 'contact_support';
-    const href = outcome.type === 'action_item' ? '/actions' : `/questions?type=${outcome.type === 'risk' ? 'risk' : 'open_question'}`;
+    // Straight to the item's own card (questions.js and actions.js focus ?item=)
+    const href = outcome.type === 'action_item'
+      ? (outcome.item_id ? `/actions?item=${encodeURIComponent(outcome.item_id)}` : '/actions')
+      : (outcome.id !== undefined ? `/questions?item=${encodeURIComponent(outcome.id)}` : `/questions?type=${outcome.type === 'risk' ? 'risk' : 'open_question'}`);
     return `
       <li class="flex items-start gap-3 py-1.5">
         <span class="material-symbols-outlined shrink-0 text-lg ${closed ? 'text-success' : 'text-on-surface-variant'}" aria-hidden="true">${icon}</span>

@@ -533,7 +533,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
           </div>`;
   const questionRow = question => `
           <div style="font-size: 14px; line-height: 1.4; padding: 6px 0; border-top: 1px solid #f1eef2;">
-            <a href="${link('/questions')}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(question.text), 140))}</a>
+            <a href="${link(question.id !== undefined && question.id !== null ? `/questions?item=${encodeURIComponent(question.id)}` : '/questions')}" style="color: #1b1b1d; text-decoration: none;">${escapeHtml(clip(String(question.text), 140))}</a>
             <div style="font-size: 12px; color: #6b6d78;">${escapeHtml(t(`types.short.${question.type === 'risk' ? 'risk' : 'open_question'}`))}${question.owner ? ` · ${escapeHtml(question.owner)}` : ''}</div>
           </div>`;
   const closedBlock = closed => !closed || !closed.length ? '' : `

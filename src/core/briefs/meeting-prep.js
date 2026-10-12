@@ -43,6 +43,8 @@ const STOPWORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'e
  * @property {'action_item'|'open_question'|'risk'} type
  * @property {string} text
  * @property {string|null} owner
+ * @property {number} [id] - an open question's or risk's id (links open its card)
+ * @property {string} [item_id] - an action item's id
  *
  * @typedef {Object} MeetingPrep
  * @property {string} start - ISO date-time
@@ -190,20 +192,20 @@ function buildMeetingPrep({ events, userId, selfEmail, members, records = new Ma
 
     const questions = seriesOutcomes.filter(outcome => outcome.resolution_status !== 'resolved')
       .filter(outcome => once(outcome.text))
-      .map(outcome => ({ type: outcome.type, text: outcome.text, owner: outcome.owner_name || null }))
+      .map(outcome => ({ type: outcome.type, id: outcome.id, text: outcome.text, owner: outcome.owner_name || null }))
       .slice(0, MAX_QUESTIONS);
 
     const sinceTime = since ? new Date(since).getTime() : null;
     const closedAfter = date => sinceTime !== null && !!date && new Date(date).getTime() >= sinceTime;
     const closed = sinceTime === null ? [] : [
       ...seriesActions.filter(item => item.status === 'done' && closedAfter(item.completed_at))
-        .map(item => ({ type: /** @type {'action_item'} */ ('action_item'), text: item.text, owner: ownerOf(item.owners).owner, at: item.completed_at })),
+        .map(item => ({ type: /** @type {'action_item'} */ ('action_item'), id: undefined, item_id: item.item_id, text: item.text, owner: ownerOf(item.owners).owner, at: item.completed_at })),
       ...seriesOutcomes.filter(outcome => outcome.resolution_status === 'resolved' && closedAfter(outcome.resolved_at))
-        .map(outcome => ({ type: outcome.type, text: outcome.text, owner: outcome.resolved_by?.name || null, at: outcome.resolved_at }))
+        .map(outcome => ({ type: outcome.type, id: outcome.id, item_id: undefined, text: outcome.text, owner: outcome.resolved_by?.name || null, at: outcome.resolved_at }))
     ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
       .filter(entry => once(entry.text))
       .slice(0, MAX_CLOSED)
-      .map(({ type, text, owner }) => ({ type, text, owner }));
+      .map(({ type, id, item_id, text, owner }) => ({ type, ...(id !== undefined ? { id } : {}), ...(item_id ? { item_id } : {}), text, owner }));
 
     prep.push({
       start: event.start,
