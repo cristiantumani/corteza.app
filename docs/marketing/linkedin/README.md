@@ -63,9 +63,7 @@ Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, sa
 >
 > 👉 corteza.app/early-access
 
-## Ready to post
-
-### 2026-10-12: Walk into every meeting prepared (week 3)
+### 2026-10-12: Walk into every meeting prepared
 
 Image: `2026-10-12-prepare.png` (source: `2026-10-12-prepare.html`, same style as the template)
 
