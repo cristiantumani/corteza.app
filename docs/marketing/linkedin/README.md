@@ -55,19 +55,33 @@ Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, sa
 >
 > #Productivity #Meetings #GoogleWorkspace
 
+## Ready to post
+
+### 2026-10-12: Ask in plain language (week 2)
+
+Image: `2026-10-12-ask.png` (source: `2026-10-12-ask.html`, same style as the template)
+
+> "Why did we decide that?"
+>
+> Every team asks it. Usually three weeks later, in a meeting where half the people weren't there the first time. Someone says "I think it was because of…", someone else remembers it differently, and twenty minutes later you've made the same decision again. Or a different one.
+>
+> The decision was made. The reason was said out loud. It just didn't stick anywhere.
+>
+> With Corteza, you ask in plain words: *"What did we decide about pricing, and why?"*
+>
+> In a few seconds you get the decision, the reasoning behind it, and the exact Google Meet meeting it came from, so you can check it yourself instead of trusting anyone's memory. Including mine.
+>
+> No one had to write it down. Corteza picked it up from the meeting's transcript or Gemini notes.
+>
+> Fewer meetings about meetings. More time doing the thing you decided.
+>
+> 👉 corteza.app/early-access
+>
+> #Productivity #Meetings #GoogleWorkspace #DecisionMaking
+
 ## Next: weekly posts
 
 One per week, each about a single feature. Image ideas are suggestions.
-
-### Week 2: Ask in plain language
-
-Image: the Search answer card ("What did we decide about pricing, and why?").
-
-> "Why did we decide that?" Every team asks it. Few can answer it.
->
-> With Corteza, just ask: *"What did we decide about pricing, and why?"* You get the decision, the reasoning, and the meeting it came from, in seconds.
->
-> 👉 corteza.app/early-access
 
 ### Week 3: Walk into your next meeting prepared
 
