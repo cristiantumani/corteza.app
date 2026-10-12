@@ -1,6 +1,8 @@
 # First use: see value in a minute
 
-**Status:** draft for approval. Linear COR-45 (Fase A). Replaces the 4-step tour (COR-12, `partials/onboarding.html`).
+**Status:** approved with changes (Oct 12, 2026): 10 pre-checked / 3 live, 1:1s like any other meeting,
+static example, "How it works" stays. Linear COR-45 (Fase A). The 4-step tour (COR-12,
+`partials/onboarding.html`) stops opening on first run and stays behind "How it works".
 ROADMAP A4 ("Onboarding in under 5 minutes"; metric: time to first decision).
 
 ## Why
@@ -19,7 +21,7 @@ minute, whenever the person has a recent meeting with a transcript or Gemini not
 
 ## What changes
 
-### 1. "Get started" on Home (replaces the tour)
+### 1. "Get started" on Home (instead of the tour on first run)
 
 While setup isn't done (below), Home shows one **Get started** panel at the top instead of the capture
 panel, in the page and not as a modal. It has three numbered steps. The current step is open, done
@@ -33,7 +35,7 @@ steps collapse to one line with a check, and later steps are greyed out.
    from `GET /api/integrations/google/meetings`. Each row shows the title, when it was, and whether it
    has a transcript or notes.
    - Meetings with a transcript or notes that Corteza hasn't processed yet are **pre-checked**, up to
-     **10** (`FIRST_IMPORT_DEFAULT_MAX`). 1:1s are listed but not pre-checked, same as automatic capture.
+     **10** (`FIRST_IMPORT_DEFAULT_MAX`). 1:1s are treated like any other meeting (section 7).
    - Meetings without a transcript or notes are greyed out, with "No transcript or notes".
    - **Import N meetings** starts the import (`POST /api/integrations/google/imports`, into the personal
      space). **Skip** goes to step 3 without importing.
@@ -75,10 +77,12 @@ items and one open question, each with its quote. It's static (`src/data/sample-
 ES), rendered in the panel, and never saved, searched or counted. It goes away when the first real
 outcome arrives.
 
-### 5. Hints instead of a tour
+### 5. Hints, and "How it works" on demand
 
-The 4-step overlay is removed. What it explained shows up once, in context, the first time each page
-has something to show:
+The 4-step overlay no longer opens by itself on first run, where it covered an empty Home. It stays
+as it is behind the sidebar's **How it works**, for anyone who wants to see how Corteza works after
+setup. What it explained also shows up once, in context, the first time each page has something to
+show:
 
 - **Search**, when the person has at least one outcome: one line under the box, "Ask in your own
   words, or type a decision like 'We decided not to go for ISO 27001' to close what it settles", with
@@ -95,11 +99,29 @@ Each hint has a close (×) and doesn't come back after that.
 The title ("Sign in to Corteza"), the subtitle and the Privacy and Terms links are already there.
 Add one line under the button: "Transcripts are never stored, only the outcomes." in both languages.
 
+### 7. 1:1s are meetings like any other
+
+1:1s are often where the most important commitments are made, so Corteza stops treating them
+differently:
+
+- Automatic capture no longer skips meetings with 2 or fewer participants: the `one_on_one` rule in
+  `skipReason` (`jobs/meet-poller.js`) and the `skip_one_on_one` setting are removed
+  (`connections.js` defaults, `PUT /api/integrations/google/settings`, the Settings checkbox and its
+  copy, including "1:1 meetings are skipped by default").
+- Anyone who wants to leave some meetings out still can, by title ("Exclude meetings by title", e.g.
+  "1:1, interview").
+- What protects 1:1s is what protects every meeting: outcomes go to the personal space of the person
+  who connected, and sensitive topics (performance, leaving, pay, health…) stay visible only to them.
+- 1:1s skipped before this change stay skipped (no surprise processing or AI cost). They can be
+  imported like any past meeting. The "1:1 meeting, skipped" label stays for those old records.
+- The stored `skip_one_on_one` field is ignored and left in place (no migration).
+
 ## Data and API
 
 - `workspace_members.setup_dismissed_at` (Date, optional): set by "I'll do this later".
   `workspace_members.hints_seen` (`{ search?, actions?, context? }`: Dates): set when a hint is
-  closed. `onboarding_seen_at` stays, but nothing reads it anymore.
+  closed. `onboarding_seen_at` stays but no longer decides anything: the tour only opens from
+  "How it works" (`/dashboard?tour=1`).
 - Get started shows when **no outcomes in the person's spaces** AND **no `setup_dismissed_at`**.
   Existing people who already have outcomes never see it, so no migration is needed.
 - `GET /api/onboarding` → `{ setup: { show, connected, has_outcomes, active_import }, hints_seen, is_admin }`.
@@ -113,7 +135,8 @@ Add one line under the button: "Transcripts are never stored, only the outcomes.
   `{ from: 'setup' }` sets it. The server caps the request at 10 meetings in that case.
 - Step 3 polls `GET /api/integrations/google/imports/:id` (progress) and `GET /api/home` (the review
   queue) every 5 s while the import runs, then stops.
-- The `/dashboard?tour=1` link and the sidebar's "How it works" are removed.
+- The sidebar's "How it works" (`/dashboard?tour=1`) keeps opening the tour; `onboarding.js` no
+  longer opens it on its own.
 
 **AI cost.** The default selection is at most 10 meetings, and only 3 run at full price. The AI budget
 checks (`checkAiBudget`) apply as they do today. In the worst case, one new person costs about
@@ -135,19 +158,20 @@ checks (`checkAiBudget`) apply as they do today. In the worst case, one new pers
 ## Tests
 
 - Unit: `shouldShowSetup` (no outcomes / outcomes / dismissed); pre-selection (only ready and new
-  meetings, no 1:1s, at most 10, newest first); `startImport` with `liveFirst` sends the first 3 live
+  meetings, 1:1s included, at most 10, newest first); `skipReason` no longer skips 1:1s but still
+  excludes by title; `startImport` with `liveFirst` sends the first 3 live
   and the rest to the batch, and without it sends all to the batch, as today.
 - Route: `/integrations/google/callback` with `from=setup` redirects to the dashboard, including on
   errors; `POST /imports` with `from: 'setup'` refuses more than 10 meetings; the hints and dismiss
   endpoints validate the name.
-- `i18n.test.js` covers the new keys in both languages. The old `onboarding.*` keys are removed.
+- Integration: `meet-capture.test.js` now expects 1:1s to be captured (its "skips 1:1s" case changes).
+- `i18n.test.js` covers the new keys in both languages; the `onboarding.*` keys stay for the tour.
 - Preview fixtures (`scripts/preview.js`): Get started at step 1, step 2 with meetings, step 3 with
   outcomes arriving, step 3 with the example, the waiting state, and each hint. Desktop and mobile.
 
-## Questions for Cristian
+## Decided (Oct 12, 2026)
 
-1. **10 meetings and 3 live** as defaults: OK, or a different cap given the beta budget?
-2. **1:1s not pre-checked:** they're often the most valuable meetings, but also the most private.
-   Keep them unchecked (same as automatic capture)?
-3. **Example meeting:** a static card in the panel (proposed), or link to the existing `/demo` dashboard?
-4. **"How it works" in the sidebar:** remove it (proposed), or keep a link to a short help page?
+1. Defaults: 10 meetings pre-checked, the first 3 extracted live.
+2. 1:1s are treated like any other meeting, in Get started and in automatic capture (section 7).
+3. The example meeting is a static card in the panel.
+4. "How it works" stays in the sidebar and opens the tour on demand.
