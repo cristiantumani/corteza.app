@@ -3,7 +3,7 @@
 A launch post, then one short post per week about a single feature. Each post links to `corteza.app/early-access`.
 
 - **Image:** make one per post with `template.html` (1200×1500, 4:5, the size that takes the most room in the feed). Edit the texts, then open it in Chrome at 1200×1500 and take a screenshot, or run `chromium --headless --window-size=1200,1500 --screenshot=out.png template.html`. Keep the same style so the series looks consistent. A real screenshot of the feature in the app works well too.
-- **Honesty rule:** only claim what works today. Meeting feedback for organizers and pre-meeting briefs are on the roadmap, not live yet.
+- **Honesty rule:** only claim what works today (check `docs/seo/product-facts.md` in the website repo). Meeting prep (Prepare your day, and in the morning summary) is live; meeting feedback for organizers is on the roadmap, not live yet.
 - **Link:** in the post, or in the first comment ("link in the comments") for a bit more reach.
 
 ## Posted
@@ -55,13 +55,7 @@ Image: `2026-10-01-action-items.png` (source: `2026-10-01-action-items.html`, sa
 >
 > #Productivity #Meetings #GoogleWorkspace
 
-## Next: weekly posts
-
-One per week, each about a single feature. Image ideas are suggestions.
-
-### Week 2: Ask in plain language
-
-Image: the Search answer card ("What did we decide about pricing, and why?").
+### Week of 2026-10-05: Ask in plain language
 
 > "Why did we decide that?" Every team asks it. Few can answer it.
 >
@@ -69,15 +63,29 @@ Image: the Search answer card ("What did we decide about pricing, and why?").
 >
 > 👉 corteza.app/early-access
 
-### Week 3: Walk into your next meeting prepared
+### 2026-10-12: Walk into every meeting prepared
 
-Image: Search with "What's still pending from Ana?" and the open action items list.
+Image: `2026-10-12-prepare.png` (source: `2026-10-12-prepare.html`, same style as the template)
 
-> Before your next 1:1 or team sync, ask Corteza: *"What's still pending from Ana?"*
+> You open the calendar invite for the weekly. Again.
 >
-> Every open commitment, who owns it and when it's due. Walk in prepared, and stop re-discussing what was already agreed.
+> And the same questions come up: What did we agree last time? Did Bruno ever confirm that with the provider? Wasn't someone supposed to send something?
+>
+> So the first 15 minutes go to remembering. Every week.
+>
+> Corteza now does that part for you. Each morning, for every meeting on your calendar, it shows what's still open from that meeting's earlier sessions: the action items (with who owns them, and what's overdue), the open questions, the risks, and what got done since last time.
+>
+> You see it on your Home under "Prepare your day", and in your 8:00 AM summary email. You can mark things done right there, before the meeting even starts.
+>
+> No notes to dig through. Nothing to prepare. You just walk in knowing where things stand, and the meeting starts where the last one ended.
 >
 > 👉 corteza.app/early-access
+>
+> #Productivity #Meetings #GoogleWorkspace #FutureOfWork
+
+## Next: weekly posts
+
+One per week, each about a single feature. Image ideas are suggestions.
 
 ### Week 4: Import your history
 
