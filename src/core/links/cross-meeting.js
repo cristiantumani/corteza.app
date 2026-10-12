@@ -61,13 +61,14 @@ function asCandidate(row, kind) {
     ? {
       kind, id: row.id, type: row.type, text: row.text, topic_id: row.topic_id || null, topic: row.topic || null,
       meeting: row.source_details && row.source_details.title, date: row.timestamp, owners: row.owner_name ? [row.owner_name] : [],
-      embedding: row.embedding || null
+      embedding: row.embedding || null, unlinked_topics: row.unlinked_topics || []
     }
     : {
       kind, id: row.item_id, type: 'action_item', text: row.text, topic_id: row.topic_id || null, topic: row.topic || null,
       meeting: row.source && row.source.title, date: row.source && row.source.occurred_at ? row.source.occurred_at : row.created_at,
       owners: (row.owners || []).map(o => o.name).filter(Boolean), due_date: row.due_date || null, embedding: row.embedding || null,
-      owner_ids: row.owner_ids || [], author_id: (row.created_by && row.created_by.user_id) || null
+      owner_ids: row.owner_ids || [], author_id: (row.created_by && row.created_by.user_id) || null,
+      unlinked_topics: row.unlinked_topics || []
     };
 }
 
@@ -91,7 +92,7 @@ async function loadEarlierItems({ workspaceId, spaceIds, ownerId, meetingId, bef
       ...(meetingId ? { 'source_details.external_id': { $ne: meetingId } } : {}),
       timestamp: { $gte: since.toISOString(), $lt: before.toISOString() },
       $or: [{ type: { $in: ['open_question', 'risk'] }, resolution_status: { $ne: 'resolved' } }, { type: 'decision' }]
-    }, { projection: { _id: 0, id: 1, type: 1, text: 1, topic_id: 1, topic: 1, source_details: 1, timestamp: 1, owner_name: 1, embedding: 1 } })
+    }, { projection: { _id: 0, id: 1, type: 1, text: 1, topic_id: 1, topic: 1, source_details: 1, timestamp: 1, owner_name: 1, embedding: 1, unlinked_topics: 1 } })
       .sort({ timestamp: -1 }).limit(MAX_POOL).toArray(),
     getDatabase().collection('action_items').find({
       workspace_id: workspaceId,
@@ -99,7 +100,7 @@ async function loadEarlierItems({ workspaceId, spaceIds, ownerId, meetingId, bef
       ...(meetingId ? { 'source.external_id': { $ne: meetingId } } : {}),
       created_at: { $gte: since, $lt: before },
       $or: [{ space_id: { $in: spaceIds } }, ...(ownerId ? [{ owner_ids: ownerId, 'owner_duplicates.user_id': { $ne: ownerId } }] : [])]
-    }, { projection: { _id: 0, item_id: 1, text: 1, topic_id: 1, topic: 1, source: 1, created_at: 1, owners: 1, owner_ids: 1, created_by: 1, due_date: 1, embedding: 1 } })
+    }, { projection: { _id: 0, item_id: 1, text: 1, topic_id: 1, topic: 1, source: 1, created_at: 1, owners: 1, owner_ids: 1, created_by: 1, due_date: 1, embedding: 1, unlinked_topics: 1 } })
       .sort({ created_at: -1 }).limit(MAX_POOL).toArray()
   ]);
   return [...outcomes.map(row => asCandidate(row, 'decision')), ...actions.map(row => asCandidate(row, 'action_item'))];
@@ -291,7 +292,9 @@ async function applyLinks(workspaceId, links) {
 
   // Threads: each new item joins the thread of an earlier item it's linked to (the first that has
   // one), bringing along the rest of its own meeting's thread; linked earlier items without a
-  // thread join it too. Two existing threads are never merged.
+  // thread join it too. Two existing threads are never merged. An item someone took out of a
+  // thread ("Not related", core/topics/thread-edits) never goes back into it.
+  const leftThread = (item, topicId) => Array.isArray(item.unlinked_topics) && item.unlinked_topics.includes(topicId);
   const linksByNew = new Map();
   for (const link of links) {
     const list = linksByNew.get(link.newItem) || [];
@@ -299,11 +302,11 @@ async function applyLinks(workspaceId, links) {
     linksByNew.set(link.newItem, list);
   }
   for (const [newItem, earlierItems] of linksByNew) {
-    const threaded = earlierItems.find(item => item.topic_id);
+    const threaded = earlierItems.find(item => item.topic_id && !leftThread(newItem, item.topic_id));
     const topicId = (threaded && threaded.topic_id) || newItem.topic_id || newTopicId();
     const topic = (threaded && threaded.topic) || newItem.topic || null;
     for (const item of earlierItems) {
-      if (item.topic_id) continue;
+      if (item.topic_id || leftThread(item, topicId)) continue;
       await update(item, { topic_id: topicId, ...(topic ? { topic } : {}) });
       item.topic_id = topicId;
     }

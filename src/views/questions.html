@@ -64,9 +64,9 @@
     <!-- Main: list and filters (public/scripts/questions.js) -->
     <main class="ml-64 pt-16 h-screen overflow-y-auto bg-background">
         <div class="max-w-[1100px] mx-auto p-8">
-            <p class="text-on-surface-variant mb-6">{{t:questions.intro}}</p>
+            <p id="questions-intro" class="text-on-surface-variant mb-6">{{t:questions.intro}}</p>
 
-            <div class="flex flex-wrap items-center gap-3 mb-6">
+            <div id="list-controls" class="flex flex-wrap items-center gap-3 mb-6">
                 <div class="inline-flex rounded-lg border border-outline-variant overflow-hidden" role="group" aria-label="{{t:questions.filters.type}}">
                     <button type="button" data-type="all" class="type-filter px-4 py-2 text-sm font-semibold">{{t:questions.filters.all}}</button>
                     <button type="button" data-type="open_question" class="type-filter px-4 py-2 text-sm font-semibold">{{t:questions.filters.questions}} <span data-count="open_question"></span></button>
@@ -80,7 +80,6 @@
                 <span id="items-count" class="text-sm text-on-surface-variant"></span>
             </div>
 
-            <div id="topic-banner" class="hidden mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3 text-sm text-on-surface" role="status"></div>
             <div id="loop-notice" class="hidden mb-4 flex flex-col gap-2 rounded-xl border border-primary/30 bg-surface-container-low p-4" role="status"></div>
 
             <div id="items" class="flex flex-col gap-3">
@@ -91,6 +90,6 @@
 
     <script src="/scripts/sensitive.js?v=1"></script>
     <script src="/scripts/close-loop.js?v=3"></script>
-    <script src="/scripts/questions.js?v=5"></script>
+    <script src="/scripts/questions.js?v=6"></script>
 </body>
 </html>

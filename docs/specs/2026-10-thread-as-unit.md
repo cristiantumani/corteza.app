@@ -1,6 +1,6 @@
 # The thread as a unit: "is this still open?"
 
-**Status:** draft for approval (Oct 12, 2026). Linear COR-44 (points 1, 2, 3 and 5). Builds on topic
+**Status:** approved and built (Oct 12, 2026). Linear COR-44 (points 1, 2, 3 and 5). Builds on topic
 threads (`docs/specs/2026-10-topic-threads.md`) and cross-meeting links
 (`docs/specs/2026-10-cross-meeting-links.md`).
 
@@ -80,8 +80,9 @@ Grouping is automatic, so it can be wrong. Any item shown in a thread (card or t
   `unlinked_topics` on the item so cross-meeting links never put it back (`applyLinks` skips items
   whose `unlinked_topics` contains that thread).
 - Toast with **Undo** (puts it back).
-- Who can do it: whoever can edit the item (outcomes: `canModifyDecision`; action items: owners, author
-  or an admin, as PATCH allows).
+- Who can do it: whoever can edit the item (outcomes: their author or an admin; action items: owners,
+  author or an admin, as PATCH allows), and only for items they can see (a colleague's personal space
+  stays hidden, even from admins).
 - If the item was the one holding a sensitive mark for the thread, nothing changes for the item itself
   (it stays sensitive and private); the rest of the thread keeps its marks.
 

@@ -1,4 +1,5 @@
 const { getDecisionsCollection, getDatabase } = require('../../config/database');
+const { statusFor } = require('./thread-view');
 
 /**
  * Reads topic threads (see topics.js): the outcomes (`decisions`) and action items that
@@ -8,25 +9,26 @@ const { getDecisionsCollection, getDatabase } = require('../../config/database')
  */
 
 const MAX_PER_THREAD = 20;
-const OUTCOME_FIELDS = { _id: 0, id: 1, type: 1, text: 1, owner_name: 1, resolution_status: 1, topic_id: 1, topic: 1, timestamp: 1 };
-const ACTION_FIELDS = { _id: 0, item_id: 1, text: 1, owners: 1, due_date: 1, status: 1, topic_id: 1, topic: 1, decision_id: 1 };
+const OUTCOME_FIELDS = { _id: 0, id: 1, type: 1, text: 1, owner_name: 1, user_id: 1, resolution_status: 1, topic_id: 1, topic: 1, timestamp: 1 };
+const ACTION_FIELDS = { _id: 0, item_id: 1, text: 1, owners: 1, owner_ids: 1, created_by: 1, due_date: 1, status: 1, topic_id: 1, topic: 1, decision_id: 1 };
 
 /**
  * @typedef {Object} Thread
  * @property {string} topic_id
  * @property {string|null} topic
- * @property {Object[]} outcomes - { id, type, text, owner_name, resolution_status ('open'|'resolved'), timestamp }
- * @property {Object[]} actions - { item_id, text, owners: [{ name }], due_date, status, decision_id }
+ * @property {Object[]} outcomes - { id, type, text, owner_name, resolution_status ('open'|'resolved'), timestamp, can_edit }
+ * @property {Object[]} actions - { item_id, text, owners: [{ name }], mine, due_date, status, decision_id, can_edit }
  */
 
 /**
  * Loads the threads with these ids, as the viewer can see them
  * @param {string} workspaceId
  * @param {string[]} topicIds
- * @param {{ spaceIds: string[], viewerId?: string|null }} access
+ * @param {{ spaceIds: string[], viewerId?: string|null, admin?: boolean }} access - admin: the viewer can edit
+ *   everything (`can_edit`: they wrote it, own the action item, or are an admin)
  * @returns {Promise<Map<string, Thread>>}
  */
-async function loadThreads(workspaceId, topicIds, { spaceIds, viewerId = null }) {
+async function loadThreads(workspaceId, topicIds, { spaceIds, viewerId = null, admin = false }) {
   const ids = [...new Set(topicIds.filter(id => typeof id === 'string' && id))];
   const threads = new Map();
   if (ids.length === 0) return threads;
@@ -49,10 +51,25 @@ async function loadThreads(workspaceId, topicIds, { spaceIds, viewerId = null })
   };
   const withoutThread = row => { const copy = { ...row }; delete copy.topic_id; delete copy.topic; return copy; };
   for (const outcome of outcomes) {
-    threadFor(outcome).outcomes.push({ ...withoutThread(outcome), resolution_status: outcome.resolution_status || 'open' });
+    const row = withoutThread(outcome);
+    delete row.user_id;
+    threadFor(outcome).outcomes.push({
+      ...row,
+      resolution_status: outcome.resolution_status || 'open',
+      can_edit: Boolean(admin || (viewerId && outcome.user_id === viewerId))
+    });
   }
   for (const action of actions) {
-    threadFor(action).actions.push({ ...withoutThread(action), owners: (action.owners || []).map(owner => ({ name: owner.name || null })) });
+    const row = withoutThread(action);
+    delete row.owner_ids;
+    delete row.created_by;
+    const mine = Boolean(viewerId && (action.owner_ids || []).includes(viewerId));
+    threadFor(action).actions.push({
+      ...row,
+      owners: (action.owners || []).map(owner => ({ name: owner.name || null })),
+      mine,
+      can_edit: Boolean(admin || mine || (viewerId && action.created_by && action.created_by.user_id === viewerId))
+    });
   }
   return threads;
 }
@@ -90,18 +107,22 @@ async function withThreadSummaries(workspaceId, items, access) {
 }
 
 /**
- * Adds `linked` to questions and risks: the other items of their thread
+ * Adds `linked` to questions and risks: the other items of their thread, and `status`: the
+ * status line of an open one (thread-view.statusFor)
  * @param {string} workspaceId
  * @param {Object[]} items - outcomes (questions and risks)
- * @param {{ spaceIds: string[], viewerId?: string|null }} access
- * @returns {Promise<Object[]>} each with `topic_id`, `topic` and `linked: { outcomes, actions }` (empty when none)
+ * @param {{ spaceIds: string[], viewerId?: string|null, admin?: boolean }} access
+ * @param {Date} [now]
+ * @returns {Promise<Object[]>} each with `topic_id`, `topic`, `status`, `can_edit` and `linked: { outcomes, actions }` (empty when none)
  */
-async function withLinkedItems(workspaceId, items, access) {
+async function withLinkedItems(workspaceId, items, access, now = new Date()) {
   const threads = await loadThreads(workspaceId, items.map(item => item.topic_id), access);
   return items.map(item => {
     const thread = item.topic_id ? threads.get(item.topic_id) : undefined;
     return {
       ...item,
+      status: statusFor(item, thread, now),
+      can_edit: Boolean(access.admin || (access.viewerId && item.user_id === access.viewerId)),
       linked: thread
         ? { outcomes: thread.outcomes.filter(outcome => outcome.id !== item.id), actions: thread.actions }
         : { outcomes: [], actions: [] }
