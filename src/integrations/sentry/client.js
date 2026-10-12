@@ -49,14 +49,20 @@ function scrubEvent(event) {
 
 /**
  * Starts Sentry when SENTRY_DSN is set
- * @param {{ dsn?: string, environment?: string }} [options]
+ * @param {{ dsn?: string, environment?: string, release?: string }} [options]
  * @returns {boolean} whether it's on
  */
-function initSentry({ dsn = process.env.SENTRY_DSN, environment = process.env.SENTRY_ENVIRONMENT || 'production' } = {}) {
+function initSentry({
+  dsn = process.env.SENTRY_DSN,
+  environment = process.env.SENTRY_ENVIRONMENT || 'production',
+  // The deployed commit (Railway sets it), so Sentry links errors to code and suspect commits
+  release = process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA || undefined
+} = {}) {
   if (!dsn || enabled) return enabled;
   Sentry.init({
     dsn,
     environment,
+    release,
     sendDefaultPii: false,
     defaultIntegrations: false,
     integrations: [
