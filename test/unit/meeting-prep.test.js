@@ -77,11 +77,12 @@ test('closed since last time, and the open questions and risks of the meeting', 
     { id: 3, type: 'open_question', text: 'From another meeting', resolution_status: 'open', source_details: fromMeet('conferenceRecords/zz', 'Board') }
   ];
   const [weeklyPrep] = build({ actions, outcomes });
-  assert.deepEqual(weeklyPrep.questions, [{ type: 'open_question', text: 'Do we charge for the API?', owner: 'Juan' }]);
+  assert.deepEqual(weeklyPrep.questions, [{ type: 'open_question', id: 1, text: 'Do we charge for the API?', owner: 'Juan' }], 'with its id, so links open its card');
   assert.deepEqual(weeklyPrep.closed.map(c => [c.type, c.text, c.owner]), [
     ['risk', 'Churn after the price change', 'Cristian'],
     ['action_item', 'Ship the onboarding emails', 'Martín Marchant']
   ]);
+  assert.deepEqual(weeklyPrep.closed.map(c => c.id || c.item_id), [2, 'd1']);
   assert.deepEqual(weeklyPrep.items, []);
   assert.ok(hasContent(weeklyPrep));
 });

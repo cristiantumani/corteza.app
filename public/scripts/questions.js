@@ -11,7 +11,8 @@
  *     as the answer; anything there can be marked "Not related" (with Undo);
  *   - with "All" types, a risk whose thread has an open question in the list is shown inside
  *     that question's card;
- *   - /questions?topic=<id> is the thread view: its state, and every item grouped by meeting.
+ *   - /questions?topic=<id> is the thread view: its state, and every item grouped by meeting;
+ *   - /questions?item=<id> shows that one card (links from Prepare your day and the morning email).
  * Answering a question offers to close its thread's open risks (close-loop.js).
  */
 (function() {
@@ -21,10 +22,12 @@
 
   const params = new URLSearchParams(window.location.search);
   const topicParam = params.get('topic');
+  const itemParam = Number(params.get('item'));
   const state = {
     type: ['open_question', 'risk'].includes(params.get('type')) ? params.get('type') : 'all',
     status: topicParam ? 'all' : 'open',
-    topic: topicParam && /^top_[0-9a-f]{1,32}$/.test(topicParam) ? topicParam : null
+    topic: topicParam && /^top_[0-9a-f]{1,32}$/.test(topicParam) ? topicParam : null,
+    item: Number.isInteger(itemParam) && itemParam > 0 ? itemParam : null
   };
   const OUTCOME_LABELS = { decision: t('types.short.decision'), open_question: t('types.short.open_question'), risk: t('types.short.risk') };
   const LABELS = {
@@ -431,9 +434,36 @@
     }
   }
 
+  /** One question or risk on its own, with its thread; falls back to the list when it isn't visible */
+  async function loadItem(container) {
+    setListChrome(false);
+    try {
+      const response = await fetch('/api/questions-risks?type=all&status=all', { credentials: 'include' });
+      if (response.status === 401) {
+        window.location.href = `/auth/login?return=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return;
+      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || t('questions.loadFailed'));
+      const item = (data.items || []).find(entry => entry.id === state.item);
+      if (!item) {
+        state.item = null;
+        return load();
+      }
+      container.innerHTML = `
+        <a href="/questions" class="inline-flex items-center gap-1 self-start text-sm font-semibold text-on-surface-variant hover:underline">
+          <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_back</span>${escapeHtml(t('threads.back'))}
+        </a>
+        ${itemHtml(item)}`;
+    } catch (error) {
+      container.innerHTML = `<p class="text-error">${escapeHtml(error.message)}</p>`;
+    }
+  }
+
   async function load() {
     const container = document.getElementById('items');
     if (state.topic) return loadThread(container);
+    if (state.item) return loadItem(container);
     setListChrome(true);
     renderFilters();
     const query = new URLSearchParams({ type: state.type, status: state.status });

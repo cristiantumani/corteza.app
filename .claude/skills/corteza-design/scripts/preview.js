@@ -30,6 +30,7 @@ const PAGES = {
   actions: { path: '/actions', view: 'actions.html', active: 'actions' },
   questions: { path: '/questions', view: 'questions.html', active: 'questions' },
   thread: { path: '/questions', url: '/questions?topic=top_9c1a2b7e', view: 'questions.html', active: 'questions' },
+  question: { path: '/questions', url: '/questions?item=102', view: 'questions.html', active: 'questions' },
   search: { path: '/ai-search', view: 'ai-search.html', active: 'search', preload: true, prepare: async page => {
     const input = page.locator('input[type="text"], textarea').first();
     if (await input.count()) { await input.fill('¿Qué decidimos sobre el plan anual?'); await input.press('Enter'); }
