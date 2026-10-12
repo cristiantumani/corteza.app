@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { Anthropic } = require('@anthropic-ai/sdk');
+const { createAnthropic } = require('../integrations/anthropic/client');
 const config = require('../config/environment');
 const { SAMPLING_MODELS, responseText } = require('../services/claude');
 const { DEMO_WORKSPACE_ID, DEMO_WORKSPACE_NAME, DEMO_DECISIONS } = require('../data/demo-decisions');
@@ -133,7 +133,7 @@ DO:
 Answer as if you're a senior team member who was in all those meetings and knows the full story.`;
 
   try {
-    const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
+    const anthropic = createAnthropic({ apiKey: config.claude.apiKey });
     const model = config.claude.model;
     // Thinking (on by default on current models) counts toward max_tokens
     /** @type {any} */

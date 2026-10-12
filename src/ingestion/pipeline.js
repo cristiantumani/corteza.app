@@ -76,6 +76,27 @@ async function listRecentForUser(workspaceId, userId, source, limit = 10) {
 }
 
 /**
+ * How one person's capture is doing, for the status line in Settings (only their own meetings)
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @param {string} source
+ * @param {Date} [now]
+ * @returns {Promise<{ last_read_at: Date|null, failed_today: number }>}
+ *   failed_today: meetings that failed for good (no attempts left) since midnight UTC
+ */
+async function captureHealth(workspaceId, userId, source, now = new Date()) {
+  const midnight = new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z');
+  const [last, failedToday] = await Promise.all([
+    ingestions().find({ workspace_id: workspaceId, user_id: userId, source, status: 'completed' })
+      .sort({ updated_at: -1 }).limit(1).project({ _id: 0, updated_at: 1 }).toArray(),
+    ingestions().countDocuments({
+      workspace_id: workspaceId, user_id: userId, source, status: 'failed', attempts: { $gte: MAX_ATTEMPTS }, updated_at: { $gte: midnight }
+    })
+  ]);
+  return { last_read_at: last.length ? last[0].updated_at : null, failed_today: failedToday };
+}
+
+/**
  * Claims a transcript for processing
  * @param {Transcript} transcript
  * @param {boolean} [manual] - a person chose this meeting (import): also re-process
@@ -396,6 +417,7 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
     return { status: 'completed', decisions, actionItems };
   } catch (error) {
     console.error(`❌ Ingestion failed for ${transcript.source} ${transcript.externalId}:`, error.message);
+    require('../integrations/sentry/client').reportError(error, { job: 'ingestion', workspace_id: transcript.workspaceId });
     await ingestions().updateOne(key, { $set: { status: 'failed', error: error.message.slice(0, 500), updated_at: new Date() } });
     track('meeting_capture_failed', { source: transcript.source, manual, workspace_id: transcript.workspaceId }, ownerOf(transcript));
     return { status: 'failed', decisions: [], actionItems: [], error: error.message };
@@ -403,6 +425,7 @@ async function ingestTranscript(transcript, { extract, manual = false, reviewAss
 }
 
 module.exports = {
+  captureHealth,
   ingestTranscript,
   recordSkipped,
   listRecentForUser,

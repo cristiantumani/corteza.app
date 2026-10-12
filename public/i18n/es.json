@@ -937,7 +937,14 @@
       "done": "Listo: {outcomes} capturados de {meetings}",
       "background": "Sigue corriendo aunque salgas de esta página. Te enviaremos un resumen por correo cuando termine.",
       "openHome": "Abrir Inicio →"
-    }
+    },
+    "working": "Funcionando",
+    "lastRead": "última reunión leída {when}",
+    "failedToday": {
+      "one": "Algo falló al leer {count} reunión hoy. Ya nos avisaron y lo estamos revisando.",
+      "other": "Algo falló al leer {count} reuniones hoy. Ya nos avisaron y lo estamos revisando."
+    },
+    "checked": "revisado {when}"
   },
   "context": {
     "requestFailed": "La solicitud falló ({status})",

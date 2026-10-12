@@ -89,6 +89,7 @@ const google = {
   last_polled_at: iso(4 * 60 * 1000), last_error: null, meetings_processed: 12, decisions_captured: 43,
   outcomes_by_type: { decision: 31, open_question: 7, risk: 5 },
   settings: { auto_capture: true, space_id: 'sp1', output_language: 'auto', skip_one_on_ones: true },
+  health: { last_read_at: iso(2 * 3600 * 1000), failed_today: 0 },
   recent_meetings: [
     { title: 'Planificación comercial Q4', status: 'completed', decisions_created: 3, outcomes_by_type: { decision: 1, open_question: 1, risk: 1 }, action_items_created: 2, updated_at: iso(2 * 3600 * 1000) },
     { title: 'Ana / Bruno', status: 'skipped', skip_reason: 'one_on_one', updated_at: iso(5 * 3600 * 1000) },

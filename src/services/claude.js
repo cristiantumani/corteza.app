@@ -1,4 +1,5 @@
 const { Anthropic } = require('@anthropic-ai/sdk');
+const { createAnthropic } = require('../integrations/anthropic/client');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
 const { recordAiUsage } = require('../core/usage/ai-usage');
@@ -205,7 +206,7 @@ function createClient() {
   if (!isClaudeConfigured()) {
     throw new Error('Claude API not configured. Set ANTHROPIC_API_KEY in environment.');
   }
-  return new Anthropic({ apiKey: config.claude.apiKey, timeout: 5 * 60 * 1000, maxRetries: 2 });
+  return createAnthropic({ apiKey: config.claude.apiKey, timeout: 5 * 60 * 1000, maxRetries: 2 });
 }
 
 /**

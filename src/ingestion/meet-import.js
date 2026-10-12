@@ -198,7 +198,10 @@ async function startImport(connection, meetingIds, spaceId, deps = {}) {
   console.log(`📥 Meet import ${job.import_id} started: ${ids.length} meeting(s) for ${connection.google_email}`);
 
   // Background: the caller polls getImport for progress
-  runImport(job.import_id, deps).catch(error => console.error(`❌ Meet import ${job.import_id} failed:`, error.message));
+  runImport(job.import_id, deps).catch(error => {
+    console.error(`❌ Meet import ${job.import_id} failed:`, error.message);
+    require('../integrations/sentry/client').reportError(error, { job: 'meet_import', workspace_id: job.workspace_id });
+  });
   return job;
 }
 

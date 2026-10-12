@@ -1,5 +1,5 @@
 <h1>Política de privacidad</h1>
-<p class="updated">Última actualización: 10 de octubre de 2026</p>
+<p class="updated">Última actualización: 12 de octubre de 2026</p>
 
 <p>Corteza (“Corteza”, “nosotros”) es un registro de decisiones para equipos que usan Google Workspace. Lee las transcripciones y las notas de Gemini de tus reuniones de Google Meet y guarda los resultados que salen de ellas: decisiones, pendientes, preguntas abiertas y riesgos. Esta política explica qué datos usa Corteza, para qué, con quién los comparte y qué opciones tienes. Corteza es operado por Cristian Tumani. Contacto: <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>.</p>
 
@@ -71,6 +71,8 @@
     <tr><td>Railway</td><td>Alojamiento de la aplicación</td><td>Datos que pasan por la aplicación, registros del servidor</td></tr>
     <tr><td>Resend</td><td>Envío de correos</td><td>Tu correo y el contenido de los correos que te enviamos</td></tr>
     <tr><td>PostHog</td><td>Analítica de producto</td><td>Identificadores, conteos y uso de funciones; sin contenido de reuniones</td></tr>
+    <tr><td>Sentry (UE)</td><td>Monitoreo de errores</td><td>Tipo de error y traza, con identificadores internos del espacio de trabajo y de la persona; sin contenido de reuniones, correos ni datos de las solicitudes</td></tr>
+    <tr><td>GitHub</td><td>Guardar nuestros respaldos nocturnos</td><td>Una copia cifrada de la base de datos que solo Corteza puede descifrar</td></tr>
     <tr><td>Google</td><td>Inicio de sesión y las integraciones que conectes</td><td>Según la sección 1</td></tr>
   </tbody>
 </table>
@@ -87,6 +89,7 @@
 <ul>
   <li>Los resultados se conservan mientras tu espacio de trabajo use Corteza, para que el registro siga siendo útil. Puedes eliminar resultados y pendientes cuando quieras.</li>
   <li>Las transcripciones y los eventos de calendario no se guardan (ver sección 1).</li>
+  <li>Cada noche se hace un respaldo cifrado de la base de datos, que se guarda 30 días para poder recuperarnos de una falla. Los datos eliminados salen de los respaldos dentro de esos 30 días.</li>
   <li><strong>Desconectar Google</strong> (Configuración → Google Meet) revoca el acceso de Corteza ante Google y borra los tokens guardados. También puedes quitar el acceso desde tu <a href="https://myaccount.google.com/permissions" rel="noopener">cuenta de Google</a>.</li>
   <li>Para eliminar tu cuenta o los datos de tu espacio de trabajo, escribe a <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>. Los eliminamos en un plazo de 30 días. Cuando se elimina un espacio de trabajo completo, se destruye su clave de cifrado, lo que deja ilegible cualquier copia que quede, incluidas las de respaldo.</li>
 </ul>

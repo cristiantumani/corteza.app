@@ -1,6 +1,9 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 const { MongoClient } = require('mongodb');
 const config = require('./config/environment');
+// Error monitoring first, so it sees errors from everything that follows (off without SENTRY_DSN)
+const sentry = require('./integrations/sentry/client');
+sentry.initSentry();
 const analytics = require('./integrations/posthog/client');
 const { connectToMongoDB } = require('./config/database');
 const MongoInstallationStore = require('./config/installationStore');
@@ -254,6 +257,7 @@ async function startApp() {
 
   expressApp.use(jsonBodyErrors); // a malformed body is the client's mistake, not an exception to report
   analytics.setupErrorHandler(expressApp);
+  sentry.setupErrorHandler(expressApp);
 
   // Create Slack App with the custom receiver
   const appConfig = {
@@ -308,9 +312,9 @@ async function startApp() {
   // Start the server FIRST so Railway can health check it
   await app.start(config.port);
   // Railway sends SIGTERM on redeploys: send queued analytics events before exiting
-  if (analytics.posthog) {
+  if (analytics.posthog || sentry.isEnabled()) {
     process.once('SIGTERM', () => {
-      analytics.shutdownAnalytics().catch(() => {}).finally(() => process.exit(0));
+      Promise.all([analytics.shutdownAnalytics().catch(() => {}), sentry.flushSentry()]).finally(() => process.exit(0));
     });
   }
   console.log(`⚡️ Bot running on port ${config.port}!`);
@@ -346,6 +350,7 @@ async function startApp() {
   require('./jobs/weekly-digest').startWeeklyDigestJob();
   require('./jobs/daily-digest').startDailyDigestJob();
   require('./jobs/meet-poller').startMeetPollerJob();
+  require('./jobs/ops-alerts').startOpsAlertsJob();
 }
 
 // Start the application

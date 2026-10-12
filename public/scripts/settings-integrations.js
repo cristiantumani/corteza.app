@@ -85,6 +85,16 @@
     `;
   }
 
+  /** "Working · last checked 3 min ago · last meeting read Oct 12, 16:20" (docs/specs/2026-10-ops-monitoring.md) */
+  function statusLine(data, needsReconnect) {
+    const health = data.health || {};
+    return [
+      needsReconnect ? null : t('meet.working'),
+      t(needsReconnect ? 'meet.lastChecked' : 'meet.checked', { when: formatTime(data.last_polled_at) }),
+      health.last_read_at ? t('meet.lastRead', { when: formatTime(health.last_read_at) }) : null
+    ].filter(Boolean).join(' · ');
+  }
+
   async function renderConnected(data) {
     const spaces = await loadWritableSpaces();
     const settings = data.settings || {};
@@ -113,7 +123,7 @@
           <span class="w-2 h-2 rounded-full ${needsReconnect ? 'bg-error' : 'bg-tertiary'}"></span>
           ${escapeHtml(t(needsReconnect ? 'meet.needsReconnect' : 'meet.connectedAs', { email: data.google_email }))}
         </span>
-        <span>${escapeHtml(t('meet.lastChecked', { when: formatTime(data.last_polled_at) }))}</span>
+        <span>${escapeHtml(statusLine(data, needsReconnect))}</span>
         <span>${escapeHtml(t('meet.totals', { outcomes: t('outcomeCounts.outcome', { count: data.decisions_captured }), meetings: t('capture.meetings', { count: data.meetings_processed }) }))}</span>
       </div>
       ${!needsReconnect && data.needs_reconsent ? `
@@ -122,6 +132,7 @@
           <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('capture.reconnect'))}</a>
         </div>` : ''}
       ${!needsReconnect && data.last_error ? `<p class="mb-4 text-error">${escapeHtml(t('meet.lastFailed', { error: data.last_error }))}</p>` : ''}
+      ${data.health && data.health.failed_today ? `<p class="mb-4 text-error">${escapeHtml(t('meet.failedToday', { count: data.health.failed_today }))}</p>` : ''}
       ${needsReconnect ? '' : data.calendar_connected ? `
         <p class="mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-base text-tertiary" aria-hidden="true">event_available</span>
           ${escapeHtml(t('meet.calendarConnected'))}</p>` : `

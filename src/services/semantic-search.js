@@ -1,6 +1,6 @@
 const { getDecisionsCollection, getDatabase } = require('../config/database');
 const { generateQueryEmbedding, isEmbeddingsEnabled } = require('./embeddings');
-const { Anthropic } = require('@anthropic-ai/sdk');
+const { createAnthropic } = require('../integrations/anthropic/client');
 const config = require('../config/environment');
 const { trackAiGeneration } = require('../integrations/posthog/client');
 const { recordAiUsage } = require('../core/usage/ai-usage');
@@ -361,7 +361,7 @@ async function generateConversationalResponse(query, results, conversationHistor
     return cached.response;
   }
 
-  const anthropic = new Anthropic({ apiKey: config.claude.apiKey });
+  const anthropic = createAnthropic({ apiKey: config.claude.apiKey });
   const sources = results.all.map(r => describeSource(r)).join('\n\n') || '(none)';
   const history = formatHistory(conversationHistory);
   const meetings = Array.isArray(context.meetings) ? context.meetings.filter(Boolean) : [];

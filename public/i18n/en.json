@@ -937,7 +937,14 @@
       "done": "Done: {outcomes} captured from {meetings}",
       "background": "It keeps running if you leave this page. We’ll email you a summary when it’s done.",
       "openHome": "Open Home →"
-    }
+    },
+    "working": "Working",
+    "lastRead": "last meeting read {when}",
+    "failedToday": {
+      "one": "Something went wrong reading {count} meeting today. We were notified and are looking into it.",
+      "other": "Something went wrong reading {count} meetings today. We were notified and are looking into it."
+    },
+    "checked": "last checked {when}"
   },
   "context": {
     "requestFailed": "Request failed ({status})",

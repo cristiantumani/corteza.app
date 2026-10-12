@@ -6,6 +6,7 @@ const { getUnsubscribeUrl } = require('./weekly-digest');
 const voice = require('../core/digest/voice');
 const { memberLanguage } = require('../core/users/language');
 const { track } = require('../integrations/posthog/client');
+const { reportError } = require('../integrations/sentry/client');
 
 /**
  * Daily digest: one morning email per person with what happened since their last one, to
@@ -394,6 +395,8 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
       sent++;
     } catch (error) {
       console.error(`❌ Daily digest failed for ${member.user_id} in ${member.workspace_id}:`, error.message);
+      reportError(error, { job: 'daily_digest', workspace_id: member.workspace_id });
+      await require('../core/ops/alerts').countFailure('daily_digest').catch(() => {});
     }
   }
   if (sent > 0) console.log(`📬 Daily digest: ${sent} email(s) sent, ${checked} people checked`);
@@ -414,7 +417,10 @@ function startDailyDigestJob() {
     console.warn('⚠️  Daily digest needs RESEND_API_KEY — skipping');
     return;
   }
-  const run = () => runDailyDigest().catch(error => console.error('❌ Daily digest job failed:', error.message));
+  const run = () => runDailyDigest().catch(error => {
+    console.error('❌ Daily digest job failed:', error.message);
+    reportError(error, { job: 'daily_digest' });
+  });
   setTimeout(() => {
     run();
     setInterval(run, CHECK_INTERVAL_MS);

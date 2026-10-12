@@ -108,6 +108,7 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
 
     // Only this person's meetings: colleagues' meeting titles are private
     const recent = await listRecentForUser(workspace_id, user_id, 'google_meet');
+    const health = await require('../../ingestion/pipeline').captureHealth(workspace_id, user_id, 'google_meet');
 
     const { getActiveImport, maxDaysBack } = require('../../ingestion/meet-import');
     const activeImport = await getActiveImport(workspace_id, user_id);
@@ -129,7 +130,8 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       decisions_captured: connection.decisions_captured || 0,
       outcomes_by_type: connection.outcomes_by_type || null,
       settings: connection.settings,
-      recent_meetings: recent
+      recent_meetings: recent,
+      health // the status line: last meeting read, meetings that failed for good today
     });
   } catch (error) {
     console.error('❌ Failed to load Google connection:', error);
