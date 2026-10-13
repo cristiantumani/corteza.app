@@ -189,6 +189,40 @@ C4. **Decision health analytics for leaders.**
 - **Workspace add-on:** a side panel in Calendar and Gmail showing the decisions and open items for a meeting. Later, a Meet add-on.
 - **Existing channels:** keep the Chrome extension. Keep Slack input (old Phase 4) at low priority unless a design partner needs it.
 
+### Phase E: Trust and compliance (free base now; certifications with external funding)
+
+Corteza handles confidential company information from meetings, so companies will ask for proof of
+security before they sign: a security questionnaire first, then certifications. **Corteza is
+bootstrapped (Oct 2026):** the paid steps below are among the first things to do with external
+funding, or once revenue covers them. Linear: project "Fase E: Confianza y cumplimiento"; the paid
+items carry the **Funding** label.
+
+**Now, at no cost:**
+- **E1. Compliance base (COR-49):** short written policies (information security, access control,
+  incident response, continuity and backups, vendors, secure development) in `docs/security/`; 2FA
+  on every tool; a quarterly access review; a vendor (subprocessor) register with each one's
+  certification; one backup restore test. Most of the technical controls already exist: per-company
+  encryption, transcripts never stored, logs and analytics without content, encrypted backups, Sentry
+  and ops alerts. What's missing is mostly paperwork and routine.
+- **E2. Security page and questionnaire answers (COR-50):** `/security` on the website and ready
+  answers to a standard security questionnaire (EN/ES). Builds on the one-page security summary
+  (COR-39) and the DPA (COR-7). This answers most early buyers, such as a client's cybersecurity
+  questionnaire.
+
+**With funding, in this order** (approximate market prices, Oct 2026, to be quoted):
+
+| Step | What | Why | Cost | Time |
+|---|---|---|---|---|
+| CASA Tier 2 (COR-8) | Google's security assessment for restricted scopes | Unlocks Google verification (no 100 test-user cap) and the Marketplace (Phase D) | a few hundred to a few thousand USD a year | weeks |
+| E3 (COR-51) | Compliance platform (Vanta, Drata, Secureframe or Sprinto) | Automated control checks, policy templates, the path to SOC 2 and ISO | ~USD 7–15k a year | ongoing |
+| E4 (COR-52) | External penetration test | Required by auditors and big buyers | ~USD 5–15k | 2–4 weeks |
+| E5 (COR-53) | **SOC 2** Type I, then Type II | The most requested report (US buyers, tech companies) | auditor ~USD 10–30k | Type I 1–3 months; Type II 3–12 months of evidence |
+| E6 (COR-54) | **ISO 27001** (+ ISO 27701 for privacy) | Europe and large LatAm companies | ~USD 10–25k plus yearly audits | 4–9 months; ~70% of SOC 2 controls reuse |
+
+Trigger for E5: the first paying customer that asks for it, or the first round, whichever comes first.
+GDPR is not a certification: it's covered by the privacy policy, the DPA and a record of processing.
+ISO 42001 (AI management) only if a customer requires it.
+
 ## Go-to-market
 
 - **Ideal customer profile:** companies of 20–200 people on Google Workspace with Gemini notes turned on, and many recurring internal meetings. Examples: startups, scale-ups and agencies. The buyer is the COO, CEO or Head of Ops.
