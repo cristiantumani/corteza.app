@@ -102,13 +102,12 @@ Last reviewed: October 13, 2026.
 
 **Where is data stored?**
 
-- EN: In MongoDB Atlas (database) and Railway (application hosting). ⚠️ Region: [confirm the Atlas
-  cluster's cloud provider and region, and Railway's region]. Error monitoring (Sentry) is in the EU.
+- EN: The database (MongoDB Atlas) is in the EU, on AWS in Paris (eu-west-3). The application runs on
+  Railway. ⚠️ [Confirm Railway's region.] Error monitoring (Sentry) is in the EU.
   Our providers may process data in the United States under their contractual safeguards (standard
   contractual clauses where they apply).
-- ES: En MongoDB Atlas (base de datos) y Railway (hosting de la aplicación). ⚠️ Región: [confirmar
-  proveedor y región del clúster de Atlas, y región de Railway]. El monitoreo de errores (Sentry) está en
-  la UE. Nuestros proveedores pueden procesar datos en Estados Unidos con sus garantías contractuales
+- ES: La base de datos (MongoDB Atlas) está en la UE, en AWS París (eu-west-3). La aplicación corre en
+  Railway. ⚠️ [Confirmar la región de Railway.] El monitoreo de errores (Sentry) está en la UE. Nuestros proveedores pueden procesar datos en Estados Unidos con sus garantías contractuales
   (cláusulas contractuales tipo cuando aplican).
 
 **How long do you keep data, and how is it deleted?**
@@ -206,13 +205,14 @@ Last reviewed: October 13, 2026.
 **Who at Corteza can access production and customer data?**
 
 - EN: Only the founder. Access to production systems (hosting, database, source code, email provider)
-  is personal, with MFA. ⚠️ [Confirm 2FA is on for Google, GitHub, Railway, MongoDB Atlas, Anthropic,
-  OpenAI, Resend, PostHog and Sentry.] Meeting content in the database is encrypted, and Corteza staff
+  is personal. Two-factor authentication is on for the Google and GitHub accounts and is being turned
+  on for every other provider account. ⚠️ [Update when 2FA is on everywhere, COR-49.] Meeting content in the database is encrypted, and Corteza staff
   don't read customer content except at the customer's request for support, for a security
   investigation, or when the law requires it. The nightly backup job uses a read-only database user.
 - ES: Solo el fundador. El acceso a los sistemas de producción (hosting, base de datos, código, proveedor
-  de correo) es personal y con MFA. ⚠️ [Confirmar 2FA activo en Google, GitHub, Railway, MongoDB Atlas,
-  Anthropic, OpenAI, Resend, PostHog y Sentry.] El contenido de reuniones en la base de datos está
+  de correo) es personal. La verificación en dos pasos está activa en las cuentas de Google y GitHub y
+  se está activando en las de los demás proveedores. ⚠️ [Actualizar cuando 2FA esté en todas, COR-49.]
+  El contenido de reuniones en la base de datos está
   cifrado, y el equipo de Corteza no lee contenido de clientes salvo a pedido del cliente para soporte,
   para una investigación de seguridad, o cuando la ley lo exige. El proceso de backup nocturno usa un
   usuario de base de datos de solo lectura.
@@ -290,9 +290,9 @@ Last reviewed: October 13, 2026.
 **What are your availability commitments?**
 
 - EN: Corteza runs on managed cloud infrastructure (Railway, MongoDB Atlas). We don't offer a contractual
-  SLA yet. ⚠️ Target recovery time after a major failure: within one business day.
+  SLA yet. Target recovery time after a major failure: within one business day.
 - ES: Corteza corre sobre infraestructura en la nube gestionada (Railway, MongoDB Atlas). Todavía no
-  ofrecemos un SLA contractual. ⚠️ Tiempo objetivo de recuperación ante una falla grave: dentro de un día
+  ofrecemos un SLA contractual. Tiempo objetivo de recuperación ante una falla grave: dentro de un día
   hábil.
 
 ## 8. Third parties (subprocessors)
@@ -322,25 +322,23 @@ Last reviewed: October 13, 2026.
 
 - EN: We process personal data in line with the GDPR: we act as processor for the customer's meeting
   content, collect only what the features need, never sell data, and support access, correction,
-  deletion and export requests within 30 days. ⚠️ We sign a Data Processing Agreement on request
-  [confirm the DPA template is ready, COR-7].
+  deletion and export requests within 30 days. We sign a Data Processing Agreement on request.
 - ES: Tratamos los datos personales de acuerdo con el RGPD: actuamos como encargado del tratamiento del
   contenido de reuniones del cliente, recolectamos solo lo que las funciones necesitan, nunca vendemos
-  datos, y atendemos pedidos de acceso, corrección, eliminación y portabilidad en 30 días. ⚠️ Firmamos
-  un Acuerdo de Tratamiento de Datos (DPA) a pedido [confirmar que la plantilla de DPA está lista,
-  COR-7].
+  datos, y atendemos pedidos de acceso, corrección, eliminación y portabilidad en 30 días. Firmamos un
+  Acuerdo de Tratamiento de Datos (DPA) a pedido.
 
 ## 10. People and physical security
 
 **Background checks, training, devices, offices?**
 
 - EN: Corteza is a one-person company today; the founder is the only person with access. Work is done
-  on a personal, disk-encrypted laptop with a screen lock. ⚠️ [Confirm FileVault is on.] There are no
+  on a personal, disk-encrypted laptop with a screen lock (FileVault). There are no
   offices or own data centers: all infrastructure is with cloud providers that hold SOC 2 and ISO
   27001 certifications for their data centers. Policies for onboarding and offboarding staff will be in
   place before the first hire.
 - ES: Hoy Corteza es una empresa de una persona; el fundador es el único con acceso. El trabajo se hace en
-  una laptop personal con disco cifrado y bloqueo de pantalla. ⚠️ [Confirmar FileVault activo.] No hay
+  una laptop personal con disco cifrado y bloqueo de pantalla (FileVault). No hay
   oficinas ni centros de datos propios: toda la infraestructura está en proveedores en la nube con
   certificaciones SOC 2 e ISO 27001 para sus centros de datos. Las políticas de alta y baja de personal
   estarán listas antes de la primera contratación.
