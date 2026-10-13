@@ -5,21 +5,23 @@ const { apiRateLimiter } = require('../middleware/auth');
 const { LANGUAGES, isLanguage, requestLanguage } = require('../core/i18n/i18n');
 
 /**
- * The privacy policy and terms of service, public (no sign-in): Google's OAuth verification and
- * the consent screen link to them.
+ * The privacy policy, terms of service and security page, public (no sign-in): Google's OAuth
+ * verification and the consent screen link to the first two; customers' security reviews to the third.
  *
  *   GET /privacy   Privacy Policy (with the Google API Services "Limited Use" statement)
  *   GET /terms     Terms of Service
+ *   GET /security  How Corteza protects data (docs/security/questionnaire.md has the long answers)
  *
  * In the language of ?lang=en|es, else the person's or the browser's (core/i18n). The texts live in
  * src/views/legal/<doc>.<lang>.html; English is the binding version.
  */
 const router = express.Router();
 
-const DOCS = /** @type {const} */ (['privacy', 'terms']);
+const DOCS = /** @type {const} */ (['privacy', 'terms', 'security']);
 const TITLES = {
   privacy: { en: 'Privacy Policy', es: 'Política de privacidad' },
-  terms: { en: 'Terms of Service', es: 'Términos del servicio' }
+  terms: { en: 'Terms of Service', es: 'Términos del servicio' },
+  security: { en: 'Security', es: 'Seguridad' }
 };
 const LANGUAGE_NAMES = { en: 'English', es: 'Español' };
 
@@ -28,7 +30,7 @@ const template = fs.readFileSync(path.join(views, 'page.html'), 'utf8');
 
 /**
  * One legal page, ready to send
- * @param {'privacy'|'terms'} doc
+ * @param {'privacy'|'terms'|'security'} doc
  * @param {string} lang
  * @returns {string}
  */
@@ -43,7 +45,8 @@ function renderLegalPage(doc, lang) {
     otherLabel: LANGUAGE_NAMES[other],
     otherHref: `/${doc}?lang=${other}`,
     privacyLabel: TITLES.privacy[language],
-    termsLabel: TITLES.terms[language]
+    termsLabel: TITLES.terms[language],
+    securityLabel: TITLES.security[language]
   };
   return template
     .replace(/\{\{(\w+)\}\}/g, (match, key) => (key in values ? values[key] : match))

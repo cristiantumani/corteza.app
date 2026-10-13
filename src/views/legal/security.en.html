@@ -1,0 +1,82 @@
+<h1>Security</h1>
+<p class="updated">Last updated: October 13, 2026</p>
+
+<p>Corteza reads your team’s Google Meet meetings and keeps the outcomes in them. This page explains how we protect that data: what we keep and what we don’t, how it’s encrypted, who can see it, and how to report a problem. For the full detail of what data we use and why, see the <a href="/privacy?lang=en">Privacy Policy</a>.</p>
+
+<div class="callout">In short: we never store transcripts, only the outcomes found in them. Meeting content is encrypted with a key unique to your workspace. Colleagues can’t see each other’s personal space, not even admins. Your data is never used to train AI models.</div>
+
+<h2>What we keep, and what we don’t</h2>
+<ul>
+  <li><strong>Kept:</strong> the outcomes of a meeting (decisions, action items, open questions, risks), with their owner, due date, reasoning, a short quote as evidence, and the meeting’s title and date.</li>
+  <li><strong>Not kept:</strong> transcripts and meeting notes. They’re read, sent to our AI provider to find the outcomes, and discarded. We keep only a fingerprint (hash) so the same meeting isn’t processed twice.</li>
+  <li><strong>Not kept:</strong> calendar events. They’re read to prepare your day and held in memory for at most 10 minutes.</li>
+  <li>Corteza only reads Google data after you connect it, and only the permissions listed in the Privacy Policy. It doesn’t browse your Drive or your email.</li>
+</ul>
+
+<h2>Encryption</h2>
+<ul>
+  <li><strong>In transit:</strong> all traffic uses HTTPS (TLS), with HSTS.</li>
+  <li><strong>At rest, per workspace:</strong> meeting content (outcome text, reasoning, quotes, titles, AI context and documents) is encrypted in the application with AES-256-GCM before it reaches the database, using a key unique to each workspace. Workspace keys are themselves encrypted with a master key kept outside the database. The database provider sees only ciphertext for those fields.</li>
+  <li><strong>Credentials:</strong> Google access tokens and other integration credentials are encrypted.</li>
+  <li><strong>Deletion by key:</strong> when a workspace is deleted, its key is destroyed, which makes any remaining copy of its content unreadable, backups included.</li>
+</ul>
+
+<h2>Who can see what</h2>
+<ul>
+  <li><strong>Sign-in is Google only.</strong> Corteza has no passwords. Your company’s Google Workspace policies (2-step verification, session length, device rules) apply to Corteza too. A workspace is tied to your Google domain, verified by Google.</li>
+  <li><strong>Personal by default:</strong> what Corteza captures from your meetings goes to your personal space, which only you can open. Workspace admins can’t open it either.</li>
+  <li><strong>Sensitive topics</strong> (people leaving, performance, pay, health, legal matters about a person) are detected automatically or marked by you, and stay visible only to you.</li>
+  <li><strong>Checked on every request:</strong> each request is checked against the signed-in person and their workspace, and data is always filtered to what they’re allowed to see.</li>
+  <li><strong>Corteza staff</strong> don’t read customer content, except when you ask us to for support and give permission, for a security investigation, or when the law requires it.</li>
+</ul>
+
+<h2>AI</h2>
+<ul>
+  <li>Meeting text is processed by Anthropic (Claude) to find outcomes and answer searches, and outcome text by OpenAI for search embeddings, through their business APIs.</li>
+  <li>Neither provider trains its models on data sent through these APIs, and we don’t use your data to train any model. Outcomes you confirm or dismiss improve results only inside your own workspace.</li>
+</ul>
+
+<h2>Infrastructure and providers</h2>
+<table>
+  <thead><tr><th>Provider</th><th>What for</th></tr></thead>
+  <tbody>
+    <tr><td>Railway</td><td>Application hosting</td></tr>
+    <tr><td>MongoDB Atlas</td><td>Database (meeting content encrypted by Corteza, as above)</td></tr>
+    <tr><td>Anthropic</td><td>AI that finds outcomes and writes search answers</td></tr>
+    <tr><td>OpenAI</td><td>Embeddings for semantic search</td></tr>
+    <tr><td>Resend</td><td>Sending email</td></tr>
+    <tr><td>PostHog</td><td>Product analytics (counts and ids, no meeting content)</td></tr>
+    <tr><td>Sentry (EU)</td><td>Error monitoring (error type and stack trace, no meeting content)</td></tr>
+    <tr><td>GitHub</td><td>Source code, automated checks and encrypted nightly backups</td></tr>
+    <tr><td>Google</td><td>Sign-in and the integrations you connect</td></tr>
+  </tbody>
+</table>
+<p>The full list, with the data each one receives, is in the <a href="/privacy?lang=en">Privacy Policy</a>.</p>
+
+<h2>Application security</h2>
+<ul>
+  <li>Strict Content-Security-Policy, no third-party scripts, and protection against framing and content sniffing.</li>
+  <li>Session cookies are HTTP-only, secure and SameSite, and expire after 7 days.</li>
+  <li>Rate limits on sign-in, the API and AI features.</li>
+  <li>Requests that try to inject database operators are refused, and all content shown in the browser is escaped.</li>
+  <li>Every change goes through automated checks before release: tests, linting, type checks and a scan of dependencies for known vulnerabilities.</li>
+</ul>
+
+<h2>Monitoring, backups and availability</h2>
+<ul>
+  <li>Errors are reported to Sentry with no meeting content, and we get alerts when captures fail, when background jobs stop or when a Google connection is lost.</li>
+  <li>Logs and analytics carry counts and ids only: never transcripts, outcome text or search questions.</li>
+  <li>The database is backed up every night, encrypted with a key held only by Corteza, and kept for 30 days.</li>
+</ul>
+
+<h2>Your control</h2>
+<ul>
+  <li>Disconnect Google at any time from Settings → Google Meet; Corteza’s access is revoked and the stored tokens deleted.</li>
+  <li>Delete outcomes and action items at any time. To delete an account or a whole workspace, write to us and we do it within 30 days.</li>
+</ul>
+
+<h2>Compliance</h2>
+<p>Corteza follows the Google API Services User Data Policy, including its Limited Use requirements, and handles personal data in line with the GDPR. We don’t hold a SOC 2 or ISO 27001 certification yet; they’re on our roadmap. We’re happy to fill in your security questionnaire or sign a data processing agreement.</p>
+
+<h2>Report a security issue</h2>
+<p>If you think you’ve found a vulnerability, write to <a href="mailto:cristian@corteza.app">cristian@corteza.app</a> with the details. We answer within 2 business days and ask that you give us reasonable time to fix it before making it public. Please don’t access other people’s data or disrupt the service while testing.</p>

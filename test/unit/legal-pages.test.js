@@ -52,10 +52,24 @@ describe('privacy policy and terms (public pages)', () => {
   });
 
   test('every placeholder is filled', () => {
-    for (const doc of ['privacy', 'terms']) {
+    for (const doc of ['privacy', 'terms', 'security']) {
       for (const lang of ['en', 'es']) {
         const html = router.renderLegalPage(doc, lang);
         assert.doesNotMatch(html, /\{\{\w+\}\}|<!-- CONTENT -->/, `${doc}.${lang}`);
+      }
+    }
+  });
+
+  test('the security page: both languages, how to report a problem, linked from every legal page', async () => {
+    assert.match((await get('/security')).html, /<h1>Security<\/h1>/);
+    assert.match((await get('/security?lang=es')).html, /<h1>Seguridad<\/h1>/);
+    for (const lang of ['en', 'es']) {
+      const { html } = await get(`/security?lang=${lang}`);
+      assert.match(html, /mailto:cristian@corteza\.app/, lang);
+      assert.match(html, /AES-256-GCM/, lang);
+      assert.match(html, new RegExp(`href="/privacy\\?lang=${lang}"`), `${lang}: links the privacy policy`);
+      for (const doc of ['privacy', 'terms']) {
+        assert.match((await get(`/${doc}?lang=${lang}`)).html, new RegExp(`href="/security\\?lang=${lang}"`), `${doc}.${lang}`);
       }
     }
   });
