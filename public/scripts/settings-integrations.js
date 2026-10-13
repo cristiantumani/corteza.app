@@ -104,13 +104,6 @@
       .concat(spaces.filter(s => !s.is_personal).map(s => `<option value="${escapeHtml(s.space_id)}" ${s.space_id === settings.space_id ? 'selected' : ''}>${escapeHtml((s.settings && s.settings.icon) || '📁')} ${escapeHtml(s.name)}</option>`))
       .join('');
 
-    const recent = (data.recent_meetings || []).map(m => {
-      const status = m.status === 'completed'
-        ? countLabel(m.decisions_created, m.action_items_created, m.outcomes_by_type)
-        : m.status === 'skipped' ? (SKIP_REASONS[m.skip_reason] || t('capture.skipped'))
-          : m.status === 'failed' ? t('capture.failed') : t('upload.processing');
-      return `<li class="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-4 py-2 border-b border-outline-variant/50"><span class="text-on-surface">${escapeHtml(m.title || t('capture.meeting'))}</span><span class="sm:whitespace-nowrap">${escapeHtml(status)}</span></li>`;
-    }).join('');
 
     body().innerHTML = `
       ${needsReconnect ? `
@@ -169,7 +162,7 @@
         <button id="gm-disconnect" class="text-error font-bold py-3 px-6 rounded-lg hover:bg-error/10 transition-all">${escapeHtml(t('meet.disconnect'))}</button>
       </div>
 
-      ${recent ? `<h4 class="text-sm font-bold text-on-surface mb-2">${escapeHtml(t('capture.latest'))}</h4><ul>${recent}</ul>` : `<p>${escapeHtml(t('capture.noMeetings'))}</p>`}
+      <p class="text-sm"><a href="/dashboard?tab=meetings" class="font-semibold text-on-surface underline">${escapeHtml(t('meetings.seeOnHome'))}</a></p>
 
       ${needsReconnect ? '' : renderImportSection(spaceOptions, data.import_max_days || 7)}
     `;

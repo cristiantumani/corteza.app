@@ -2,8 +2,8 @@
  * Home: automatic capture from Google Meet comes first.
  *
  * - #capture-panel: connect Google Meet (if not connected), or the capture status in one
- *   line with "Check now", "Import past meetings" and the latest processed meetings folded
- *   away. While an import runs on the server it shows its progress (refreshed every 10 s)
+ *   line with "Check now", "Import past meetings" and "See your meetings" (the Meetings tab,
+ *   home-meetings.js). While an import runs on the server it shows its progress (refreshed every 10 s)
  *   and, when it finishes, refreshes the overview and the outcomes list.
  *   (What I owe and what's open live in the overview: public/scripts/home-overview.js.)
  *
@@ -15,13 +15,6 @@
   'use strict';
   const t = window.t || (key => key); // public/scripts/i18n.js
   const locale = (window.CortezaI18n && window.CortezaI18n.locale) || undefined;
-
-  const SKIP_REASONS = {
-    one_on_one: t('capture.skip.one_on_one'),
-    excluded_title: t('capture.skip.excluded_title'),
-    no_transcript: t('capture.skip.no_transcript'),
-    too_short: t('capture.skip.too_short')
-  };
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -39,15 +32,6 @@
 
 
   const describe = (byType, total, actionItems) => window.CortezaOutcomes.describe(byType, total, actionItems);
-
-  function meetingOutcome(meeting) {
-    if (meeting.status === 'completed') {
-      return describe(meeting.outcomes_by_type || null, meeting.decisions_created || 0, meeting.action_items_created || 0);
-    }
-    if (meeting.status === 'skipped') return SKIP_REASONS[meeting.skip_reason] || t('capture.skipped');
-    if (meeting.status === 'failed') return t('capture.failed');
-    return t('upload.processing');
-  }
 
   const panel = () => document.getElementById('capture-panel');
 
@@ -122,15 +106,6 @@
 
   function renderConnected(data) {
     const needsReconnect = data.status !== 'active';
-    const recent = (data.recent_meetings || []).slice(0, 5);
-    const recentHtml = recent.length
-      ? `<ul class="divide-y divide-outline-variant/50">${recent.map(meeting => `
-          <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-4 py-2 text-sm">
-            <span class="text-on-surface truncate">${escapeHtml(meeting.title || t('capture.meeting'))}</span>
-            <span class="sm:whitespace-nowrap text-on-surface-variant">${escapeHtml(meetingOutcome(meeting))} · ${escapeHtml(timeAgo(meeting.updated_at))}</span>
-          </li>`).join('')}</ul>`
-      : `<p class="text-sm text-on-surface-variant">${escapeHtml(t('capture.noMeetings'))}</p>`;
-
     // All good: a quiet line under the page. Something to act on (reconnect, an import running): a card
     const quiet = !needsReconnect && !data.needs_reconsent && !data.active_import;
     panel().innerHTML = `
@@ -152,20 +127,12 @@
           <span class="flex flex-wrap items-center gap-x-4 gap-y-1 sm:ml-auto">
             <button id="capture-sync" type="button" class="font-semibold text-primary hover:underline disabled:opacity-50" ${needsReconnect ? 'disabled' : ''}>${escapeHtml(t('capture.checkNow'))}</button>
             <a href="/settings#import" class="font-semibold text-primary hover:underline">${escapeHtml(t('capture.importPast'))}</a>
-            <button id="capture-meetings-toggle" type="button" aria-expanded="false" aria-controls="capture-meetings" class="font-semibold text-on-surface-variant hover:text-primary">${escapeHtml(t('capture.latest'))}</button>
+            <a href="/dashboard?tab=meetings" data-home-tab="meetings" class="font-semibold text-on-surface-variant hover:text-primary">${escapeHtml(t('meetings.seeYours'))}</a>
           </span>
         </div>
         ${importProgressHtml(data.active_import)}
         <p id="capture-sync-result" class="hidden text-sm"></p>
-        <div id="capture-meetings" hidden>${recentHtml}</div>
       </div>`;
-
-    const toggle = document.getElementById('capture-meetings-toggle');
-    toggle.addEventListener('click', () => {
-      const list = document.getElementById('capture-meetings');
-      list.hidden = !list.hidden;
-      toggle.setAttribute('aria-expanded', String(!list.hidden));
-    });
 
     const syncButton = document.getElementById('capture-sync');
     if (syncButton) syncButton.addEventListener('click', checkNow);

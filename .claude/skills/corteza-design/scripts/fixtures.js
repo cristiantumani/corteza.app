@@ -264,7 +264,23 @@ const routes = {
   }),
   'POST /api/questions-risks/103/reopen': { success: true, resolution_status: 'open', resolution_note: null, resolved_by: null, resolved_at: null },
   'POST /api/action-items/from-colleagues/seen': { success: true, seen: 1 },
-  'GET /api/threads/top_9c1a2b7e': pricingThread
+  'GET /api/threads/top_9c1a2b7e': pricingThread,
+  // Home → Meetings (GET /api/meetings, GET /api/meetings/outcomes)
+  'GET /api/meetings': () => ({
+    success: true, next_before: iso(20 * day),
+    meetings: [
+      { id: 'conferenceRecords/q4', kind: 'meeting', title: 'Planificación comercial Q4', occurred_at: iso(2 * 3600 * 1000), status: 'completed', skip_reason: null, can_capture: false, url: 'https://meet.google.com/abc-defg-hij', counts: { decision: 1, action_item: 2, open_question: 1, risk: 1 }, to_review: 2 },
+      { id: 'conferenceRecords/1on1', kind: 'meeting', title: 'Ana / Bruno', occurred_at: iso(5 * 3600 * 1000), status: 'skipped', skip_reason: 'one_on_one', can_capture: true, url: null, counts: { decision: 0, action_item: 0, open_question: 0, risk: 0 }, to_review: 0 },
+      { id: 'conferenceRecords/ops', kind: 'meeting', title: 'Weekly Ops', occurred_at: iso(26 * 3600 * 1000), status: 'completed', skip_reason: null, can_capture: false, url: null, counts: { decision: 1, action_item: 1, open_question: 0, risk: 0 }, to_review: 0 },
+      { id: 'manual:' + date(-1), kind: 'manual', title: null, occurred_at: new Date(date(-1) + 'T00:00:00Z').toISOString(), status: 'completed', skip_reason: null, can_capture: false, url: null, counts: { decision: 1, action_item: 0, open_question: 0, risk: 0 }, to_review: 0 },
+      { id: 'conferenceRecords/tech', kind: 'meeting', title: 'Revisión técnica', occurred_at: iso(5 * day), status: 'failed', skip_reason: null, can_capture: true, url: null, counts: { decision: 0, action_item: 0, open_question: 0, risk: 0 }, to_review: 0 }
+    ]
+  }),
+  'GET /api/meetings/outcomes': () => ({
+    success: true,
+    outcomes: decisions.filter(d => [101, 102, 103].includes(d.id)).map(d => ({ ...d, resolution_status: d.type === 'decision' ? undefined : 'open', can_review: d.review_status !== 'confirmed' })),
+    action_items: actionItems.slice(0, 2).map(a => ({ item_id: a.item_id, text: a.text, owners: a.owners.map(o => ({ name: o.name })), due_date: a.due_date, status: a.status }))
+  })
 };
 
 module.exports = { user, spaces, routes };

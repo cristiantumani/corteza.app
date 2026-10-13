@@ -23,7 +23,8 @@
     "tabs": {
       "label": "Home views",
       "overview": "Overview",
-      "all": "All outcomes"
+      "all": "All outcomes",
+      "meetings": "Meetings"
     },
     "ask": {
       "label": "Ask about your meetings",
@@ -1308,5 +1309,32 @@
     "back": "All questions & risks",
     "notFound": "This thread isn’t available. It may be private, or everything in it was taken out.",
     "loadFailed": "Could not load this thread"
+  },
+  "meetings": {
+    "intro": "Your meetings, newest first, with what came out of each one.",
+    "todayAt": "Today, {time}",
+    "yesterdayAt": "Yesterday, {time}",
+    "reading": "Reading…",
+    "failed": "Couldn’t be read",
+    "nothing": "Nothing captured",
+    "byHand": "Logged by hand",
+    "tryAgain": "Try again",
+    "captureAnyway": "Capture anyway",
+    "toReview": {
+      "one": "{count} to review",
+      "other": "{count} to review"
+    },
+    "confirmAll": "Confirm all ({count})",
+    "openInMeet": "Open the meeting",
+    "empty": "No meetings yet. Once Google Meet is connected, every meeting with a transcript or Gemini notes shows up here.",
+    "showMore": "Show more",
+    "seeYours": "See your meetings",
+    "seeOnHome": "Your meetings and what came out of each one are on Home → Meetings",
+    "groups": {
+      "decision": "Decisions",
+      "action_item": "Action items",
+      "open_question": "Open questions",
+      "risk": "Risks"
+    }
   }
 }
