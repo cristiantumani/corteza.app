@@ -75,6 +75,7 @@
             </div>
             <div class="inline-flex self-start rounded-lg border border-outline-variant overflow-hidden" role="tablist" aria-label="{{t:home.tabs.label}}">
                 <button type="button" role="tab" data-home-tab="overview" aria-controls="home-overview" aria-selected="true" class="px-4 py-2 text-sm font-semibold bg-primary text-on-primary">{{t:home.tabs.overview}}</button>
+                <button type="button" role="tab" data-home-tab="meetings" aria-controls="home-meetings" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">{{t:home.tabs.meetings}}</button>
                 <button type="button" role="tab" data-home-tab="all" aria-controls="home-all" aria-selected="false" class="px-4 py-2 text-sm font-semibold text-on-surface-variant">{{t:home.tabs.all}}</button>
             </div>
         </div>
@@ -118,6 +119,12 @@
             <section id="capture-panel">
                 <div class="rounded-xl border border-outline-variant px-4 py-3 text-sm text-on-surface-variant">{{t:home.capture.loading}}</div>
             </section>
+        </section>
+
+        <!-- Meetings: the person's meetings, each with what came out of it (public/scripts/home-meetings.js) -->
+        <section id="home-meetings" role="tabpanel" aria-label="{{t:home.tabs.meetings}}" class="hidden flex flex-col gap-3">
+            <p class="text-sm text-on-surface-variant">{{t:meetings.intro}}</p>
+            <div id="home-meetings-list" class="flex flex-col" aria-live="polite"><p class="text-sm text-on-surface-variant">{{t:common.loading}}</p></div>
         </section>
 
         <!-- All outcomes: the full list with its filters (public/scripts/dashboard.js) -->
@@ -451,10 +458,11 @@
 <script src="/scripts/log-action-item.js?v=2"></script>
 <script src="/scripts/inline-edit.js?v=5"></script>
 <script src="/scripts/outcome-labels.js?v=2"></script>
-<script src="/scripts/home-capture.js?v=9"></script>
+<script src="/scripts/home-capture.js?v=10"></script>
 <script src="/scripts/decide-words.js?v=1"></script>
 <script src="/scripts/decide-card.js?v=1"></script>
-<script src="/scripts/home-overview.js?v=7"></script>
+<script src="/scripts/home-meetings.js?v=1"></script>
+<script src="/scripts/home-overview.js?v=8"></script>
 <script src="/scripts/close-loop.js?v=3"></script>
 <script src="/scripts/home-today.js?v=2"></script>
 <script src="/scripts/onboarding.js?v=3"></script>

@@ -297,9 +297,13 @@
   // ---------- Tabs ----------
 
   let changed = false;
+  const TABS = ['overview', 'meetings', 'all'];
   function showTab(tab) {
+    if (!TABS.includes(tab)) tab = 'overview';
     const all = tab === 'all';
-    document.getElementById('home-overview').classList.toggle('hidden', all);
+    document.getElementById('home-overview').classList.toggle('hidden', tab !== 'overview');
+    const meetings = document.getElementById('home-meetings');
+    if (meetings) meetings.classList.toggle('hidden', tab !== 'meetings');
     document.getElementById('home-all').classList.toggle('hidden', !all);
     document.querySelectorAll('[role="tab"][data-home-tab]').forEach(button => {
       const selected = button.dataset.homeTab === tab;
@@ -313,7 +317,13 @@
       changed = false;
       window.fetchDecisions();
     }
-    try { history.replaceState(null, '', all ? '#all' : location.pathname + location.search); } catch (e) { /* ignore */ }
+    try {
+      // Meetings keeps ?tab=meetings (and the open ?meeting=); the others drop them
+      const url = new URL(location.href);
+      if (tab !== 'meetings') { url.searchParams.delete('tab'); url.searchParams.delete('meeting'); } else url.searchParams.set('tab', 'meetings');
+      history.replaceState(null, '', url.pathname + url.search + (all ? '#all' : ''));
+    } catch (e) { /* ignore */ }
+    document.dispatchEvent(new CustomEvent('corteza:home-tab', { detail: tab }));
   }
 
   document.addEventListener('click', event => {
@@ -347,7 +357,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('home-overview')) return;
-    showTab(location.hash === '#all' ? 'all' : 'overview');
+    const tabParam = new URLSearchParams(location.search).get('tab');
+    showTab(location.hash === '#all' ? 'all' : tabParam === 'meetings' ? 'meetings' : 'overview');
     setupAsk();
     load();
   });

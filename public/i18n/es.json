@@ -23,7 +23,8 @@
     "tabs": {
       "label": "Vistas de inicio",
       "overview": "Resumen",
-      "all": "Todos los resultados"
+      "all": "Todos los resultados",
+      "meetings": "Reuniones"
     },
     "ask": {
       "label": "Pregunta sobre tus reuniones",
@@ -1308,5 +1309,32 @@
     "back": "Todas las preguntas y riesgos",
     "notFound": "Este tema no está disponible. Puede ser privado, o todo lo que tenía se sacó.",
     "loadFailed": "No se pudo cargar este tema"
+  },
+  "meetings": {
+    "intro": "Tus reuniones, de la más reciente a la más antigua, con lo que salió de cada una.",
+    "todayAt": "Hoy, {time}",
+    "yesterdayAt": "Ayer, {time}",
+    "reading": "Leyendo…",
+    "failed": "No se pudo leer",
+    "nothing": "No se capturó nada",
+    "byHand": "Registrado a mano",
+    "tryAgain": "Reintentar",
+    "captureAnyway": "Capturar igual",
+    "toReview": {
+      "one": "{count} por revisar",
+      "other": "{count} por revisar"
+    },
+    "confirmAll": "Confirmar todo ({count})",
+    "openInMeet": "Abrir la reunión",
+    "empty": "Aún no hay reuniones. Cuando conectes Google Meet, cada reunión con transcripción o notas de Gemini aparecerá aquí.",
+    "showMore": "Ver más",
+    "seeYours": "Ver tus reuniones",
+    "seeOnHome": "Tus reuniones y lo que salió de cada una están en Inicio → Reuniones",
+    "groups": {
+      "decision": "Decisiones",
+      "action_item": "Pendientes",
+      "open_question": "Preguntas abiertas",
+      "risk": "Riesgos"
+    }
   }
 }

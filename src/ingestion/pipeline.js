@@ -111,6 +111,8 @@ async function claim(transcript, manual = false) {
     const doc = {
       ...key,
       title: transcript.title,
+      occurred_at: transcript.occurredAt ? new Date(transcript.occurredAt) : null, // when it happened (Meetings view)
+      url: transcript.url || null,
       manual, // imported past meeting (or a manual retry): not counted as "today" in the daily digest
       status: 'processing',
       attempts: 1,
@@ -145,6 +147,8 @@ async function recordSkipped(transcript, reason) {
     {
       $setOnInsert: {
         title: transcript.title || null,
+        occurred_at: transcript.occurredAt ? new Date(transcript.occurredAt) : null,
+        url: transcript.url || null,
         status: 'skipped',
         skip_reason: reason,
         attempts: 0,

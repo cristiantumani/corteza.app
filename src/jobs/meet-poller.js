@@ -84,7 +84,7 @@ async function pollConnection(connection, deps = {}) {
       continue;
     }
     const author = { user_id: connection.user_id, name: connection.user_name };
-    const base = { workspaceId: connection.workspace_id, source, externalId: record.name, title: meeting.title, author };
+    const base = { workspaceId: connection.workspace_id, source, externalId: record.name, title: meeting.title, author, occurredAt: meeting.occurredAt, url: meeting.url };
 
     const reason = skipReason(meeting, connection.settings);
     if (reason) {

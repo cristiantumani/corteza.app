@@ -1,6 +1,6 @@
 # Meetings: what came out of each one
 
-**Status:** draft for approval (Oct 13, 2026). Linear COR-42 (UX · B). Builds on confirm/dismiss
+**Status:** approved and built (Oct 13, 2026). Linear COR-42 (UX · B). Builds on confirm/dismiss
 (`core/decisions/review-service.js`), imports (`ingestion/meet-import.js`) and topic threads.
 
 ## Why
