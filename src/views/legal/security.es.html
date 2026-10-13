@@ -1,0 +1,82 @@
+<h1>Seguridad</h1>
+<p class="updated">Última actualización: 13 de octubre de 2026</p>
+
+<p>Corteza lee las reuniones de Google Meet de tu equipo y guarda lo que sale de ellas. Esta página explica cómo protegemos esos datos: qué guardamos y qué no, cómo se cifran, quién puede verlos y cómo reportar un problema. El detalle completo de qué datos usamos y para qué está en la <a href="/privacy?lang=es">Política de privacidad</a>. La versión en inglés es la que rige.</p>
+
+<div class="callout">En resumen: nunca guardamos transcripciones, solo lo que sale de ellas. El contenido de las reuniones se cifra con una clave única de tu workspace. Los colegas no pueden ver el espacio personal de otro, ni siquiera los administradores. Tus datos nunca se usan para entrenar modelos de IA.</div>
+
+<h2>Qué guardamos y qué no</h2>
+<ul>
+  <li><strong>Guardamos:</strong> lo que sale de una reunión (decisiones, pendientes, preguntas abiertas, riesgos), con su responsable, fecha, razonamiento, una cita breve como evidencia, y el título y la fecha de la reunión.</li>
+  <li><strong>No guardamos:</strong> transcripciones ni notas de reunión. Se leen, se envían a nuestro proveedor de IA para encontrar lo que salió de la reunión y se descartan. Solo guardamos una huella (hash) para no procesar dos veces la misma reunión.</li>
+  <li><strong>No guardamos:</strong> eventos del calendario. Se leen para preparar tu día y quedan en memoria como máximo 10 minutos.</li>
+  <li>Corteza solo lee datos de Google después de que lo conectas, y solo con los permisos de la Política de privacidad. No recorre tu Drive ni tu correo.</li>
+</ul>
+
+<h2>Cifrado</h2>
+<ul>
+  <li><strong>En tránsito:</strong> todo el tráfico usa HTTPS (TLS), con HSTS.</li>
+  <li><strong>En reposo, por workspace:</strong> el contenido de las reuniones (textos, razonamientos, citas, títulos, contexto para la IA y documentos) se cifra en la aplicación con AES-256-GCM antes de llegar a la base de datos, con una clave única por workspace. Esas claves a su vez se cifran con una clave maestra que vive fuera de la base de datos. El proveedor de la base de datos solo ve texto cifrado en esos campos.</li>
+  <li><strong>Credenciales:</strong> los tokens de acceso de Google y las demás credenciales de integraciones se guardan cifrados.</li>
+  <li><strong>Borrado por clave:</strong> cuando se elimina un workspace, se destruye su clave, y cualquier copia que quede de su contenido, backups incluidos, se vuelve ilegible.</li>
+</ul>
+
+<h2>Quién ve qué</h2>
+<ul>
+  <li><strong>Solo se entra con Google.</strong> Corteza no tiene contraseñas. Las políticas de Google Workspace de tu empresa (verificación en 2 pasos, duración de sesión, reglas de dispositivos) se aplican también a Corteza. Cada workspace está atado a tu dominio de Google, verificado por Google.</li>
+  <li><strong>Personal por defecto:</strong> lo que Corteza captura de tus reuniones va a tu espacio personal, que solo tú puedes abrir. Los administradores del workspace tampoco.</li>
+  <li><strong>Temas sensibles</strong> (salidas de personas, desempeño, sueldos, salud, temas legales sobre una persona): se detectan automáticamente o los marcas tú, y solo los ves tú.</li>
+  <li><strong>Se revisa en cada pedido:</strong> cada pedido se valida contra la persona que inició sesión y su workspace, y los datos siempre se filtran a lo que puede ver.</li>
+  <li><strong>El equipo de Corteza</strong> no lee el contenido de los clientes, salvo que nos lo pidas para soporte y des permiso, para investigar un incidente de seguridad, o cuando la ley lo exige.</li>
+</ul>
+
+<h2>IA</h2>
+<ul>
+  <li>El texto de las reuniones lo procesa Anthropic (Claude) para encontrar lo que salió de ellas y responder búsquedas, y OpenAI procesa los textos guardados para la búsqueda semántica, a través de sus APIs empresariales.</li>
+  <li>Ninguno de los dos entrena sus modelos con datos enviados por esas APIs, y nosotros no usamos tus datos para entrenar ningún modelo. Lo que confirmas o descartas mejora los resultados solo dentro de tu propio workspace.</li>
+</ul>
+
+<h2>Infraestructura y proveedores</h2>
+<table>
+  <thead><tr><th>Proveedor</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td>Railway</td><td>Hosting de la aplicación</td></tr>
+    <tr><td>MongoDB Atlas</td><td>Base de datos (contenido de reuniones cifrado por Corteza, como se explica arriba)</td></tr>
+    <tr><td>Anthropic</td><td>IA que encuentra lo que sale de las reuniones y responde búsquedas</td></tr>
+    <tr><td>OpenAI</td><td>Embeddings para la búsqueda semántica</td></tr>
+    <tr><td>Resend</td><td>Envío de correos</td></tr>
+    <tr><td>PostHog</td><td>Analítica de producto (conteos e ids, sin contenido de reuniones)</td></tr>
+    <tr><td>Sentry (UE)</td><td>Monitoreo de errores (tipo de error y traza, sin contenido de reuniones)</td></tr>
+    <tr><td>GitHub</td><td>Código fuente, revisiones automáticas y backups nocturnos cifrados</td></tr>
+    <tr><td>Google</td><td>Inicio de sesión y las integraciones que conectas</td></tr>
+  </tbody>
+</table>
+<p>La lista completa, con los datos que recibe cada uno, está en la <a href="/privacy?lang=es">Política de privacidad</a>.</p>
+
+<h2>Seguridad de la aplicación</h2>
+<ul>
+  <li>Content-Security-Policy estricta, sin scripts de terceros, y protección contra framing y content sniffing.</li>
+  <li>Las cookies de sesión son HTTP-only, seguras y SameSite, y vencen a los 7 días.</li>
+  <li>Límites de uso en el inicio de sesión, la API y las funciones de IA.</li>
+  <li>Se rechazan los pedidos que intentan inyectar operadores de base de datos, y todo el contenido que se muestra en el navegador se escapa.</li>
+  <li>Cada cambio pasa por revisiones automáticas antes de publicarse: tests, lint, chequeo de tipos y un escaneo de vulnerabilidades conocidas en las dependencias.</li>
+</ul>
+
+<h2>Monitoreo, backups y disponibilidad</h2>
+<ul>
+  <li>Los errores se reportan a Sentry sin contenido de reuniones, y recibimos alertas cuando fallan capturas, cuando se detienen procesos en segundo plano o cuando se pierde una conexión con Google.</li>
+  <li>Los logs y la analítica llevan solo conteos e ids: nunca transcripciones, textos ni preguntas de búsqueda.</li>
+  <li>La base de datos se respalda cada noche, cifrada con una clave que solo tiene Corteza, y se guarda 30 días.</li>
+</ul>
+
+<h2>Tu control</h2>
+<ul>
+  <li>Desconecta Google cuando quieras desde Configuración → Google Meet: se revoca el acceso de Corteza y se borran los tokens guardados.</li>
+  <li>Borra lo capturado y los pendientes cuando quieras. Para eliminar una cuenta o un workspace completo, escríbenos y lo hacemos en un plazo de 30 días.</li>
+</ul>
+
+<h2>Cumplimiento</h2>
+<p>Corteza cumple la Política de datos de usuario de los servicios de API de Google, incluidos sus requisitos de Uso Limitado, y trata los datos personales de acuerdo con el RGPD. Todavía no tenemos certificación SOC 2 ni ISO 27001; están en nuestro roadmap. Con gusto completamos tu cuestionario de seguridad o firmamos un acuerdo de tratamiento de datos (DPA).</p>
+
+<h2>Reportar un problema de seguridad</h2>
+<p>Si crees que encontraste una vulnerabilidad, escríbenos a <a href="mailto:cristian@corteza.app">cristian@corteza.app</a> con el detalle. Respondemos en 2 días hábiles y te pedimos un plazo razonable para corregirla antes de hacerla pública. Al probar, por favor no accedas a datos de otras personas ni interrumpas el servicio.</p>

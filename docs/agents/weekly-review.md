@@ -21,6 +21,7 @@ reviews and merges. Never merge your own PR.
 | How it works / first-run onboarding | `src/views/partials/onboarding.html`, `onboarding.*` keys in `public/i18n/{en,es}.json` | a step names a screen, button or flow that changed, or an important new capability should be one of the steps |
 | Empty states and short help texts | `public/i18n/{en,es}.json` | a text describes behaviour that changed |
 | Privacy policy and terms | `src/views/legal/{privacy,terms}.{en,es}.html` | a new Google scope, a new provider/subprocessor (AI, email, analytics, hosting), a new kind of data stored, a new place data goes, or a retention change. Update **both languages** and the "Last updated" date |
+| Security page and questionnaire answers | `src/views/legal/security.{en,es}.html`, `docs/security/questionnaire.md` | a new provider/subprocessor, a security control added or removed (encryption, backups, monitoring, access, CI checks), a certification or pentest done, or a fact marked ⚠️ that the week's work settles. Update **both languages** and the dates |
 | Permissions before Google's consent | `src/views/google-connect.html`, `connectGoogle.*` keys | a scope was added, removed or used differently |
 | Google verification checklist and demo script | `docs/launch/google-verification.md`, `docs/launch/demo-video-script.md` | scopes, screens or flows they mention changed |
 

@@ -57,7 +57,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Create a decision (single write path for new code) | `src/core/decisions/decision-service.js` (`createDecision`) |
 | Transcript → decisions pipeline (dedupe, extract, auto-save) | `src/ingestion/pipeline.js` (`ingestTranscript`) |
 | Google Meet: connect/settings routes, token storage, API client | `src/integrations/google/{routes,connections,meet-client}.js`; what each permission is for, shown before Google's consent screen (every Connect link): `src/views/google-connect.html` |
-| Privacy policy and terms (public `/privacy`, `/terms`, EN/ES; English binds) | `src/views/legal/` (`page.html` + `<doc>.<lang>.html`), `src/http/legal.js`; linked from login and the sidebar. When a Google scope, a provider or a use of data changes, update both languages (new date) and the connect page in the same PR |
+| Privacy policy, terms and security page (public `/privacy`, `/terms`, `/security`, EN/ES; English binds) and ready answers to customers' security questionnaires | `src/views/legal/` (`page.html` + `<doc>.<lang>.html`), `src/http/legal.js`, `docs/security/questionnaire.md`; linked from login and the sidebar. When a Google scope, a provider, a use of data or a security control changes, update both languages (new date), the connect page, `/security` and the questionnaire in the same PR |
 | Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs, extraction through the Message Batches API at half price) | `src/ingestion/meet-import.js`, `src/ingestion/batch-extraction.js` |
