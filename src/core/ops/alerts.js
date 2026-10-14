@@ -39,7 +39,7 @@ const ALERTS = {
   },
   google_revoked: {
     subject: 'Google connections were lost',
-    body: d => `${d.count} Google connection(s) were revoked or expired in the last 24 hours. Those people need to reconnect Google Meet in Settings.`,
+    body: d => `${d.count} Google connection(s) were revoked or expired in the last 24 hours${Array.isArray(d.people) && d.people.length ? ` (${d.people.join(', ')})` : ''}. Those people need to reconnect Google Meet in Settings.`,
     resolved: null
   }
 };
