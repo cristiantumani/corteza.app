@@ -62,13 +62,14 @@ describe('ops alerts (docs/specs/2026-10-ops-monitoring.md)', { skip }, () => {
     await db.collection('ops_state').updateOne({ _id: 'heartbeat:meet_poller' }, { $set: { at: new Date(NOW.getTime() - 25 * MIN) } });
     await alerts.countFailure('daily_digest', NOW);
     await alerts.countFailure('daily_digest', NOW);
-    await db.collection('google_connections').insertOne({ workspace_id: 'W', user_id: 'U', status: 'revoked', revoked_at: new Date(NOW.getTime() - 60 * MIN) });
+    await db.collection('google_connections').insertOne({ workspace_id: 'W', user_id: 'U', google_email: 'ana@acme.com', status: 'revoked', revoked_at: new Date(NOW.getTime() - 60 * MIN) });
 
     active = await ops.runOpsChecks(deps);
     assert.deepEqual(active, { failed_captures: true, meet_poller: true, daily_digest: true, google_revoked: true });
     assert.deepEqual(raised.failed_captures, { failed: 2, exhausted: 1 });
     assert.equal(raised.daily_digest.failed, 2);
     assert.equal(raised.google_revoked.count, 1);
+    assert.deepEqual(raised.google_revoked.people, ['ana@acme.com'], 'names who lost the connection');
     assert.ok(!JSON.stringify(raised).includes('m1'), 'counts only');
   });
 

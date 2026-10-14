@@ -47,7 +47,7 @@ error types, never titles or text.
 | **Captures are failing** | 3 or more meetings in `failed` in the last hour, or any meeting that used up its 3 attempts |
 | **The Meet poller stopped** | no poller run finished in the last 20 minutes (it runs every 5) |
 | **Morning summaries failed** | one or more morning summaries failed to send today (count of failures) |
-| **Google connections lost** | Google connections revoked or expired in the last 24 hours (count; at most once a day) |
+| **Google connections lost** | Google connections revoked or expired in the last 24 hours (count and the Google addresses, so you can tell them; at most once a day) |
 
 The job state (last sent per type) lives in a small `ops_state` collection. `/health` stays as it is
 (Railway needs it to answer without the database).

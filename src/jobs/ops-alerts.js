@@ -73,11 +73,15 @@ async function runOpsChecks(deps = {}) {
   else await resolve('daily_digest');
 
   // Google connections lost in the last 24 hours (once a day at most)
-  const revoked = await getDatabase().collection('google_connections').countDocuments({
-    status: 'revoked', revoked_at: { $gte: new Date(now.getTime() - 24 * HOUR_MS) }
-  });
-  active.google_revoked = revoked > 0;
-  if (active.google_revoked) await raise('google_revoked', { count: revoked }, { resendEveryMs: 24 * HOUR_MS });
+  // Who, so the founder can tell them (the alert goes only to OPS_ALERT_EMAIL; an address isn't meeting content)
+  const revoked = await getDatabase().collection('google_connections')
+    .find({ status: 'revoked', revoked_at: { $gte: new Date(now.getTime() - 24 * HOUR_MS) } })
+    .project({ _id: 0, google_email: 1 }).limit(50).toArray();
+  active.google_revoked = revoked.length > 0;
+  if (active.google_revoked) {
+    const people = revoked.map(row => (typeof row.google_email === 'string' && row.google_email) || 'unknown');
+    await raise('google_revoked', { count: revoked.length, people }, { resendEveryMs: 24 * HOUR_MS });
+  }
   else await resolve('google_revoked');
 
   return active;
