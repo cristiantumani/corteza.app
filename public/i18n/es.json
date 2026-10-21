@@ -759,7 +759,14 @@
     "addPlaceholder": "¿Cuál es el siguiente paso?",
     "addSave": "Agregar",
     "thatsFine": "Está bien así",
-    "resolvedByItem": "Resuelto con el pendiente: {item}"
+    "resolvedByItem": "Resuelto con el pendiente: {item}",
+    "answerLabel": "Respuesta",
+    "enterHint": "Enter para guardar · Mayús+Enter para otra línea",
+    "saveAnswerClose": "Guardar respuesta y cerrar",
+    "closedCount": {
+      "one": "Listo, quedó cerrado.",
+      "other": "Listo, quedaron {count} cerrados."
+    }
   },
   "questions": {
     "pageTitle": "Preguntas y riesgos · Corteza",

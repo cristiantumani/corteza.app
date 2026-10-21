@@ -759,7 +759,14 @@
     "addPlaceholder": "What’s the next step?",
     "addSave": "Add",
     "thatsFine": "That’s fine",
-    "resolvedByItem": "Resolved with the action item: {item}"
+    "resolvedByItem": "Resolved with the action item: {item}",
+    "answerLabel": "Answer",
+    "enterHint": "Enter to save · Shift+Enter for a new line",
+    "saveAnswerClose": "Save answer and close",
+    "closedCount": {
+      "one": "Done, it's closed.",
+      "other": "Done, {count} closed."
+    }
   },
   "questions": {
     "pageTitle": "Questions & risks · Corteza",
