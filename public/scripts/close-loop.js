@@ -29,13 +29,30 @@
         <p class="text-sm text-on-surface">${isQuestion
           ? escapeHtml(t('loop.question')).replace('{question}', `<strong>“${escapeHtml(outcome.text)}”</strong>`)
           : escapeHtml(t('loop.risk')).replace('{risk}', `<strong>“${escapeHtml(outcome.text)}”</strong>`)}</p>
-        ${isQuestion ? `<textarea class="loop-note w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="${escapeHtml(t('loop.answerPlaceholder'))}"></textarea>` : ''}
+        ${isQuestion ? answerBoxHtml('loop-note', false) : ''}
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" class="loop-yes ${BUTTON}" data-id="${escapeHtml(outcome.id)}" data-kind="${kind}">${escapeHtml(t(isQuestion ? 'detail.markAnswered' : 'detail.markMitigated'))}</button>
           <button type="button" class="loop-no ${LINK}">${escapeHtml(t('loop.notYet'))}</button>
         </div>
+        <span class="loop-error text-sm text-error" role="alert"></span>
       </div>`;
   }
+
+  /**
+   * The answer to a question: a labelled box, Enter saves and Shift+Enter starts a new line
+   * @param {string} className - loop-note (one question) or loop-pick-note (a checked one in a list)
+   * @param {boolean} hidden - shown only once its question is checked
+   */
+  function answerBoxHtml(className, hidden) {
+    const id = `loop-answer-${++answerBoxes}`;
+    return `
+      <div class="loop-answer flex flex-col gap-1${hidden ? ' hidden' : ''}">
+        <label for="${id}" class="text-xs font-semibold text-on-surface-variant">${escapeHtml(t('loop.answerLabel'))}</label>
+        <textarea id="${id}" class="${className} w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="${escapeHtml(t('loop.answerPlaceholder'))}" aria-describedby="${id}-hint"></textarea>
+        <span id="${id}-hint" class="text-xs text-on-surface-variant">${escapeHtml(t('loop.enterHint'))}</span>
+      </div>`;
+  }
+  let answerBoxes = 0;
 
   /**
    * Shows the prompts in the page's notice area
@@ -75,13 +92,14 @@
               <input type="checkbox" class="loop-pick mt-0.5" data-id="${escapeHtml(outcome.id)}" data-type="${escapeHtml(outcome.type)}">
               <span><span class="text-xs font-semibold text-on-surface-variant">${escapeHtml(typeLabel(outcome.type))}</span> ${escapeHtml(outcome.text)}</span>
             </label>
-            ${outcome.type === 'open_question' ? `<div class="pl-6 mt-1"><textarea class="loop-pick-note hidden w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-sm" rows="2" maxlength="1000" placeholder="${escapeHtml(t('loop.answerPlaceholder'))}"></textarea></div>` : ''}
+            ${outcome.type === 'open_question' ? `<div class="pl-6 mt-1">${answerBoxHtml('loop-pick-note', true)}</div>` : ''}
           </li>`).join('')}
         </ul>
         <div class="flex flex-wrap items-center gap-3">
           <button type="button" class="loop-close-picked ${BUTTON} disabled:opacity-50" disabled>${escapeHtml(t('loop.closeSelected'))}</button>
           <button type="button" class="loop-no ${LINK}">${escapeHtml(t('loop.notNow'))}</button>
         </div>
+        <span class="loop-error text-sm text-error" role="alert"></span>
       </div>`);
     const row = container.lastElementChild;
     row.dataset.itemText = item.text || '';
@@ -124,28 +142,83 @@
   document.addEventListener('change', event => {
     const pick = event.target.closest('.loop-pick');
     if (!pick) return;
-    const note = pick.closest('li').querySelector('.loop-pick-note');
-    if (note) note.classList.toggle('hidden', !pick.checked);
-    const row = pick.closest('.loop-row');
-    row.querySelector('.loop-close-picked').disabled = !row.querySelector('.loop-pick:checked');
+    const answer = pick.closest('li').querySelector('.loop-answer');
+    if (answer) {
+      answer.classList.toggle('hidden', !pick.checked);
+      if (pick.checked) answer.querySelector('textarea').focus();
+    }
+    updateCloseButton(pick.closest('.loop-row'));
   });
+
+  /** Close selected says it saves the answer once one is written */
+  function updateCloseButton(row) {
+    const button = row.querySelector('.loop-close-picked');
+    if (!button || button.dataset.busy) return;
+    const checked = [...row.querySelectorAll('.loop-pick:checked')];
+    button.disabled = checked.length === 0;
+    const answered = checked.some(pick => {
+      const note = pick.closest('li').querySelector('.loop-pick-note');
+      return note && note.value.trim();
+    });
+    button.textContent = t(answered ? 'loop.saveAnswerClose' : 'loop.closeSelected');
+  }
+
+  document.addEventListener('input', event => {
+    if (event.target.closest('.loop-pick-note')) updateCloseButton(event.target.closest('.loop-row'));
+  });
+
+  // In an answer box, Enter saves (like the row's main button) and Shift+Enter starts a new line
+  document.addEventListener('keydown', event => {
+    const box = event.target.closest && event.target.closest('.loop-note, .loop-pick-note');
+    if (!box || event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    const button = box.closest('.loop-row').querySelector('.loop-close-picked, .loop-yes');
+    if (button && !button.disabled) button.click();
+  });
+
+  /**
+   * Replaces a prompt with a short confirmation that fades away
+   * @param {HTMLElement} row
+   * @param {string} message
+   */
+  function confirmRow(row, message) {
+    row.innerHTML = `<p class="text-sm text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span>${escapeHtml(message)}</p>`;
+    row.setAttribute('role', 'status');
+    setTimeout(() => removeRow(row), 4000);
+  }
+
+  function showError(row, message) {
+    const error = row.querySelector('.loop-error');
+    if (error) error.textContent = message;
+  }
 
   document.addEventListener('click', async event => {
     const closePicked = event.target.closest('.loop-close-picked');
     if (closePicked) {
       const row = closePicked.closest('.loop-row');
       const fallback = t('loop.resolvedByItem', { item: row.dataset.itemText || '' });
+      const label = closePicked.textContent;
       closePicked.disabled = true;
+      closePicked.dataset.busy = '1';
+      closePicked.textContent = t('common.saving');
+      showError(row, '');
+      let closed = 0;
       try {
         for (const pick of row.querySelectorAll('.loop-pick:checked')) {
           const note = pick.closest('li').querySelector('.loop-pick-note');
           await postJson(`/api/questions-risks/${encodeURIComponent(pick.dataset.id)}/resolve`, { note: (note && note.value.trim()) || fallback });
+          pick.checked = false;
+          pick.disabled = true;
+          closed++;
         }
-        removeRow(row);
+        confirmRow(row, t('loop.closedCount', { count: closed }));
         if (target.onChange) target.onChange();
       } catch (error) {
-        closePicked.disabled = false;
-        alert(error.message);
+        delete closePicked.dataset.busy;
+        closePicked.textContent = label;
+        updateCloseButton(row);
+        showError(row, error.message);
+        if (closed && target.onChange) target.onChange();
       }
       return;
     }
@@ -189,7 +262,10 @@
     if (!yes) return;
     const row = yes.closest('.loop-row');
     const note = row.querySelector('.loop-note');
+    const label = yes.textContent;
     yes.disabled = true;
+    yes.textContent = t('common.saving');
+    showError(row, '');
     const response = await fetch(`/api/questions-risks/${encodeURIComponent(yes.dataset.id)}/resolve`, {
       method: 'POST',
       credentials: 'include',
@@ -199,10 +275,11 @@
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       yes.disabled = false;
-      alert(data.error || t('common.couldNotSave'));
+      yes.textContent = label;
+      showError(row, data.error || t('common.couldNotSave'));
       return;
     }
-    removeRow(row);
+    confirmRow(row, t('loop.closedCount', { count: 1 }));
     offer(data.linked_risks, 'risk');
     if (target.onChange) target.onChange();
   });
