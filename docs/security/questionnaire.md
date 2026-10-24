@@ -135,14 +135,18 @@ Last reviewed: October 24, 2026.
 
 **Can users connect Corteza to their own AI assistant (Claude, ChatGPT…)? What leaves Corteza then?**
 
-- EN: Yes, through a standard MCP connector (read-only today). The person signs in with Google and
-  approves access (OAuth 2.1 with PKCE; no API keys). The assistant sees only what that person sees in
+- EN: Yes, through a standard MCP connector. The person signs in with Google and approves access
+  (OAuth 2.1 with PKCE; no API keys): read, and changes they confirm (each previewed first, same
+  permission rules as the app, marked as made through the assistant, undo for 24 hours, rate limited;
+  admins can allow reading only). The assistant sees only what that person sees in
   Corteza, never colleagues' private spaces and never sensitive topics. What it reads is sent to that
   assistant's provider under the person's or company's own agreement with it. People can disconnect
   any time; workspace admins can turn the connector off, which revokes every assistant at once. Tokens
   are short-lived and stored hashed; we log tool names and counts only.
-- ES: Sí, con un conector MCP estándar (hoy solo de lectura). La persona entra con Google y aprueba el
-  acceso (OAuth 2.1 con PKCE; sin API keys). El asistente solo ve lo que esa persona ve en Corteza,
+- ES: Sí, con un conector MCP estándar. La persona entra con Google y aprueba el acceso (OAuth 2.1 con
+  PKCE; sin API keys): leer, y cambios que ella confirma (cada uno se muestra antes, mismas reglas de
+  permisos que la app, marcado como hecho desde el asistente, deshacer durante 24 horas, con límite;
+  los admins pueden permitir solo lectura). El asistente solo ve lo que esa persona ve en Corteza,
   nunca espacios privados de colegas ni temas sensibles. Lo que lee se envía al proveedor de ese
   asistente según el acuerdo de la persona o de su empresa con él. Se puede desconectar cuando se
   quiera; los admins del workspace pueden apagar el conector, lo que revoca todos los asistentes al

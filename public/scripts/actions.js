@@ -104,6 +104,8 @@
       badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold">${escapeHtml(t('actions.new'))}</span><span class="text-xs text-on-surface-variant">${escapeHtml(by ? t('actions.assignedBy', { name: by }) : t('actions.assignedByColleague'))}</span>`);
     }
     if (item.sensitive && window.CortezaSensitive) badges.push(window.CortezaSensitive.chip());
+    // Last changed through an AI assistant (MCP connector)
+    if (item.changed_via && item.changed_via.client_name) badges.push(`<span class="text-xs text-on-surface-variant">${escapeHtml(t('mcp.via', { client: item.changed_via.client_name }))}</span>`);
     if (item.completed_earlier) badges.push(`<span class="text-xs text-on-surface-variant">${escapeHtml(t('actions.completedEarlier'))}</span>`);
     return badges.length ? `<div class="flex flex-wrap items-center gap-2">${badges.join('')}</div>` : '';
   }

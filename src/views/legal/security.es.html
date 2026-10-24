@@ -39,7 +39,7 @@
 <h2>Asistentes de IA que conectes</h2>
 <ul>
   <li>Cada persona puede conectar Corteza a su propio asistente de IA (Claude, ChatGPT y otros) con un conector MCP estándar, entrando con Google y aprobando el acceso (OAuth 2.1 con PKCE). Sin API keys.</li>
-  <li>El asistente actúa como esa persona: solo lee lo que ella ve en Corteza, nunca los espacios privados de colegas ni los temas sensibles. Hoy no puede cambiar nada.</li>
+  <li>El asistente actúa como esa persona: solo lee lo que ella ve en Corteza, nunca los espacios privados de colegas ni los temas sensibles. Solo puede hacer cambios con el permiso de escritura que la persona aprobó: cada uno se muestra y se confirma antes, sigue las mismas reglas de permisos que la app, queda marcado como hecho desde el asistente y se puede deshacer durante 24 horas. Los cambios tienen un límite, y los admins pueden dejar a los asistentes solo leyendo.</li>
   <li>Lo que lee va al proveedor de ese asistente según el acuerdo de la persona o de su empresa con él. Cada persona puede desconectar un asistente cuando quiera, y los admins pueden apagar el conector para todo el workspace, lo que revoca todos los asistentes al instante.</li>
   <li>Los tokens de acceso duran poco y se guardan como hash; registramos qué herramienta se usó y cuándo, nunca la pregunta ni la respuesta.</li>
 </ul>

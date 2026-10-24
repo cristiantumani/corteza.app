@@ -39,7 +39,7 @@
 <h2>AI assistants you connect</h2>
 <ul>
   <li>People can connect Corteza to their own AI assistant (Claude, ChatGPT and others) through a standard MCP connector, signing in with Google and approving access (OAuth 2.1 with PKCE). No API keys.</li>
-  <li>The assistant acts as that person: it reads only what they see in Corteza, never colleagues' private spaces and never sensitive topics. It can't change anything today.</li>
+  <li>The assistant acts as that person: it reads only what they see in Corteza, never colleagues' private spaces and never sensitive topics. It can make changes only with the write permission the person approved: each one is previewed and confirmed first, follows the same permission rules as the app, is marked as made through the assistant and can be undone for 24 hours. Changes are rate limited, and admins can let assistants read only.</li>
   <li>What it reads goes to that assistant's provider under the person's or company's own agreement with it. Each person can disconnect an assistant at any time; admins can turn the connector off for the whole workspace, which revokes every assistant at once.</li>
   <li>Access tokens are short-lived and stored hashed; we log which tool was used and when, never the question or the answer.</li>
 </ul>

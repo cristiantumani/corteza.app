@@ -90,15 +90,17 @@ router.get('/oauth/consent', apiRateLimiter, async (req, res) => {
     // Google sign-in first, then back here
     return res.redirect(`/auth/google?return=${encodeURIComponent(`/oauth/consent?request=${requestId}`)}`);
   }
-  if (!(await oauth.assistantsEnabled(user.workspace_id))) {
+  const access = await oauth.assistantsAccess(user.workspace_id);
+  if (!access.enabled) {
     return res.status(403).type('html').send(messagePage(lang, 'mcp.consent.offTitle', 'mcp.consent.off'));
   }
+  const scopes = oauth.effectiveScopes(request.scopes, access);
 
   const csrf = crypto.randomBytes(16).toString('hex');
   res.setHeader('Content-Security-Policy', buildCsp({ formAction: formActionFor(request.redirect_uri) }));
   req.session.mcpConsent = { request: requestId, csrf };
   const t = (key, vars) => translate(lang, key, vars);
-  const abilities = request.scopes.map(scope => `<li>${escapeHtml(t(`mcp.consent.scope.${scope}`))}</li>`).join('');
+  const abilities = (scopes.length ? scopes : ['read']).map(scope => `<li>${escapeHtml(t(`mcp.consent.scope.${scope}`))}</li>`).join('');
   const title = t('mcp.consent.title', { client: request.client_name });
   req.session.save(() => {
     res.type('html').send(page(lang, title, `

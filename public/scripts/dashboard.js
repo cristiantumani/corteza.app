@@ -788,7 +788,8 @@
       if (decision.resolution_status === 'resolved') {
         const name = decision.resolved_by && decision.resolved_by.name;
         const done = name ? t(isRisk ? 'detail.mitigatedBy' : 'detail.answeredBy', { name }) : t(isRisk ? 'detail.mitigated' : 'detail.answered');
-        const when = decision.resolved_at ? ` · ${new Date(decision.resolved_at).toLocaleDateString(CortezaI18n.locale)}` : '';
+        const when = (decision.resolved_at ? ` · ${new Date(decision.resolved_at).toLocaleDateString(CortezaI18n.locale)}` : '')
+          + (decision.changed_via && decision.changed_via.client_name ? ` · ${t('mcp.via', { client: decision.changed_via.client_name })}` : '');
         box.innerHTML = `
           ${decision.resolution_note ? `<p class="m-0 mb-2 whitespace-pre-wrap">${escapeHtml(decision.resolution_note)}</p>` : ''}
           <p class="m-0 text-sm text-on-surface-variant">${escapeHtml(done + when)}</p>

@@ -5,6 +5,8 @@ const { buildThreadView } = require('../../core/topics/thread-view');
 const { buildToday } = require('../../core/home/today');
 const { listMeetings, meetingOutcomes } = require('../../core/meetings/meetings');
 const { getTimeZone, localTime } = require('../../core/users/timezone');
+const { listQuestionsAndRisks } = require('../../core/decisions/questions-risks');
+const { sameName } = require('../../core/briefs/meeting-prep');
 
 /**
  * What the MCP connector's tools return (docs/specs/2026-10-mcp-connector.md). Read-only, and each
@@ -273,4 +275,81 @@ async function getMeeting(caller, { id }) {
   };
 }
 
-module.exports = { searchOutcomes, getThread, listActions, prepareMeeting, listMyMeetings, getMeeting, outcomeCard, actionCard, findMember, MAX_ITEMS };
+/**
+ * get_person: prep for a 1:1 with a colleague, from what the caller already sees
+ * @param {Caller} caller
+ * @param {{ who: string }} args
+ */
+async function getPerson(caller, { who }) {
+  const member = await findMember(caller.workspaceId, String(who || ''));
+  if (member === 'ambiguous') return { error: `More than one person matches "${who}". Use their full name or email.` };
+  if (!member) return { error: `Nobody in this workspace matches "${who}".` };
+  if (member.user_id === caller.userId) return { error: 'That’s you. Use list_action_items for your own items.' };
+  const { timezone } = await getTimeZone(caller.workspaceId, caller.userId);
+  const now = new Date();
+  const spaceIds = await spacesOf(caller);
+  const [items, questions] = await Promise.all([
+    listActionItems(caller.workspaceId, { spaceIds, viewerId: caller.userId, status: 'open', now, today: localTime(now, timezone || 'UTC').date }),
+    listQuestionsAndRisks(caller.workspaceId, { spaceIds, type: 'all', status: 'open' })
+  ]);
+  const isThem = owner => (owner.user_id ? owner.user_id === member.user_id : Boolean(owner.name) && sameName(owner.name, member.name));
+  const isMe = owner => owner.user_id === caller.userId;
+  const visible = items.filter(item => !item.sensitive);
+  const theirs = visible.filter(item => (item.owners || []).some(isThem));
+  const shared = theirs.filter(item => (item.owners || []).some(isMe));
+  const named = text => Boolean(text) && sameName(String(text), member.name);
+  const open = questions.items.filter(outcome => !outcome.sensitive);
+  const meetings = [...new Set(theirs.map(item => item.source && item.source.title).filter(Boolean))].slice(0, 5);
+  return {
+    person: member.name,
+    their_open_action_items: theirs.filter(item => !shared.includes(item)).slice(0, MAX_ITEMS).map(actionCard),
+    shared_action_items: shared.slice(0, MAX_ITEMS).map(actionCard),
+    questions_waiting_on_them: open.filter(o => o.type === 'open_question' && named(o.owner_name)).slice(0, MAX_ITEMS).map(outcomeCard),
+    risks_they_raised_or_own: open.filter(o => o.type === 'risk' && (named(o.raised_by) || named(o.owner_name))).slice(0, MAX_ITEMS).map(outcomeCard),
+    meetings_these_came_from: meetings,
+    note: 'Only what you can see in Corteza: their items in your spaces and the ones you share.'
+  };
+}
+
+/**
+ * get_outcome: one outcome or action item in full (why, evidence quote, status history)
+ * @param {Caller} caller
+ * @param {{ id: string|number }} args
+ */
+async function getOutcome(caller, { id }) {
+  const db = getDatabase();
+  const spaceIds = await spacesOf(caller);
+  const quote = text => (text ? String(text).slice(0, 120) : null);
+  const via = doc => (doc.changed_via ? { client: doc.changed_via.client_name, at: doc.changed_via.at } : null);
+  if (typeof id === 'string' && /^act_[a-f0-9]{8,40}$/.test(id)) {
+    const item = await db.collection('action_items').findOne(
+      { workspace_id: caller.workspaceId, item_id: id, $or: [{ space_id: { $in: spaceIds } }, { owner_ids: caller.userId }] },
+      { projection: { _id: 0, embedding: 0, owner_duplicates: 0, unseen_by: 0 } }
+    );
+    if (!item || item.sensitive) return { error: 'Not found' };
+    return {
+      ...actionCard(item),
+      evidence_quote: quote(item.evidence_quote),
+      added_by: (item.created_by && item.created_by.name) || null,
+      created_at: item.created_at || null,
+      completed_at: item.completed_at || null,
+      last_changed_via_assistant: via(item)
+    };
+  }
+  const outcomeId = Number(id);
+  if (!Number.isInteger(outcomeId) || outcomeId <= 0) return { error: 'Unknown id. Use an id from another Corteza tool.' };
+  const outcome = await db.collection('decisions').findOne({ workspace_id: caller.workspaceId, id: outcomeId, space_id: { $in: spaceIds } }, { projection: { _id: 0, embedding: 0 } });
+  if (!outcome || outcome.sensitive) return { error: 'Not found' };
+  return {
+    ...outcomeCard(outcome),
+    evidence_quote: quote(outcome.evidence_quote),
+    captured: outcome.capture === 'ai' ? 'from the meeting' : 'logged by hand',
+    review: outcome.review_status || null,
+    resolved_by: (outcome.resolved_by && outcome.resolved_by.name) || null,
+    resolved_at: outcome.resolved_at || null,
+    thread_link: outcome.topic_id ? `${appUrl()}/questions?topic=${encodeURIComponent(outcome.topic_id)}` : null,
+    last_changed_via_assistant: via(outcome)
+  };
+}
+
+module.exports = { searchOutcomes, getThread, listActions, prepareMeeting, listMyMeetings, getMeeting, getPerson, getOutcome, outcomeCard, actionCard, findMember, MAX_ITEMS };
