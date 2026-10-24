@@ -16,7 +16,8 @@ const FIELD_PATHS = {
   ],
   ai_context: ['description', 'glossary', 'role', 'focus', 'documents.[].text'],
   ingestions: ['title'],
-  meet_imports: ['items.[].title']
+  meet_imports: ['items.[].title'],
+  mcp_changes: ['payload_json', 'preview_json', 'undo_json'] // MCP v2: what an assistant previewed and can undo
 };
 
 const UNAVAILABLE = '[unavailable]';

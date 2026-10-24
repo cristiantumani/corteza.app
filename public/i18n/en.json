@@ -759,7 +759,21 @@
       "allowHelp": "Turning it off disconnects every assistant in the workspace at once.",
       "confirmOff": "This disconnects AI assistants for the whole workspace. Continue?",
       "off": "Your workspace doesn’t allow connecting AI assistants. Ask an admin.",
-      "offAdmin": "AI assistants are turned off in this workspace."
+      "offAdmin": "AI assistants are turned off in this workspace.",
+      "canRead": "Can read",
+      "canWrite": "Can read and make changes",
+      "allowWrite": "Assistants can make changes",
+      "allowWriteHelp": "Record decisions and action items and close them, always after the person confirms. Off: assistants only read.",
+      "recent": "Recent changes through assistants",
+      "recentHelp": "You can undo each one for 24 hours.",
+      "undo": "Undo",
+      "undone": "Undone",
+      "kind": {
+        "record_decision": "Decision recorded",
+        "update_action_item": "Action item updated",
+        "resolve_outcome": "Question or risk updated",
+        "add_action_item": "Action item added"
+      }
     }
   },
   "loop": {
@@ -1380,7 +1394,8 @@
       "title": "{client} wants to connect to your Corteza",
       "canDo": "If you allow it, it will be able to:",
       "scope": {
-        "read": "See your decisions, open questions, risks and action items, and the meetings they came from: only what you see in Corteza, never sensitive topics."
+        "read": "See your decisions, open questions, risks and action items, and the meetings they came from: only what you see in Corteza, never sensitive topics.",
+        "write": "Record decisions and action items, and close or update the ones you can change in Corteza. You confirm each change, and you can undo it."
       },
       "asYou": "You’re connecting as {email} · {workspace}.",
       "disconnect": "You can disconnect it any time in Settings → AI assistants.",
@@ -1389,6 +1404,7 @@
       "expired": "It expired or was already used. Connect Corteza again from your assistant.",
       "offTitle": "AI assistants are turned off",
       "off": "Your workspace doesn’t allow connecting AI assistants to Corteza. Ask an admin."
-    }
+    },
+    "via": "via {client}"
   }
 }

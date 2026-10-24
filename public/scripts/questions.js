@@ -233,6 +233,7 @@
           </span>
           ${item.sensitive && window.CortezaSensitive ? window.CortezaSensitive.chip() : ''}
           ${resolved ? `<span class="px-2 py-0.5 rounded-full bg-success-wash text-success-ink text-xs font-semibold">${escapeHtml(by ? t(label.resolvedBy, { name: by }) : label.resolved)}${item.resolved_at ? ` · ${escapeHtml(formatDate(item.resolved_at))}` : ''}</span>` : ''}
+          ${item.changed_via && item.changed_via.client_name ? `<span class="text-xs text-on-surface-variant">${escapeHtml(t('mcp.via', { client: item.changed_via.client_name }))}</span>` : ''}
           ${item.capture === 'ai' && !item.review_status ? `<span class="text-xs text-on-surface-variant">${escapeHtml(t('questions.notReviewed'))}</span>` : ''}
           ${item.can_edit ? menuHtml('decision', item.id, item.topic_id) : ''}
         </div>

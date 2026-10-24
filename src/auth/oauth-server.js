@@ -19,11 +19,14 @@ const { InvalidGrantError, InvalidTokenError, InvalidRequestError } = require('@
  *   mcp_tokens         { token_hash, kind: 'access'|'refresh', grant_id, client_id, client_name, workspace_id, user_id,
  *                        scopes, resource, expires_at, created_at, last_used_at, revoked_at }
  *
+ * Scopes: `read` and `write` (v2). A client that asks for none gets both; the workspace switch
+ * `ai_assistants_write_enabled` (default on) takes `write` away from every token while it's off.
+ *
  * A grant is one "connected assistant" (one consent); its tokens share `grant_id`, so Disconnect revokes
  * them all. Tokens and codes are stored as SHA-256 hashes, never in clear. No meeting content is stored.
  */
 
-const SCOPES = ['read'];
+const SCOPES = ['read', 'write']; // write: changes the person confirms (docs/specs/2026-10-mcp-v2-write.md)
 const ACCESS_TTL_S = 60 * 60;
 const REFRESH_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -53,15 +56,35 @@ function randomToken(prefix) {
 const collection = name => getDatabase().collection(name);
 
 /**
- * Whether a workspace lets AI assistants read Corteza: its own setting, else MCP_DEFAULT_ENABLED
- * (default on, for the beta)
+ * What a workspace lets AI assistants do: read (its own setting, else MCP_DEFAULT_ENABLED, default on
+ * for the beta) and make changes (`ai_assistants_write_enabled`, default on; only while reading is on)
+ * @param {string} workspaceId
+ * @returns {Promise<{ enabled: boolean, write: boolean }>}
+ */
+async function assistantsAccess(workspaceId) {
+  const workspace = await collection('workspaces').findOne({ workspace_id: workspaceId }, { projection: { _id: 0, ai_assistants_enabled: 1, ai_assistants_write_enabled: 1 } });
+  const enabled = workspace && typeof workspace.ai_assistants_enabled === 'boolean' ? workspace.ai_assistants_enabled : process.env.MCP_DEFAULT_ENABLED !== 'false';
+  const write = enabled && !(workspace && workspace.ai_assistants_write_enabled === false);
+  return { enabled, write };
+}
+
+/**
+ * Whether a workspace lets AI assistants read Corteza
  * @param {string} workspaceId
  * @returns {Promise<boolean>}
  */
 async function assistantsEnabled(workspaceId) {
-  const workspace = await collection('workspaces').findOne({ workspace_id: workspaceId }, { projection: { _id: 0, ai_assistants_enabled: 1 } });
-  if (workspace && typeof workspace.ai_assistants_enabled === 'boolean') return workspace.ai_assistants_enabled;
-  return process.env.MCP_DEFAULT_ENABLED !== 'false';
+  return (await assistantsAccess(workspaceId)).enabled;
+}
+
+/**
+ * The scopes a token holds right now: `write` only while the workspace allows changes
+ * @param {string[]} scopes - as granted
+ * @param {{ write: boolean }} access
+ * @returns {string[]}
+ */
+function effectiveScopes(scopes, access) {
+  return (scopes || []).filter(scope => SCOPES.includes(scope) && (scope !== 'write' || access.write));
 }
 
 /** Registered clients, as the SDK expects them */
@@ -114,8 +137,21 @@ async function issueTokens(grant) {
  * @returns {Promise<boolean>}
  */
 async function grantStillValid(workspaceId, userId) {
-  const member = await getWorkspaceMembersCollection().findOne({ workspace_id: workspaceId, user_id: userId, removed_at: null }, { projection: { _id: 1 } });
-  return Boolean(member) && (await assistantsEnabled(workspaceId));
+  return (await grantAccess(workspaceId, userId)) !== null;
+}
+
+/**
+ * What a grant may do now: null when the person left the workspace or assistants are off
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @returns {Promise<{ enabled: boolean, write: boolean }|null>}
+ */
+async function grantAccess(workspaceId, userId) {
+  const [member, access] = await Promise.all([
+    getWorkspaceMembersCollection().findOne({ workspace_id: workspaceId, user_id: userId, removed_at: null }, { projection: { _id: 1 } }),
+    assistantsAccess(workspaceId)
+  ]);
+  return member && access.enabled ? access : null;
 }
 
 /** The SDK's OAuthServerProvider, backed by MongoDB */
@@ -189,14 +225,15 @@ const provider = {
     const now = new Date();
     const row = await collection('mcp_tokens').findOne({ token_hash: hash(String(token)), kind: 'access', revoked_at: null });
     if (!row || row.expires_at <= now) throw new InvalidTokenError('Invalid or expired token');
-    if (!(await grantStillValid(row.workspace_id, row.user_id))) throw new InvalidTokenError('Access is no longer allowed');
+    const access = await grantAccess(row.workspace_id, row.user_id);
+    if (!access) throw new InvalidTokenError('Access is no longer allowed');
     if (!row.last_used_at || now.getTime() - new Date(row.last_used_at).getTime() > LAST_USED_EVERY_MS) {
       await collection('mcp_tokens').updateMany({ grant_id: row.grant_id }, { $set: { last_used_at: now } });
     }
     return {
       token,
       clientId: row.client_id,
-      scopes: row.scopes,
+      scopes: effectiveScopes(row.scopes, access),
       expiresAt: Math.floor(row.expires_at.getTime() / 1000),
       resource: resourceUrl(),
       extra: { workspace_id: row.workspace_id, user_id: row.user_id, grant_id: row.grant_id, client_name: row.client_name }
@@ -222,6 +259,8 @@ const provider = {
 async function approveRequest(requestId, user) {
   const request = await collection('mcp_auth_requests').findOneAndDelete({ request_id: String(requestId) });
   if (!request || request.expires_at < new Date()) throw new InvalidRequestError('This request expired. Start again from your assistant.');
+  // Only what the consent page showed: no write while the workspace allows reading only
+  const scopes = effectiveScopes(request.scopes, await assistantsAccess(user.workspace_id));
   const code = crypto.randomBytes(32).toString('base64url');
   await collection('mcp_auth_codes').insertOne({
     code_hash: hash(code),
@@ -232,7 +271,7 @@ async function approveRequest(requestId, user) {
     user_id: user.user_id,
     code_challenge: request.code_challenge,
     redirect_uri: request.redirect_uri,
-    scopes: request.scopes,
+    scopes: scopes.length ? scopes : ['read'],
     resource: request.resource,
     expires_at: new Date(Date.now() + CODE_TTL_MS)
   });
@@ -281,17 +320,17 @@ async function revokeGrant(grantId) {
  * A person's connected assistants (active grants)
  * @param {string} workspaceId
  * @param {string} userId
- * @returns {Promise<Array<{ grant_id: string, client_name: string, connected_at: Date, last_used_at: Date|null }>>}
+ * @returns {Promise<Array<{ grant_id: string, client_name: string, connected_at: Date, last_used_at: Date|null, can_write: boolean }>>}
  */
 async function listGrants(workspaceId, userId) {
   const rows = await collection('mcp_tokens').find(
     { workspace_id: workspaceId, user_id: userId, kind: 'refresh', revoked_at: null, expires_at: { $gt: new Date() } },
-    { projection: { _id: 0, grant_id: 1, client_name: 1, created_at: 1, last_used_at: 1 } }
+    { projection: { _id: 0, grant_id: 1, client_name: 1, scopes: 1, created_at: 1, last_used_at: 1 } }
   ).toArray();
-  /** @type {Map<string, { grant_id: string, client_name: string, connected_at: Date, last_used_at: Date|null }>} */
+  /** @type {Map<string, { grant_id: string, client_name: string, connected_at: Date, last_used_at: Date|null, can_write: boolean }>} */
   const grants = new Map();
   for (const row of rows) {
-    const grant = grants.get(row.grant_id) || { grant_id: row.grant_id, client_name: row.client_name, connected_at: row.created_at, last_used_at: null };
+    const grant = grants.get(row.grant_id) || { grant_id: row.grant_id, client_name: row.client_name, connected_at: row.created_at, last_used_at: null, can_write: (row.scopes || []).includes('write') };
     if (row.created_at < grant.connected_at) grant.connected_at = row.created_at;
     if (row.last_used_at && (!grant.last_used_at || row.last_used_at > grant.last_used_at)) grant.last_used_at = row.last_used_at;
     grants.set(row.grant_id, grant);
@@ -325,6 +364,16 @@ async function setAssistantsEnabled(workspaceId, enabled) {
   if (!enabled) await collection('mcp_tokens').updateMany({ workspace_id: workspaceId, revoked_at: null }, { $set: { revoked_at: new Date() } });
 }
 
+/**
+ * Lets assistants make changes in a workspace, or read only. Off takes `write` from every token at
+ * once (checked on each request); on gives it back to the ones granted it.
+ * @param {string} workspaceId
+ * @param {boolean} enabled
+ */
+async function setAssistantsWriteEnabled(workspaceId, enabled) {
+  await collection('workspaces').updateOne({ workspace_id: workspaceId }, { $set: { ai_assistants_write_enabled: Boolean(enabled) } });
+}
+
 module.exports = {
   provider,
   clientsStore,
@@ -335,7 +384,10 @@ module.exports = {
   revokeGrant,
   revokeUserGrant,
   assistantsEnabled,
+  assistantsAccess,
+  effectiveScopes,
   setAssistantsEnabled,
+  setAssistantsWriteEnabled,
   baseUrl,
   resourceUrl,
   hash,

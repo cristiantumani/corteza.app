@@ -1,7 +1,7 @@
 # MCP connector v2: keep the record up to date from your AI assistant
 
-**Status:** draft for review (Oct 24, 2026). Linear COR-58. Builds on v1 (COR-57,
-`docs/specs/2026-10-mcp-connector.md`), which is read-only.
+**Status:** approved and built (Oct 24, 2026). Linear COR-58. Builds on v1 (COR-57,
+`docs/specs/2026-10-mcp-connector.md`), which is read-only. Decisions at the end.
 
 ## Why
 
@@ -45,7 +45,9 @@ and prompts that finish real work by combining Corteza with the assistant's othe
   asks for it and the person sees the consent page again (step-up).
 - **Workspace switch:** the existing "Allow AI assistants" admin switch covers both. A second
   switch, "Assistants can make changes" (`ai_assistants_write_enabled`, default on), lets an admin
-  allow reading only. Turning it off drops `write` from every grant at once, and they keep `read`.
+  allow reading only. Turning it off takes `write` from every token at once (checked on each
+  request, `effectiveScopes` in `src/auth/oauth-server.js`), and they keep `read`; turning it back
+  on gives it back to the tokens granted it.
 
 ## Tools
 
@@ -56,7 +58,7 @@ confirmed: the exact text, owner and date, and the items it would close. Nothing
 
 | Tool | Does | Built on |
 |---|---|---|
-| `record_decision(text, rationale?)` | Previews a decision and the open questions, risks and action items it settles (each with its relation: answers / mitigates / completes / drops). One Claude call: metered with `recordAiUsage` (feature `mcp_decide`) and refused when `checkAiBudget` says no. | `previewDecision` / `recordDecision` (`core/agent/decide.js`) |
+| `record_decision(text, rationale?)` | Previews a decision and the open questions, risks and action items it settles (each with its relation: answers / mitigates / completes / drops). One Claude call: metered with `recordAiUsage` (feature `decide`, as in the app) and refused when `checkAiBudget` says no. | `previewDecision` / `recordDecision` (`core/agent/decide.js`) |
 | `update_action_item(item_id, status?, due_date?, text?)` | Previews marking done / cancelled / reopened, or a new date or text. When it closes the item, the preview also lists what it may resolve (*Does this also answer…?*) or leave without a next step. | `updateActionItem` (`core/actions/action-service.js`), `relatedOutcomes` / `orphanedBy` (`core/actions/close-loop.js`) |
 | `resolve_outcome(id, note?, answered_by?)` | Answers an open question or mitigates a risk with a note, or uses a decision as the answer. Also `reopen`. | `setResolution`, `useAsAnswer` (same as `/api/questions-risks/:id/resolve`) |
 | `add_action_item(text, owner?, due_date?, decision_id?, topic_id?)` | Previews a new action item. `owner` is "me" (default), a name or an email. The preview shows the matched member, or "no match: stays unassigned" so the assistant can ask. It goes to the decision's space, else the person's personal space. | `createActionItem`, `findMember`, `ensurePersonalSpace` |
@@ -77,7 +79,7 @@ Then:
 
 | Tool | What it returns | Built on |
 |---|---|---|
-| `get_person(name_or_email)` | Prep for a 1:1: open action items between the two of you (each one's for the other, and the other's for you), their open items you can see, the questions waiting on them, and your last meetings together with links. Only what the caller can already see. | `findMember`, `listActionItems`, the 1:1 suggestion in `core/briefs/meeting-prep.js`, `listMeetings` |
+| `get_person(who)` | Prep for a 1:1: their open action items you can see, the ones you share, open questions waiting on them (owner) and risks they raised or own, and the meetings these came from. Only what the caller can already see. | `findMember`, `listActionItems`, `listQuestionsAndRisks`, `sameName` from `core/briefs/meeting-prep.js` |
 | `get_outcome(id)` | One outcome in full: why, evidence quote (at most 120 characters), owner, status and its history, its thread, the meeting and the link. | decisions collection by access, `buildThreadView` for the thread line |
 
 ### Prompts (new)
@@ -118,9 +120,10 @@ Then:
   - `payload`, `preview` and `undo` hold meeting content, so they go in `FIELD_PATHS` (encrypted).
   - A TTL index removes rows 30 days after `created_at`.
   - `undo` keeps what's needed to put things back (previous status, date, text, the ids closed).
-- **The "via" mark:** each changed item gets `via: { kind: 'assistant', client_name, grant_id, at }`
-  in its status history (decisions and action items already keep one). The UI shows "via Claude"
-  next to the change in the detail modal history. New items carry `source.kind = 'assistant'`.
+- **The "via" mark:** each changed item gets `changed_via: { kind: 'assistant', client_name,
+  change_id, at }` (the last change through an assistant; undo removes it). The UI shows "via Claude"
+  on Action items, Questions & risks and the detail modal's answer line. New action items carry
+  `source.type = 'assistant'`.
 - **Analytics:** `mcp_change_previewed` / `mcp_change_applied` / `mcp_change_undone` with `kind`,
   counts and the client name. Never text.
 - **Logs:** ids, the kind and counts only.
@@ -167,13 +170,12 @@ Then:
 - **Privacy:** `mcp_changes` fields encrypted (the strict filter check in CI), and no text in
   PostHog events or logs.
 
-## Questions for Cristian
+## Decisions (Oct 24, Cristian)
 
-1. **Scope at connect:** should `write` be asked for by default when Claude connects, or only when
-   the person needs it? My proposal: ask for both at connect (one consent, the page lists both).
-   Most people want both, and step-up adds friction.
-2. **The admin switch "Assistants can make changes"**, default on?
-3. **`add_action_item` with someone else as owner:** allowed? Same as the app (yes, they see it on
-   their Action items with "new from a colleague"), or only "me" in v2?
-4. **Undo window:** 24 hours OK?
-5. **The write rate limits** (20 per hour per assistant, 100 per day per person): OK for the beta?
+1. **Both scopes at connect:** a client that asks for no scope gets `read` and `write` on one consent
+   page. A client that asks for `read` only gets read only.
+2. **Admin switch "Assistants can make changes"**, default on.
+3. **`add_action_item` for a colleague:** allowed, as in the app; they see it as "new from a
+   colleague".
+4. **Undo window:** 24 hours.
+5. **Rate limits for the beta:** 20 applied changes per hour per assistant, 100 per day per person.

@@ -224,6 +224,17 @@ async function connectToMongoDB() {
     await db.collection('beta_access').createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: 'string' } } });
     await db.collection('beta_access').createIndex({ domain: 1 }, { unique: true, partialFilterExpression: { domain: { $type: 'string' } } });
 
+    // MCP connector (auth/oauth-server.js, integrations/mcp/changes.js); the TTLs clean expired rows
+    await db.collection('mcp_tokens').createIndex({ token_hash: 1 }, { unique: true });
+    await db.collection('mcp_tokens').createIndex({ workspace_id: 1, user_id: 1, kind: 1 });
+    await db.collection('mcp_tokens').createIndex({ grant_id: 1 });
+    await db.collection('mcp_auth_requests').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+    await db.collection('mcp_auth_codes').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+    await db.collection('mcp_changes').createIndex({ change_id: 1 }, { unique: true });
+    await db.collection('mcp_changes').createIndex({ grant_id: 1, applied_at: -1 });
+    await db.collection('mcp_changes').createIndex({ workspace_id: 1, user_id: 1, applied_at: -1 });
+    await db.collection('mcp_changes').createIndex({ created_at: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {

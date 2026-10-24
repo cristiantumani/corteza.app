@@ -153,10 +153,10 @@ describe('MCP connector: OAuth and read-only tools', { skip }, () => {
   test('the tools act as the person: their own data, never sensitive items or colleagues’ spaces', async () => {
     const client = await connectClient(tokens.access_token);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), ['get_meeting', 'get_thread', 'list_action_items', 'list_meetings', 'prepare_meeting', 'search_outcomes']);
+    assert.deepEqual(tools.map(t => t.name).sort(), ['get_meeting', 'get_outcome', 'get_person', 'get_thread', 'list_action_items', 'list_meetings', 'prepare_meeting', 'search_outcomes'], 'a read-only token gets no write tools');
     assert.ok(tools.every(t => t.annotations && t.annotations.readOnlyHint), 'all read-only');
     const { prompts } = await client.listPrompts();
-    assert.deepEqual(prompts.map(p => p.name).sort(), ['my_week', 'prepare_my_day', 'whats_overdue']);
+    assert.deepEqual(prompts.map(p => p.name).sort(), ['action_items_to_tickets', 'follow_up_email', 'my_week', 'prepare_my_day', 'prepare_one_on_one', 'weekly_report', 'whats_overdue']);
 
     const search = parse(await client.callTool({ name: 'search_outcomes', arguments: { query: 'precios' } }));
     const ids = search.outcomes.map(o => o.id).sort();
