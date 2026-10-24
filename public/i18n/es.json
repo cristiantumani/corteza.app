@@ -759,7 +759,14 @@
     "addPlaceholder": "¿Cuál es el siguiente paso?",
     "addSave": "Agregar",
     "thatsFine": "Está bien así",
-    "resolvedByItem": "Resuelto con el pendiente: {item}"
+    "resolvedByItem": "Resuelto con el pendiente: {item}",
+    "answerLabel": "Respuesta",
+    "enterHint": "Enter para guardar · Mayús+Enter para otra línea",
+    "saveAnswerClose": "Guardar respuesta y cerrar",
+    "closedCount": {
+      "one": "Listo, quedó cerrado.",
+      "other": "Listo, quedaron {count} cerrados."
+    }
   },
   "questions": {
     "pageTitle": "Preguntas y riesgos · Corteza",
@@ -1010,7 +1017,8 @@
         },
         "yourDay": "Tu día: {items}",
         "since": "desde {since}: {items}",
-        "plan": "Planifica tu día con Corteza"
+        "plan": "Planifica tu día con Corteza",
+        "googleLost": "Corteza no está leyendo tus reuniones"
       },
       "yesterday": "ayer",
       "overdueWas": "Atrasado · vencía el {date}",
@@ -1071,7 +1079,9 @@
         "change": "Cambia la zona horaria en Configuración, o",
         "unsubscribe": "date de baja de los resúmenes de la mañana"
       },
-      "assignedFrom": "Vienen de reuniones capturadas por {names}."
+      "assignedFrom": "Vienen de reuniones capturadas por {names}.",
+      "googleLost": "Corteza no está leyendo tus reuniones desde el {since}.",
+      "googleLostButton": "Reconectar Google"
     },
     "invite": {
       "subject": "{name} te invitó a {workspace} en Corteza",
@@ -1129,6 +1139,16 @@
       "title": "Tu importación está lista",
       "body": "Corteza capturó {outcomes} de {meetings}. Quedaron guardados en tu espacio. Confirma los correctos y descarta el resto: Corteza aprende de eso.",
       "review": "Revisar en Corteza →"
+    },
+    "reconnect": {
+      "subject": "Corteza dejó de leer tus reuniones",
+      "reminderSubject": "Recordatorio: Corteza sigue sin leer tus reuniones",
+      "title": "Corteza dejó de leer tus reuniones",
+      "body": "Google cortó el acceso de Corteza a tus reuniones el {since}. Pasa cuando se quita el permiso o vence la conexión. Desde entonces no capturamos nada nuevo.",
+      "catchUp": "Reconecta con un clic: Corteza vuelve a leer tus reuniones, también las que tuviste mientras tanto.",
+      "button": "Reconectar Google",
+      "why": "Te escribimos porque es un aviso del servicio, no un resumen. No te volveremos a escribir por esto más de una vez.",
+      "whyReminder": "Es el último aviso por esto. El banner en Corteza seguirá ahí hasta que reconectes."
     }
   },
   "unsubscribe": {

@@ -418,7 +418,7 @@ function dailyDigestSubject(summary, lang = 'en') {
   const parts = [];
   if (today.length) parts.push(t('email.digest.subject.yourDay', { items: today.join(', ') }));
   if (since.length) parts.push(t('email.digest.subject.since', { since: summary.since || t('email.digest.yesterday'), items: since.join(', ') }));
-  if (!parts.length) return t('email.digest.subject.plan');
+  if (!parts.length) return t(summary.googleLost ? 'email.digest.subject.googleLost' : 'email.digest.subject.plan');
   const subject = parts.join(' · ');
   return subject.charAt(0).toUpperCase() + subject.slice(1);
 }
@@ -435,7 +435,8 @@ function dailyDigestSubject(summary, lang = 'en') {
  * @param {Object} params.summary - { dayLabel, today ('YYYY-MM-DD'), since ('yesterday' or a weekday),
  *   meetings, outcomes: { decision, open_question, risk, … }, newActionItems, dueToday, toReview,
  *   overdue, noDueDate, planItems: [{ item_id, text, due_date, meeting, next_step_on }], assignedBy: [{ name, count }],
- *   meetingPrep: [{ time, title, people, kind, last_met, items: [{ item_id, text, due_date, mine, owner }], suggested, more, questions, closed }]
+ *   meetingPrep: [{ time, title, people, kind, last_met, items: [{ item_id, text, due_date, mine, owner }], suggested, more, questions, closed }],
+ *   googleLost: when their Google connection was lost, written for them, or null
  *   (core/briefs/meeting-prep: each meeting's open items from its own history, everyone's) }
  * @param {{ voice: string, subject: string, opener: string, followUp: string }|null} [params.partner] - the
  *   morning partner's line (core/digest/voice): it becomes the subject and opens the email, and the counts
@@ -515,6 +516,12 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
   ].filter(Boolean);
 
   const divider = '<tr><td colspan="3" style="border-top: 1px solid #ebe7ec; font-size: 0; line-height: 0;">&nbsp;</td></tr>';
+  // Their Google connection is lost: say it first, with the way back (src/integrations/google/reconnect-notices.js)
+  const googleLostHtml = summary.googleLost ? `
+            <div style="border: 1px solid #f2c4bd; background: #fdf1ef; border-radius: 10px; padding: 14px 16px; margin: 0 0 24px;">
+              <p style="font-size: 15px; color: #1b1b1d; margin: 0 0 10px;">${escapeHtml(t('email.digest.googleLost', { since: summary.googleLost }))}</p>
+              <a href="${link('/integrations/google/connect')}" style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; padding: 9px 18px; border-radius: 8px;">${escapeHtml(t('email.digest.googleLostButton'))}</a>
+            </div>` : '';
   const plateHtml = itemRows.length || reminders.length ? `
         <h2 style="font-size: 16px; font-weight: 700; color: #1b1b1d; margin: 0 0 4px;">${escapeHtml(t('email.digest.plate'))}</h2>
         <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -585,6 +592,7 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
           <div style="padding: 24px 28px 28px;">
             ${heading}
             <p style="font-size: 14px; color: #6b6d78; margin: 0 0 24px;">${escapeHtml(workspace_name)} · ${escapeHtml(summary.dayLabel)}</p>
+            ${googleLostHtml}
             ${plateHtml}
             ${prepHtml}
             <h2 style="font-size: 16px; font-weight: 700; margin: 28px 0 12px;">${since}</h2>
@@ -609,11 +617,54 @@ function dailyDigestHtml({ workspace_name, summary, unsubscribe_url, partner = n
     `;
 }
 
+/**
+ * "Corteza stopped reading your meetings": sent to the person whose Google connection was lost
+ * (src/integrations/google/reconnect-notices.js). Only the date it stopped and a link: no meeting content.
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} params.since - when access stopped, already written for the reader ("Monday, October 20")
+ * @param {boolean} [params.reminder] - the reminder sent a few days later
+ * @param {string} [params.lang]
+ * @returns {Promise<{ success: true, email_id: string }>}
+ */
+async function sendGoogleReconnectEmail({ email, since, reminder = false, lang = 'en' }) {
+  const result = await sendEmail({ to: email, ...googleReconnectEmail({ since, reminder, lang }) });
+  return { success: true, email_id: result.id };
+}
+
+/**
+ * Subject and HTML of the reconnect email (see sendGoogleReconnectEmail)
+ * @param {{ since: string, reminder?: boolean, lang?: string }} params
+ * @returns {{ subject: string, html: string }}
+ */
+function googleReconnectEmail({ since, reminder = false, lang = 'en' }) {
+  const t = textsIn(lang);
+  const appUrl = process.env.BASE_URL || 'https://app.corteza.app';
+  return {
+    subject: t(reminder ? 'email.reconnect.reminderSubject' : 'email.reconnect.subject'),
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; color: #111; line-height: 1.6;">
+        <img src="https://corteza.app/favicon-96x96.png" alt="Corteza" width="40" style="margin-bottom: 24px;" />
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px;">${escapeHtml(t('email.reconnect.title'))}</h1>
+        <p style="font-size: 15px; margin: 0 0 16px;">${escapeHtml(t('email.reconnect.body', { since }))}</p>
+        <p style="font-size: 15px; margin: 0 0 28px;">${escapeHtml(t('email.reconnect.catchUp'))}</p>
+        <a href="${appUrl}/integrations/google/connect"
+           style="display: inline-block; background: #000; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 10px;">
+          ${escapeHtml(t('email.reconnect.button'))}
+        </a>
+        <p style="font-size: 13px; color: #6b6d78; margin: 32px 0 0;">${escapeHtml(t(reminder ? 'email.reconnect.whyReminder' : 'email.reconnect.why'))}</p>
+      </div>
+    `
+  };
+}
+
 module.exports = {
   sendImportSummaryEmail,
   sendBetaWelcomeEmail,
   betaFrom,
   sendDailyDigestEmail,
+  sendGoogleReconnectEmail,
+  googleReconnectEmail,
   dailyDigestHtml,
   dailyDigestSubject,
   sendEmail,

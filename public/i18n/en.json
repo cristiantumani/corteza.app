@@ -759,7 +759,14 @@
     "addPlaceholder": "What’s the next step?",
     "addSave": "Add",
     "thatsFine": "That’s fine",
-    "resolvedByItem": "Resolved with the action item: {item}"
+    "resolvedByItem": "Resolved with the action item: {item}",
+    "answerLabel": "Answer",
+    "enterHint": "Enter to save · Shift+Enter for a new line",
+    "saveAnswerClose": "Save answer and close",
+    "closedCount": {
+      "one": "Done, it's closed.",
+      "other": "Done, {count} closed."
+    }
   },
   "questions": {
     "pageTitle": "Questions & risks · Corteza",
@@ -1010,7 +1017,8 @@
         },
         "yourDay": "Your day: {items}",
         "since": "since {since}: {items}",
-        "plan": "Plan your day with Corteza"
+        "plan": "Plan your day with Corteza",
+        "googleLost": "Corteza isn’t reading your meetings"
       },
       "yesterday": "yesterday",
       "overdueWas": "Overdue · was due {date}",
@@ -1071,7 +1079,9 @@
         "change": "Change the time zone in Settings, or",
         "unsubscribe": "unsubscribe from morning summaries"
       },
-      "assignedFrom": "They came from meetings captured by {names}."
+      "assignedFrom": "They came from meetings captured by {names}.",
+      "googleLost": "Corteza hasn’t been reading your meetings since {since}.",
+      "googleLostButton": "Reconnect Google"
     },
     "invite": {
       "subject": "{name} invited you to join {workspace} on Corteza",
@@ -1129,6 +1139,16 @@
       "title": "Your import is done",
       "body": "Corteza captured {outcomes} from {meetings}. They’re saved in your space. Confirm the ones that are right and dismiss the rest: Corteza learns from it.",
       "review": "Review in Corteza →"
+    },
+    "reconnect": {
+      "subject": "Corteza stopped reading your meetings",
+      "reminderSubject": "Reminder: Corteza still isn’t reading your meetings",
+      "title": "Corteza stopped reading your meetings",
+      "body": "Google cut Corteza’s access to your meetings on {since}. It happens when the permission is removed or the connection expires. Nothing new has been captured since.",
+      "catchUp": "Reconnect in one click: Corteza reads your meetings again, including the ones you had in the meantime.",
+      "button": "Reconnect Google",
+      "why": "We’re writing because this is a service notice, not a summary. We won’t write about this more than once more.",
+      "whyReminder": "This is the last notice about this. The banner in Corteza stays until you reconnect."
     }
   },
   "unsubscribe": {

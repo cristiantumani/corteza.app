@@ -57,5 +57,8 @@
     "tailwindcss": "^3.4.19",
     "tailwindcss-cli": "^0.1.2",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "zod": "^4.6.7"
   }
 }

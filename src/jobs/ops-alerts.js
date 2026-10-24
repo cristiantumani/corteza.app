@@ -90,10 +90,19 @@ async function runOpsChecks(deps = {}) {
 function startOpsAlertsJob() {
   if (process.env.OPS_ALERTS_ENABLED === 'false') return;
   if (!process.env.OPS_ALERT_EMAIL) console.warn('⚠️  OPS_ALERT_EMAIL not set: ops alerts are checked but not emailed');
-  const run = () => runOpsChecks().catch(error => {
-    console.error('❌ Ops checks failed:', error.message);
-    reportError(error, { job: 'ops_alerts' });
-  });
+  const run = () => {
+    runOpsChecks().catch(error => {
+      console.error('❌ Ops checks failed:', error.message);
+      reportError(error, { job: 'ops_alerts' });
+    });
+    // People whose Google connection was lost hear it from us (docs/specs/2026-10-lost-google-connection.md)
+    if (process.env.RESEND_API_KEY) {
+      require('../integrations/google/reconnect-notices').sendReconnectNotices().catch(error => {
+        console.error('❌ Reconnect emails failed:', error.message);
+        reportError(error, { job: 'reconnect_notices' });
+      });
+    }
+  };
   setTimeout(() => {
     run();
     setInterval(run, CHECK_INTERVAL_MS);
