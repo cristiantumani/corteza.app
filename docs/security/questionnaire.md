@@ -14,7 +14,7 @@ company cybersecurity questionnaires), in English and Spanish, to copy and paste
   update this file, `/security` and the privacy policy in the same PR. The weekly review agent
   (`docs/agents/weekly-review.md`) checks they agree.
 
-Last reviewed: October 13, 2026.
+Last reviewed: October 24, 2026.
 
 ---
 
@@ -132,6 +132,22 @@ Last reviewed: October 13, 2026.
 - ES: No. Usamos Anthropic (Claude) y OpenAI (embeddings) a través de sus APIs comerciales, cuyos
   términos no permiten entrenar con los datos enviados. Corteza no entrena modelos. Lo que un usuario
   confirma o descarta se usa como ejemplo solo dentro de ese mismo workspace.
+
+**Can users connect Corteza to their own AI assistant (Claude, ChatGPT…)? What leaves Corteza then?**
+
+- EN: Yes, through a standard MCP connector (read-only today). The person signs in with Google and
+  approves access (OAuth 2.1 with PKCE; no API keys). The assistant sees only what that person sees in
+  Corteza, never colleagues' private spaces and never sensitive topics. What it reads is sent to that
+  assistant's provider under the person's or company's own agreement with it. People can disconnect
+  any time; workspace admins can turn the connector off, which revokes every assistant at once. Tokens
+  are short-lived and stored hashed; we log tool names and counts only.
+- ES: Sí, con un conector MCP estándar (hoy solo de lectura). La persona entra con Google y aprueba el
+  acceso (OAuth 2.1 con PKCE; sin API keys). El asistente solo ve lo que esa persona ve en Corteza,
+  nunca espacios privados de colegas ni temas sensibles. Lo que lee se envía al proveedor de ese
+  asistente según el acuerdo de la persona o de su empresa con él. Se puede desconectar cuando se
+  quiera; los admins del workspace pueden apagar el conector, lo que revoca todos los asistentes al
+  instante. Los tokens duran poco y se guardan como hash; solo registramos nombres de herramientas y
+  conteos.
 
 ## 3. Encryption
 

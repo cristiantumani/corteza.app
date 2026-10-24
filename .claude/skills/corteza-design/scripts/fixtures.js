@@ -241,6 +241,7 @@ const routes = {
   'GET /api/ai/pending-suggestions': { success: true, suggestions: [] },
   'GET /api/me/timezone': { success: true, timezone: user.timezone, automatic: true },
   'GET /api/me/language': { success: true, language: 'en', chosen: null },
+  'GET /api/ai-assistants': { success: true, enabled: true, is_admin: true, mcp_url: 'https://app.corteza.app/mcp', assistants: [{ grant_id: 'grant_demo', client_name: 'Claude', connected_at: '2026-10-20T10:00:00Z', last_used_at: '2026-10-24T09:12:00Z' }] },
   'GET /api/me/digest-voice': {
     success: true, voice: 'sarcastic', chosen: null, default_voice: 'sarcastic', workspace_enabled: true, is_admin: true,
     voices: ['classic', 'sergeant', 'sarcastic'],

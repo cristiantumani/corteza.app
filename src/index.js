@@ -153,6 +153,11 @@ async function startApp() {
   expressApp.get('/auth/me', apiRateLimiter, handleMe);
   expressApp.get('/auth/logout', apiRateLimiter, handleLogout);
 
+  // MCP connector: OAuth for AI assistants (consent page, /authorize, /token…) and the /mcp endpoint
+  expressApp.use(require('./http/oauth-consent'));
+  expressApp.use(require('./integrations/mcp/server').mcpRouter());
+  expressApp.use(require('./http/mcp-settings'));
+
   // Connect Google Meet (automatic decision capture)
   expressApp.use(require('./integrations/google/routes'));
 

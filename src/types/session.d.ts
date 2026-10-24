@@ -29,6 +29,8 @@ declare module 'express-session' {
     oauth: { state: string; nonce: string; started_at: number; inviteId?: string | null; returnTo?: string | null };
     /** Browser language last saved on the membership (core/users/language rememberBrowserLanguage) */
     browser_language: 'en' | 'es';
+    /** MCP connector consent page in progress (src/http/oauth-consent.js) */
+    mcpConsent: { request: string; csrf: string };
     /** "Connect Google Meet" in progress (src/integrations/google/routes.js) */
     googleConnect: { state: string; nonce: string; started_at: number };
   }
