@@ -7,6 +7,7 @@ const voice = require('../core/digest/voice');
 const { memberLanguage } = require('../core/users/language');
 const { track } = require('../integrations/posthog/client');
 const { reportError } = require('../integrations/sentry/client');
+const { sinceLabel: lostSinceLabel } = require('../integrations/google/reconnect-notices');
 
 /**
  * Daily digest: one morning email per person with what happened since their last one, to
@@ -271,6 +272,21 @@ function buildPartner({ voiceName, summary, now, timeZone, languageSetting, rece
 }
 
 /**
+ * Whether a person's Google connection is lost, and if today's summary goes out for it even with
+ * nothing new: the first morning after the loss, then Mondays (the reconnect emails cover the rest)
+ * @param {{ status?: string, revoked_at?: Date, digest_notice_sent_at?: Date|null }|null} connection
+ * @param {string} day - today in their time zone, 'YYYY-MM-DD'
+ * @param {string} timeZone
+ * @returns {{ since: Date|null, sendAnyway: boolean }}
+ */
+function lostConnectionNotice(connection, day, timeZone) {
+  if (!connection || connection.status !== 'revoked' || !(connection.revoked_at instanceof Date)) return { since: null, sendAnyway: false };
+  const last = connection.digest_notice_sent_at ? localTime(new Date(connection.digest_notice_sent_at), timeZone).date : null;
+  const monday = new Date(`${day}T12:00:00Z`).getUTCDay() === 1;
+  return { since: connection.revoked_at, sendAnyway: !last || (monday && last !== day) };
+}
+
+/**
  * Claims one person's digest for a day; null if another run already did
  * @returns {Promise<Date|null>} start of the window (the previous check, at most 72 h back)
  */
@@ -305,9 +321,11 @@ async function claimDay(workspaceId, userId, day, now) {
  * @param {string} params.timeZone
  * @param {Object|null} params.workspace - { digest_voices_enabled }
  * @param {string|null} params.languageSetting - their Meet language setting
+ * @param {Date|null} [params.googleLostAt] - their Google connection was lost then: the email says so first
+ * @param {boolean} [params.withoutPartner] - sent only for that notice: no partner line about an empty day
  * @returns {Promise<{ params: Object, voiceName: string, partner: Object|null, language: 'en'|'es' }>}
  */
-async function composeDigest(member, { summary, since, now, timeZone, workspace, languageSetting }) {
+async function composeDigest(member, { summary, since, now, timeZone, workspace, languageSetting, googleLostAt = null, withoutPartner = false }) {
   const voiceName = voice.resolveVoice(member, workspace);
   const recent = await getDatabase().collection('daily_digests').find(
     { workspace_id: member.workspace_id, user_id: member.user_id, sent: true, checked_at: { $gte: new Date(now.getTime() - voice.REPEAT_DAYS * 24 * 3600 * 1000) } },
@@ -319,7 +337,7 @@ async function composeDigest(member, { summary, since, now, timeZone, workspace,
     texts: [...summary.planItems.map(item => item.text), ...(summary.meetingPrep || []).flatMap(meeting => (meeting.items || []).map(item => item.text))],
     previous: (recent[0] && recent[0].language) || null
   });
-  const partner = buildPartner({ voiceName, summary, now, timeZone, recent, languageSetting, language });
+  const partner = withoutPartner ? null : buildPartner({ voiceName, summary, now, timeZone, recent, languageSetting, language });
   return {
     voiceName,
     partner,
@@ -331,7 +349,8 @@ async function composeDigest(member, { summary, since, now, timeZone, workspace,
         ...summary,
         today: localTime(now, timeZone).date,
         dayLabel: now.toLocaleDateString(language === 'es' ? 'es' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone }),
-        since: sinceLabel(since, now, timeZone, language)
+        since: sinceLabel(since, now, timeZone, language),
+        googleLost: googleLostAt ? lostSinceLabel(googleLostAt, language, timeZone) : null
       },
       unsubscribe_url: getUnsubscribeUrl(member.workspace_id, member.user_id, 'daily'),
       partner,
@@ -356,10 +375,10 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
   const db = getDatabase();
   const [workspaces, connections] = await Promise.all([
     db.collection('workspaces').find({ workspace_id: { $in: workspaceIds } }, { projection: { _id: 0, workspace_id: 1, digest_voices_enabled: 1 } }).toArray(),
-    db.collection('google_connections').find({ workspace_id: { $in: workspaceIds } }, { projection: { _id: 0, workspace_id: 1, user_id: 1, 'settings.language': 1 } }).toArray()
+    db.collection('google_connections').find({ workspace_id: { $in: workspaceIds } }, { projection: { _id: 1, workspace_id: 1, user_id: 1, 'settings.language': 1, status: 1, revoked_at: 1, digest_notice_sent_at: 1 } }).toArray()
   ]);
   const workspaceOf = new Map(workspaces.map(workspace => [workspace.workspace_id, workspace]));
-  const languageOf = new Map(connections.map(connection => [`${connection.workspace_id}|${connection.user_id}`, (connection.settings && connection.settings.language) || null]));
+  const connectionOf = new Map(connections.map(connection => [`${connection.workspace_id}|${connection.user_id}`, connection]));
   // Opted-out members still count for their workspace's usual time zone
   const timeZoneOf = timeZoneResolver(members);
 
@@ -375,13 +394,19 @@ async function runDailyDigest(now = new Date(), { send = defaultSend } = {}) {
       if (!since) continue;
       checked++;
       const summary = await buildDailySummary(member.workspace_id, member.user_id, since, now, timeZone);
-      if (!hasNews(summary)) continue;
+      const connection = connectionOf.get(`${member.workspace_id}|${member.user_id}`) || null;
+      const lost = lostConnectionNotice(connection, day, timeZone);
+      // Nothing new: no email, unless their Google connection is lost (first morning, then Mondays)
+      const news = hasNews(summary);
+      if (!news && !lost.sendAnyway) continue;
 
-      const languageSetting = languageOf.get(`${member.workspace_id}|${member.user_id}`) || null;
+      const languageSetting = (connection && connection.settings && connection.settings.language) || null;
       const { params, voiceName, partner, language } = await composeDigest(member, {
-        summary, since, now, timeZone, workspace: workspaceOf.get(member.workspace_id) || null, languageSetting
+        summary, since, now, timeZone, workspace: workspaceOf.get(member.workspace_id) || null, languageSetting,
+        googleLostAt: lost.since, withoutPartner: !news
       });
       await send(params);
+      if (lost.since) await db.collection('google_connections').updateOne({ _id: connection._id }, { $set: { digest_notice_sent_at: now } });
       await getDatabase().collection('daily_digests').updateOne(
         { workspace_id: member.workspace_id, user_id: member.user_id, day },
         // Counts only: the items' text isn't kept
@@ -436,6 +461,7 @@ module.exports = {
   buildPartner,
   composeDigest,
   hasNews,
+  lostConnectionNotice,
   sinceLabel,
   timeZoneResolver
 };

@@ -1,6 +1,6 @@
 # When Google stops working, the person knows
 
-**Status:** draft for approval (Oct 22, 2026). Linear COR-56. Builds on the Google connection
+**Status:** approved and built (Oct 24, 2026). Linear COR-56. Builds on the Google connection
 (`src/integrations/google/connections.js`), the daily digest (`src/jobs/daily-digest.js`) and the
 ops alerts (`src/jobs/ops-alerts.js`).
 
@@ -25,32 +25,33 @@ never reconnect.
 When a connection becomes `revoked`, the person gets one email in their language:
 
 > **Corteza dejó de leer tus reuniones**
-> Google cortó el acceso de Corteza a tus reuniones (pasa cuando se quita el permiso o vence la
-> conexión). Desde el lunes 20 no capturamos nada nuevo.
-> **[Reconectar Google]** (un clic, vuelve a Corteza)
-> Lo que se perdió mientras tanto lo puedes importar después desde Configuración → Google Meet.
+> Google cortó el acceso de Corteza a tus reuniones el lunes, 20 de octubre. Pasa cuando se quita el
+> permiso o vence la conexión. Desde entonces no capturamos nada nuevo.
+> Reconecta con un clic: Corteza vuelve a leer tus reuniones, también las que tuviste mientras tanto.
+> **[Reconectar Google]**
 
 - The button goes to `/integrations/google/connect` (the existing permission page, then Google).
-- **At most two emails per lost connection:** the day it's lost and a reminder 3 days later if it's
-  still lost. Nothing more after that; Home keeps the notice.
-- Sent by the ops alerts job (every 15 min), which already finds revoked connections. State lives on
-  the connection (`reconnect_email_sent_at`, `reconnect_reminder_sent_at`), and reconnecting clears
-  it, so a later loss emails again.
+- **At most two emails per lost connection:** the day it's lost and a reminder 3 days after that
+  first email if it's still lost. Nothing more after that; Home keeps the notice.
+- Sent from the ops alerts job's 15-minute run (`src/integrations/google/reconnect-notices.js`).
+  State lives on the connection (`reconnect_email_sent_at`, `reconnect_reminder_sent_at`), claimed
+  before sending and released if the send fails; reconnecting clears it, so a later loss emails
+  again. Connections lost before this shipped get their first email on the first run.
 - People who opted out of email (`daily_digest_opt_out`) still get it: it's about the service, not a
   summary. One line at the bottom says why they're getting it.
 
-### 2. After reconnecting, offer what was missed
+### 2. After reconnecting, what was missed comes back on its own
 
-Right after a reconnect, the Google Meet section in Settings shows "You were disconnected from
-Mon 20 to Thu 23: **Import those meetings**", which opens Import past meetings with that period
-preselected. Nothing is imported without a click.
+No import needed: the poller resumes from the last meeting it read before the loss (`poll_cursor`
+isn't reset on reconnect), so the meetings held while disconnected are captured on the next poll.
+The email says so.
 
 ### 3. The morning summary doesn't go silent
 
-If a person's connection is lost, their morning summary is sent even with nothing new, with one line
-at the top: "Corteza isn't reading your meetings since Mon 20. [Reconnect]". Only on the first
-morning after the loss and then on Mondays, so it doesn't nag every day; the reconnect emails cover
-the rest.
+While a person's connection is lost, every morning summary they get opens with "Corteza hasn't been
+reading your meetings since Monday, October 20. [Reconnect Google]". With nothing new it's still
+sent, without the partner's line, on the first morning after the loss and then on Mondays
+(`digest_notice_sent_at` on the connection), so it doesn't nag every day.
 
 ### 4. The root cause: the 7-day expiry (your action, no code)
 
@@ -77,18 +78,16 @@ ids only (`google_reconnect_email_sent`, `google_reconnected`).
 
 ## Tests
 
-- Integration: a revoked connection gets one email, a reminder after 3 days, nothing after; reconnect
-  clears the state and a new loss emails again; opted-out people still get it; another person's
-  connection is never mixed in.
-- Integration: the morning summary with a lost connection is sent with the status line (first morning
-  and Mondays only).
-- Unit: the email in EN and ES, no content beyond the date and link.
-- Preview: the email and the Settings "Import those meetings" notice (desktop and mobile, EN and ES).
+- Integration (`test/integration/reconnect-notices.test.js`): one email, a reminder 3 days later,
+  nothing after; a failed send is retried; reconnecting clears the state and a new loss emails again;
+  opted-out people still get it; the morning summary is sent with the notice on the first morning and
+  Mondays, not on other days, and never to connected people with nothing new.
+- Unit (`test/unit/reconnect-email.test.js`): the email in EN and ES carries the date and link only;
+  the summary leads with the notice and has its own subject when there is nothing else.
 
-## Open questions
+## Decisions (Oct 24)
 
-1. A reminder after **3 days**, then stop: OK?
-2. Send the summary with the status line on **the first morning and Mondays**: OK, or every day
-   while disconnected?
-3. Section 4: do you move the app to **In production** now (the warning screen for testers), or wait
-   for verification?
+1. Reminder after 3 days, then stop.
+2. Summary with the notice when nothing else is new: the first morning and Mondays.
+3. Moving the OAuth app to In production is Cristian's call; the steps are in
+   `docs/launch/google-verification.md`.

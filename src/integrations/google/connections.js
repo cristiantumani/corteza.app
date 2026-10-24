@@ -119,6 +119,8 @@ async function saveConnection({ workspaceId, userId, userName, email, refreshTok
         last_error: null,
         updated_at: now
       },
+      // A reconnect clears the lost-connection notices, so a later loss emails again (reconnect-notices.js)
+      $unset: { reconnect_email_sent_at: '', reconnect_reminder_sent_at: '', digest_notice_sent_at: '' },
       $setOnInsert: {
         workspace_id: workspaceId,
         user_id: userId,
