@@ -150,7 +150,6 @@
           <div class="flex flex-wrap items-center gap-2">${ownersHtml(item)}</div>
           ${threadHtml(item)}
           ${sourceHtml(item)}
-          ${item.evidence_quote ? `<p class="text-xs italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         </div>
         <!-- Due date and status: beside the text on wider screens, under it on a phone -->
         <div class="w-full sm:w-auto pl-9 sm:pl-0 flex flex-wrap sm:flex-col items-center sm:items-end gap-2">
@@ -181,6 +180,9 @@
           ${unmatched.length ? `<div class="decision-action-chips font-normal">${unmatched.map(name => `<span class="decision-action-chip" title="${escapeHtml(t('actions.notMatched'))}">${escapeHtml(name)} <button type="button" data-keep-name="${escapeHtml(name)}" aria-label="${escapeHtml(t('common.remove'))}">×</button></span>`).join('')}</div>` : ''}
           <div class="owner-picker font-normal"><p class="text-on-surface-variant">${escapeHtml(t('common.loading'))}</p></div>
         </div>
+        ${item.evidence_quote ? `<div class="flex flex-col gap-1 text-sm font-semibold text-on-surface">${escapeHtml(t('detail.evidence'))}
+          <p class="font-normal italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>
+        </div>` : ''}
         ${window.CortezaSensitive ? `<label class="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
           <input type="checkbox" name="sensitive" class="mt-0.5" ${item.sensitive ? 'checked' : ''}>
           <span><span class="font-semibold">${escapeHtml(t('sensitive.mark'))}</span> <span class="text-on-surface-variant">${escapeHtml(t('sensitive.help'))}</span></span>

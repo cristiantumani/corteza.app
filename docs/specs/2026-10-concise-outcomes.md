@@ -1,6 +1,6 @@
 # Concise outcomes: the point first, the meeting as reference
 
-**Status:** draft for approval (Oct 15, 2026). Linear COR-55. Builds on extraction v2
+**Status:** approved and built (Oct 24, 2026). Linear COR-55. Builds on extraction v2
 (`src/services/claude.js`), the eval (`scripts/eval-extraction.js`, `scripts/eval/score.js`) and the
 review card, Questions & risks and Action items pages.
 
@@ -76,12 +76,14 @@ one on the same set, the synthetic fixtures plus your real meetings in `~/cortez
 New captures follow the new rules. For the outcomes already saved there's an optional migration,
 `016-shorten-outcomes.js`, the same shape as `006-translate-outcomes.js`:
 
-- Claude rewrites each headline and rationale under the new rules (Message Batches API, half price;
-  roughly 0.1 USD per 100 outcomes) and keeps the old ones in `original_text` and
-  `original_rationale`, so nothing is lost and it can be undone.
+- Claude rewrites each headline and rationale under the new rules (one call per 20 items, metered
+  as `shorten_outcomes`; cents per hundred outcomes) and keeps the old ones in `original_text` and
+  `original_rationale` (encrypted like the text), marked `shortened_at`, so nothing is lost and
+  `--undo` puts them back.
 - Dry run first: it prints 10 before → after pairs to your terminal only (never to logs), for you to
   judge before `--apply`.
-- Only AI-captured outcomes that nobody edited by hand.
+- Only long AI-captured outcomes (headline over 15 words or why over 20) that nobody edited by hand:
+  editing an outcome's or action item's text or why now records `text_edited_at`.
 
 ## Not now
 
@@ -100,10 +102,9 @@ New captures follow the new rules. For the outcomes already saved there's an opt
   "En la reunión". Preview screenshots (desktop and mobile, EN and ES) of Home, Meetings, Questions
   and Action items.
 
-## Open questions
+## Decisions (Oct 24)
 
-1. **15 words** for the headline and **20** for the why: OK, or tighter (12 / 15)?
-2. **Hide the quote from cards** (only in the detail modal): OK? It was added for trust in
-   auto-saved items; the link to the meeting keeps that trust with less text.
-3. **Migration 016 for what's already saved**: run it (after seeing the 10 samples), or leave old
-   outcomes as they are?
+1. 15 words for the headline, 20 for the why.
+2. The quote leaves the cards: it's in the detail modal ("En la reunión") and, for action items, in
+   the editor.
+3. Saved outcomes are rewritten with migration 016 after Cristian reviews the dry run's samples.

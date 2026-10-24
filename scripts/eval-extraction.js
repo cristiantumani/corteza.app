@@ -33,7 +33,7 @@ const path = require('path');
 const { extractDecisionsFromTranscript, isClaudeConfigured } = require('../src/services/claude');
 const { buildExtractionText } = require('../src/ingestion/pipeline');
 const config = require('../src/config/environment');
-const { scoreFixture, summarize } = require('./eval/score');
+const { scoreFixture, summarize, writingStats, HEADLINE_MAX_WORDS, COPY_RUN_WORDS } = require('./eval/score');
 const { formatContextBlock } = require('../src/core/context/context-service');
 
 const FIXTURES_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'extraction');
@@ -68,6 +68,7 @@ async function main() {
   console.log(`🧪 Extraction eval: ${selected.length} fixture(s), model ${config.claude.model}\n`);
 
   const results = [];
+  const written = [];
   for (const fixture of selected) {
     const text = buildExtractionText({
       title: fixture.title, occurredAt: `${fixture.date}T12:00:00Z`, participants: fixture.participants, text: fixture.transcript
@@ -77,6 +78,7 @@ async function main() {
     const { decisions } = await extractDecisionsFromTranscript(text, null, { context });
     const result = scoreFixture(decisions, fixture.expected, fixture.not_expected || []);
     results.push(result);
+    written.push({ items: decisions, transcript: fixture.transcript });
 
     console.log(`📄 ${fixture.name}: ${result.matched.length}/${fixture.expected.length} expected found, ${result.extra.length} extra (${result.noise.length} known noise)`);
     for (const exp of result.missed) {
@@ -93,6 +95,9 @@ async function main() {
   }
   console.log(`\nOwner accuracy: ${percent(summary.ownerAccuracy)}   Due date accuracy: ${percent(summary.dueDateAccuracy)}   Rationale (context) accuracy: ${percent(summary.rationaleAccuracy)}`);
   console.log(`Decisions phrased as outcomes (not "se propuso…"): ${percent(summary.decisionsAsOutcomes)}`);
+  const writing = writingStats(written);
+  const number = value => (value === null ? '-' : value.toFixed(1));
+  console.log(`Writing: ${number(writing.avgWords)} words per headline, ${percent(writing.overMaxWords)} over ${HEADLINE_MAX_WORDS} words, ${percent(writing.copied)} copied from the transcript (${COPY_RUN_WORDS}+ words in a row), ${percent(writing.rationaleRepeats)} of "why" repeat the headline, ${number(writing.avgCardChars)} characters per card`);
   const perMeeting = value => (value === null ? '-' : value.toFixed(1));
   console.log(`Per meeting: ${perMeeting(summary.noisePerMeeting)} known-noise item(s), ${perMeeting(summary.extrasPerMeeting)} unexpected item(s) in total`);
 

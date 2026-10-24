@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { scoreFixture, summarize } = require('../../scripts/eval/score');
+const { scoreFixture, summarize, writingStats } = require('../../scripts/eval/score');
 
 test('items match expected ones by type and keywords, once each', () => {
   const extracted = [
@@ -75,4 +75,25 @@ test('"|" keywords accept alternatives, and a missed item captured with another 
   assert.equal(result.retyped.length, 1);
   assert.equal(result.retyped[0].item.decision_type, 'action_item');
   assert.equal(result.noise.length, 1, 'alternatives work in not_expected too');
+});
+
+test('writing: headline length, copying from the transcript, rationales that repeat the headline', () => {
+  const transcript = 'Bueno, yo creo que lo que tenemos que hacer es ver cómo metemos IA en el Excel del curso, así nos diferenciamos.';
+  const stats = writingStats([{ transcript, items: [
+    { decision_text: 'Investigar cómo sumar IA a los Excel del curso', rationale: 'Diferenciarnos con IA frente a la competencia' },
+    // Copied: 6+ words in a row from the transcript (accents and case don't matter)
+    { decision_text: 'Lo que tenemos que hacer es ver como metemos IA en el Excel', rationale: null },
+    // Over 15 words, and its "why" mostly repeats it
+    { decision_text: 'Se decide comenzar una investigación técnica sobre cómo implementar una experiencia interactiva con IA y Excel para los usuarios', rationale: 'Comenzar una investigación técnica sobre IA y Excel' }
+  ] }]);
+  assert.equal(stats.headlines, 3);
+  assert.equal(stats.overMaxWords, 1 / 3);
+  assert.equal(stats.copied, 1 / 3);
+  assert.equal(stats.rationaleRepeats, 1 / 2, 'of the two items with a why');
+  assert.ok(stats.avgWords > 10 && stats.avgWords < 15);
+  assert.ok(stats.avgCardChars > 0);
+});
+
+test('writing: no items means no numbers', () => {
+  assert.deepEqual(writingStats([{ transcript: 'hola', items: [] }]), { headlines: 0, avgWords: null, overMaxWords: null, copied: null, rationaleRepeats: null, avgCardChars: null });
 });

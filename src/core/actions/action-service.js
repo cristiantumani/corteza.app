@@ -223,12 +223,14 @@ async function updateActionItem(workspaceId, itemId, changes = {}) {
     const text = typeof changes.text === 'string' ? changes.text.trim() : '';
     if (!text) return { error: 'Write what needs to be done' };
     set.text = text.slice(0, MAX_TEXT);
+    set.text_edited_at = new Date(); // edited by hand: never rewritten by migrations (016)
     unset.embedding = ''; // recomputed from the new text when it's next needed
   }
   if (changes.rationale !== undefined) {
     if (changes.rationale !== null && typeof changes.rationale !== 'string') return { error: 'Invalid why' };
     const why = typeof changes.rationale === 'string' ? changes.rationale.trim() : '';
     set.rationale = why ? why.slice(0, MAX_RATIONALE) : null;
+    set.text_edited_at = new Date();
   }
   if (changes.owners !== undefined) {
     set.owners = changes.owners;
