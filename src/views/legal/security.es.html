@@ -1,5 +1,5 @@
 <h1>Seguridad</h1>
-<p class="updated">Última actualización: 13 de octubre de 2026</p>
+<p class="updated">Última actualización: 24 de octubre de 2026</p>
 
 <p>Corteza lee las reuniones de Google Meet de tu equipo y guarda lo que sale de ellas. Esta página explica cómo protegemos esos datos: qué guardamos y qué no, cómo se cifran, quién puede verlos y cómo reportar un problema. El detalle completo de qué datos usamos y para qué está en la <a href="/privacy?lang=es">Política de privacidad</a>. La versión en inglés es la que rige.</p>
 
@@ -34,6 +34,14 @@
 <ul>
   <li>El texto de las reuniones lo procesa Anthropic (Claude) para encontrar lo que salió de ellas y responder búsquedas, y OpenAI procesa los textos guardados para la búsqueda semántica, a través de sus APIs empresariales.</li>
   <li>Ninguno de los dos entrena sus modelos con datos enviados por esas APIs, y nosotros no usamos tus datos para entrenar ningún modelo. Lo que confirmas o descartas mejora los resultados solo dentro de tu propio workspace.</li>
+</ul>
+
+<h2>Asistentes de IA que conectes</h2>
+<ul>
+  <li>Cada persona puede conectar Corteza a su propio asistente de IA (Claude, ChatGPT y otros) con un conector MCP estándar, entrando con Google y aprobando el acceso (OAuth 2.1 con PKCE). Sin API keys.</li>
+  <li>El asistente actúa como esa persona: solo lee lo que ella ve en Corteza, nunca los espacios privados de colegas ni los temas sensibles. Hoy no puede cambiar nada.</li>
+  <li>Lo que lee va al proveedor de ese asistente según el acuerdo de la persona o de su empresa con él. Cada persona puede desconectar un asistente cuando quiera, y los admins pueden apagar el conector para todo el workspace, lo que revoca todos los asistentes al instante.</li>
+  <li>Los tokens de acceso duran poco y se guardan como hash; registramos qué herramienta se usó y cuándo, nunca la pregunta ni la respuesta.</li>
 </ul>
 
 <h2>Infraestructura y proveedores</h2>

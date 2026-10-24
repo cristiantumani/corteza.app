@@ -742,6 +742,24 @@
       "manual": "Elegida por ti.",
       "auto": "Detectada desde tu navegador.",
       "saved": "Guardado. Tu resumen llega a las 8:00 en esta zona horaria."
+    },
+    "assistants": {
+      "title": "Asistentes de IA",
+      "body": "Conecta Corteza a Claude, ChatGPT u otro asistente compatible con MCP para preguntarle por tus decisiones, preguntas abiertas, riesgos y pendientes.",
+      "howTo": "En tu asistente, agrega un conector con esta URL:",
+      "howToHelp": "Te pedirá entrar con Google y permitir el acceso. Solo verá lo que tú ves en Corteza, nunca los temas sensibles.",
+      "copy": "Copiar",
+      "copied": "URL copiada.",
+      "connected": "Asistentes conectados",
+      "none": "Todavía no conectaste ninguno.",
+      "connectedOn": "Conectado el {date}",
+      "lastUsed": "usado por última vez el {date}",
+      "disconnect": "Desconectar",
+      "allow": "Permitir que los miembros conecten asistentes de IA",
+      "allowHelp": "Si lo apagas, se desconectan todos los asistentes del workspace al instante.",
+      "confirmOff": "Se desconectarán los asistentes de IA de todo el workspace. ¿Continuar?",
+      "off": "Tu workspace no permite conectar asistentes de IA. Pídeselo a un admin.",
+      "offAdmin": "Los asistentes de IA están apagados en este workspace."
     }
   },
   "loop": {
@@ -1355,6 +1373,22 @@
       "action_item": "Pendientes",
       "open_question": "Preguntas abiertas",
       "risk": "Riesgos"
+    }
+  },
+  "mcp": {
+    "consent": {
+      "title": "{client} quiere conectarse a tu Corteza",
+      "canDo": "Si lo permites, podrá:",
+      "scope": {
+        "read": "Ver tus decisiones, preguntas abiertas, riesgos y pendientes, y las reuniones de donde salieron: solo lo que tú ves en Corteza, nunca los temas sensibles."
+      },
+      "asYou": "Te conectas como {email} · {workspace}.",
+      "disconnect": "Puedes desconectarlo cuando quieras en Configuración → Asistentes de IA.",
+      "allow": "Permitir",
+      "expiredTitle": "Esta solicitud ya no es válida",
+      "expired": "Venció o ya se usó. Vuelve a conectar Corteza desde tu asistente.",
+      "offTitle": "Los asistentes de IA están desactivados",
+      "off": "Tu workspace no permite conectar asistentes de IA a Corteza. Pídeselo a un admin."
     }
   }
 }

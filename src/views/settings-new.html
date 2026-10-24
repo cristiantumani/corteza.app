@@ -169,6 +169,18 @@
                     <span id="language-status" class="text-xs text-on-surface-variant mt-2" role="status"></span>
                 </section>
 
+                <!-- AI assistants: Corteza in Claude, ChatGPT… through MCP (public/scripts/settings-assistants.js, src/http/mcp-settings.js) -->
+                <section id="ai-assistants" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-on-surface mb-1">{{t:settings.assistants.title}}</h3>
+                            <p class="text-sm text-on-surface-variant">{{t:settings.assistants.body}}</p>
+                        </div>
+                        <span class="material-symbols-outlined text-primary text-3xl" aria-hidden="true">smart_toy</span>
+                    </div>
+                    <div id="assistants-body" class="flex flex-col gap-4"><p class="text-sm text-on-surface-variant">{{t:common.loading}}</p></div>
+                </section>
+
                 <!-- Daily summary email: the time zone it's sent in (public/scripts/settings-timezone.js) -->
                 <section id="email-summary" class="col-span-12 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col">
                     <div class="flex justify-between items-start mb-6">
@@ -417,6 +429,7 @@
     <script src="/scripts/settings-context.js?v=4"></script>
     <script src="/scripts/settings-timezone.js?v=2"></script>
     <script src="/scripts/settings-language.js?v=1"></script>
+    <script src="/scripts/settings-assistants.js?v=1"></script>
     <script src="/scripts/settings-digest-voice.js?v=2"></script>
 </body>
 </html>

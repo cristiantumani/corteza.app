@@ -1,6 +1,6 @@
 # Corteza in your AI assistant (MCP connector, v1 read-only)
 
-**Status:** draft for approval (Oct 24, 2026). Linear COR-57. Decisions taken with Cristian on Oct 24:
+**Status:** approved and built (Oct 24, 2026). Linear COR-57. Decisions taken with Cristian on Oct 24:
 remote server with Google sign-in, v1 read-only, on by default for beta workspaces, build now.
 
 ## Why
@@ -33,10 +33,12 @@ endpoint and delegates the login to the existing Google sign-in:
 
 1. The client discovers the endpoints (`/.well-known/oauth-protected-resource`,
    `/.well-known/oauth-authorization-server`) and registers itself (dynamic client registration).
-2. The person is sent to `/oauth/authorize`: if not signed in, the normal Google sign-in (same `hd`
-   rules, beta gate included); then a consent page in Corteza: "**Claude** wants to read your
-   Corteza: decisions, open questions, risks and your action items. It can't change anything."
-   Allow / Cancel.
+2. The person is sent to `/authorize`, which parks the request and opens Corteza's consent page
+   (`/oauth/consent`): if not signed in, the normal Google sign-in first (same `hd` rules, beta gate
+   included); then "**Claude** wants to connect to your Corteza. If you allow it, it will be able
+   to:" followed by one line per granted scope (today only `read`: see your decisions, open
+   questions, risks and action items, only what you see, never sensitive topics). Neutral on
+   purpose, so the same page works when write scopes come. Allow / Cancel.
 3. The client gets an access token (short-lived) and a refresh token, both tied to that person's
    membership. PKCE is required; redirect URIs must match the registration.
 
@@ -119,10 +121,10 @@ endpoints), `src/http/mcp-settings.js` and a Settings section. Dependency:
 - End to end: connect the MCP Inspector (and Claude) to a local server with fake data and call every
   tool and prompt.
 
-## Open questions
+## Decisions (Oct 24)
 
-1. Consent page wording: "Claude wants to read your Corteza…" OK?
-2. Should `search_outcomes` also return our generated answer (costs a Claude call per search), or
-   only sources and let the assistant answer? **Recommendation: only sources.**
-3. Name in the connector list: "Corteza" with the description "Your team's decisions, open questions
-   and action items from Google Meet"?
+1. Consent wording: neutral, one line per scope the assistant gets, no promise about what it can't do
+   (writes will come).
+2. `search_outcomes` returns sources only; the assistant writes the answer (no Claude call on our side).
+3. Connector name "Corteza", description "Your team's decisions, open questions and action items from
+   Google Meet".

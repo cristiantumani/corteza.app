@@ -742,6 +742,24 @@
       "manual": "Set by you.",
       "auto": "Detected from your browser.",
       "saved": "Saved. Your summary arrives at 8:00 AM in this time zone."
+    },
+    "assistants": {
+      "title": "AI assistants",
+      "body": "Connect Corteza to Claude, ChatGPT or another MCP-compatible assistant to ask it about your decisions, open questions, risks and action items.",
+      "howTo": "In your assistant, add a connector with this URL:",
+      "howToHelp": "It will ask you to sign in with Google and allow access. It only sees what you see in Corteza, never sensitive topics.",
+      "copy": "Copy",
+      "copied": "URL copied.",
+      "connected": "Connected assistants",
+      "none": "You haven’t connected any yet.",
+      "connectedOn": "Connected on {date}",
+      "lastUsed": "last used on {date}",
+      "disconnect": "Disconnect",
+      "allow": "Let members connect AI assistants",
+      "allowHelp": "Turning it off disconnects every assistant in the workspace at once.",
+      "confirmOff": "This disconnects AI assistants for the whole workspace. Continue?",
+      "off": "Your workspace doesn’t allow connecting AI assistants. Ask an admin.",
+      "offAdmin": "AI assistants are turned off in this workspace."
     }
   },
   "loop": {
@@ -1355,6 +1373,22 @@
       "action_item": "Action items",
       "open_question": "Open questions",
       "risk": "Risks"
+    }
+  },
+  "mcp": {
+    "consent": {
+      "title": "{client} wants to connect to your Corteza",
+      "canDo": "If you allow it, it will be able to:",
+      "scope": {
+        "read": "See your decisions, open questions, risks and action items, and the meetings they came from: only what you see in Corteza, never sensitive topics."
+      },
+      "asYou": "You’re connecting as {email} · {workspace}.",
+      "disconnect": "You can disconnect it any time in Settings → AI assistants.",
+      "allow": "Allow",
+      "expiredTitle": "This request is no longer valid",
+      "expired": "It expired or was already used. Connect Corteza again from your assistant.",
+      "offTitle": "AI assistants are turned off",
+      "off": "Your workspace doesn’t allow connecting AI assistants to Corteza. Ask an admin."
     }
   }
 }
