@@ -14,6 +14,11 @@
  * captured (logistics, equipment problems, small talk). An extracted item of any type
  * whose text has all of an entry's `match` keywords counts as noise.
  *
+ * Writing (docs/specs/2026-10-concise-outcomes.md), from writingStats: words per headline and the
+ * share over HEADLINE_MAX_WORDS, headlines that copy a run of COPY_RUN_WORDS words from the transcript
+ * (quotes don't count: they're meant to be verbatim), rationales that mostly repeat the headline, and
+ * characters per card (headline + rationale).
+ *
  * Also checked:
  * - rationale_match: keywords the item's rationale should contain (context behind it)
  * - decisions phrased as outcomes ("Se decide…", "Launch moves to…"), not narration
@@ -141,4 +146,70 @@ function summarize(results) {
   };
 }
 
-module.exports = { scoreFixture, summarize, normalize, NARRATION };
+const HEADLINE_MAX_WORDS = 15;
+const COPY_RUN_WORDS = 6;
+const RATIONALE_REPEAT_SHARE = 0.7;
+
+/** @param {unknown} text @returns {string[]} */
+function words(text) {
+  return normalize(text).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+
+/**
+ * Whether a text repeats COPY_RUN_WORDS consecutive words of the transcript
+ * @param {string[]} textWords
+ * @param {Set<string>} transcriptRuns - every run of COPY_RUN_WORDS words in the transcript, joined by spaces
+ * @returns {boolean}
+ */
+function copiesTranscript(textWords, transcriptRuns) {
+  for (let i = 0; i + COPY_RUN_WORDS <= textWords.length; i++) {
+    if (transcriptRuns.has(textWords.slice(i, i + COPY_RUN_WORDS).join(' '))) return true;
+  }
+  return false;
+}
+
+/**
+ * How the items of one or more meetings are written: length, copying, repetition
+ * @param {Array<{ items: Object[], transcript: string }>} meetings - extracted items with their transcript
+ * @returns {{ headlines: number, avgWords: number|null, overMaxWords: number|null, copied: number|null,
+ *   rationaleRepeats: number|null, avgCardChars: number|null }} shares are 0..1
+ */
+function writingStats(meetings) {
+  let headlines = 0;
+  let wordTotal = 0;
+  let over = 0;
+  let copied = 0;
+  let rationales = 0;
+  let repeats = 0;
+  let chars = 0;
+  for (const { items, transcript } of meetings) {
+    const all = words(transcript);
+    const runs = new Set();
+    for (let i = 0; i + COPY_RUN_WORDS <= all.length; i++) runs.add(all.slice(i, i + COPY_RUN_WORDS).join(' '));
+    for (const item of items) {
+      const headline = words(item.decision_text);
+      if (!headline.length) continue;
+      headlines++;
+      wordTotal += headline.length;
+      if (headline.length > HEADLINE_MAX_WORDS) over++;
+      if (copiesTranscript(headline, runs)) copied++;
+      chars += String(item.decision_text || '').length + String(item.rationale || '').length;
+      const why = words(item.rationale);
+      if (why.length) {
+        rationales++;
+        const inHeadline = new Set(headline);
+        if (why.filter(word => inHeadline.has(word)).length / why.length >= RATIONALE_REPEAT_SHARE) repeats++;
+      }
+    }
+  }
+  return {
+    headlines,
+    avgWords: headlines ? wordTotal / headlines : null,
+    overMaxWords: headlines ? over / headlines : null,
+    copied: headlines ? copied / headlines : null,
+    rationaleRepeats: rationales ? repeats / rationales : null,
+    avgCardChars: headlines ? chars / headlines : null
+  };
+}
+
+module.exports = { scoreFixture, summarize, writingStats, normalize, NARRATION, HEADLINE_MAX_WORDS, COPY_RUN_WORDS };

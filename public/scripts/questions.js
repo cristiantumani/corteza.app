@@ -239,7 +239,6 @@
         <p class="text-on-surface font-medium ${resolved ? 'line-through text-on-surface-variant' : ''}">${escapeHtml(item.text)}</p>
         ${resolved ? '' : statusLineHtml(item)}
         ${item.rationale ? `<p class="text-sm text-on-surface-variant">${escapeHtml(t('questions.whyMatters', { text: item.rationale }))}</p>` : ''}
-        ${item.evidence_quote ? `<p class="text-xs italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         ${sourceHtml(item)}
         ${resolved ? answeredBy : ''}
         ${resolved && item.resolution_note && !answeredBy ? `<p class="text-sm text-on-surface bg-surface-container-low rounded-lg p-3">${escapeHtml(item.resolution_note)}</p>` : ''}

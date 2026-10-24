@@ -62,7 +62,7 @@ CI (`.github/workflows/ci.yml`) runs lint, the type check, `npm audit --omit=dev
 | Google Meet: meeting → transcript text | `src/ingestion/sources/google-meet.js` |
 | Google Meet poller (every 5 min) | `src/jobs/meet-poller.js` |
 | Import past Google Meet meetings (list by period, background import jobs, extraction through the Message Batches API at half price) | `src/ingestion/meet-import.js`, `src/ingestion/batch-extraction.js` |
-| AI extraction prompt (Claude) | `src/services/claude.js` |
+| AI extraction prompt (Claude); outcomes are written concise (a headline of at most 15 words, a why of at most 20 only when it adds something, a quote of at most 120 characters shown only in the detail; the eval reports words per headline and copying from the transcript) | `src/services/claude.js`, `writingStats` in `scripts/eval/score.js`; rewrite saved ones: `scripts/migrations/016-shorten-outcomes.js`; spec `docs/specs/2026-10-concise-outcomes.md` |
 | AI usage and daily caps (per person and workspace, `ai_usage`) | `src/core/usage/ai-usage.js` (`recordAiUsage`, `checkAiBudget`, `requireAiBudget`) |
 | Language outcomes are written in (detected from the spoken transcript, or fixed in Settings → Google Meet) | `src/core/language/detect.js`, `outputLanguage` in `src/services/claude.js`; translate saved ones: `scripts/migrations/006-translate-outcomes.js` |
 | Decision types (decision, action_item, open_question, risk, …), outcome counts and labels | `src/core/decisions/types.js` (`countByType`, `describeOutcomes`), `public/scripts/outcome-labels.js` |

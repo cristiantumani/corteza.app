@@ -108,3 +108,14 @@ test('who raised an open question or risk is kept, only for those types', () => 
   assert.equal(normalizeItem({ decision_text: 'x', decision_type: 'open_question', raised_by: '' }).raised_by, null);
   assert.equal(normalizeItem({ decision_text: 'x', decision_type: 'decision', raised_by: 'Carla' }).raised_by, null);
 });
+
+test('the extraction prompt asks for short headlines, a short why and a short quote (concise outcomes)', () => {
+  const { buildExtractionParams } = require('../../src/services/claude');
+  const system = buildExtractionParams('x').system.map(block => block.text).join('\n');
+  assert.match(system, /headline of at most 15 words/);
+  assert.match(system, /never copied from the transcript/);
+  assert.match(system, /no "Se decide…"/);
+  assert.match(system, /at most 20 words/);
+  assert.match(system, /at most 120 characters/);
+  assert.match(system, /Right: "Investigar cómo sumar IA a los Excel del curso"/, 'a long and a short example');
+});

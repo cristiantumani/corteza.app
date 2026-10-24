@@ -166,7 +166,6 @@
         <span class="self-start px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">${escapeHtml(typeLabel(item.type))}</span>
         <p class="text-on-surface font-medium">${escapeHtml(item.text)}</p>
         ${item.rationale ? `<p class="text-sm text-on-surface-variant">${escapeHtml(t('home.review.why', { text: item.rationale }))}</p>` : ''}
-        ${item.evidence_quote ? `<p class="text-sm italic text-on-surface-variant">“${escapeHtml(item.evidence_quote)}”</p>` : ''}
         <p class="text-xs text-on-surface-variant">${sourceLine(item.source_details, item.timestamp)}</p>
       </div>
       ${item.may_close && item.may_close.length && window.CortezaMayClose ? `<div data-may-close data-decision-id="${escapeHtml(item.id)}">${window.CortezaMayClose.render(item.may_close)}</div>` : ''}

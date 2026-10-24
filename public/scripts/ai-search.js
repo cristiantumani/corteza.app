@@ -366,7 +366,6 @@
           : verdict === true ? `<span class="text-xs font-bold text-tertiary">${escapeHtml(t('search.related1'))}</span>` : ''}
       </div>
       <p class="font-medium text-on-surface line-clamp-4">${escapeHtml(decision.text)}</p>
-      ${decision.evidence_quote ? `<p class="text-sm italic text-on-surface-variant line-clamp-3">“${escapeHtml(decision.evidence_quote)}”</p>` : ''}
       <p class="text-xs text-on-surface-variant">${sourceLine}</p>
     `;
 

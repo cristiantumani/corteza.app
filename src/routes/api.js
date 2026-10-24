@@ -208,6 +208,7 @@ async function updateDecision(req, res) {
 
         if (updates.text && typeof updates.text === 'string' && updates.text.trim().length > 0) {
           sanitizedUpdates.text = updates.text.trim();
+          sanitizedUpdates.text_edited_at = new Date(); // edited by hand: never rewritten by migrations (016)
         }
 
         if (updates.type && DECISION_TYPES.includes(updates.type)) {
@@ -251,7 +252,10 @@ async function updateDecision(req, res) {
         };
         if (updates.rationale !== undefined) {
           const rationale = optionalText(updates.rationale, 2000);
-          if (rationale !== undefined) sanitizedUpdates.rationale = rationale;
+          if (rationale !== undefined) {
+            sanitizedUpdates.rationale = rationale;
+            sanitizedUpdates.text_edited_at = new Date();
+          }
         }
         if (updates.owner_name !== undefined) {
           const ownerName = optionalText(updates.owner_name, 200);
