@@ -76,6 +76,7 @@ A future roadmap item adds another sensitive scope: `tasks` for Google Tasks. Ad
 ## Pilots while verification is pending
 
 - **Test users:** add each pilot user's email under Google Auth Platform → Audience → Test users (100 at most). Testing-mode refresh tokens can expire after 7 days, so users may need to reconnect weekly.
+- **End the 7-day expiry before verification (optional, Cristian's call).** Google expires refresh tokens after 7 days only while the app is in **Testing**. Google Auth Platform → Audience → **Publish app** moves it to In production: tokens stop expiring weekly; users see Google's "this app isn't verified" screen once when they connect (Advanced → continue); the 100-user cap stays until verification. Before doing it, connect one tester and check that capture (Meet + Drive notes) still works. Either way, people whose connection is lost now get an email to reconnect and a notice in their morning summary (`src/integrations/google/reconnect-notices.js`, spec `docs/specs/2026-10-lost-google-connection.md`).
 - **Trusted app (per customer domain), to be confirmed.** The pilot's Workspace admin can mark the Corteza OAuth client as **Trusted** in Admin console → Security → Access and data control → API controls → Manage third-party app access. Try this with Ninja Excel first. Record here whether it lifts the unverified-app warning and the user cap for that domain.
 
 ## After verification
