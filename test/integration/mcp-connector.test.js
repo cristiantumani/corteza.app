@@ -73,6 +73,7 @@ describe('MCP connector: OAuth and read-only tools', { skip }, () => {
 
     const app = express();
     app.set('trust proxy', 1);
+    app.use(require('../../src/middleware/auth').addSecurityHeaders); // the production CSP
     app.use(session({ secret: 'test', resave: false, saveUninitialized: false }));
     app.use(express.json());
     // Stands in for Google sign-in
@@ -122,6 +123,8 @@ describe('MCP connector: OAuth and read-only tools', { skip }, () => {
     const page = await http(consentPath);
     const html = await page.text();
     assert.equal(page.status, 200);
+    const formAction = page.headers.get('content-security-policy').split('; ').find(d => d.startsWith('form-action'));
+    assert.equal(formAction, `form-action 'self' ${new URL(REDIRECT).origin}`, 'the browser may follow Allow back to the assistant');
     assert.match(html, /Claude wants to connect to your Corteza/);
     assert.ok(!/can.t change/i.test(html), 'neutral wording: lists what it can do, promises nothing about what it can’t');
     const csrf = html.match(/name="csrf" value="([a-f0-9]+)"/)[1];

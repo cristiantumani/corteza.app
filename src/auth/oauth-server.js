@@ -259,11 +259,11 @@ async function denyRequest(requestId) {
 /**
  * A parked request, for the consent page
  * @param {string} requestId
- * @returns {Promise<{ client_name: string, scopes: string[] }|null>}
+ * @returns {Promise<{ client_name: string, scopes: string[], redirect_uri: string }|null>}
  */
 async function getRequest(requestId) {
   if (typeof requestId !== 'string' || !/^[a-f0-9]{32}$/.test(requestId)) return null;
-  const request = await collection('mcp_auth_requests').findOne({ request_id: requestId, expires_at: { $gt: new Date() } }, { projection: { _id: 0, client_name: 1, scopes: 1 } });
+  const request = await collection('mcp_auth_requests').findOne({ request_id: requestId, expires_at: { $gt: new Date() } }, { projection: { _id: 0, client_name: 1, scopes: 1, redirect_uri: 1 } });
   return request || null;
 }
 
