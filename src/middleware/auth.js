@@ -107,10 +107,11 @@ const DRIVE_PICKER_SOURCES = {
 
 /**
  * The Content-Security-Policy header value
- * @param {{ drivePicker?: boolean }} [options] - drivePicker: also allow Google's Picker scripts and frames
+ * @param {{ drivePicker?: boolean, formAction?: string[] }} [options] - drivePicker: also allow Google's Picker scripts and frames;
+ *   formAction: more places a form may submit to or be redirected to (Chrome checks the redirect after a POST too)
  * @returns {string}
  */
-function buildCsp({ drivePicker = false } = {}) {
+function buildCsp({ drivePicker = false, formAction = [] } = {}) {
   const extra = kind => (drivePicker ? ` ${DRIVE_PICKER_SOURCES[kind]}` : '');
   return [
     "default-src 'self'",
@@ -122,7 +123,7 @@ function buildCsp({ drivePicker = false } = {}) {
     ...(drivePicker ? [`frame-src ${DRIVE_PICKER_SOURCES.frame}`] : []),
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    ["form-action 'self'", ...formAction].join(' '),
     "object-src 'none'",
     "upgrade-insecure-requests"
   ].join('; ');

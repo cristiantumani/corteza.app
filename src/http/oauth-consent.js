@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const express = require('express');
-const { apiRateLimiter } = require('../middleware/auth');
+const { apiRateLimiter, buildCsp } = require('../middleware/auth');
 const { requestLanguage, translate, escapeHtml } = require('../core/i18n/i18n');
 const oauth = require('../auth/oauth-server');
 const { track } = require('../integrations/posthog/client');
@@ -56,6 +56,23 @@ function page(lang, title, body) {
 </html>`;
 }
 
+/**
+ * The CSP source that lets the consent form end at the assistant's redirect URI. The app-wide
+ * policy has form-action 'self', and Chrome applies it to the redirect after the POST too: without
+ * this, Allow silently did nothing while the code was already issued.
+ * @param {string} [redirectUri]
+ * @returns {string[]}
+ */
+function formActionFor(redirectUri) {
+  try {
+    const url = new URL(String(redirectUri));
+    if (url.protocol === 'https:' || url.protocol === 'http:') return [url.origin];
+    return /^[a-z][a-z0-9+.-]*:$/.test(url.protocol) ? [url.protocol] : []; // desktop apps: cursor:, vscode:
+  } catch {
+    return [];
+  }
+}
+
 /** A page with just a message (expired request, assistants off) */
 function messagePage(lang, titleKey, textKey) {
   const t = (key, vars) => translate(lang, key, vars);
@@ -78,6 +95,7 @@ router.get('/oauth/consent', apiRateLimiter, async (req, res) => {
   }
 
   const csrf = crypto.randomBytes(16).toString('hex');
+  res.setHeader('Content-Security-Policy', buildCsp({ formAction: formActionFor(request.redirect_uri) }));
   req.session.mcpConsent = { request: requestId, csrf };
   const t = (key, vars) => translate(lang, key, vars);
   const abilities = request.scopes.map(scope => `<li>${escapeHtml(t(`mcp.consent.scope.${scope}`))}</li>`).join('');
@@ -129,3 +147,4 @@ router.post('/oauth/consent', apiRateLimiter, express.urlencoded({ extended: fal
 });
 
 module.exports = router;
+module.exports.formActionFor = formActionFor;
