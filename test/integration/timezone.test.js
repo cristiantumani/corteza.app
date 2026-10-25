@@ -35,6 +35,11 @@ describe("a person's time zone: detected by the browser, or chosen in Settings",
     assert.equal(await tz.saveTimeZone(WS, 'UA', 'America/New_York'), false, 'travelling does not override a manual choice');
     assert.deepEqual(await tz.getTimeZone(WS, 'UA'), { timezone: 'Europe/Madrid', source: 'manual' });
 
+    // Automatic again in Settings: the browser's zone, and the browser updates it from then on
+    assert.equal(await tz.saveTimeZone(WS, 'UA', 'America/New_York', { follow: true }), true);
+    assert.deepEqual(await tz.getTimeZone(WS, 'UA'), { timezone: 'America/New_York', source: 'auto' });
+    assert.equal(await tz.saveTimeZone(WS, 'UA', 'America/Santiago'), true, 'travelling updates it again');
+
     assert.equal(await tz.saveTimeZone(WS, 'UA', 'Not/AZone', { manual: true }), false);
     assert.equal(await tz.saveTimeZone(WS, 'UX', 'UTC'), false, 'removed members are left alone');
   });

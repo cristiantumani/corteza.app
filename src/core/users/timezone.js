@@ -6,7 +6,8 @@ const { getWorkspaceMembersCollection } = require('../../config/database');
  * Stored on the membership as `timezone` (IANA name, e.g. 'America/Santiago') with
  * `timezone_source`: 'auto' when the browser reported it (public/scripts/timezone.js, on
  * every app page), 'manual' when the person picked it in Settings. A manual choice is never
- * overwritten by the browser. Google sign-in doesn't give us a time zone.
+ * overwritten by the browser until the person picks "Automatic" again in Settings (`follow`).
+ * Google sign-in doesn't give us a time zone.
  */
 
 /**
@@ -78,13 +79,14 @@ function localDayBounds(now, timeZone) {
  * @param {string} workspaceId
  * @param {string} userId
  * @param {string} timeZone
- * @param {{ manual?: boolean }} [options] - manual: picked in Settings (the browser won't override it)
+ * @param {{ manual?: boolean, follow?: boolean }} [options] - manual: picked in Settings (the browser won't override it);
+ *   follow: "Automatic" picked in Settings, back to following the browser (replaces a manual choice)
  * @returns {Promise<boolean>} false for an invalid time zone, or an automatic one when a manual choice exists
  */
-async function saveTimeZone(workspaceId, userId, timeZone, { manual = false } = {}) {
+async function saveTimeZone(workspaceId, userId, timeZone, { manual = false, follow = false } = {}) {
   if (!isValidTimeZone(timeZone)) return false;
   const filter = { workspace_id: workspaceId, user_id: userId, removed_at: null };
-  if (!manual) filter.timezone_source = { $ne: 'manual' };
+  if (!manual && !follow) filter.timezone_source = { $ne: 'manual' };
   const result = await getWorkspaceMembersCollection().updateOne(filter, {
     $set: { timezone: timeZone, timezone_source: manual ? 'manual' : 'auto', timezone_updated_at: new Date() }
   });

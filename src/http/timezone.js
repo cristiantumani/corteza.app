@@ -7,7 +7,8 @@ const { track } = require('../integrations/posthog/client');
  * The signed-in person's time zone (logic in core/users/timezone).
  *
  *   GET  /api/me/timezone   { timezone, source: 'auto'|'manual'|null }
- *   POST /api/me/timezone   { timezone, manual? }: the browser reports it (auto), or Settings sets it (manual)
+ *   POST /api/me/timezone   { timezone, manual?, follow? }: the browser reports it (auto), Settings sets it (manual),
+ *                           or Settings goes back to Automatic (follow: the browser's, and it follows it again)
  */
 const router = express.Router();
 
@@ -29,10 +30,10 @@ router.get('/api/me/timezone', apiRateLimiter, requireSession, async (req, res) 
 router.post('/api/me/timezone', apiRateLimiter, requireSession, async (req, res) => {
   try {
     const { workspace_id, user_id } = req.session.user;
-    const { timezone, manual } = req.body || {};
+    const { timezone, manual, follow } = req.body || {};
     if (!isValidTimeZone(timezone)) return res.status(400).json({ success: false, error: 'Unknown time zone' });
-    const saved = await saveTimeZone(workspace_id, user_id, timezone, { manual: manual === true });
-    if (saved && manual === true) track('timezone_set', { source: 'manual' });
+    const saved = await saveTimeZone(workspace_id, user_id, timezone, { manual: manual === true, follow: follow === true && manual !== true });
+    if (saved && (manual === true || follow === true)) track('timezone_set', { source: manual === true ? 'manual' : 'automatic' });
     res.json({ success: true, saved });
   } catch (error) {
     console.error('❌ Failed to save time zone:', error);
