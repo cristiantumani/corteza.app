@@ -117,6 +117,16 @@ describe('MCP connector v2: changes from the assistant', { skip }, () => {
     await cleanup();
   });
 
+  test('the 401 challenge doesn’t narrow the scope: clients ask for read and write', async () => {
+    const response = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) });
+    assert.equal(response.status, 401);
+    const challenge = response.headers.get('www-authenticate') || '';
+    assert.match(challenge, /resource_metadata=/);
+    assert.ok(!/scope="read"/.test(challenge), 'scope="read" made MCP clients ask for read only');
+    const metadata = await (await fetch(`${base}/.well-known/oauth-protected-resource/mcp`)).json();
+    assert.deepEqual(metadata.scopes_supported, ['read', 'write']);
+  });
+
   test('a write token sees the write tools, which never claim to be read-only', async () => {
     const { tools } = await client.listTools();
     const names = tools.map(t => t.name);

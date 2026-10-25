@@ -155,6 +155,7 @@ describe('MCP connector: OAuth and read-only tools', { skip }, () => {
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map(t => t.name).sort(), ['get_meeting', 'get_outcome', 'get_person', 'get_thread', 'list_action_items', 'list_meetings', 'prepare_meeting', 'search_outcomes'], 'a read-only token gets no write tools');
     assert.ok(tools.every(t => t.annotations && t.annotations.readOnlyHint), 'all read-only');
+    assert.match(client.getInstructions(), /This connection can only read/, 'the assistant can tell the person how to allow changes');
     const { prompts } = await client.listPrompts();
     assert.deepEqual(prompts.map(p => p.name).sort(), ['action_items_to_tickets', 'follow_up_email', 'my_week', 'prepare_my_day', 'prepare_one_on_one', 'weekly_report', 'whats_overdue']);
 
