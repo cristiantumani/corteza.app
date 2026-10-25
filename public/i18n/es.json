@@ -739,6 +739,7 @@
       "create": "Crear enlace de invitación"
     },
     "timezone": {
+      "automatic": "Automática (según dónde estés): {zone}",
       "manual": "Elegida por ti.",
       "auto": "Detectada desde tu navegador.",
       "saved": "Guardado. Tu resumen llega a las 8:00 en esta zona horaria."

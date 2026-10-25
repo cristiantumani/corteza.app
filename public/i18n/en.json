@@ -739,6 +739,7 @@
       "create": "Create an invite link"
     },
     "timezone": {
+      "automatic": "Automatic (follows where you are): {zone}",
       "manual": "Set by you.",
       "auto": "Detected from your browser.",
       "saved": "Saved. Your summary arrives at 8:00 AM in this time zone."

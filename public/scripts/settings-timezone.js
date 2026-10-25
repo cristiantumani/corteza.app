@@ -1,13 +1,15 @@
 /**
  * Settings → Morning summary: the time zone the daily summary email is sent in.
- * Talks to /api/me/timezone (src/http/timezone.js). Choosing one here is "manual": the
- * browser's automatic report (public/scripts/timezone.js) no longer changes it.
+ * Talks to /api/me/timezone (src/http/timezone.js). The first option, Automatic (the default),
+ * follows the browser (public/scripts/timezone.js) wherever the person is; choosing a zone here is
+ * "manual" and the browser no longer changes it, until they pick Automatic again.
  */
 (function() {
   'use strict';
   const t = window.t || (key => key); // public/scripts/i18n.js
 
   const $ = id => document.getElementById(id);
+  const AUTOMATIC = 'automatic'; // the option that follows the browser
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!$('timezone-select')) return;
@@ -43,25 +45,34 @@
     const detected = browserTimeZone();
     const current = saved.timezone || detected || 'UTC';
     select.textContent = '';
+    if (detected) {
+      const automatic = document.createElement('option');
+      automatic.value = AUTOMATIC;
+      automatic.textContent = t('settings.timezone.automatic', { zone: detected.replace(/_/g, ' ') });
+      select.appendChild(automatic);
+    }
     for (const zone of allTimeZones([current, 'UTC'])) {
       const option = document.createElement('option');
       option.value = zone;
       option.textContent = zone.replace(/_/g, ' ');
       select.appendChild(option);
     }
-    select.value = current;
-    setStatus(t(saved.source === 'manual' ? 'settings.timezone.manual' : 'settings.timezone.auto'));
+    const manual = saved.source === 'manual' || !detected;
+    select.value = manual ? current : AUTOMATIC;
+    setStatus(t(manual ? 'settings.timezone.manual' : 'settings.timezone.auto'));
   }
 
   async function save() {
-    const timezone = $('timezone-select').value;
+    const value = $('timezone-select').value;
+    const follow = value === AUTOMATIC;
+    const timezone = follow ? browserTimeZone() : value;
     setStatus(t('common.saving'));
     try {
       const response = await fetch('/api/me/timezone', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timezone, manual: true })
+        body: JSON.stringify(follow ? { timezone, follow: true } : { timezone, manual: true })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.saved) throw new Error(data.error || t('common.couldNotSave'));
