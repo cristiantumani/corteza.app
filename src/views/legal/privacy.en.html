@@ -1,5 +1,5 @@
 <h1>Privacy Policy</h1>
-<p class="updated">Last updated: October 24, 2026</p>
+<p class="updated">Last updated: October 26, 2026</p>
 
 <p>Corteza (“Corteza”, “we”, “us”) is a decision log for teams that use Google Workspace. It reads the transcripts and Gemini notes of your Google Meet meetings and keeps the outcomes in them: decisions, action items, open questions and risks. This policy explains what data Corteza uses, why, who it shares it with, and the choices you have. Corteza is operated by Cristian Tumani. Contact: <a href="mailto:cristian@corteza.app">cristian@corteza.app</a>.</p>
 
@@ -21,6 +21,7 @@
     <tr><td><code>drive.meet.readonly</code></td><td>Reads the transcript and notes files that Google Meet saves in your Google Drive.</td></tr>
     <tr><td><code>drive.readonly</code></td><td>Reads the Gemini “Take notes for me” document of a meeting when Google stores it in a way the permission above doesn’t cover. Corteza opens only the notes documents Google Meet links to a meeting; it doesn’t browse, list or read other files in your Drive.</td></tr>
     <tr><td><code>calendar.events.readonly</code> (optional)</td><td>Reads today’s events in your calendar to prepare your morning summary and the “Prepare your day” section on Home: each meeting with what is still open from its earlier sessions. Calendar events are read when the summary or Home is prepared, kept only in the server’s memory for up to 10 minutes, and never saved.</td></tr>
+    <tr><td><code>tasks</code> (optional, off by default)</td><td>Only if you turn on “My action items in Google Calendar” in Settings: adds your own open action items with a due date (their text, why, meeting title and a link to Corteza) to a “Corteza” list in your Google Tasks, so they show on your calendar, and reads back the ones you complete or move in that list. Corteza doesn’t touch your other task lists. Turning it off stops the sync; the tasks already there stay in your Google account.</td></tr>
     <tr><td><code>drive.file</code> (optional)</td><td>Lets you pick specific documents in Google Drive (through Google’s file picker) to give the AI context about your company or your role. Corteza can open only the files you pick.</td></tr>
   </tbody>
 </table>

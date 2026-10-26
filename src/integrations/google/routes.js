@@ -16,11 +16,15 @@ const { track } = require('../posthog/client');
  *   GET  /integrations/google/connect       what each permission is for (shown before Google's consent screen,
  *                                           as Google's verification requires), then ?continue=1 starts consent
  *                                           (Meet + Drive-Meet scopes, optional calendar, offline access)
+ *                                           ?tasks=1 (from Settings → "My action items in Google Calendar") also asks
+ *                                           for Google Tasks, and turns the sync on when granted (core/actions/google-tasks-sync)
  *   GET  /integrations/google/callback      Google redirects back here
  *   GET  /api/integrations/google           connection status for the signed-in user (+ active_import: a running import, or null)
  *   PUT  /api/integrations/google/settings  { space_id, skip_one_on_one, exclude_keywords }
  *   POST /api/integrations/google/sync      check for new meetings now
  *   POST /api/integrations/google/disconnect
+ *   PUT  /api/integrations/google/tasks-sync { enabled }: on with the Tasks permission → first sync now;
+ *                                           without it → { needs_consent: true, url }; off stops the sync both ways
  *
  * Import past meetings (src/ingestion/meet-import.js):
  *   GET  /api/integrations/google/meetings?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -31,6 +35,17 @@ const router = express.Router();
 
 function settingsRedirect(res, params) {
   return res.redirect(`/settings?${new URLSearchParams(params)}#integrations`);
+}
+
+/** The first sync after turning it on, without making the person wait (failures show in Settings) */
+function syncTasksSoon(workspaceId, userId) {
+  const { syncPerson } = require('../../core/actions/google-tasks-sync');
+  connections.getConnection(workspaceId, userId)
+    .then(connection => syncPerson(connection))
+    .catch(error => {
+      console.error(`❌ First Google Tasks sync failed for ${userId} in ${workspaceId}:`, error.message);
+      require('../sentry/client').reportError(error, { job: 'google_tasks_sync', workspace_id: workspaceId });
+    });
 }
 
 function requireSession(req, res, next) {
@@ -44,14 +59,18 @@ const disclosurePage = localizedPage(fs.readFileSync(path.join(__dirname, '../..
 router.get('/integrations/google/connect', (req, res) => {
   if (!req.session?.user) return res.redirect('/auth/login?return=%2Fsettings');
   if (!google.isGoogleConfigured()) return settingsRedirect(res, { google_error: 'Google is not configured on this server.' });
-  if (req.query.continue !== '1') return res.type('html').send(disclosurePage(req));
+  const tasks = req.query.tasks === '1';
+  if (req.query.continue !== '1') {
+    const page = disclosurePage(req);
+    return res.type('html').send(tasks ? page.replace('/integrations/google/connect?continue=1"', '/integrations/google/connect?continue=1&amp;tasks=1"') : page);
+  }
 
   const state = google.randomToken();
   const nonce = google.randomToken();
-  req.session.googleConnect = { state, nonce, started_at: Date.now() };
+  req.session.googleConnect = { state, nonce, started_at: Date.now(), tasks };
   req.session.save(err => {
     if (err) return settingsRedirect(res, { google_error: 'Could not start. Please try again.' });
-    res.redirect(connections.buildConnectUrl({ state, nonce, loginHint: req.session.user.email }));
+    res.redirect(connections.buildConnectUrl({ state, nonce, loginHint: req.session.user.email, extraScopes: tasks ? [connections.TASKS_SCOPE] : [] }));
   });
 });
 
@@ -91,6 +110,14 @@ router.get('/integrations/google/callback', async (req, res) => {
       grantedScopes
     });
     track('google_meet_connected', { granted_scope_count: grantedScopes.length });
+    if (pending.tasks) {
+      // Asked from "My action items in Google Calendar": on only if Google granted Tasks
+      if (!grantedScopes.includes(connections.TASKS_SCOPE)) return settingsRedirect(res, { google_error: 'Google Tasks wasn’t allowed, so your action items stay in Corteza.' });
+      await connections.setTasksSync(user.workspace_id, user.user_id, true);
+      track('google_tasks_sync_enabled', {});
+      syncTasksSoon(user.workspace_id, user.user_id);
+      return settingsRedirect(res, { google: 'tasks_on' });
+    }
     settingsRedirect(res, { google: 'connected' });
   } catch (error) {
     console.error('❌ Google Meet connect failed:', error.message);
@@ -122,6 +149,12 @@ router.get('/api/integrations/google', apiRateLimiter, requireSession, async (re
       status: connection.status,
       needs_reconsent: connections.needsReconsent(connection),
       calendar_connected: connections.hasCalendar(connection), // optional: meeting prep in the morning summary
+      tasks_sync: { // optional: my action items in Google Calendar (core/actions/google-tasks-sync)
+        enabled: Boolean(connection.tasks_sync) && connections.hasTasks(connection),
+        count: connection.tasks_count || 0,
+        synced_at: connection.tasks_synced_at || null,
+        error: connection.tasks_last_error || null
+      },
       google_email: connection.google_email,
       connected_at: connection.connected_at,
       last_polled_at: connection.last_polled_at,
@@ -279,10 +312,34 @@ router.post('/api/integrations/google/disconnect', apiRateLimiter, requireSessio
   try {
     const { workspace_id, user_id } = req.session.user;
     await connections.disconnect(workspace_id, user_id);
+    // Google Tasks sync stops with the connection (the tasks stay in the person's Google)
+    await require('../../config/database').getDatabase().collection('google_task_links').deleteMany({ workspace_id, user_id });
     res.json({ success: true });
   } catch (error) {
     console.error('❌ Google Meet disconnect failed:', error);
     res.status(500).json({ success: false, error: 'Failed to disconnect' });
+  }
+});
+
+router.put('/api/integrations/google/tasks-sync', apiRateLimiter, requireSession, async (req, res) => {
+  try {
+    const { workspace_id, user_id } = req.session.user;
+    const enabled = req.body && req.body.enabled;
+    if (typeof enabled !== 'boolean') return res.status(400).json({ success: false, error: 'enabled must be true or false' });
+    const connection = await connections.getConnection(workspace_id, user_id);
+    if (!connection || connection.status !== 'active') return res.status(409).json({ success: false, error: 'Connect Google first' });
+    if (enabled && !connections.hasTasks(connection)) {
+      // Google asks for the Tasks permission first; the callback turns it on
+      return res.json({ success: true, needs_consent: true, url: '/integrations/google/connect?tasks=1' });
+    }
+    await connections.setTasksSync(workspace_id, user_id, enabled);
+    track(enabled ? 'google_tasks_sync_enabled' : 'google_tasks_sync_disabled', {});
+    console.log(`📅 Google Tasks sync ${enabled ? 'on' : 'off'} for ${user_id} in ${workspace_id}`);
+    if (enabled) syncTasksSoon(workspace_id, user_id);
+    res.json({ success: true, enabled });
+  } catch (error) {
+    console.error('❌ Failed to change the Google Tasks sync:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to save' });
   }
 });
 

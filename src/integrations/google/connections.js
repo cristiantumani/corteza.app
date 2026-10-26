@@ -24,6 +24,9 @@ const MEET_SCOPES = [
 // Optional: today's calendar events, to prepare the morning summary for today's meetings
 // (core/briefs/meeting-prep.js). Meet capture works without it.
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
+// Optional, asked only when the person turns on "My action items in Google Calendar" in Settings:
+// their own action items with a date, as tasks in a "Corteza" list (core/actions/google-tasks-sync.js)
+const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks';
 // Also ask for identity so we can check the connected account is the signed-in user
 const CONNECT_SCOPES = ['openid', 'email', ...MEET_SCOPES, CALENDAR_SCOPE];
 
@@ -51,14 +54,15 @@ function createClient() {
 
 /**
  * Consent URL for connecting Google Meet (offline access → refresh token)
- * @param {Object} params - { state, nonce, loginHint }
+ * @param {{ state: string, nonce: string, loginHint?: string, extraScopes?: string[] }} params - extraScopes: optional
+ *   permissions asked on top (incremental: Google keeps the ones already granted)
  */
-function buildConnectUrl({ state, nonce, loginHint }) {
+function buildConnectUrl({ state, nonce, loginHint, extraScopes = [] }) {
   return createClient().generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent', // always return a refresh token
     include_granted_scopes: true,
-    scope: CONNECT_SCOPES,
+    scope: [...CONNECT_SCOPES, ...extraScopes],
     state,
     nonce,
     login_hint: loginHint || undefined
@@ -94,6 +98,52 @@ function needsReconsent(connection) {
 /** True when the person let Corteza read their calendar (optional; connected before it existed, or unticked) */
 function hasCalendar(connection) {
   return Boolean(connection && Array.isArray(connection.scopes) && connection.scopes.includes(CALENDAR_SCOPE));
+}
+
+/** True when the person let Corteza manage their Google Tasks (asked when they turn the sync on) */
+function hasTasks(connection) {
+  return Boolean(connection && Array.isArray(connection.scopes) && connection.scopes.includes(TASKS_SCOPE));
+}
+
+/**
+ * Turns "My action items in Google Calendar" on or off. Off stops the sync both ways; the tasks
+ * already in Google stay there.
+ * @param {string} workspaceId
+ * @param {string} userId
+ * @param {boolean} enabled
+ */
+async function setTasksSync(workspaceId, userId, enabled) {
+  await collection().updateOne({ workspace_id: workspaceId, user_id: userId }, { $set: { tasks_sync: Boolean(enabled), updated_at: new Date() } });
+}
+
+/**
+ * Takes a short lease for one Google Tasks sync, so the first sync and the poller never run at once
+ * (they'd create the same task twice)
+ * @param {*} connectionId
+ * @param {number} [ms]
+ * @returns {Promise<Object|null>} the fresh connection if the lease was acquired
+ */
+async function acquireTasksLease(connectionId, ms = 2 * 60 * 1000) {
+  const now = new Date();
+  return collection().findOneAndUpdate(
+    { _id: connectionId, $or: [{ tasks_lease_until: null }, { tasks_lease_until: { $exists: false } }, { tasks_lease_until: { $lt: now } }] },
+    { $set: { tasks_lease_until: new Date(now.getTime() + ms) } },
+    { returnDocument: 'after' }
+  );
+}
+
+/**
+ * Records a finished sync (and releases its lease): the list it used, when, how many tasks it keeps, and the error if any
+ * @param {*} connectionId
+ * @param {{ listId?: string, pulledAt?: Date, count?: number, error?: string|null }} result
+ */
+async function finishTasksSync(connectionId, { listId, pulledAt, count, error = null }) {
+  /** @type {Object<string, any>} */
+  const set = { tasks_synced_at: new Date(), tasks_last_error: error, tasks_lease_until: null };
+  if (listId) set.tasks_list_id = listId;
+  if (pulledAt) set.tasks_pulled_at = pulledAt;
+  if (typeof count === 'number') set.tasks_count = count;
+  await collection().updateOne({ _id: connectionId }, { $set: set });
 }
 
 /** Scopes from MEET_SCOPES the user did not grant (they can untick boxes on the consent screen) */
@@ -236,6 +286,11 @@ module.exports = {
   needsReconsent,
   hasCalendar,
   CALENDAR_SCOPE,
+  hasTasks,
+  TASKS_SCOPE,
+  setTasksSync,
+  acquireTasksLease,
+  finishTasksSync,
   saveConnection,
   getConnection,
   listActiveConnections,

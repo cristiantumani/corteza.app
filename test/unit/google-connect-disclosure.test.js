@@ -51,6 +51,18 @@ describe('connect Google: what each permission is for, before Google asks', () =
     assert.match(location.searchParams.get('scope'), /meetings\.space\.readonly/);
   });
 
+  test('from “My action items in Google Calendar”: the Tasks permission is explained, then asked', async () => {
+    user = { workspace_id: 'W1', user_id: 'U1', email: 'ana@acme.com', language: 'en' };
+    const page = await (await get('/integrations/google/connect?tasks=1')).text();
+    assert.match(page, /Create, edit and delete your tasks/);
+    assert.match(page, /href="\/integrations\/google\/connect\?continue=1&amp;tasks=1"/);
+    const response = await get('/integrations/google/connect?continue=1&tasks=1');
+    const scope = new URL(response.headers.get('location')).searchParams.get('scope');
+    assert.match(scope, /auth\/tasks/);
+    const plain = await get('/integrations/google/connect?continue=1');
+    assert.doesNotMatch(new URL(plain.headers.get('location')).searchParams.get('scope'), /auth\/tasks/, 'only when asked for');
+  });
+
   test('signed out: to the login page', async () => {
     user = undefined;
     const response = await get('/integrations/google/connect');

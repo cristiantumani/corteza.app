@@ -985,7 +985,21 @@
       "one": "Algo falló al leer {count} reunión hoy. Ya nos avisaron y lo estamos revisando.",
       "other": "Algo falló al leer {count} reuniones hoy. Ya nos avisaron y lo estamos revisando."
     },
-    "checked": "revisado {when}"
+    "checked": "revisado {when}",
+    "tasks": {
+      "title": "Mis pendientes en Google Calendar",
+      "body": "Corteza agrega tus pendientes abiertos con fecha a una lista “Corteza” de Google Tasks, para que aparezcan en tu Google Calendar. Si marcas uno como hecho o le cambias la fecha en Google, Corteza también lo actualiza.",
+      "offHelp": "Apagado. Al encenderlo, Google te pedirá permiso para gestionar tus tareas.",
+      "offDone": "Apagado. Las tareas que ya están en Google se quedan ahí; no se agregan nuevas y los cambios que hagas allá ya no llegan a Corteza.",
+      "first": "Encendido. Tus pendientes aparecerán en Google en un minuto.",
+      "status": {
+        "one": "Encendido · {count} pendiente en Google · última sincronización {when}",
+        "other": "Encendido · {count} pendientes en Google · última sincronización {when}"
+      },
+      "failed": "La última sincronización falló: {error}",
+      "open": "Abrir Google Tasks",
+      "onBanner": "Listo: tus pendientes con fecha van camino a tu Google Calendar."
+    }
   },
   "context": {
     "requestFailed": "La solicitud falló ({status})",
@@ -1257,7 +1271,12 @@
     "keep": "Corteza guarda solo los resultados de tus reuniones (decisiones, pendientes, preguntas abiertas y riesgos), nunca las transcripciones. El contenido de las reuniones se cifra, nadie más ve tu espacio personal y puedes desconectarte cuando quieras en Configuración.",
     "privacy": "Política de privacidad",
     "continue": "Continuar a Google",
-    "notNow": "Ahora no"
+    "notNow": "Ahora no",
+    "tasks": {
+      "title": "Crear, editar y borrar tus tareas",
+      "when": "(solo si activas “Mis pendientes en Google Calendar”)",
+      "body": "Corteza agrega tus propios pendientes abiertos con fecha a una lista “Corteza” de Google Tasks, para que aparezcan en tu calendario, y lee los que completas o mueves. No toca tus otras listas."
+    }
   },
   "decide": {
     "understood": "Parece una decisión",
@@ -1407,5 +1426,9 @@
       "off": "Tu workspace no permite conectar asistentes de IA a Corteza. Pídeselo a un admin."
     },
     "via": "vía {client}"
+  },
+  "tasks": {
+    "from": "De: {meeting}",
+    "open": "Abrir en Corteza: {link}"
   }
 }

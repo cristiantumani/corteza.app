@@ -985,7 +985,21 @@
       "one": "Something went wrong reading {count} meeting today. We were notified and are looking into it.",
       "other": "Something went wrong reading {count} meetings today. We were notified and are looking into it."
     },
-    "checked": "last checked {when}"
+    "checked": "last checked {when}",
+    "tasks": {
+      "title": "My action items in Google Calendar",
+      "body": "Corteza adds your open action items that have a due date to a “Corteza” list in Google Tasks, so they show on your Google Calendar. Mark one done or move its date in Google and Corteza follows.",
+      "offHelp": "Off. Turning it on asks Google for permission to manage your tasks.",
+      "offDone": "Off. The tasks already in Google stay there; nothing new is added and changes there no longer reach Corteza.",
+      "first": "On. Your action items appear in Google in a minute.",
+      "status": {
+        "one": "On · {count} action item in Google · last sync {when}",
+        "other": "On · {count} action items in Google · last sync {when}"
+      },
+      "failed": "The last sync failed: {error}",
+      "open": "Open Google Tasks",
+      "onBanner": "Done: your action items with a date are on their way to your Google Calendar."
+    }
   },
   "context": {
     "requestFailed": "Request failed ({status})",
@@ -1257,7 +1271,12 @@
     "keep": "Corteza keeps only the outcomes of your meetings (decisions, action items, open questions and risks), never the transcripts. Meeting content is encrypted, nobody else sees your personal space, and you can disconnect at any time in Settings.",
     "privacy": "Privacy Policy",
     "continue": "Continue to Google",
-    "notNow": "Not now"
+    "notNow": "Not now",
+    "tasks": {
+      "title": "Create, edit and delete your tasks",
+      "when": "(only if you turn on “My action items in Google Calendar”)",
+      "body": "Corteza adds your own open action items with a due date to a “Corteza” list in Google Tasks, so they show on your calendar, and reads back the ones you complete or move. It doesn’t touch your other lists."
+    }
   },
   "decide": {
     "understood": "Sounds like a decision",
@@ -1407,5 +1426,9 @@
       "off": "Your workspace doesn’t allow connecting AI assistants to Corteza. Ask an admin."
     },
     "via": "via {client}"
+  },
+  "tasks": {
+    "from": "From: {meeting}",
+    "open": "Open in Corteza: {link}"
   }
 }

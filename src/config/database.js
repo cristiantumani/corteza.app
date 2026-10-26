@@ -235,6 +235,10 @@ async function connectToMongoDB() {
     await db.collection('mcp_changes').createIndex({ workspace_id: 1, user_id: 1, applied_at: -1 });
     await db.collection('mcp_changes').createIndex({ created_at: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
+    // Google Tasks sync (core/actions/google-tasks-sync.js): one link per person and action item
+    await db.collection('google_task_links').createIndex({ workspace_id: 1, user_id: 1, item_id: 1 }, { unique: true });
+    await db.collection('google_task_links').createIndex({ workspace_id: 1, user_id: 1, task_id: 1 });
+
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
   } catch (error) {
