@@ -89,15 +89,17 @@ Last reviewed: October 24, 2026.
   `drive.meet.readonly` (read the transcript and notes files Meet saves), `drive.readonly` (read the
   Gemini notes document linked to a meeting when the previous scope doesn't cover it; no other files
   are read), and optionally `calendar.events.readonly` (today's meetings, to prepare the day; never
-  stored) and `drive.file` (only documents the user picks). Corteza follows the Google API Services
+  stored), `drive.file` (only documents the user picks) and `tasks` (off by default: the user's own
+  open action items with a due date, in a "Corteza" list of their Google Tasks). Corteza follows the Google API Services
   User Data Policy, including Limited Use.
 - ES: Solo después de que el usuario conecta Google en Configuración, y cada uno se explica antes de la
   pantalla de consentimiento de Google: `meetings.space.readonly` (listar sus reuniones y sus
   transcripciones y notas), `drive.meet.readonly` (leer los archivos de transcripción y notas que guarda
   Meet), `drive.readonly` (leer el documento de notas de Gemini vinculado a una reunión cuando el permiso
   anterior no lo cubre; no se lee ningún otro archivo), y opcionalmente `calendar.events.readonly` (las
-  reuniones del día, para preparar la jornada; nunca se guardan) y `drive.file` (solo documentos que el
-  usuario elige). Corteza cumple la Política de datos de usuario de los servicios de API de Google,
+  reuniones del día, para preparar la jornada; nunca se guardan), `drive.file` (solo documentos que el
+  usuario elige) y `tasks` (apagado por defecto: sus propios pendientes abiertos con fecha, en una lista
+  "Corteza" de su Google Tasks). Corteza cumple la Política de datos de usuario de los servicios de API de Google,
   incluido el Uso Limitado.
 
 **Where is data stored?**

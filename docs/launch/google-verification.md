@@ -13,6 +13,7 @@ The free steps (this page) come first; the paid security assessment (CASA, step 
 | `https://www.googleapis.com/auth/drive.meet.readonly` | Restricted | Connect Google | Read the transcript Docs that Meet creates |
 | `https://www.googleapis.com/auth/drive.readonly` | Restricted | Connect Google | Read Gemini notes Docs, which `drive.meet.readonly` doesn't cover (tested, below). Corteza only opens the Docs the Meet API links to a meeting |
 | `https://www.googleapis.com/auth/calendar.events.readonly` | Sensitive | Connect Google (optional, can be unticked) | Today's events, read when the morning summary or Home's "Prepare your day" is built: each meeting with what is still open from its earlier sessions (`core/briefs/meeting-prep.js`, `core/home/today.js`). Kept in server memory for up to 10 minutes for Home, never saved |
+| `https://www.googleapis.com/auth/tasks` | Sensitive | Settings → "My action items in Google Calendar" (off by default; asked only when the user turns it on) | The user's own open action items with a due date, written to a "Corteza" task list in their Google Tasks, and the ones they complete or move there read back (`core/actions/google-tasks-sync.js`). Only that list is touched; only ids and dates of the link are stored |
 | `https://www.googleapis.com/auth/drive.file` | Non-sensitive | Settings → Context for the AI, through Google's Picker | Only the files the person picks, as company or personal context for the AI (`integrations/google/drive-files.js`) |
 
 All scopes go in Google Auth Platform → Data access, even the ones asked for later (`drive.file`).
@@ -69,6 +70,9 @@ A future roadmap item adds another sensitive scope: `tasks` for Google Tasks. Ad
 
 **`calendar.events.readonly`** (optional for the user)
 > Corteza's morning summary email, and the "Prepare your day" section on the user's Home page, prepare the user for today's meetings: for each event in the user's primary calendar today, they show what is still open (action items, questions, risks) from that meeting's earlier sessions, matched by the event's Google Meet link. Events are read when the summary or Home is built, kept only in the server's memory for up to 10 minutes, and never saved. The user can untick this permission and Corteza works without it.
+
+**`tasks`** (optional, off by default)
+> Users can turn on "My action items in Google Calendar" in Settings. Corteza then keeps the user's own open action items that have a due date (captured from their meetings or added by hand) as tasks in a task list named "Corteza" in their Google Tasks, so they appear on the user's Google Calendar; when the user completes a task or changes its date there, Corteza updates the action item. Corteza only creates, updates and deletes tasks in the list it created, never reads or changes the user's other lists, and stores only which task belongs to which action item. Google Tasks can't be written with a narrower scope. The user can turn it off at any time.
 
 **`drive.file`**
 > In Settings → Context for the AI, users can pick documents from Google Drive with the Google Picker (for example a company glossary) so the AI understands their company's terms. Corteza only opens the files the user picks.

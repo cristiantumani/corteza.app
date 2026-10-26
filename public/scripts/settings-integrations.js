@@ -45,7 +45,7 @@
 
     const banner = document.createElement('div');
     banner.className = `mb-4 p-3 rounded-lg text-sm ${error ? 'bg-error-container text-on-error-container' : 'bg-primary/10 text-primary'}`;
-    banner.textContent = error || t('meet.connectedBanner');
+    banner.textContent = error || t(params.get('google') === 'tasks_on' ? 'meet.tasks.onBanner' : 'meet.connectedBanner');
     const section = document.getElementById('integrations');
     section.insertBefore(banner, section.children[1]);
     section.scrollIntoView({ behavior: 'smooth' });
@@ -95,6 +95,51 @@
     ].filter(Boolean).join(' · ');
   }
 
+  /**
+   * "My action items in Google Calendar" (docs/specs/2026-10-google-tasks-sync.md): off by default;
+   * turning it on asks Google for Tasks the first time
+   * @param {{ enabled?: boolean, count?: number, synced_at?: string|null, error?: string|null }} sync
+   */
+  function renderTasksSync(sync) {
+    const status = sync.enabled
+      ? (sync.error ? t('meet.tasks.failed', { error: sync.error }) : sync.synced_at ? t('meet.tasks.status', { count: sync.count || 0, when: formatTime(sync.synced_at) }) : t('meet.tasks.first'))
+      : t('meet.tasks.offHelp');
+    return `
+      <div class="mb-4 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input id="gm-tasks" type="checkbox" class="mt-1 w-5 h-5" ${sync.enabled ? 'checked' : ''}>
+          <span><strong class="text-on-surface">${escapeHtml(t('meet.tasks.title'))}</strong>
+            <span class="block">${escapeHtml(t('meet.tasks.body'))}</span>
+            <span id="gm-tasks-status" class="block text-xs mt-1 ${sync.error ? 'text-error' : 'text-on-surface-variant'}" role="status">${escapeHtml(status)}
+              ${sync.enabled ? ` · <a href="https://tasks.google.com/" target="_blank" rel="noopener" class="underline">${escapeHtml(t('meet.tasks.open'))}</a>` : ''}</span></span>
+        </label>
+      </div>`;
+  }
+
+  async function toggleTasksSync(box) {
+    box.disabled = true;
+    const status = document.getElementById('gm-tasks-status');
+    status.textContent = t('common.saving');
+    try {
+      const response = await fetch('/api/integrations/google/tasks-sync', {
+        method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: box.checked })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) throw new Error(data.error || t('common.couldNotSave'));
+      // First time: Google asks for the Tasks permission (after Corteza explains it)
+      if (data.needs_consent) {
+        window.location.href = data.url;
+        return;
+      }
+      status.textContent = t(box.checked ? 'meet.tasks.first' : 'meet.tasks.offDone');
+      box.disabled = false;
+    } catch (error) {
+      box.checked = !box.checked;
+      box.disabled = false;
+      status.textContent = t('common.tryAgain', { error: error.message });
+    }
+  }
+
   async function renderConnected(data) {
     const spaces = await loadWritableSpaces();
     const settings = data.settings || {};
@@ -133,6 +178,7 @@
           <strong>${escapeHtml(t('meet.calendar.title'))}</strong> ${escapeHtml(t('meet.calendar.body'))}
           <a href="/integrations/google/connect" class="font-bold underline ml-1">${escapeHtml(t('meet.calendar.button'))}</a>
         </div>`}
+      ${needsReconnect ? '' : renderTasksSync(data.tasks_sync || {})}
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <label class="block" data-multi-space>
@@ -168,6 +214,8 @@
     `;
 
     document.getElementById('gm-save').addEventListener('click', saveSettings);
+    const tasksToggle = document.getElementById('gm-tasks');
+    if (tasksToggle) tasksToggle.addEventListener('change', () => toggleTasksSync(tasksToggle));
     document.getElementById('gm-sync').addEventListener('click', syncNow);
     document.getElementById('gm-disconnect').addEventListener('click', disconnect);
     if (!needsReconnect) setupImportSection();

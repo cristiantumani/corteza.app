@@ -32,6 +32,6 @@ declare module 'express-session' {
     /** MCP connector consent page in progress (src/http/oauth-consent.js) */
     mcpConsent: { request: string; csrf: string };
     /** "Connect Google Meet" in progress (src/integrations/google/routes.js) */
-    googleConnect: { state: string; nonce: string; started_at: number };
+    googleConnect: { state: string; nonce: string; started_at: number; tasks?: boolean };
   }
 }

@@ -7,6 +7,7 @@ const pipeline = require('../ingestion/pipeline');
 const { ensurePersonalSpace } = require('../services/spaces');
 const { countByType } = require('../core/decisions/types');
 const { reportError } = require('../integrations/sentry/client');
+const { track } = require('../integrations/posthog/client');
 
 /**
  * Google Meet poller: finds meetings that ended for each connected user and
@@ -153,12 +154,35 @@ async function runForConnection(connection, deps = {}) {
   }
 }
 
+/**
+ * Google Tasks sync for each active connection that has it on (core/actions/google-tasks-sync);
+ * one person's failure never stops the others
+ * @param {Object[]} active - active google_connections
+ */
+async function syncGoogleTasks(active) {
+  const { syncPerson } = require('../core/actions/google-tasks-sync');
+  for (const connection of active.filter(c => c.tasks_sync)) {
+    try {
+      const result = await syncPerson(connection);
+      if (result.created || result.updated || result.completed || result.removed || result.pulled) {
+        console.log(`📅 Google Tasks for ${connection.user_id}: +${result.created} ~${result.updated} ✓${result.completed} -${result.removed} ←${result.pulled}`);
+        track('google_tasks_synced', { created: result.created, updated: result.updated, completed: result.completed, removed: result.removed, pulled: result.pulled }, connection.user_id);
+      }
+    } catch (error) {
+      console.error(`❌ Google Tasks sync failed for ${connection.user_id} in ${connection.workspace_id}:`, error.message);
+      if (!meetClient.isRevokedError(error)) reportError(error, { job: 'google_tasks_sync', workspace_id: connection.workspace_id });
+    }
+  }
+}
+
 async function runMeetPoller() {
   try {
     const active = await connections.listActiveConnections();
     for (const connection of active) {
       await runForConnection(connection);
     }
+    // My action items in Google Calendar: both ways, for the people who turned it on
+    await syncGoogleTasks(active);
     // Finish "Import past meetings" jobs interrupted by a restart
     await require('../ingestion/meet-import').resumeStaleImports();
     // The ops checks alert when this stops (jobs/ops-alerts)
