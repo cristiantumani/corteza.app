@@ -9,6 +9,8 @@ test('analytics is off in tests and every helper is a no-op', () => {
   assert.doesNotThrow(() => {
     analytics.track('meeting_captured', { outcome_count: 3 }, 'U1');
     analytics.identify('U1', { email: 'ana@acme.com' });
+    analytics.linkWebsiteVisitor('U1', 'Ana@Acme.com');
+    analytics.linkWebsiteVisitor('U1', null);
     analytics.trackAiGeneration({ feature: 'extraction', response: { model: 'm' }, latencyMs: 10 });
   });
 });
@@ -35,4 +37,8 @@ test('request properties keep the path and drop the query string (OAuth codes, s
   const props = analytics.requestProperties({ method: 'GET', originalUrl: '/auth/google/callback?state=abc&code=4/0AXsecret' });
   assert.deepEqual(props, { $current_url: '/auth/google/callback', $request_path: '/auth/google/callback', $request_method: 'GET' });
   assert.equal(analytics.requestProperties({ method: 'GET', url: '/api/decisions?search=pricing#x' }).$current_url, '/api/decisions');
+});
+
+test('the website and the app share one id for an early access requester: their email, lowercased', () => {
+  assert.equal(analytics.websiteVisitorId('  Ana@Acme.COM '), 'ana@acme.com');
 });

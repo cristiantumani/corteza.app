@@ -98,6 +98,8 @@ router.get('/auth/google/callback', authRateLimiter, async (req, res) => {
           console.error('❌ Failed to save session:', saveErr);
           return loginErrorRedirect(res, 'Could not create your session. Please try again.');
         }
+        // Same person as their early access request on the website (funnel from the site to activation)
+        analytics.linkWebsiteVisitor(result.sessionUser.user_id, result.sessionUser.email);
         analytics.identify(result.sessionUser.user_id, {
           email: result.sessionUser.email,
           name: result.sessionUser.user_name,
