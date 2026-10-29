@@ -1,6 +1,7 @@
 const config = require('../../config/environment');
 const mailer = require('../../utils/n8n-client');
 const beta = require('./beta-access');
+const { track, websiteVisitorId } = require('../../integrations/posthog/client');
 
 /**
  * Approves a beta tester and sends them the welcome email, once.
@@ -17,6 +18,8 @@ const beta = require('./beta-access');
 async function approveBetaTester({ email, name, company, approvedVia, lang = 'en' }) {
   const { entry, alreadyApproved } = await beta.approve({ email, name, company, approvedVia });
   console.log(`🎟️  Beta ${alreadyApproved ? 'already approved' : 'approved'}: ${entry.email} (${approvedVia})`);
+  // Funnel step between the website's sign-up and the first sign-in (same person: their email)
+  if (!alreadyApproved) track('beta_approved', { via: approvedVia }, websiteVisitorId(entry.email));
 
   if (!process.env.RESEND_API_KEY) return { alreadyApproved, welcome: 'not_configured' };
   if (!(await beta.claimWelcome(entry.email))) return { alreadyApproved, welcome: 'already_sent' };

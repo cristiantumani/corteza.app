@@ -142,6 +142,31 @@ function aiGenerationProperties(feature, response, latencyMs, extra = {}) {
  * Sends queued events before the process exits (Railway redeploys send SIGTERM)
  * @returns {Promise<void>}
  */
+/**
+ * Joins the person who requested early access on the website (the site identifies them by their
+ * email, same PostHog project) with their Corteza user, so one funnel runs from the website to
+ * activation: sign-up → beta_approved → user_signed_in → google_meet_connected → meeting_captured.
+ * Both ids are already identified, so a plain alias wouldn't merge them; `$merge_dangerously` does.
+ * Safe here: the email is Google-verified and belongs to this user. Repeating it is a no-op.
+ * @param {string} userId - the membership's user_id
+ * @param {string|null|undefined} email
+ */
+function linkWebsiteVisitor(userId, email) {
+  const alias = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  if (!alias || !userId || alias === userId) return;
+  track('$merge_dangerously', { alias }, userId);
+}
+
+/**
+ * The website's id for someone who requested early access (their email, lowercased), for
+ * server events about them before they have a Corteza user (beta_approved)
+ * @param {string} email
+ * @returns {string}
+ */
+function websiteVisitorId(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
 async function shutdownAnalytics() {
   if (posthog) await posthog.shutdown();
 }
@@ -150,6 +175,8 @@ module.exports = {
   posthog,
   track,
   identify,
+  linkWebsiteVisitor,
+  websiteVisitorId,
   trackAiGeneration,
   aiGenerationProperties,
   requestProperties,
