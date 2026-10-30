@@ -18,8 +18,6 @@ The free steps (this page) come first; the paid security assessment (CASA, step 
 
 All scopes go in Google Auth Platform → Data access, even the ones asked for later (`drive.file`).
 
-A future roadmap item adds another sensitive scope: `tasks` for Google Tasks. Add it only once the feature ships.
-
 ## Can we drop `drive.readonly`? (live test, 15 minutes)
 
 `drive.readonly` is the scope reviewers push back on most ("See and download all your Google Drive files"). Without it, verification is easier and the consent screen less scary. Test whether Google now lets `drive.meet.readonly` open Gemini notes:
