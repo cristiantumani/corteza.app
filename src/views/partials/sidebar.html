@@ -118,6 +118,12 @@
        onclick="if (window.CortezaOnboarding) { event.preventDefault(); window.CortezaOnboarding.open(); }">
       <span class="material-symbols-outlined" aria-hidden="true">help</span>{{t:nav.howItWorks}}
     </a>
+    <!-- SUPPORT: Help chat (core/support), only when SUPPORT_AGENT_ID is set; removed by page-partials.js otherwise -->
+    <button type="button" class="sb-link" id="sb-support" onclick="if (window.CortezaSupport) window.CortezaSupport.open();">
+      <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>{{t:nav.support}}
+    </button>
+    <script src="/scripts/support-chat.js?v=1" defer></script>
+    <!-- /SUPPORT -->
     <a class="sb-link" href="/auth/logout">
       <span class="material-symbols-outlined" aria-hidden="true">logout</span>{{t:nav.logout}}
     </a>

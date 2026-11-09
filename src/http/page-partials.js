@@ -19,7 +19,10 @@ const onboardingHTML = fs.readFileSync(path.join(views, 'partials/onboarding.htm
  * @returns {string}
  */
 function sidebar(active) {
-  return sidebarHTML.replace(`data-nav="${active}"`, `data-nav="${active}" aria-current="page"`);
+  const html = sidebarHTML.replace(`data-nav="${active}"`, `data-nav="${active}" aria-current="page"`);
+  // Help shows only when the support agent is configured (core/support/support-agent)
+  if (process.env.SUPPORT_AGENT_ID && process.env.SUPPORT_ENVIRONMENT_ID) return html;
+  return html.replace(/\s*<!-- SUPPORT:[\s\S]*?<!-- \/SUPPORT -->/, '');
 }
 
 /**

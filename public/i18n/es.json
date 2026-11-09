@@ -15,7 +15,8 @@
     "open": "Abrir menú",
     "homeTitle": "Inicio",
     "privacy": "Privacidad",
-    "terms": "Términos"
+    "terms": "Términos",
+    "support": "Ayuda"
   },
   "home": {
     "pageTitle": "Inicio · Corteza",
@@ -1430,5 +1431,20 @@
   "tasks": {
     "from": "De: {meeting}",
     "open": "Abrir en Corteza: {link}"
+  },
+  "support": {
+    "title": "Ayuda",
+    "new": "Nuevo chat",
+    "close": "Cerrar ayuda",
+    "placeholder": "Escribe tu pregunta",
+    "send": "Enviar",
+    "footer": "Responde un asistente de IA a partir de las páginas publicadas de Corteza.",
+    "emailInstead": "Prefiero escribirle a Cristian",
+    "greeting": "¡Hola! Te ayudo con cómo funciona Corteza: captura de reuniones, permisos de Google, privacidad, los asistentes de IA… ¿Qué necesitas?",
+    "thinking": "Buscando…",
+    "error": "La ayuda no responde ahora. Prueba de nuevo en un momento o escribe a cristian@corteza.app.",
+    "limit": "Llegaste al límite de ayuda de hoy. Escribe a cristian@corteza.app y te responde en 24 horas.",
+    "sessionLimit": "Este chat llegó a su límite. Empieza un chat nuevo para seguir.",
+    "escalated": "Se lo pasé a Cristian: te responde por email en menos de 24 horas."
   }
 }

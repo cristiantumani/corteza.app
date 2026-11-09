@@ -135,6 +135,20 @@ Last reviewed: October 24, 2026.
   términos no permiten entrenar con los datos enviados. Corteza no entrena modelos. Lo que un usuario
   confirma o descarta se usa como ejemplo solo dentro de ese mismo workspace.
 
+**Is in-app support handled by AI? What does it see?**
+
+- EN: Yes. The Help chat is an AI agent (Anthropic's Claude Managed Agents) that answers only from
+  Corteza's public pages. It has no access to meetings, outcomes or account data. It receives the
+  message, the person's first name, language and current page. Anthropic keeps the conversation in
+  the agent session; Corteza stores only ids, dates and token counts. Questions it can't answer are
+  emailed to Corteza's founder with the person's name and email, who replies personally.
+- ES: Sí. El chat de Ayuda es un agente de IA (Claude Managed Agents de Anthropic) que responde solo
+  con las páginas públicas de Corteza. No tiene acceso a reuniones, resultados ni datos de la cuenta.
+  Recibe el mensaje, el nombre de pila de la persona, su idioma y la página actual. Anthropic
+  conserva la conversación en la sesión del agente; Corteza guarda solo ids, fechas y cantidad de
+  tokens. Lo que no sabe responder se envía por email al fundador de Corteza, con el nombre y email de
+  la persona, y él responde personalmente.
+
 **Can users connect Corteza to their own AI assistant (Claude, ChatGPT…)? What leaves Corteza then?**
 
 - EN: Yes, through a standard MCP connector. The person signs in with Google and approves access
@@ -323,7 +337,7 @@ Last reviewed: October 24, 2026.
 
 | Provider | Purpose | Data |
 |---|---|---|
-| Anthropic | AI that finds outcomes and answers searches | Transcript and notes text (not stored), outcomes, AI context, search questions |
+| Anthropic | AI that finds outcomes and answers searches; the Help chat agent (Claude Managed Agents) | Transcript and notes text (not stored), outcomes, AI context, search questions; Help chat messages with the person's first name and language (kept by Anthropic in the agent session; the agent reads only Corteza's public pages) |
 | OpenAI | Embeddings for semantic search | Outcome text and search questions |
 | MongoDB Atlas | Database | Everything Corteza stores (meeting content encrypted by Corteza) |
 | Railway | Application hosting | Data in transit through the app, server logs |
