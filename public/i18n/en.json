@@ -15,7 +15,8 @@
     "open": "Open menu",
     "homeTitle": "Home",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "support": "Help"
   },
   "home": {
     "pageTitle": "Home · Corteza",
@@ -1430,5 +1431,20 @@
   "tasks": {
     "from": "From: {meeting}",
     "open": "Open in Corteza: {link}"
+  },
+  "support": {
+    "title": "Help",
+    "new": "New chat",
+    "close": "Close help",
+    "placeholder": "Ask a question",
+    "send": "Send",
+    "footer": "Answered by an AI assistant from Corteza’s published pages.",
+    "emailInstead": "Email Cristian instead",
+    "greeting": "Hi! I can help with how Corteza works: capturing meetings, Google permissions, privacy, the AI assistants… What do you need?",
+    "thinking": "Looking it up…",
+    "error": "Help isn’t answering right now. Try again in a moment or email cristian@corteza.app.",
+    "limit": "You reached today’s help limit. Email cristian@corteza.app and he’ll reply within 24 hours.",
+    "sessionLimit": "This chat reached its limit. Start a new chat to keep going.",
+    "escalated": "Sent to Cristian: he’ll reply by email within 24 hours."
   }
 }

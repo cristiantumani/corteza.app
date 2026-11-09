@@ -170,6 +170,8 @@ async function startApp() {
   expressApp.use(require('./http/sensitive'));
   // Decide and close: a typed decision closes what it settles (core/agent/decide)
   expressApp.use(require('./http/decide'));
+  // Help: an AI agent answers from corteza.app's pages, escalates to Cristian (core/support)
+  expressApp.use(require('./http/support'));
 
   // Confirm / dismiss AI-captured outcomes
   expressApp.use(require('./http/decision-review'));

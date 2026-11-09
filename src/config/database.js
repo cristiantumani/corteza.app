@@ -238,6 +238,11 @@ async function connectToMongoDB() {
     // Google Tasks sync (core/actions/google-tasks-sync.js): one link per person and action item
     await db.collection('google_task_links').createIndex({ workspace_id: 1, user_id: 1, item_id: 1 }, { unique: true });
     await db.collection('google_task_links').createIndex({ workspace_id: 1, user_id: 1, task_id: 1 });
+    // Help chats (core/support): ids and dates only; the conversation lives in the agent session
+    await db.collection('support_conversations').createIndex({ conversation_id: 1 }, { unique: true });
+    await db.collection('support_conversations').createIndex({ workspace_id: 1, user_id: 1, created_at: -1 });
+    await db.collection('support_usage').createIndex({ workspace_id: 1, user_id: 1, day: 1 }, { unique: true });
+    await db.collection('support_usage').createIndex({ updated_at: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 31 });
 
     console.log('✅ Database ready!');
     return { db, decisionsCollection };
