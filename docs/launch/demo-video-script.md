@@ -9,7 +9,8 @@ Checklist and justifications: [`google-verification.md`](google-verification.md)
 - Use a test account (ninjaexcel.com works) that has, in the last few days:
   - one meeting **with a transcript**,
   - one meeting **with Gemini notes only** (no transcript), so `drive.readonly` is shown being used (skip it if the live test let us drop that scope),
-  - a meeting **today** in the calendar that also happened last week with the same Meet link, so meeting prep has history to show.
+  - a meeting **today** in the calendar that also happened last week with the same Meet link, so meeting prep has history to show,
+  - at least one of the test user's own action items **with a due date**, so Google Tasks has something to show.
 - **Disconnect Google first** (Settings → Google Meet → Disconnect) and remove Corteza at <https://myaccount.google.com/permissions>, so the full consent screen appears.
 - Browser at 100% zoom, address bar visible (reviewers check the client ID in the consent URL), no other tabs or bookmarks with private data.
 - Turn off email and chat notifications.
@@ -28,8 +29,10 @@ Checklist and justifications: [`google-verification.md`](google-verification.md)
 | 8 | Home → **All outcomes** → open one outcome: text, owner, the quote under **In the meeting**, the meeting name | "Only the outcomes are stored, with a short quote as evidence, encrypted with a key for the user's workspace." |
 | 9 | Action items page with the imported items | "Action items keep their owner and due date, so the team can follow up." |
 | 10 | The **morning summary** email in Gmail (send it with `railway run node scripts/send-daily-digest.js --email <test account>`), scroll to today's meetings. Then Home → **Prepare your day**, open today's meeting | "**calendar.events.readonly**: the morning email and Home list today's meetings, each with what is still open from its earlier sessions. Events are read when needed, kept in memory for at most 10 minutes, and never saved." |
-| 11 | Settings → Context for the AI → **Add from Google Drive** → the Picker → pick one doc | "**drive.file**: users can pick a document as context for the AI. Corteza can open only the files they pick." |
-| 12 | Settings → Google Meet → **Disconnect** → confirm. Then <https://myaccount.google.com/permissions> shows Corteza is gone | "Users can disconnect at any time: Corteza revokes its access with Google and deletes the stored tokens. Data deletion requests go to cristian@corteza.app." |
+| 11 | Settings → Google Meet → turn on **My action items in Google Calendar** → the permission page → **Continue to Google** → Google's consent screen asks for Tasks only. **Zoom into the address bar** to show the `tasks` scope → **Continue** | "**tasks** is asked only when the user turns this on. Corteza adds the user's own open action items with a due date to a 'Corteza' list in Google Tasks." |
+| 12 | **Open Google Tasks** (or Google Calendar): the "Corteza" list with the action item. Mark it complete there, then back in Corteza → Action items → **Resolved**: the item is done, "via Google Tasks" | "Completing or moving a task in Google updates the action item in Corteza. Only that list is touched, and Corteza stores only which task belongs to which item." |
+| 13 | Settings → Context for the AI → **Add from Google Drive** → the Picker → pick one doc | "**drive.file**: users can pick a document as context for the AI. Corteza can open only the files they pick." |
+| 14 | Settings → Google Meet → **Disconnect** → confirm. Then <https://myaccount.google.com/permissions> shows Corteza is gone | "Users can disconnect at any time: Corteza revokes its access with Google and deletes the stored tokens. Data deletion requests go to cristian@corteza.app." |
 
 ## After recording
 
